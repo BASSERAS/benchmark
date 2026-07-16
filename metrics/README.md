@@ -41,12 +41,7 @@ Outputs land in `results/<dataset>/<method>/`.
 
 ## A1 — Path MMD² · *Maximum Mean Discrepancy on full paths*
 
-$$
-\text{MMD}^2(P, Q)
-= \frac{1}{N^2}\sum_{i,j} k(x_i, x_j)
-- \frac{2}{N^2}\sum_{i,j} k(x_i, \tilde{x}_j)
-+ \frac{1}{N^2}\sum_{i,j} k(\tilde{x}_i, \tilde{x}_j)
-$$
+$$\text{MMD}^2(P, Q) = \frac{1}{N^2}\sum_{i,j} k(x_i, x_j) - \frac{2}{N^2}\sum_{i,j} k(x_i, \tilde{x}_j) + \frac{1}{N^2}\sum_{i,j} k(\tilde{x}_i, \tilde{x}_j)$$
 
 Each path is flattened to $x = (X_1,\ldots,X_T) \in \mathbb{R}^{T \cdot d}$ before applying the kernel.
 Tests whether the **joint temporal distribution** is reproduced. **Perfect: 0. Direction: ↓**
