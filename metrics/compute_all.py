@@ -2,13 +2,13 @@
 compute_all.py — Run all 14 metrics (A1-A14 + A15) for each of 5 seeds.
 
 For each seed:
-  - Loads real Heston paths from dataset/
-  - Loads generated paths from TimeGan/results/generated_paths/seed_i/
+  - Loads real paths from dataset/<dataset>/
+  - Loads generated paths from methods/<method>/generated_paths/seed_i/
   - Computes A1-A12 (numpy), A13 (PyTorch GRU+MLP), A14 (PyTorch GRU+MLP), A15 (numpy)
-  - Saves metrics/results/seed_i_metrics.json
+  - Saves results/<dataset>/<method>/seed_i_metrics.json
   - Generates PCA + t-SNE plots
 
-After all seeds: writes metrics/results/metrics_summary.csv
+After all seeds: writes results/<dataset>/<method>/metrics_summary.csv
 """
 
 import json, os, sys, time, warnings
@@ -16,11 +16,24 @@ import numpy as np
 
 warnings.filterwarnings("ignore")
 
-METRICS_DIR   = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT     = os.path.dirname(METRICS_DIR)
-DATASET_DIR   = os.path.join(REPO_ROOT, "dataset")
-TIMEGAN_DIR   = os.path.join(REPO_ROOT, "TimeGan", "results", "generated_paths")
-RESULTS_DIR   = os.path.join(METRICS_DIR, "results")
+METRICS_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT   = os.path.dirname(METRICS_DIR)
+
+# ── CLI args — choose method and dataset ─────────────────────────────────
+import argparse as _ap
+_parser = _ap.ArgumentParser(add_help=False)
+_parser.add_argument("--method",  default="TimeGAN")
+_parser.add_argument("--dataset", default="Heston")
+_parser.add_argument("--seeds",   type=int, default=5)
+_cli, _ = _parser.parse_known_args()
+
+METHOD      = _cli.method
+DATASET     = _cli.dataset
+N_SEEDS     = _cli.seeds
+
+DATASET_DIR   = os.path.join(REPO_ROOT, "dataset", DATASET)
+GENERATED_DIR = os.path.join(REPO_ROOT, "methods", METHOD, "generated_paths")
+RESULTS_DIR   = os.path.join(REPO_ROOT, "results", DATASET, METHOD)
 PLOTS_DIR     = os.path.join(RESULTS_DIR, "plots")
 
 os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -53,11 +66,12 @@ from sklearn.manifold import TSNE
 def load_data():
     S = np.load(os.path.join(DATASET_DIR, "heston_S_8192x128.npy"))   # (8192, 128)
     v = np.load(os.path.join(DATASET_DIR, "heston_v_8192x128.npy"))   # (8192, 128)
+    # Note: file names are dataset-specific; update for new datasets
     return S, v
 
 
 def load_generated(seed: int) -> np.ndarray:
-    path = os.path.join(TIMEGAN_DIR, f"seed_{seed}", "generated_paths_8192x128.npy")
+    path = os.path.join(GENERATED_DIR, f"seed_{seed}", "generated_paths_8192x128.npy")
     if not os.path.exists(path):
         raise FileNotFoundError(f"Missing: {path}. Run TimeGan/train.py first.")
     return np.load(path)   # (8192, 128)
@@ -189,7 +203,7 @@ def main():
     print(f"Real data: {S.shape}  min={S.min():.2f}  max={S.max():.2f}")
 
     all_results = []
-    for seed in range(5):
+    for seed in range(N_SEEDS):
         try:
             res = compute_metrics_for_seed(seed, S, v)
             out_path = os.path.join(RESULTS_DIR, f"seed_{seed}_metrics.json")

@@ -10,7 +10,8 @@ import argparse, csv, os, subprocess, sys, time
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))  # methods/TimeGAN/code
+METHOD_DIR = os.path.dirname(SCRIPT_DIR)                    # methods/TimeGAN
 PYTHON     = sys.executable
 
 
@@ -23,8 +24,8 @@ def run_seed(seed: int, gpu: str) -> subprocess.Popen:
         PYTHON, os.path.join(SCRIPT_DIR, "train_seed.py"),
         "--seed", str(seed),
     ]
-    os.makedirs(os.path.join(SCRIPT_DIR, "results", "losses"), exist_ok=True)
-    log = open(os.path.join(SCRIPT_DIR, "results", "losses", f"seed_{seed}.log"), "w")
+    os.makedirs(os.path.join(METHOD_DIR, "losses"), exist_ok=True)
+    log = open(os.path.join(METHOD_DIR, "losses", f"seed_{seed}.log"), "w")
     p = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT, env=env)
     print(f"  Launched seed {seed} on GPU {gpu}  PID={p.pid}", flush=True)
     return p
@@ -59,7 +60,7 @@ def main():
 
 
 def plot_losses():
-    losses_dir = os.path.join(SCRIPT_DIR, "results", "losses")
+    losses_dir = os.path.join(METHOD_DIR, "losses")
     colors = ["#2196F3","#FF9800","#4CAF50","#9C27B0","#F44336"]
     fig, axes = plt.subplots(2, 2, figsize=(16, 9))
     axes = axes.flatten()

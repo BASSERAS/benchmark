@@ -1,64 +1,88 @@
-# Benchmark — Time Series Generation on Heston
+# Time-Series Generation Benchmark
 
-Public benchmark repo for time-series generation quality evaluation.
+A public benchmark for evaluating **generative models of financial time series**.
 
-## Structure
+Each method is trained on the same target dataset and evaluated with the same 15 metrics
+(A1–A15) across 5 random seeds.
 
-```
-benchmark/
-├── dataset/          8192 Heston paths, seq_len=128 (canonical parameters)
-├── TimeGan/          PyTorch TimeGAN (5 seeds) + reference TF1 code
-│   └── results/      generated_paths/, params/, losses/
-└── metrics/          14 evaluation metrics (A1-A14) + Heston A15
-    └── results/      per-seed JSON, summary CSV, PCA/t-SNE plots
-```
+---
 
-## Dataset
+## Results
 
-Heston stochastic volatility (Euler-Maruyama, full-truncation):
-- mu=0.05, kappa=2.0, theta=0.04, xi=0.3, rho=-0.7, S0=100, v0=0.04, dt=1/250
-- 8192 paths x 128 time steps, seed=0
+> Cross-method comparison — columns = methods, rows = metrics.
+> Values are **mean ± std** across 5 seeds.
 
-## TimeGAN
+*More methods coming. Full table will appear here once ≥ 2 methods are benchmarked.*
 
-PyTorch reimplementation (GPU-enabled) matching Yoon et al. NeurIPS 2019:
-- Embedder/Recovery/Generator/Supervisor/Discriminator — 3-layer GRU, hidden_dim=24
-- 3 training phases: embedding (5k) + supervised (5k) + joint adversarial (10k)
-- Reference TF1 code in `TimeGan/reference/`
+Detailed per-seed results, plots, and classifier loss curves:
+→ [`results/Heston/TimeGAN/`](results/Heston/TimeGAN/)
 
-## Metrics (A1-A14 + A15)
+---
 
-| ID | Metric | Type |
-|----|--------|------|
-| A1 | Full path MMD² | distributional |
-| A2 | Terminal MMD² | distributional |
-| A3 | Increment MMD² | distributional |
-| A4 | Volatility MMD | distributional |
-| A5 | Terminal SWD | distributional |
-| A6 | Path SWD | distributional |
-| A7 | Terminal Cov Error | statistical |
-| A8 | Terminal Mean RMSE | statistical |
-| A9 | Return Std Error | statistical |
-| A10 | Return Kurtosis Error | statistical |
-| A11 | ACF Error (abs returns) | temporal |
-| A12 | ACF Error (sq returns) | temporal |
-| A13 | Discriminative Score (GRU + MLP) | downstream |
-| A14 | Predictive Score TSTR (GRU + MLP) | downstream |
-| A15 | Teacher-Sigma Corr/RMSE | Heston-specific |
+## Datasets
 
-## Usage
+| Dataset | Paths | Seq len | Description |
+|---------|-------|---------|-------------|
+| [Heston](dataset/Heston/) | 8 192 | 128 | Heston stochastic volatility model, daily prices (~6 months) |
+
+→ [`dataset/Heston/README.md`](dataset/Heston/README.md) — parameters, SDE formula, reproduce instructions.
+
+---
+
+## Methods
+
+| Method | Paper | Authors | Year | Venue | Original code |
+|--------|-------|---------|------|-------|---------------|
+| [TimeGAN](methods/TimeGAN/) | [Time-series GAN](https://arxiv.org/abs/2010.00782) | Yoon, Jarrett, van der Schaar | 2019 | NeurIPS | [jsyoon0823/TimeGAN](https://github.com/jsyoon0823/TimeGAN) |
+
+---
+
+## Metrics (A1–A15)
+
+| ID | Name | Lower = better | Perfect score |
+|----|------|---------------|---------------|
+| A1 | Path MMD² | ✓ | 0 |
+| A2 | Terminal MMD² | ✓ | 0 |
+| A3 | Increment MMD² | ✓ | 0 |
+| A4 | Volatility MMD | ✓ | 0 |
+| A5 | Terminal SWD | ✓ | 0 |
+| A6 | Path SWD | ✓ | 0 |
+| A7 | Cov Error (%) | ✓ | 0 |
+| A8 | Mean RMSE | ✓ | 0 |
+| A9 | Std Error | ✓ | 0 |
+| A10 | Kurtosis Error | ✓ | 0 |
+| A11 | ACF Abs Error | ✓ | 0 |
+| A12 | ACF Sq Error | ✓ | 0 |
+| A13 | Disc Score (GRU) | ✓ | 0 |
+| A13 | Disc Score (MLP) | ✓ | 0 |
+| A14 | Pred Score (GRU) | ✓ | baseline MAE |
+| A14 | Pred Score (MLP) | ✓ | baseline MAE |
+| A15 | Sigma Corr | ✗ | 1 |
+| A15 | Sigma RMSE | ✓ | 0 |
+
+Full formulas and per-seed results: [`results/Heston/TimeGAN/README.md`](results/Heston/TimeGAN/README.md)
+
+---
+
+## Reproducing
 
 ```bash
-# Generate dataset
-python dataset/generate_heston.py
+# 1. Generate target dataset
+cd dataset/Heston && python generate_heston.py
 
-# Train TimeGAN (5 seeds, 2 A100 GPUs in parallel)
-python TimeGan/train.py
+# 2. Train TimeGAN (5 seeds, 2 A100 GPUs)
+cd methods/TimeGAN/code && python train.py --gpu0 0 --gpu1 3
 
-# Compute all metrics
-python metrics/compute_all.py
+# 3. Compute all 15 metrics
+cd metrics && python compute_all.py --method TimeGAN --dataset Heston
 ```
 
-## Reference
-- Yoon et al., "Time-series Generative Adversarial Networks", NeurIPS 2019
-- tsg-benchmark: https://github.com/BASSERAS/tsg-benchmark
+---
+
+## Adding a new method
+
+1. Create `methods/<NewMethod>/` with subfolders `generated_paths/`, `weights/`, `losses/`, `code/`
+2. Implement `code/train.py` — accepts `--seed`, `--n-samples`, `--gpu0`, `--gpu1`
+3. Save generated paths as `generated_paths/seed_{i}/generated_paths_NxT.npy`
+4. Run `python metrics/compute_all.py --method NewMethod --dataset Heston`
+5. Results appear in `results/Heston/NewMethod/`

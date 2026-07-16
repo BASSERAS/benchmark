@@ -6,8 +6,9 @@ CUDA_VISIBLE_DEVICES must be set in the environment before launching this script
 import argparse, csv, json, os, sys, time
 import numpy as np
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-REPO_ROOT  = os.path.dirname(SCRIPT_DIR)
+SCRIPT_DIR   = os.path.dirname(os.path.abspath(__file__))  # methods/TimeGAN/code
+METHOD_DIR   = os.path.dirname(SCRIPT_DIR)                    # methods/TimeGAN
+BENCH_ROOT   = os.path.dirname(os.path.dirname(METHOD_DIR))   # benchmark/
 
 
 def main():
@@ -36,7 +37,7 @@ def main():
     print(f"=== Seed {args.seed}  CUDA_VISIBLE_DEVICES={cvd}  device={gpu_info} ===", flush=True)
 
     # ── Load dataset ──────────────────────────────────────────────────────
-    ds_path = os.path.join(REPO_ROOT, "dataset", "heston_S_8192x128.npy")
+    ds_path = os.path.join(BENCH_ROOT, "dataset", "Heston", "heston_S_8192x128.npy")
     S = np.load(ds_path)   # (8192, 128)
     print(f"Dataset {S.shape}  S0_mean={S[:,0].mean():.2f}", flush=True)
 
@@ -58,11 +59,10 @@ def main():
     print(f"Training done in {elapsed:.1f}s", flush=True)
 
     # ── Save results ──────────────────────────────────────────────────────
-    results  = os.path.join(SCRIPT_DIR, "results")
     seed_tag = f"seed_{args.seed}"
 
     # 1. Generated paths
-    gen_dir  = os.path.join(results, "generated_paths", seed_tag)
+    gen_dir  = os.path.join(METHOD_DIR, "generated_paths", seed_tag)
     os.makedirs(gen_dir, exist_ok=True)
     paths = model.sample(args.n_samples)            # (8192, 128)
     npy_path = os.path.join(gen_dir, f"generated_paths_{args.n_samples}x128.npy")
@@ -79,7 +79,7 @@ def main():
     print(f"Paths saved {paths.shape}  mean={paths.mean():.2f}", flush=True)
 
     # 2. Model params
-    params_dir = os.path.join(results, "params")
+    params_dir = os.path.join(METHOD_DIR, "weights")
     os.makedirs(params_dir, exist_ok=True)
     torch.save(model.state_dict(), os.path.join(params_dir, f"{seed_tag}_model.pt"))
     cfg = model.config(); cfg["seed"] = args.seed; cfg["train_time_sec"] = round(elapsed, 2)
@@ -87,7 +87,7 @@ def main():
         json.dump(cfg, f, indent=2)
 
     # 3. Loss history
-    losses_dir = os.path.join(results, "losses")
+    losses_dir = os.path.join(METHOD_DIR, "losses")
     os.makedirs(losses_dir, exist_ok=True)
     loss_path = os.path.join(losses_dir, f"{seed_tag}_losses.csv")
     fields = ["step","phase","e_loss","s_loss","g_loss","d_loss"]
