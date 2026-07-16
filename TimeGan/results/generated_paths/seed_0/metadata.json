@@ -4,9 +4,9 @@
   "seq_len": 128,
   "min_val": 39.893609418078476,
   "max_val": 155.57898269218714,
-  "train_time_sec": 344.18,
-  "generated_mean": 101.9683072150704,
-  "generated_std": 0.8857907389817175,
+  "train_time_sec": 480.73,
+  "generated_mean": 100.8393650928552,
+  "generated_std": 9.755066560917058,
   "real_mean": 101.32547381502401,
   "real_std": 9.971659995159825
 }

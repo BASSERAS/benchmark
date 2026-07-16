@@ -8,5 +8,5 @@
   "joint_steps": 10000,
   "seq_len": 128,
   "seed": 1,
-  "train_time_sec": 322.85
+  "train_time_sec": 485.95
 }

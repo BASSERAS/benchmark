@@ -2,12 +2,19 @@
 PyTorch TimeGAN — faithful reimplementation of Yoon et al. NeurIPS 2019.
 GPU-accelerated, tested on NVIDIA A100.
 
+Fixes applied vs first version:
+  1. Recovery: sigmoid output activation (matches original FC with sigmoid).
+  2. Phase 1 loss: 10*sqrt(MSE) not raw MSE.
+  3. Phase 3 Generator supervised coeff: 100*sqrt(G_S) not 10*sqrt(G_S).
+  4. Phase 3 Embedder loss: 10*sqrt(MSE(X,X~)) + 0.1*G_S (not MSE + 10*sqrt).
+  5. Phase 3 Moment matching: gradients flow through Recovery to Generator/Supervisor.
+
 Architecture:
-  Embedder     : 3-layer GRU -> Linear -> Sigmoid  -> (batch, T, hidden_dim)
-  Recovery     : 3-layer GRU -> Linear             -> (batch, T, n_features)
-  Generator    : 3-layer GRU -> Linear -> Sigmoid  -> (batch, T, hidden_dim)
-  Supervisor   : 2-layer GRU -> Linear -> Sigmoid  -> (batch, T, hidden_dim)
-  Discriminator: 3-layer GRU -> Linear             -> (batch, T, 1)  [logits]
+  Embedder     : num_layers-GRU -> Linear -> Sigmoid  -> (batch, T, hidden_dim)
+  Recovery     : num_layers-GRU -> Linear -> Sigmoid  -> (batch, T, n_features)  [fix 1]
+  Generator    : num_layers-GRU -> Linear -> Sigmoid  -> (batch, T, hidden_dim)
+  Supervisor   : (num_layers-1)-GRU -> Linear -> Sigmoid -> (batch, T, hidden_dim)
+  Discriminator: num_layers-GRU -> Linear             -> (batch, T, 1)  [logits]
 """
 
 import numpy as np
@@ -36,7 +43,7 @@ class Recovery(nn.Module):
 
     def forward(self, h: torch.Tensor) -> torch.Tensor:
         r, _ = self.rnn(h)
-        return self.fc(r)
+        return torch.sigmoid(self.fc(r))   # fix 1: sigmoid matches original
 
 
 class Generator(nn.Module):
@@ -51,7 +58,7 @@ class Generator(nn.Module):
 
 
 class Supervisor(nn.Module):
-    """Uses num_layers-1 GRU layers as in the original paper."""
+    """num_layers-1 GRU layers as in the original paper."""
     def __init__(self, hidden_dim: int, num_layers: int = 3):
         super().__init__()
         self.rnn = nn.GRU(hidden_dim, hidden_dim, max(1, num_layers - 1), batch_first=True)
@@ -89,38 +96,36 @@ class TimeGAN:
         log_every: int = 100,
         gamma: float = 1.0,
     ):
-        self.n_features      = n_features
-        self.hidden_dim      = hidden_dim
-        self.num_layers      = num_layers
-        self.batch_size      = batch_size
-        self.device          = torch.device(device if torch.cuda.is_available() else "cpu")
-        self.embedding_steps = embedding_steps
-        self.supervised_steps= supervised_steps
-        self.joint_steps     = joint_steps
-        self.log_every       = log_every
-        self.gamma           = gamma
+        self.n_features       = n_features
+        self.hidden_dim       = hidden_dim
+        self.num_layers       = num_layers
+        self.batch_size       = batch_size
+        self.device           = torch.device(device if torch.cuda.is_available() else "cpu")
+        self.embedding_steps  = embedding_steps
+        self.supervised_steps = supervised_steps
+        self.joint_steps      = joint_steps
+        self.log_every        = log_every
+        self.gamma            = gamma
 
-        # Networks
         self.embedder      = Embedder(n_features, hidden_dim, num_layers).to(self.device)
         self.recovery      = Recovery(hidden_dim, n_features, num_layers).to(self.device)
         self.generator     = Generator(n_features, hidden_dim, num_layers).to(self.device)
         self.supervisor    = Supervisor(hidden_dim, num_layers).to(self.device)
         self.discriminator = Discriminator(hidden_dim, num_layers).to(self.device)
 
-        # Optimizers (one per component)
         self.opt_er   = optim.Adam(
             list(self.embedder.parameters()) + list(self.recovery.parameters()), lr=1e-3)
         self.opt_sup  = optim.Adam(self.supervisor.parameters(), lr=1e-3)
-        self.opt_gen  = optim.Adam(self.generator.parameters(), lr=1e-3)
+        self.opt_gen  = optim.Adam(
+            list(self.generator.parameters()) + list(self.supervisor.parameters()), lr=1e-3)
         self.opt_disc = optim.Adam(self.discriminator.parameters(), lr=1e-3)
 
-        # State
         self.loss_history: List[Dict[str, Any]] = []
         self.min_val: Optional[np.ndarray] = None
         self.max_val: Optional[np.ndarray] = None
         self._seq_len: int = 128
 
-    # ── Utilities ─────────────────────────────────────────────────────────
+    # ── Utilities ──────────────────────────────────────────────────────────
 
     def _to_tensor(self, x: np.ndarray) -> torch.Tensor:
         return torch.FloatTensor(x).to(self.device)
@@ -146,7 +151,7 @@ class TimeGAN:
         denom = np.where(self.max_val - self.min_val == 0, 1.0, self.max_val - self.min_val)
         return norm * (denom + 1e-7) + self.min_val
 
-    # ── Phase 1 ───────────────────────────────────────────────────────────
+    # ── Phase 1: Embedding pre-train ───────────────────────────────────────
 
     def _phase1(self, data: torch.Tensor):
         T = data.shape[1]
@@ -156,50 +161,56 @@ class TimeGAN:
             X = self._batch(data)
             self.opt_er.zero_grad()
             H = self.embedder(X)
-            e_loss = mse(self.recovery(H), X)
+            e_loss_t0 = mse(self.recovery(H), X)
+            # fix 2: 10*sqrt(MSE) matches original E_loss0
+            e_loss = 10.0 * torch.sqrt(e_loss_t0 + 1e-8)
             e_loss.backward()
             self.opt_er.step()
             if (step + 1) % self.log_every == 0:
-                self._log(step + 1, "embedding", e_loss=round(e_loss.item(), 6),
+                self._log(step + 1, "embedding",
+                          e_loss=round(e_loss_t0.item(), 6),
                           s_loss=None, g_loss=None, d_loss=None)
                 if (step + 1) % (self.log_every * 10) == 0:
-                    print(f"  step {step+1:5d}  e_loss={e_loss.item():.6f}")
+                    print(f"  step {step+1:5d}  e_loss={e_loss_t0.item():.6f}")
 
-    # ── Phase 2 ───────────────────────────────────────────────────────────
+    # ── Phase 2: Supervisor pre-train ──────────────────────────────────────
 
     def _phase2(self, data: torch.Tensor):
         print(f"[Phase 2] Supervisor pre-train  {self.supervised_steps} steps")
         mse = nn.functional.mse_loss
         for step in range(self.supervised_steps):
             X = self._batch(data)
-            self.opt_sup.zero_grad()
+            self.opt_gen.zero_grad()   # gen+sup optimizer (matches g_vars+s_vars)
             with torch.no_grad():
-                H = self.embedder(X)
+                H = self.embedder(X)   # embedder frozen
             s_loss = mse(self.supervisor(H[:, :-1, :]), H[:, 1:, :])
             s_loss.backward()
-            self.opt_sup.step()
+            self.opt_gen.step()
             if (step + 1) % self.log_every == 0:
-                self._log(step + 1, "supervised", e_loss=None,
-                          s_loss=round(s_loss.item(), 6), g_loss=None, d_loss=None)
+                self._log(step + 1, "supervised",
+                          e_loss=None, s_loss=round(s_loss.item(), 6),
+                          g_loss=None, d_loss=None)
                 if (step + 1) % (self.log_every * 10) == 0:
                     print(f"  step {step+1:5d}  s_loss={s_loss.item():.6f}")
 
-    # ── Phase 3 ───────────────────────────────────────────────────────────
+    # ── Phase 3: Joint adversarial ─────────────────────────────────────────
 
     def _phase3(self, data: torch.Tensor):
         T = data.shape[1]
         print(f"[Phase 3] Joint adversarial  {self.joint_steps} steps")
         mse = nn.functional.mse_loss
         bce = nn.functional.binary_cross_entropy_with_logits
+        d_loss = torch.tensor(0.0)
 
         for step in range(self.joint_steps):
-            # ── 2x generator update ──────────────────────────────────
+
+            # ── 2x generator + supervisor update ──────────────────────────
             for _ in range(2):
                 X = self._batch(data)
                 Z = self._noise(self.batch_size, T)
 
                 with torch.no_grad():
-                    H_real = self.embedder(X)
+                    H_real = self.embedder(X)   # embedder frozen for gen update
 
                 E_hat = self.generator(Z)
                 H_hat = self.supervisor(E_hat)
@@ -208,28 +219,42 @@ class TimeGAN:
                 Y_fake   = self.discriminator(H_hat)
                 Y_fake_e = self.discriminator(E_hat)
 
-                ones = torch.ones_like(Y_fake)
-                g_loss_u   = bce(Y_fake,   ones)
-                g_loss_u_e = bce(Y_fake_e, ones)
+                g_loss_u   = bce(Y_fake,   torch.ones_like(Y_fake))
+                g_loss_u_e = bce(Y_fake_e, torch.ones_like(Y_fake_e))
                 g_loss_s   = mse(H_sup, H_real[:, 1:, :])
 
-                # Moment matching on recovered output
-                with torch.no_grad():
-                    X_hat_mm = self.recovery(H_hat)
-                g_loss_v = (torch.mean(torch.abs(X_hat_mm.mean(0) - X.mean(0))) +
-                            torch.mean(torch.abs(X_hat_mm.std(0)  - X.std(0))))
+                # fix 5: no torch.no_grad — gradients flow through recovery
+                # to generator/supervisor (recovery params not in opt_gen)
+                X_hat = self.recovery(H_hat)
+                g_loss_v = (
+                    torch.mean(torch.abs(
+                        torch.sqrt(X_hat.var(0) + 1e-6) -
+                        torch.sqrt(X.var(0)    + 1e-6)
+                    )) +
+                    torch.mean(torch.abs(X_hat.mean(0) - X.mean(0)))
+                )
 
+                # fix 3: coefficient 100 for supervised term (was 10)
                 g_loss = (g_loss_u + self.gamma * g_loss_u_e
-                          + 10.0 * torch.sqrt(g_loss_s + 1e-8)
+                          + 100.0 * torch.sqrt(g_loss_s + 1e-8)
                           + 100.0 * g_loss_v)
 
                 self.opt_gen.zero_grad()
-                self.opt_sup.zero_grad()
                 g_loss.backward()
                 self.opt_gen.step()
-                self.opt_sup.step()
 
-            # ── discriminator (conditional) ───────────────────────
+            # ── embedder + recovery update ────────────────────────────────
+            X = self._batch(data)
+            self.opt_er.zero_grad()
+            H = self.embedder(X)
+            e_loss_t0 = mse(self.recovery(H), X)
+            g_loss_s_e = mse(self.supervisor(H[:, :-1, :]).detach(), H[:, 1:, :])
+            # fix 4: 10*sqrt(MSE) + 0.1*G_loss_S (matches original E_loss)
+            e_loss = 10.0 * torch.sqrt(e_loss_t0 + 1e-8) + 0.1 * g_loss_s_e
+            e_loss.backward()
+            self.opt_er.step()
+
+            # ── discriminator (conditional on d_loss > 0.15) ──────────────
             X = self._batch(data)
             Z = self._noise(self.batch_size, T)
             with torch.no_grad():
@@ -241,35 +266,24 @@ class TimeGAN:
             Y_fake   = self.discriminator(H_hat)
             Y_fake_e = self.discriminator(E_hat)
 
-            ones  = torch.ones_like(Y_real)
-            zeros = torch.zeros_like(Y_fake)
-            d_loss = (bce(Y_real, ones) + bce(Y_fake, zeros)
-                      + self.gamma * bce(Y_fake_e, zeros))
+            d_loss = (bce(Y_real,   torch.ones_like(Y_real)) +
+                      bce(Y_fake,   torch.zeros_like(Y_fake)) +
+                      self.gamma * bce(Y_fake_e, torch.zeros_like(Y_fake_e)))
 
             if d_loss.item() > 0.15:
                 self.opt_disc.zero_grad()
                 d_loss.backward()
                 self.opt_disc.step()
 
-            # ── embedder update ──────────────────────────────────
-            X = self._batch(data)
-            self.opt_er.zero_grad()
-            H = self.embedder(X)
-            e_loss = (mse(self.recovery(H), X)
-                      + 10.0 * torch.sqrt(mse(self.supervisor(H[:, :-1, :]),
-                                              H[:, 1:, :]) + 1e-8))
-            e_loss.backward()
-            self.opt_er.step()
-
             if (step + 1) % self.log_every == 0:
                 self._log(step + 1, "joint",
-                          e_loss=round(e_loss.item(), 6),
+                          e_loss=round(e_loss_t0.item(), 6),
                           s_loss=round(g_loss_s.item(), 6),
                           g_loss=round(g_loss.item(), 6),
                           d_loss=round(d_loss.item(), 6))
                 if (step + 1) % (self.log_every * 10) == 0:
                     print(f"  step {step+1:5d}  "
-                          f"e={e_loss.item():.4f}  s={g_loss_s.item():.4f}  "
+                          f"e={e_loss_t0.item():.4f}  s={g_loss_s.item():.4f}  "
                           f"g={g_loss.item():.4f}  d={d_loss.item():.4f}")
 
     # ── Public API ─────────────────────────────────────────────────────────
@@ -286,7 +300,7 @@ class TimeGAN:
         self._phase3(td)
 
     def sample(self, n: int) -> np.ndarray:
-        """Return n generated paths, shape (n, T), original scale."""
+        """Return n generated paths, shape (n, T) [d=1] or (n, T, d), original scale."""
         T = self._seq_len
         for m in [self.embedder, self.recovery, self.generator,
                   self.supervisor, self.discriminator]:
@@ -299,7 +313,7 @@ class TimeGAN:
         for m in [self.embedder, self.recovery, self.generator,
                   self.supervisor, self.discriminator]:
             m.train()
-        out = self._denormalize(X_hat)          # (n, T, d)
+        out = self._denormalize(X_hat)
         return out[:, :, 0] if out.shape[-1] == 1 else out
 
     def state_dict(self) -> Dict[str, Any]:
