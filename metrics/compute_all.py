@@ -112,8 +112,16 @@ def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray) -> dict:
     # A13 Discriminative Score
     print("  A13 discriminative (GRU + MLP) ...", flush=True)
     d13 = compute_discriminative_score(S, fake, n_steps=2000, device=DEVICE)
-    results.update({f"A13_{k}": v for k, v in d13.items()})
+    results["A13_disc_score_gru"] = d13["disc_score_gru"]
+    results["A13_disc_score_mlp"] = d13["disc_score_mlp"]
     print(f"       GRU={d13['disc_score_gru']:.4f}  MLP={d13['disc_score_mlp']:.4f}")
+    # Save classifier loss curves
+    import csv
+    for arch in ("gru", "mlp"):
+        loss_path = os.path.join(RESULTS_DIR, f"seed_{seed}_disc_{arch}_loss.csv")
+        with open(loss_path, "w", newline="") as lf:
+            w = csv.DictWriter(lf, fieldnames=["step", "train_bce"])
+            w.writeheader(); w.writerows(d13[f"loss_history_{arch}"])
 
     # A14 Predictive Score (TSTR)
     print("  A14 predictive TSTR (GRU + MLP) ...", flush=True)
