@@ -1,6 +1,6 @@
 """
 Heston stochastic volatility dataset generator.
-Euler-Maruyama full-truncation scheme, canonical parameters from tsg-benchmark.
+Euler-Maruyama full-truncation scheme.
 
 Saves:
   heston_S_8192x128.npy  — price paths  (8192, 128)  float64
