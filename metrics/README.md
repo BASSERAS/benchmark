@@ -63,16 +63,15 @@ Tests whether the **marginal distribution at maturity** is correct. **Perfect: 0
 ## A3 — Increment MMD² · *Maximum Mean Discrepancy on returns*
 
 $$
-\text{MMD}^2\left(\{r_t\}_{t < T},\; \{\tilde{r}_t\}_{t < T}\right),
-\qquad r_t = X_{t+1} - X_t
+\text{MMD}^2\left(\{r_t\}_{t < T}, \{\tilde{r}_t\}_{t < T}\right)
 $$
 
-All increments pooled across time before computing MMD.
+where $r_t = X_{t+1} - X_t$. All increments pooled across time before computing MMD.
 Tests the **return distribution** (mean, variance, tail shape). **Perfect: 0. ↓**
 
 ---
 
-## A4 — Volatility MMD · *Sum of MMD² over 9 volatility-related feature groups*
+## A4 — Volatility MMD · *Sum of MMD² over volatility-related feature groups*
 
 Biased MMD² is computed **independently for each of the following feature groups**
 derived from $r_t = X_{t+1} - X_t$, then summed:
@@ -80,7 +79,7 @@ derived from $r_t = X_{t+1} - X_t$, then summed:
 | # | Feature | Shape per sample |
 |---|---------|-----------------|
 | 1 | Instantaneous RV: $r_t^2$ | $(T-1, d)$ |
-| 2 | State-RV pairs: $(X_{t+1},\; r_t^2)$ | $(T-1, 2d)$ |
+| 2 | State-RV pairs: $(X_{t+1}, r_t^2)$ | $(T-1, 2d)$ |
 | 3 | Global RV mean per path: $\frac{1}{T}\sum_t r_t^2$ | $(d,)$ |
 | 4 | Terminal return: $X_T - X_0$ | $(d,)$ |
 | 5 | Returns: $r_t$ | $(T-1, d)$ |
@@ -90,11 +89,13 @@ derived from $r_t = X_{t+1} - X_t$, then summed:
 | 9 | ACF lag-products of $|r_t|$ and $r_t^2$ at lags $\{1,2,5,10\}$ (8 sub-groups) | $(N(T-1)d, 1)$ each |
 
 $$
-\text{VolMMD}(P, Q) = \sum_{g=1}^{9^{*}} \text{MMD}^2(F_g(X),\; F_g(\tilde{X}))
+\text{VolMMD}(P, Q) = \sum_{g=1}^{16} \text{MMD}^2(F_g(X), F_g(\tilde{X}))
 $$
 
-where $F_g$ extracts feature group $g$. This comprehensively tests volatility level,
-clustering, tail behaviour, and autocorrelation structure. **Perfect: 0. ↓**
+where $F_g$ extracts feature group $g$ (groups 1–8 contribute one term each; group 9 expands
+into 8 ACF sub-groups, giving 16 terms total).
+This comprehensively tests volatility level, clustering, tail behaviour, and autocorrelation
+structure. **Perfect: 0. ↓**
 
 ---
 
@@ -103,7 +104,7 @@ clustering, tail behaviour, and autocorrelation structure. **Perfect: 0. ↓**
 $$
 \text{SWD}(P_T, Q_T)
 = \mathbb{E}_{\theta \sim \mathcal{U}(\mathbb{S}^{d-1})}
-  \left[ W_1\left(\theta_{\sharp} P_T,\; \theta_{\sharp} Q_T \right) \right]
+  \left[ W_1\left(\theta_{\sharp} P_T, \theta_{\sharp} Q_T \right) \right]
 $$
 
 Approximated with **50 random projections**.
@@ -115,7 +116,7 @@ More robust to heavy tails and high dimensionality than MMD. **Perfect: 0. ↓**
 
 $$
 \text{SWD}^{\text{path}}(P, Q)
-= \frac{1}{T} \sum_{t=1}^{T} \text{SWD}(P_t,\; Q_t)
+= \frac{1}{T} \sum_{t=1}^{T} \text{SWD}(P_t, Q_t)
 $$
 
 where $P_t$ and $Q_t$ are the marginal distributions of real and generated paths at time $t$,
@@ -128,10 +129,10 @@ Tests whether the **marginal distribution is correct at every time step**, not j
 ## A7 — Covariance Error · *Frobenius norm of terminal covariance difference*
 
 $$
-\|\Sigma_{\text{real}} - \Sigma_{\text{fake}}\|_F,
-\qquad \Sigma = \text{Cov}(X_T) \in \mathbb{R}^{d \times d}
+\|\Sigma_{\text{real}} - \Sigma_{\text{fake}}\|_F
 $$
 
+where $\Sigma = \text{Cov}(X_T) \in \mathbb{R}^{d \times d}$.
 For $d=1$ (Heston) reduces to $|\text{Var}(X_T^{\text{real}}) - \text{Var}(X_T^{\text{fake}})|$.
 Tests the cross-asset covariance structure at maturity. **Perfect: 0. ↓**
 
@@ -161,10 +162,10 @@ Tests whether the overall **volatility level** is correctly reproduced. **Perfec
 ## A10 — Return Kurtosis Error · *Absolute difference of excess kurtosis*
 
 $$
-\left| \kappa(r_{\text{real}}) - \kappa(r_{\text{fake}}) \right|,
-\qquad \kappa(Z) = \frac{\mathbb{E}[(Z-\mu)^4]}{\sigma^4} - 3
+\left| \kappa(r_{\text{real}}) - \kappa(r_{\text{fake}}) \right|
 $$
 
+where $\kappa(Z) = \dfrac{\mathbb{E}[(Z-\mu)^4]}{\sigma^4} - 3$.
 Excess kurtosis = 0 for a Gaussian. Financial returns typically show $\kappa > 0$ (**fat tails**).
 Computed using Fisher's definition with bias correction (`scipy.stats.kurtosis(fisher=True, bias=False)`).
 **Perfect: 0. ↓**
@@ -179,11 +180,10 @@ $$
   \frac{1}{N}\sum_{i=1}^{N} \text{ACF}(|r_i|, \ell)
   -
   \frac{1}{N}\sum_{i=1}^{N} \text{ACF}(|\tilde{r}_i|, \ell)
-\right|,
-\quad L = \{1, 2, 5, 10\}
+\right| \quad (L = \{1, 2, 5, 10\})
 $$
 
-where $\text{ACF}(q, \ell) = \frac{\sum_t (q_t - \bar{q})(q_{t+\ell} - \bar{q})}{\sum_t (q_t - \bar{q})^2}$.
+where $\text{ACF}(q, \ell) = \dfrac{\sum_t (q_t - \bar{q})(q_{t+\ell} - \bar{q})}{\sum_t (q_t - \bar{q})^2}$.
 
 Real financial returns have near-zero autocorrelation but $|r_t|$ and $r_t^2$ show
 significant positive autocorrelation — the **ARCH / volatility clustering** stylised fact.
@@ -325,7 +325,7 @@ PS = mean absolute error on normalised scale. **Perfect: 0. Direction: ↓**
 ## A15 — Teacher-Sigma Correlation · *Pearson correlation, realised vol vs true vol*
 
 $$
-\rho = \text{Corr}\left( \hat{\sigma}^{\text{gen}},\; \sqrt{v_{\text{true}}} \right)
+\rho = \text{Corr}\left( \hat{\sigma}^{\text{gen}}, \sqrt{v_{\text{true}}} \right)
 $$
 
 $\hat{\sigma}^{\text{gen}}_{i,t}$ = rolling realised volatility (window $w=5$) computed
