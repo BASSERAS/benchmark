@@ -376,3 +376,61 @@ Tests whether the generator reproduces the **fat tail** of the return distributi
 90th, 95th, and 99th percentile levels.
 A score of 0 means survival probabilities match exactly at all three quantile levels.
 **Perfect: 0. Direction: ↓**
+
+---
+
+## Forecast Metrics — MAE, RMSE, CRPS
+
+Used in the Path Shadowing Monte-Carlo evaluation.
+Let $\{f_{i,k,h}\}_{k=1}^K$ be a weighted ensemble of $K$ forecasts with weights
+$w_k \geq 0$, $\sum_k w_k = 1$, and $y_{i,h}$ the true future value.
+$N$ = number of query paths, $H$ = forecast horizon.
+
+### MAE — Mean Absolute Error
+
+$$\text{MAE} = \frac{1}{N \cdot H} \sum_{i=1}^{N} \sum_{h=1}^{H} \left| \bar{f}_{i,h} - y_{i,h} \right|$$
+
+where $\bar{f}_{i,h} = \sum_{k=1}^{K} w_k\, f_{i,k,h}$ is the weighted ensemble mean.
+
+MAE measures **point forecast accuracy** of the ensemble mean. It does not reward
+calibrated uncertainty — a wider ensemble is penalised if its mean drifts from $y$.
+
+---
+
+### RMSE — Root Mean Square Error
+
+$$\text{RMSE} = \sqrt{\frac{1}{N \cdot H} \sum_{i=1}^{N} \sum_{h=1}^{H} \left( \bar{f}_{i,h} - y_{i,h} \right)^2}$$
+
+Same structure as MAE but with squared errors — penalises large deviations more
+strongly. Also applied to the ensemble mean only (not the full distribution).
+
+---
+
+### CRPS — Continuous Ranked Probability Score (energy form)
+
+For a single (path $i$, step $h$) pair, the CRPS is:
+
+$$\text{CRPS}_{i,h} = \underbrace{\sum_{k=1}^{K} w_k \left| f_{i,k,h} - y_{i,h} \right|}_{\text{accuracy}} - \underbrace{\frac{1}{2} \sum_{j=1}^{K} \sum_{k=1}^{K} w_j\, w_k \left| f_{i,j,h} - f_{i,k,h} \right|}_{\text{sharpness penalty}}$$
+
+The reported scalar CRPS is the mean over all $N$ paths and $H$ steps:
+
+$$\text{CRPS} = \frac{1}{N \cdot H} \sum_{i=1}^{N} \sum_{h=1}^{H} \text{CRPS}_{i,h}$$
+
+**Interpretation of the two terms:**
+
+| Term | Role |
+|------|------|
+| $\sum_k w_k \|f_k - y\|$ | Penalises ensemble members far from the truth |
+| $-\tfrac{1}{2}\sum_{j,k} w_j w_k \|f_j - f_k\|$ | Rewards ensemble spread (sharpness) |
+
+**Key properties:**
+- **Proper scoring rule**: minimised in expectation when the ensemble exactly represents
+  the true predictive distribution $p(y \mid x_{\text{past}})$.
+- **Generalises MAE**: for a deterministic forecast ($K=1$), CRPS $=$ MAE.
+- **Rewards calibrated uncertainty**: a wider ensemble is not penalised per se; an
+  inaccurately wide one is (via the accuracy term).
+- **Perfect score: 0. Direction: ↓**
+
+**Why CRPS < MAE for PS-MC:** the ensemble mean has higher MAE than the naive
+random-walk (deterministic) baseline, but CRPS is lower because the K-path fan-out
+provides a correctly calibrated spread around the truth, which the RW cannot.

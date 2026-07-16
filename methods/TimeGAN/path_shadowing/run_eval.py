@@ -53,11 +53,19 @@ def eval_seed(seed):
     N, T   = X_real.shape
     y_fut  = X_real[:, PREFIX_LEN:]   # (N, 64)
 
-    ensemble, distances, _ = ps_mc_retrieve(
+    ensemble, distances, _, real_emb_norms = ps_mc_retrieve(
         X_real, X_fake, prefix_len=PREFIX_LEN, K=K
     )
     w_unif           = uniform_weights(N, K)
-    w_gauss, eta_val = gaussian_weights(distances)
+    # Adaptive η̃: calibrate from data so η_i = η̃_adapt × ‖h_i‖ matches the
+    # median nearest-neighbour distance.  The paper's η̃=0.075 is calibrated on
+    # S&P data; our Heston embedding norms differ, so we re-derive η̃ here.
+    median_dist = float(np.median(distances))
+    median_norm = float(np.median(real_emb_norms)) + 1e-30
+    eta_tilde_adapt = median_dist / median_norm
+    w_gauss, eta_val = gaussian_weights(
+        distances, real_emb_norms=real_emb_norms, eta_tilde=eta_tilde_adapt
+    )
 
     seed_res = {"seed": seed, "eta": float(eta_val)}
     for h_name, (h_start, h_end) in HORIZONS.items():
@@ -140,7 +148,7 @@ if __name__ == "__main__":
     X_fake0 = np.load(os.path.join(
         BENCH, "methods/TimeGAN/generated_paths/seed_0/generated_paths_8192x128.npy"
     ))
-    ens0, _, _ = ps_mc_retrieve(X_real, X_fake0, prefix_len=PREFIX_LEN, K=K)
+    ens0, _, _, _ = ps_mc_retrieve(X_real, X_fake0, prefix_len=PREFIX_LEN, K=K)
     t_axis     = np.arange(T)
     idx        = np.random.choice(N, 4, replace=False)
 
