@@ -1,0 +1,12 @@
+{
+  "n_features": 1,
+  "hidden_dim": 24,
+  "num_layers": 3,
+  "batch_size": 128,
+  "embedding_steps": 5000,
+  "supervised_steps": 5000,
+  "joint_steps": 10000,
+  "seq_len": 128,
+  "seed": 0,
+  "train_time_sec": 344.18
+}
