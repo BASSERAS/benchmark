@@ -1,7 +1,7 @@
 # Metrics — A1 to A15
 
 Evaluation suite for generative models of financial time series.
-All metrics compare a set of **real paths** $X \sim P$ against **generated paths** $\tilde{X} \sim Q$.
+All metrics compare **real paths** $X \sim P$ against **generated paths** $\tilde{X} \sim Q$.
 
 ## Files
 
@@ -32,56 +32,69 @@ Outputs land in `results/<dataset>/<method>/`.
 |--------|---------|
 | $X \sim P$ | Real paths, shape $(N, T, d)$ |
 | $\tilde{X} \sim Q$ | Generated paths, shape $(N, T, d)$ |
-| $r_t = X_{t+1} - X_t$ | Log-returns / increments |
-| $k(x,x') = \exp\!\left(-\|x-x'\|^2/2\sigma^2\right)$ | RBF kernel |
+| $r_t = X_{t+1} - X_t$ | Increments / returns |
+| $k(x,x') = \frac{1}{L}\sum_{l} \exp\left(-\frac{\|x-x'\|^2}{2 h_l^2 d}\right)$ | Multi-scale RBF kernel, bandwidths $h_l \in \{0.5,1,2,4,8\}$ |
 | $W_1$ | 1-Wasserstein distance |
-| $\theta_\sharp P$ | Projection of $P$ onto direction $\theta$ |
+| $\theta_{\sharp} P$ | Push-forward of $P$ along direction $\theta$ (1-D projection) |
 
 ---
 
 ## A1 — Path MMD² · *Maximum Mean Discrepancy on full paths*
 
 $$
-\widehat{\text{MMD}}^2(P, Q)
-= \frac{1}{N^2}\sum_{i,j} k(x_i,x_j)
-- \frac{2}{N^2}\sum_{i,j} k(x_i,\tilde{x}_j)
-+ \frac{1}{N^2}\sum_{i,j} k(\tilde{x}_i,\tilde{x}_j)
+\text{MMD}^2(P, Q)
+= \frac{1}{N^2}\sum_{i,j} k(x_i, x_j)
+- \frac{2}{N^2}\sum_{i,j} k(x_i, \tilde{x}_j)
++ \frac{1}{N^2}\sum_{i,j} k(\tilde{x}_i, \tilde{x}_j)
 $$
 
-Each path is flattened to $x = (X_1,\ldots,X_T)\in\mathbb{R}^{T\cdot d}$ before applying the kernel.
+Each path is flattened to $x = (X_1,\ldots,X_T) \in \mathbb{R}^{T \cdot d}$ before applying the kernel.
 Tests whether the **joint temporal distribution** is reproduced. **Perfect: 0. Direction: ↓**
 
 ---
 
 ## A2 — Terminal MMD² · *Maximum Mean Discrepancy on terminal values*
 
-Same estimator, applied only to the terminal value $x = X_T \in \mathbb{R}^d$.
-Tests whether the **marginal at maturity** is correct. **Perfect: 0. ↓**
+Same biased estimator as A1, applied only to the terminal value $x = X_T \in \mathbb{R}^d$.
+Tests whether the **marginal distribution at maturity** is correct. **Perfect: 0. ↓**
 
 ---
 
 ## A3 — Increment MMD² · *Maximum Mean Discrepancy on returns*
 
 $$
-\widehat{\text{MMD}}^2\!\left(\{r_t\}_{t<T},\,\{\tilde{r}_t\}_{t<T}\right),
-\quad r_t = X_{t+1} - X_t
+\text{MMD}^2\left(\{r_t\}_{t < T},\; \{\tilde{r}_t\}_{t < T}\right),
+\qquad r_t = X_{t+1} - X_t
 $$
 
 All increments pooled across time before computing MMD.
-Tests the **return distribution** (mean, variance, shape). **Perfect: 0. ↓**
+Tests the **return distribution** (mean, variance, tail shape). **Perfect: 0. ↓**
 
 ---
 
-## A4 — Volatility MMD · *Maximum Mean Discrepancy on realised volatility*
+## A4 — Volatility MMD · *Sum of MMD² over 9 volatility-related feature groups*
 
-Rolling realised volatility with window $w = 5$:
+Biased MMD² is computed **independently for each of the following feature groups**
+derived from $r_t = X_{t+1} - X_t$, then summed:
+
+| # | Feature | Shape per sample |
+|---|---------|-----------------|
+| 1 | Instantaneous RV: $r_t^2$ | $(T-1, d)$ |
+| 2 | State-RV pairs: $(X_{t+1},\; r_t^2)$ | $(T-1, 2d)$ |
+| 3 | Global RV mean per path: $\frac{1}{T}\sum_t r_t^2$ | $(d,)$ |
+| 4 | Terminal return: $X_T - X_0$ | $(d,)$ |
+| 5 | Returns: $r_t$ | $(T-1, d)$ |
+| 6 | Rolling vol (window $w=5$): $\sqrt{\frac{1}{w}\sum_{s=t-w}^{t} r_s^2}$ | $(T-1, d)$ |
+| 7 | Absolute returns: $\|r_t\|$ | $(T-1, d)$ |
+| 8 | Squared returns: $r_t^2$ | $(T-1, d)$ |
+| 9 | ACF lag-products of $|r_t|$ and $r_t^2$ at lags $\{1,2,5,10\}$ (8 sub-groups) | $(N(T-1)d, 1)$ each |
 
 $$
-\hat{\sigma}_t = \sqrt{\frac{1}{w}\sum_{s=t-w}^{t-1} r_s^2}
+\text{VolMMD}(P, Q) = \sum_{g=1}^{9^{*}} \text{MMD}^2(F_g(X),\; F_g(\tilde{X}))
 $$
 
-MMD applied to $\{\hat{\sigma}_t^{\text{real}}\}$ vs $\{\hat{\sigma}_t^{\text{fake}}\}$.
-Tests **volatility clustering** and the distribution of the vol process. **Perfect: 0. ↓**
+where $F_g$ extracts feature group $g$. This comprehensively tests volatility level,
+clustering, tail behaviour, and autocorrelation structure. **Perfect: 0. ↓**
 
 ---
 
@@ -89,19 +102,26 @@ Tests **volatility clustering** and the distribution of the vol process. **Perfe
 
 $$
 \text{SWD}(P_T, Q_T)
-= \mathbb{E}_{\theta\sim\mathcal{U}(\mathbb{S}^{d-1})}
-  \!\left[W_1\!\left(\theta_\sharp P_T,\,\theta_\sharp Q_T\right)\right]
+= \mathbb{E}_{\theta \sim \mathcal{U}(\mathbb{S}^{d-1})}
+  \left[ W_1\left(\theta_{\sharp} P_T,\; \theta_{\sharp} Q_T \right) \right]
 $$
 
-Approximated with 512 random projections.
+Approximated with **50 random projections**.
 More robust to heavy tails and high dimensionality than MMD. **Perfect: 0. ↓**
 
 ---
 
-## A6 — Path SWD · *Sliced Wasserstein Distance on full paths*
+## A6 — Path SWD · *Time-averaged Sliced Wasserstein Distance*
 
-Same SWD formula with paths flattened to $x\in\mathbb{R}^{T\cdot d}$.
-Captures the **geometry of the full path distribution**. **Perfect: 0. ↓**
+$$
+\text{SWD}^{\text{path}}(P, Q)
+= \frac{1}{T} \sum_{t=1}^{T} \text{SWD}(P_t,\; Q_t)
+$$
+
+where $P_t$ and $Q_t$ are the marginal distributions of real and generated paths at time $t$,
+each estimated with **50 random projections**.
+Tests whether the **marginal distribution is correct at every time step**, not just at maturity.
+**Perfect: 0. ↓**
 
 ---
 
@@ -109,53 +129,61 @@ Captures the **geometry of the full path distribution**. **Perfect: 0. ↓**
 
 $$
 \|\Sigma_{\text{real}} - \Sigma_{\text{fake}}\|_F,
-\quad \Sigma = \text{Cov}(X_T)\in\mathbb{R}^{d\times d}
+\qquad \Sigma = \text{Cov}(X_T) \in \mathbb{R}^{d \times d}
 $$
 
-For $d=1$ reduces to $|\text{Var}(X_T^{\text{real}}) - \text{Var}(X_T^{\text{fake}})|$.
-Tests cross-asset covariance structure at maturity. **Perfect: 0. ↓**
+For $d=1$ (Heston) reduces to $|\text{Var}(X_T^{\text{real}}) - \text{Var}(X_T^{\text{fake}})|$.
+Tests the cross-asset covariance structure at maturity. **Perfect: 0. ↓**
 
 ---
 
-## A8 — Mean RMSE · *Root Mean Square Error of terminal means*
+## A8 — Mean RMSE · *L2 norm of terminal mean difference*
 
 $$
-\sqrt{\frac{1}{d}\left\|\mathbb{E}[X_T]-\mathbb{E}[\tilde{X}_T]\right\|^2}
+\left\| \mathbb{E}[X_T] - \mathbb{E}[\tilde{X}_T] \right\|_2
 $$
 
-Measures **systematic bias** in the generated terminal price level. **Perfect: 0. ↓**
+Measures **systematic bias** in the generated terminal price level.
+For $d=1$ this is simply $|\mathbb{E}[X_T] - \mathbb{E}[\tilde{X}_T]|$. **Perfect: 0. ↓**
 
 ---
 
-## A9 — Return Std Error · *Mean Absolute Error of return standard deviation*
+## A9 — Return Std Error · *Absolute difference of return standard deviations*
 
 $$
-\left|\,\sigma(r_{\text{real}}) - \sigma(r_{\text{fake}})\,\right|
+\left| \sigma(r_{\text{real}}) - \sigma(r_{\text{fake}}) \right|
 $$
 
 Tests whether the overall **volatility level** is correctly reproduced. **Perfect: 0. ↓**
 
 ---
 
-## A10 — Return Kurtosis Error · *Mean Absolute Error of excess kurtosis*
+## A10 — Return Kurtosis Error · *Absolute difference of excess kurtosis*
 
 $$
-\left|\,\kappa(r_{\text{real}}) - \kappa(r_{\text{fake}})\,\right|,
-\quad \kappa(Z) = \frac{\mathbb{E}[(Z-\mu)^4]}{\sigma^4} - 3
+\left| \kappa(r_{\text{real}}) - \kappa(r_{\text{fake}}) \right|,
+\qquad \kappa(Z) = \frac{\mathbb{E}[(Z-\mu)^4]}{\sigma^4} - 3
 $$
 
-Excess kurtosis = 0 for Gaussian; financial returns typically show $\kappa > 0$ (**fat tails**).
-Tests whether the generator reproduces the tail behaviour. **Perfect: 0. ↓**
+Excess kurtosis = 0 for a Gaussian. Financial returns typically show $\kappa > 0$ (**fat tails**).
+Computed using Fisher's definition with bias correction (`scipy.stats.kurtosis(fisher=True, bias=False)`).
+**Perfect: 0. ↓**
 
 ---
 
-## A11 — ACF Error (abs returns) · *Mean Absolute Error of autocorrelation on |r|*
+## A11 — ACF Error (abs returns) · *Mean absolute error of sample-mean ACF on |r|*
 
 $$
-\frac{1}{|L|}\sum_{\ell\in L}
-\left|\,\text{ACF}(|r_{\text{real}}|,\ell) - \text{ACF}(|r_{\text{fake}}|,\ell)\,\right|,
-\quad L = \{1,2,5,10\}
+\frac{1}{|L|} \sum_{\ell \in L}
+\left|
+  \frac{1}{N}\sum_{i=1}^{N} \text{ACF}(|r_i|, \ell)
+  -
+  \frac{1}{N}\sum_{i=1}^{N} \text{ACF}(|\tilde{r}_i|, \ell)
+\right|,
+\quad L = \{1, 2, 5, 10\}
 $$
+
+where $\text{ACF}(q, \ell) = \frac{\sum_t (q_t - \bar{q})(q_{t+\ell} - \bar{q})}{\sum_t (q_t - \bar{q})^2}$.
 
 Real financial returns have near-zero autocorrelation but $|r_t|$ and $r_t^2$ show
 significant positive autocorrelation — the **ARCH / volatility clustering** stylised fact.
@@ -163,9 +191,9 @@ A11 tests this via absolute returns. **Perfect: 0. ↓**
 
 ---
 
-## A12 — ACF Error (sq returns) · *Mean Absolute Error of autocorrelation on r²*
+## A12 — ACF Error (sq returns) · *Mean absolute error of sample-mean ACF on r²*
 
-Same formula as A11 applied to squared returns $r_t^2$.
+Same formula as A11 applied to squared returns $r_t^2$ instead of $|r_t|$.
 Complementary to A11: also tests the ARCH effect but is more sensitive to large moves.
 **Perfect: 0. ↓**
 
@@ -174,7 +202,7 @@ Complementary to A11: also tests the ARCH effect but is more sensitive to large 
 ## A13 — Discriminative Score · *Post-hoc binary classification accuracy offset*
 
 $$
-\text{DS} = \left|\,\text{Acc}_{\text{test}} - 0.5\,\right|
+\text{DS} = \left| \text{Acc}_{\text{test}} - 0.5 \right|
 $$
 
 **Principle.** Train a binary classifier to separate real paths (label 1) from generated
@@ -203,7 +231,7 @@ Input  : path  (T=128, d=1)
 ```
 
 The GRU processes the path **step by step**, accumulating a hidden state that encodes
-the full temporal trajectory. Because of its recurrent structure, it can detect
+the full temporal trajectory. Because of its recurrent structure it can detect
 **temporal patterns** — autocorrelation, volatility clustering, mean-reversion speed —
 that differ between real and generated data.
 
@@ -214,7 +242,7 @@ A GRU score close to 0 means the generated paths have **correct temporal dynamic
 ```
 Input  : path  (T=128, d=1)  →  Flatten  →  (128,)
   └─ Linear(128 → 128)  →  ReLU
-       └─ Linear(128 → 64)   →  ReLU
+       └─ Linear(128 → 64)  →  ReLU
             └─ Linear(64 → 1)  →  logit
 ```
 
@@ -241,21 +269,20 @@ A generator that passes MLP but fails GRU has correct marginals but wrong dynami
 ## A14 — Predictive Score · *Train-on-Synthetic Test-on-Real (TSTR) MAE*
 
 $$
-\text{PS} = \frac{1}{N\cdot(T-1)}
-\sum_{i=1}^{N}\sum_{t=1}^{T-1}
-\left|\hat{X}_{i,t+1} - X_{i,t+1}^{\text{real}}\right|
+\text{PS} = \frac{1}{N(T-1)}
+\sum_{i=1}^{N} \sum_{t=1}^{T-1}
+\left| \hat{X}_{i,t+1} - X_{i,t+1}^{\text{real}} \right|
 $$
 
 **Principle (TSTR).** A one-step-ahead predictor is trained **exclusively on generated
-paths**. It is then evaluated on **real paths**. If the predictor generalises well —
-low MAE on real data — the synthetic data has captured the true temporal dynamics and
-the generator is good. If the predictor trained on fake fails on real, there is a
-distributional gap in the temporal structure.
+paths** (normalised to [0, 1]). It is then evaluated on **real paths** (same normalisation).
+If the predictor generalises well — low MAE on real data — the synthetic data has captured
+the true temporal dynamics. If it fails on real data, there is a distributional gap.
 
 ### Training
 
 Both predictors are trained for **5 000 steps**, Adam (lr = 1×10⁻³), batch size 128,
-L1 (MAE) loss on min-max normalised paths. Training loss is logged every 100 steps.
+L1 (MAE) loss. Training loss is logged every 100 steps.
 
 ### GRU Predictor — architecture
 
@@ -266,7 +293,7 @@ Input  : prefix  X[0:T-1]  shape (127, 1)
             └─ Linear(8 → 1) applied at each step  →  (127, 1)
 ```
 
-Sequence-to-sequence: predicts $\hat{X}_{t+1}$ for every $t$ simultaneously, using the
+Sequence-to-sequence: predicts $\hat{X}_{t+1}$ for every $t$ simultaneously using the
 **full causal history** $X_1,\ldots,X_t$. Can capture long-range dependencies
 (mean-reversion, trend, volatility regime).
 
@@ -274,7 +301,7 @@ Sequence-to-sequence: predicts $\hat{X}_{t+1}$ for every $t$ simultaneously, usi
 
 ```
 Input  : local window  X[t-8:t]  shape (8, 1)  →  Flatten  →  (8,)
-  └─ Linear(8 → 64)   →  ReLU
+  └─ Linear(8 → 64)  →  ReLU
        └─ Linear(64 → 32)  →  ReLU
             └─ Linear(32 → 1)  →  X̂_{t+1}
 ```
@@ -290,25 +317,30 @@ short-range local patterns in the synthetic data match those in real data.
 | Sensitive to | Long-range structure, regimes | Short-range momentum / micro-structure |
 | Interpretation | Long-range temporal dynamics | Local (8-step) predictability |
 
-### Evaluation
-
-After training on fake, both predictors score all real paths.
-PS = mean absolute error (normalised scale). **Perfect: 0.** In practice, compare against
-a naïve baseline (e.g., last-value predictor) to contextualise the scale. **Direction: ↓**
+**Evaluation.** After training on fake paths, both predictors are scored on all real paths.
+PS = mean absolute error on normalised scale. **Perfect: 0. Direction: ↓**
 
 ---
 
-## A15 — Teacher-Sigma Correlation · *Pearson correlation, realised vol vs true vol* ↑
+## A15 — Teacher-Sigma Correlation · *Pearson correlation, realised vol vs true vol*
 
 $$
-\rho = \text{Corr}\!\left(\hat{\sigma}^{\text{gen}},\,\sqrt{v_{\text{true}}}\right)
+\rho = \text{Corr}\left( \hat{\sigma}^{\text{gen}},\; \sqrt{v_{\text{true}}} \right)
 $$
 
-$\hat{\sigma}^{\text{gen}}$ = rolling realised vol (window 5) from generated price paths.
-$\sqrt{v_{\text{true}}}$ = true instantaneous vol from the Heston latent variance process.
+$\hat{\sigma}^{\text{gen}}_{i,t}$ = rolling realised volatility (window $w=5$) computed
+from generated price increments:
+
+$$
+\hat{\sigma}_{i,t} = \sqrt{ \frac{1}{w} \sum_{s=t-w}^{t} r_{i,s}^2 + \varepsilon }
+$$
+
+$\sqrt{v_{\text{true},i,t}}$ = true instantaneous vol from the Heston latent variance
+process (stored in `dataset/Heston/heston_v_8192x128.npy`).
 
 **Heston-specific bonus metric.** Tests whether the generator reproduces the latent
-stochastic volatility process, not just the price paths. **Perfect: 1. Direction: ↑**
+stochastic volatility process, not just the price paths.
+**Perfect: 1. Direction: ↑** (higher is better)
 
 ---
 
@@ -316,10 +348,11 @@ stochastic volatility process, not just the price paths. **Perfect: 1. Direction
 
 $$
 \text{RMSE} = \sqrt{
-  \frac{1}{N\cdot T}\sum_{i,t}
-  \!\left(\hat{\sigma}^{\text{gen}}_{i,t} - \sqrt{v_{\text{true},i,t}}\right)^2
+  \frac{1}{N \cdot T}
+  \sum_{i=1}^{N} \sum_{t=1}^{T}
+  \left( \hat{\sigma}^{\text{gen}}_{i,t} - \sqrt{v_{\text{true},i,t}} \right)^2
 }
 $$
 
-Complementary to the correlation: measures absolute scale accuracy of the reproduced
+Complementary to the correlation: measures the absolute scale accuracy of the reproduced
 volatility process. **Perfect: 0. Direction: ↓**
