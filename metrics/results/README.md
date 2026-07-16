@@ -1,6 +1,6 @@
 # Metrics Results — TimeGAN on Heston (5 Seeds)
 
-Dataset: 8192 Heston price paths, seq_len=128, canonical parameters
+Dataset: 8192 Heston price paths, seq\_len=128, canonical parameters
 (mu=0.05, kappa=2.0, theta=0.04, xi=0.3, rho=-0.7, S0=100, v0=0.04, dt=1/250).  
 Model: PyTorch TimeGAN, 20k steps (5k embed + 5k supervised + 10k adversarial), 2×A100 GPUs.  
 Convention: lower is better for all metrics except A15 Corr (↑).
@@ -32,26 +32,135 @@ Convention: lower is better for all metrics except A15 Corr (↑).
 
 ---
 
-## Metric Definitions & Perfect Scores
+## Metric Definitions, Formulas & Perfect Scores
 
-| ID | Name | Perfect score | Explanation |
-|----|------|:-------------:|-------------|
-| A1  | Path MMD²                | **0** | Maximum Mean Discrepancy between full generated and real path distributions in a kernel RKHS. Measures whether the joint temporal distribution is matched across all time steps. |
-| A2  | Terminal MMD²            | **0** | MMD applied only to the terminal (last-step) value distributions. Tests whether the model reproduces the correct final price distribution. |
-| A3  | Increment MMD²           | **0** | MMD on first-order increments (returns dX = X[t+1]−X[t]). Measures whether the return distribution is correctly reproduced. |
-| A4  | Volatility MMD           | **0** | MMD on rolling standard deviation of returns (realized volatility proxy). Tests whether stylised volatility clustering facts are captured. |
-| A5  | Terminal SWD             | **0** | Sliced Wasserstein Distance on terminal values. More robust than MMD to heavy tails; measures transport cost between terminal distributions. |
-| A6  | Path SWD                 | **0** | Sliced Wasserstein Distance on full paths. Captures global path geometry; sensitive to drift and curvature differences. |
-| A7  | Covariance Error         | **0** | Frobenius norm of the difference between real and generated terminal covariance matrices. Tests cross-sectional correlation structure (for d>1; trivially non-zero for 1D data). |
-| A8  | Mean RMSE                | **0** | RMSE between mean vectors of real and generated terminal distributions. Measures systematic bias in the generated final price level. |
-| A9  | Return Std Error         | **0** | Absolute error on the standard deviation of returns. Measures whether the overall volatility level is correct. |
-| A10 | Return Kurtosis Error    | **0** | Absolute error on excess kurtosis of returns. Measures whether fat tails and leptokurticity of financial returns are reproduced. |
-| A11 | ACF Error (abs returns)  | **0** | Mean absolute ACF error on \|returns\| at lags 1,2,5,10. Tests volatility clustering (absolute returns have positive autocorrelation in real data). |
-| A12 | ACF Error (sq returns)   | **0** | Mean absolute ACF error on returns² at lags 1,2,5,10. Also tests volatility clustering via squared returns (ARCH effect). |
-| A13 | Discriminative Score     | **0** | \|accuracy − 0.5\| of a post-hoc classifier (GRU or MLP) trained on 80% of real+fake data and evaluated on held-out 20%. **Score 0 = classifier at chance = cannot distinguish real from fake (perfect generator). Score 0.5 = perfect separation (bad generator).** |
-| A14 | Predictive Score (TSTR)  | **0** | Train-on-Synthetic, Test-on-Real MAE. A predictor (GRU or MLP) is trained to forecast the next step on synthetic data, then its MAE is measured on real data. Measures whether the synthetic temporal dynamics are useful for prediction. |
-| A15 | Teacher-Sigma Corr (↑)   | **1** | Pearson correlation between the true Heston latent volatility √v and the realized volatility estimated from generated paths (rolling window std of returns). Heston-specific bonus metric; higher means the generator implicitly captures the correct stochastic vol process. |
-| A15 | Teacher-Sigma RMSE       | **0** | RMSE between true latent √v and estimated realized volatility from generated paths. Companion to the correlation; measures absolute accuracy of the latent vol proxy. |
+Notation: $X \sim P$ = real paths $(N, T, d)$, $\tilde{X} \sim Q$ = generated paths, $dX_t = X_{t+1} - X_t$ = increments/returns, $k(\cdot,\cdot)$ = RBF kernel.
+
+---
+
+### A1 — Path MMD²  |  perfect **0**
+
+$$\text{MMD}^2(P, Q) = \mathbb{E}[k(x,x')] - 2\,\mathbb{E}[k(x,\tilde{x})] + \mathbb{E}[k(\tilde{x},\tilde{x}')]$$
+
+where $x, x' \sim P$ and $\tilde{x}, \tilde{x}' \sim Q$. Applied to **full paths** (all $T$ time steps concatenated). Measures whether the joint temporal distribution is matched.
+
+---
+
+### A2 — Terminal MMD²  |  perfect **0**
+
+Same MMD² formula applied only to the **terminal values** $X_T \in \mathbb{R}^d$. Tests whether the model reproduces the correct final price distribution.
+
+---
+
+### A3 — Increment MMD²  |  perfect **0**
+
+MMD² applied to **first-order increments** (returns):
+
+$$\text{MMD}^2\!\left(\{dX_t\}, \{d\tilde{X}_t\}\right), \quad dX_t = X_{t+1} - X_t$$
+
+Measures whether the return distribution is correctly reproduced.
+
+---
+
+### A4 — Volatility MMD  |  perfect **0**
+
+MMD applied to the **rolling realised volatility** (window $w=5$):
+
+$$\hat{\sigma}_t = \sqrt{\frac{1}{w}\sum_{s=t-w}^{t-1}(dX_s)^2}$$
+
+Tests whether volatility clustering and the stylised vol distribution are captured.
+
+---
+
+### A5 — Terminal SWD  |  perfect **0**
+
+$$\text{SWD}(P_T, Q_T) = \mathbb{E}_{\theta \sim \mathcal{U}(\mathbb{S}^{d-1})}\!\left[W_1\!\left(\theta_\sharp P_T,\, \theta_\sharp Q_T\right)\right]$$
+
+Sliced Wasserstein Distance on terminal values: average 1-Wasserstein distance over random 1D projections $\theta$. More robust than MMD to heavy tails.
+
+---
+
+### A6 — Path SWD  |  perfect **0**
+
+Same SWD formula applied to **full paths** (path treated as a $T \cdot d$-dimensional point). Captures global path geometry, sensitive to drift and curvature.
+
+---
+
+### A7 — Covariance Error  |  perfect **0**
+
+$$\|\Sigma_{\text{real}} - \Sigma_{\text{fake}}\|_F, \quad \Sigma = \text{Cov}(X_T)$$
+
+Frobenius norm of the difference of terminal covariance matrices. For $d=1$ (Heston price), the covariance is a scalar variance — the high value here signals that TimeGAN's terminal variance is systematically wrong.
+
+---
+
+### A8 — Mean RMSE  |  perfect **0**
+
+$$\sqrt{\frac{1}{d}\left\|\mathbb{E}[X_T] - \mathbb{E}[\tilde{X}_T]\right\|^2}$$
+
+RMSE between the mean terminal vectors of real and generated paths. Measures systematic bias in the generated final price level.
+
+---
+
+### A9 — Return Std Error  |  perfect **0**
+
+$$\left|\,\sigma(dX) - \sigma(d\tilde{X})\,\right|$$
+
+Absolute error on the standard deviation of returns. Measures whether the overall volatility level is correctly reproduced.
+
+---
+
+### A10 — Return Kurtosis Error  |  perfect **0**
+
+$$\left|\,\kappa(dX) - \kappa(d\tilde{X})\,\right|, \quad \kappa(Z) = \frac{\mathbb{E}[(Z-\mu)^4]}{\sigma^4} - 3$$
+
+Absolute error on excess kurtosis of returns. Measures whether fat tails and leptokurticity of financial returns are reproduced.
+
+---
+
+### A11 — ACF Error (abs returns)  |  perfect **0**
+
+$$\frac{1}{|L|}\sum_{\ell \in L} \left|\,\text{ACF}(|dX|, \ell) - \text{ACF}(|d\tilde{X}|, \ell)\,\right|, \quad L = \{1, 2, 5, 10\}$$
+
+Mean absolute ACF error on **absolute returns** at lags 1,2,5,10. Tests volatility clustering (absolute returns exhibit positive autocorrelation in real financial data).
+
+---
+
+### A12 — ACF Error (sq returns)  |  perfect **0**
+
+Same formula as A11 but applied to **squared returns** $(dX)^2$. Tests the ARCH effect — squared returns are autocorrelated in real markets.
+
+---
+
+### A13 — Discriminative Score  |  perfect **0**
+
+$$\text{DS} = \left|\,\text{acc}_{\text{test}} - 0.5\,\right|$$
+
+A post-hoc classifier (GRU or MLP) is trained on 80% of $\{$real$\} \cup \{$fake$\}$ with labels 1/0, then accuracy is measured on the held-out 20%. **Score 0 = classifier at chance = cannot distinguish real from fake (perfect generator). Score 0.5 = perfect separation (bad generator).** Two architectures are reported: GRU (temporal, same family as TimeGAN's discriminator) and MLP (flattened, architecture-agnostic).
+
+---
+
+### A14 — Predictive Score TSTR  |  perfect **0**
+
+$$\text{PS} = \frac{1}{N \cdot T}\sum_{i,t}\left|\hat{X}_{i,t+1} - X_{i,t+1}\right|$$
+
+Train-on-Synthetic, Test-on-Real MAE. A next-step predictor is trained on **synthetic** data only, then its MAE is evaluated on **real** data. Tests whether temporal dynamics of the synthetic data are useful for real prediction. Two predictors reported: GRU (sequence-to-sequence) and MLP (sliding window of 8 steps).
+
+---
+
+### A15 — Teacher-Sigma Correlation (↑)  |  perfect **1**
+
+$$\rho = \text{Corr}\!\left(\hat{\sigma}_{\text{gen}},\, \sqrt{v_{\text{true}}}\right)$$
+
+where $\hat{\sigma}_{\text{gen},t}$ is the rolling window-5 realised vol estimated from generated paths and $\sqrt{v_{\text{true}}}$ is the true Heston latent volatility. **Higher is better (↑), perfect = 1.** Heston-specific bonus metric.
+
+---
+
+### A15 — Teacher-Sigma RMSE  |  perfect **0**
+
+$$\text{RMSE} = \sqrt{\frac{1}{N \cdot T}\sum_{i,t}\!\left(\hat{\sigma}_{\text{gen},i,t} - \sqrt{v_{\text{true},i,t}}\right)^2}$$
+
+Companion to the correlation; measures absolute accuracy of the latent vol proxy estimated from generated paths.
 
 ---
 
