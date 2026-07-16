@@ -140,8 +140,15 @@ def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray) -> dict:
     # A14 Predictive Score (TSTR)
     print("  A14 predictive TSTR (GRU + MLP) ...", flush=True)
     d14 = compute_predictive_score(S, fake, n_steps=5000, device=DEVICE)
-    results.update({f"A14_{k}": v for k, v in d14.items()})
+    results.update({f"A14_{k}": v for k, v in d14.items()
+                    if not k.startswith("loss_history")})
     print(f"       GRU={d14['pred_score_gru']:.4f}  MLP={d14['pred_score_mlp']:.4f}")
+    # Save predictive loss histories
+    for arch in ("gru", "mlp"):
+        csv_path = os.path.join(RESULTS_DIR, f"seed_{seed}_pred_{arch}_loss.csv")
+        with open(csv_path, "w", newline="") as lf:
+            w = csv.DictWriter(lf, fieldnames=["step", "train_mae"])
+            w.writeheader(); w.writerows(d14[f"loss_history_{arch}"])
 
     # A15 Teacher-Sigma (Heston-specific)
     print("  A15 teacher-sigma ...", end=" ", flush=True)

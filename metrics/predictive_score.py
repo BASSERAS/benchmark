@@ -51,7 +51,7 @@ class MLPPredictor(nn.Module):
         return self.net(x)
 
 
-def _train_gru(model, data_norm, n_steps, batch_size, device_str):
+def _train_gru(model, data_norm, n_steps, batch_size, device_str, log_every=100):
     """TSTR: train GRU on synthetic data (next-step prediction)."""
     device  = torch.device(device_str)
     model   = model.to(device)
@@ -62,13 +62,16 @@ def _train_gru(model, data_norm, n_steps, batch_size, device_str):
     data_t  = _to_tensor(data_norm, device)
 
     model.train()
-    for _ in range(n_steps):
+    history = []
+    for step in range(1, n_steps + 1):
         idx    = np.random.randint(0, N, batch_size)
         X_b    = data_t[idx, :-1, :]      # (batch, T-1, d)
         Y_b    = data_t[idx, 1:,  :1]     # (batch, T-1, 1) — predict first feature
         loss   = loss_fn(model(X_b), Y_b)
         opt.zero_grad(); loss.backward(); opt.step()
-    return model
+        if step % log_every == 0:
+            history.append({"step": step, "train_mae": round(loss.item(), 6)})
+    return model, history
 
 
 def _eval_gru(model, real_norm, device_str):
@@ -81,7 +84,7 @@ def _eval_gru(model, real_norm, device_str):
     return float(np.mean(np.abs(preds - targets)))
 
 
-def _train_mlp(model, data_norm, n_steps, batch_size, device_str, window):
+def _train_mlp(model, data_norm, n_steps, batch_size, device_str, window, log_every=100):
     device  = torch.device(device_str)
     model   = model.to(device)
     opt     = optim.Adam(model.parameters(), lr=1e-3)
@@ -91,14 +94,17 @@ def _train_mlp(model, data_norm, n_steps, batch_size, device_str, window):
     data_t  = _to_tensor(data_norm, device)
 
     model.train()
-    for _ in range(n_steps):
+    history = []
+    for step in range(1, n_steps + 1):
         idx_n  = np.random.randint(0, N, batch_size)
         idx_t  = np.random.randint(window, T, batch_size)
         X_b    = torch.stack([data_t[n, t-window:t, :] for n, t in zip(idx_n, idx_t)])
         Y_b    = data_t[torch.tensor(idx_n), torch.tensor(idx_t), :1]
         loss   = loss_fn(model(X_b), Y_b)
         opt.zero_grad(); loss.backward(); opt.step()
-    return model
+        if step % log_every == 0:
+            history.append({"step": step, "train_mae": round(loss.item(), 6)})
+    return model, history
 
 
 def _eval_mlp(model, real_norm, device_str, window):
@@ -131,7 +137,8 @@ def compute_predictive_score(
 
     Returns
     -------
-    dict with keys pred_score_gru, pred_score_mlp  (lower is better)
+    dict with keys pred_score_gru, pred_score_mlp (lower is better),
+    loss_history_gru, loss_history_mlp (list of {step, train_mae})
     """
     if real.ndim == 2:
         real = real[:, :, None]
@@ -148,11 +155,13 @@ def compute_predictive_score(
 
     hidden = max(8, d * 8)
 
-    gru_m  = _train_gru(GRUPredictor(d, hidden), fake_n, n_steps, 128, device)
+    gru_m, hist_gru = _train_gru(GRUPredictor(d, hidden), fake_n, n_steps, 128, device)
     score_gru = _eval_gru(gru_m, real_n, device)
 
-    mlp_m  = _train_mlp(MLPPredictor(WINDOW, d), fake_n, n_steps, 128, device, WINDOW)
+    mlp_m, hist_mlp = _train_mlp(MLPPredictor(WINDOW, d), fake_n, n_steps, 128, device, WINDOW)
     score_mlp = _eval_mlp(mlp_m, real_n, device, WINDOW)
 
     return {"pred_score_gru": round(score_gru, 6),
-            "pred_score_mlp": round(score_mlp, 6)}
+            "pred_score_mlp": round(score_mlp, 6),
+            "loss_history_gru": hist_gru,
+            "loss_history_mlp": hist_mlp}
