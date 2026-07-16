@@ -23,9 +23,30 @@ from sklearn.neighbors import NearestNeighbors
 
 # ── Core retrieval ────────────────────────────────────────────────────────────
 
+def _log_return_embedding(X, prefix_len):
+    """
+    Embed a price prefix as log-returns (level-normalised).
+
+    r_t = log(X_{t+1} / X_t),  t = 0 .. prefix_len-2
+
+    This removes the dominant price-level effect from L2 distance so that
+    nearby paths share similar *dynamics*, not just similar levels —
+    following the spirit of the paper's embedding (eq. 13 in arXiv:2308.01486).
+
+    Returns (N, prefix_len-1) float32 array of log-returns.
+    """
+    prefix = np.clip(X[:, :prefix_len].astype(np.float64), 1e-8, None)
+    log_ret = np.diff(np.log(prefix), axis=1)   # (N, prefix_len-1)
+    return log_ret.astype(np.float32)
+
+
 def ps_mc_retrieve(X_real, X_fake, prefix_len=64, K=77):
     """
     Retrieve K nearest fake paths for every real query path.
+
+    Distance is computed on **log-returns** of the prefix (not raw prices),
+    so that closeness reflects dynamic similarity rather than price level.
+    This follows the paper's recommendation (arXiv:2308.01486, eq. 13).
 
     Parameters
     ----------
@@ -37,19 +58,30 @@ def ps_mc_retrieve(X_real, X_fake, prefix_len=64, K=77):
     Returns
     -------
     ensemble  : (N, K, T-prefix_len) — futures of the K neighbours
-    distances : (N, K) — L2 distances to each neighbour
+    distances : (N, K) — L2 distances in log-return embedding space
     indices   : (N, K) — pool indices of the K neighbours
     """
-    real_pre = X_real[:, :prefix_len]   # (N, prefix_len)
-    fake_pre = X_fake[:, :prefix_len]   # (M, prefix_len)
-    fake_fut = X_fake[:, prefix_len:]   # (M, T-prefix_len)
+    real_emb = _log_return_embedding(X_real, prefix_len)  # (N, prefix_len-1)
+    fake_emb = _log_return_embedding(X_fake, prefix_len)  # (M, prefix_len-1)
+    fake_fut = X_fake[:, prefix_len:]                     # (M, T-prefix_len)
 
     nn = NearestNeighbors(n_neighbors=K, metric="euclidean",
                           algorithm="auto", n_jobs=16)
-    nn.fit(fake_pre)
-    distances, indices = nn.kneighbors(real_pre)    # both (N, K)
+    nn.fit(fake_emb)
+    distances, indices = nn.kneighbors(real_emb)          # both (N, K)
 
-    ensemble = fake_fut[indices]                    # (N, K, T-prefix_len)
+    # Raw futures of the K neighbours
+    ensemble_raw = fake_fut[indices]                      # (N, K, T-prefix_len)
+
+    # Anchor each retrieved future at the real path's last prefix price.
+    # Without this, a fake path at level 98 forecasting from 98→110 would
+    # be compared against a real path that ended at 103 — a spurious offset.
+    # Multiplicative alignment: scale each fake future by (S_real_last / S_fake_last).
+    S_real_last  = np.clip(X_real[:, prefix_len - 1], 1e-8, None)   # (N,)
+    S_fake_last  = np.clip(X_fake[indices, prefix_len - 1], 1e-8, None)  # (N, K)
+    scale        = (S_real_last[:, None] / S_fake_last)              # (N, K)
+    ensemble     = ensemble_raw * scale[:, :, None]                  # (N, K, T-prefix_len)
+
     return ensemble, distances, indices
 
 

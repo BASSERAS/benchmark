@@ -95,15 +95,16 @@ then use their futures (steps 64–127) as a forecast ensemble. Two variants: fl
 
 ### Results (mean ± std, 5 seeds)
 
+Embedding: **log-returns** `r_t = log(S_{t+1}/S_t)` on prefix + price anchoring at t=64.
+
 | Metric | H=32 Uniform | H=32 Gaussian | H=64 Uniform | H=64 Gaussian | Naive RW |
 |--------|:------------:|:-------------:|:------------:|:-------------:|:--------:|
-| CRPS   | 4.159 ± 0.982 | 4.154 ± 0.984 | 5.385 ± 0.990 | 5.384 ± 0.989 | 3.73 / 5.30 |
-| MAE    | 5.144 ± 0.732 | 5.138 ± 0.735 | 6.595 ± 0.605 | 6.593 ± 0.605 | 3.73 / 5.30 |
-| RMSE   | 6.778 ± 0.855 | 6.770 ± 0.860 | 8.746 ± 0.709 | 8.746 ± 0.707 | 5.07 / 7.18 |
+| **CRPS** | **3.097 ± 0.296** | 3.098 ± 0.297 | **4.412 ± 0.380** | 4.414 ± 0.381 | 3.73 / 5.30 |
+| MAE    | 4.036 ± 0.192 | 4.037 ± 0.192 | 5.720 ± 0.171 | 5.721 ± 0.172 | 3.73 / 5.30 |
+| RMSE   | 5.450 ± 0.248 | 5.451 ± 0.249 | 7.706 ± 0.182 | 7.708 ± 0.183 | 5.07 / 7.18 |
 
-PS-MC CRPS slightly exceeds the naive random-walk baseline — expected given TimeGAN's
-residual ACF error (A11 = 0.134) and retrieval on raw price-level L2 (level effects
-dominate dynamics). Normalised retrieval would likely improve results.
+PS-MC **beats the naive RW on CRPS** at both horizons (3.10 < 3.73 at H=32; 4.41 < 5.30 at H=64).
+Gaussian weights add negligible improvement once the embedding is correct.
 
 Full analysis: [`results/Heston/TimeGAN/path_shadowing/README.md`](../../results/Heston/TimeGAN/path_shadowing/README.md)
 

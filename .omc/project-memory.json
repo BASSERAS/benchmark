@@ -1,0 +1,96 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1784194244555,
+  "projectRoot": "/home/tbasseras/benchmark",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "TimeGan": {
+      "path": "TimeGan",
+      "purpose": null,
+      "fileCount": 4,
+      "lastAccessed": 1784194244552,
+      "keyFiles": [
+        "README.md",
+        "timegan_torch.py",
+        "train.py",
+        "train_seed.py"
+      ]
+    },
+    "dataset": {
+      "path": "dataset",
+      "purpose": null,
+      "fileCount": 3,
+      "lastAccessed": 1784194244552,
+      "keyFiles": [
+        "generate_heston.py",
+        "heston_S_8192x128.npy",
+        "heston_v_8192x128.npy"
+      ]
+    },
+    "metrics": {
+      "path": "metrics",
+      "purpose": null,
+      "fileCount": 5,
+      "lastAccessed": 1784194244552,
+      "keyFiles": [
+        "README.md",
+        "compute_all.py",
+        "discriminative_score.py",
+        "metrics_np.py",
+        "predictive_score.py"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "methods/TimeGAN/README.md",
+      "accessCount": 5,
+      "lastAccessed": 1784223106298,
+      "type": "file"
+    },
+    {
+      "path": "metrics/README.md",
+      "accessCount": 5,
+      "lastAccessed": 1784223133087,
+      "type": "file"
+    },
+    {
+      "path": "results/Heston/TimeGAN/README.md",
+      "accessCount": 3,
+      "lastAccessed": 1784223060966,
+      "type": "file"
+    },
+    {
+      "path": "metrics/compute_all.py",
+      "accessCount": 1,
+      "lastAccessed": 1784195718039,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}
