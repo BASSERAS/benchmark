@@ -79,6 +79,36 @@ MAE loss during GRU and MLP predictor training on *synthetic* data (5 000 steps,
 
 ---
 
+## Path Shadowing MC (arXiv:2308.01486)
+
+Given a real path prefix (steps 0–63), retrieve K=77 nearest TimeGAN paths by L2 distance,
+then use their futures (steps 64–127) as a forecast ensemble. Two variants: flat average
+(**Uniform**) and distance-weighted (**Gaussian**, η = median NN distance).
+
+### Example ensemble fan-out (seed 0)
+
+![PS-MC Example](../../results/Heston/TimeGAN/path_shadowing/plots/ps_mc_example.png)
+
+### CRPS per forecast step
+
+![CRPS per step](../../results/Heston/TimeGAN/path_shadowing/plots/crps_per_step.png)
+
+### Results (mean ± std, 5 seeds)
+
+| Metric | H=32 Uniform | H=32 Gaussian | H=64 Uniform | H=64 Gaussian | Naive RW |
+|--------|:------------:|:-------------:|:------------:|:-------------:|:--------:|
+| CRPS   | 4.159 ± 0.982 | 4.154 ± 0.984 | 5.385 ± 0.990 | 5.384 ± 0.989 | 3.73 / 5.30 |
+| MAE    | 5.144 ± 0.732 | 5.138 ± 0.735 | 6.595 ± 0.605 | 6.593 ± 0.605 | 3.73 / 5.30 |
+| RMSE   | 6.778 ± 0.855 | 6.770 ± 0.860 | 8.746 ± 0.709 | 8.746 ± 0.707 | 5.07 / 7.18 |
+
+PS-MC CRPS slightly exceeds the naive random-walk baseline — expected given TimeGAN's
+residual ACF error (A11 = 0.134) and retrieval on raw price-level L2 (level effects
+dominate dynamics). Normalised retrieval would likely improve results.
+
+Full analysis: [`results/Heston/TimeGAN/path_shadowing/README.md`](../../results/Heston/TimeGAN/path_shadowing/README.md)
+
+---
+
 ## File layout
 
 ```
