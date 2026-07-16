@@ -356,6 +356,42 @@ def teacher_sigma_metrics(
     return (float(corr) if not np.isnan(corr) else 0.0), float(rmse)
 
 
+# ======================================================================
+# A16  Tail Survival Error
+# ======================================================================
+
+def tail_survival_error(
+    X: np.ndarray,
+    Y: np.ndarray,
+    quantiles: Tuple[float, ...] = (0.90, 0.95, 0.99),
+) -> float:
+    """A16. Tail Survival Error — RMS of survival probability difference.
+
+    For each quantile alpha in {0.90, 0.95, 0.99}:
+      - q_alpha = alpha-quantile of real |returns|
+      - real_surv(alpha) = P_real(|r| > q_alpha)   (by definition ~= 1-alpha)
+      - fake_surv(alpha) = P_gen (|r| > q_alpha)
+
+    Score = sqrt( mean_alpha( (real_surv - fake_surv)^2 ) )
+
+    Tests whether the generator reproduces the fat tail of the return
+    distribution at the 90th, 95th, and 99th percentile levels.
+    Perfect: 0. Direction: lower is better.
+
+    Parameters
+    ----------
+    X : ndarray (N, T, d)  — real paths
+    Y : ndarray (N, T, d)  — generated paths
+    quantiles : tail quantile levels (default: 0.90, 0.95, 0.99)
+    """
+    real_abs_r = np.abs(np.diff(X, axis=1)).ravel()
+    fake_abs_r = np.abs(np.diff(Y, axis=1)).ravel()
+    thresholds = np.quantile(real_abs_r, quantiles)
+    real_surv = np.array([(real_abs_r > t).mean() for t in thresholds])
+    fake_surv = np.array([(fake_abs_r > t).mean() for t in thresholds])
+    return float(np.sqrt(np.mean((real_surv - fake_surv) ** 2)))
+
+
 __all__ = [
     "rbf_multiscale_kernel",
     "mmd2", "terminal_mmd2", "increment_mmd2", "volatility_mmd",
@@ -364,4 +400,5 @@ __all__ = [
     "return_std_error", "return_kurtosis_error",
     "acf", "acf_error",
     "teacher_sigma_metrics",
+    "tail_survival_error",
 ]

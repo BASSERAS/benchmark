@@ -1,4 +1,4 @@
-# Metrics — A1 to A15
+# Metrics — A1 to A16
 
 Evaluation suite for generative models of financial time series.
 All metrics compare **real paths** $X \sim P$ against **generated paths** $\tilde{X} \sim Q$.
@@ -7,7 +7,7 @@ All metrics compare **real paths** $X \sim P$ against **generated paths** $\tild
 
 | File | Purpose |
 |------|---------|
-| `metrics_np.py` | A1–A12, A15 — NumPy/SciPy implementations |
+| `metrics_np.py` | A1–A12, A15–A16 — NumPy/SciPy implementations |
 | `discriminative_score.py` | A13 — post-hoc GRU + MLP classifiers (PyTorch) |
 | `predictive_score.py` | A14 — GRU + MLP predictors, TSTR protocol (PyTorch) |
 | `compute_all.py` | Orchestrator: all metrics × N seeds → JSON + CSV + plots |
@@ -351,3 +351,28 @@ $$
 
 Complementary to the correlation: measures the absolute scale accuracy of the reproduced
 volatility process. **Perfect: 0. Direction: ↓**
+
+---
+
+## A16 — Tail Survival Error · *RMS of survival probability difference*
+
+For each tail quantile level $\alpha \in \{0.90, 0.95, 0.99\}$:
+
+- $q_\alpha$ = $\alpha$-quantile of real absolute returns $|r_t|$
+- $\text{surv}_{\text{real}}(\alpha) = P_{\text{real}}(|r| > q_\alpha)$ (by construction $\approx 1 - \alpha$)
+- $\text{surv}_{\text{gen}}(\alpha) = P_{\text{gen}}(|r| > q_\alpha)$
+
+$$
+\text{TSE}(P, Q)
+= \sqrt{
+  \frac{1}{|\mathcal{A}|}
+  \sum_{\alpha \in \mathcal{A}}
+  \left( \text{surv}_{\text{real}}(\alpha) - \text{surv}_{\text{gen}}(\alpha) \right)^2
+}
+\quad \mathcal{A} = \{0.90,\, 0.95,\, 0.99\}
+$$
+
+Tests whether the generator reproduces the **fat tail** of the return distribution at the
+90th, 95th, and 99th percentile levels.
+A score of 0 means survival probabilities match exactly at all three quantile levels.
+**Perfect: 0. Direction: ↓**

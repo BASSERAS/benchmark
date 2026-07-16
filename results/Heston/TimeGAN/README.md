@@ -5,7 +5,7 @@ Parameters: μ=0.05, κ=2.0, θ=0.04, ξ=0.3, ρ=−0.7, S₀=100, v₀=0.04, dt
 
 **Model:** PyTorch TimeGAN, 20 k steps (5 k embed + 5 k supervised + 10 k adversarial), 2×A100 80 GB.
 
-**Convention:** lower is better for all metrics **except A15 Corr (↑)**.
+**Convention:** lower is better for all metrics **except A15 Corr (↑)**. A16 ↓.
 
 ---
 
@@ -31,6 +31,7 @@ Parameters: μ=0.05, κ=2.0, θ=0.04, ξ=0.3, ρ=−0.7, S₀=100, v₀=0.04, dt
 | A14 | Predictive Score MLP (TSTR) | 0.0090 ± 0.0005 | 0.0090 | 0.0087 | 0.0090 | 0.0084 | 0.0099 | baseline |
 | A15 | Sigma Corr ↑                | 0.0031 ± 0.0101 | 0.0008 | 0.0079 | −0.010 | −0.003 | 0.0196 | **1** |
 | A15 | Sigma RMSE                  | 0.9659 ± 0.1237 | 0.9279 | 0.8392 | 1.0714 | 1.1474 | 0.8436 | **0** |
+| A16 | Tail Survival Error         | 0.0216 ± 0.0111 | 0.0209 | 0.0397 | 0.0107 | 0.0097 | 0.0270 | **0** |
 
 ---
 

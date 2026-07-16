@@ -30,6 +30,7 @@ to the TF1 reference implementation.
 | A14 | Pred Score MLP (TSTR) | Predictive | ↓ | 0.0090 ± 0.0005 | 0.0090 | 0.0087 | 0.0090 | 0.0084 | 0.0099 | baseline |
 | A15 | Sigma Corr | Heston-specific | ↑ | 0.0031 ± 0.0101 | 0.0008 | 0.0079 | -0.0100 | -0.0029 | 0.0196 | **1** |
 | A15 | Sigma RMSE | Heston-specific | ↓ | 0.9659 ± 0.1237 | 0.9279 | 0.8392 | 1.0714 | 1.1474 | 0.8436 | 0 |
+| A16 | Tail Survival Error | Fat-tail | ↓ | 0.0216 ± 0.0111 | 0.0209 | 0.0397 | 0.0107 | 0.0097 | 0.0270 | **0** |
 
 > **A13 discriminative score**: `|accuracy − 0.5|` on a held-out test set (80/20 split).
 > 0 = generator is indistinguishable from real data. 0.5 = perfect separation (bad generator).
@@ -38,6 +39,18 @@ to the TF1 reference implementation.
 >
 > **A15 sigma**: Heston-specific. Compares inferred instantaneous vol from generated paths
 > against the true variance paths.
+>
+> **A16 tail survival error**: RMS of survival probability difference at quantiles {0.90, 0.95, 0.99}.
+> Tests fat-tail reproduction. 0 = perfect. Lower is better.
+
+---
+
+## Stylised Facts Diagnostic (Heston vs TimeGAN, seed 0)
+
+Eight-panel comparison matching the Murex paper (Fig. 1 style): sample paths, return distribution,
+QQ plot, ACF of |returns|, ACF of squared returns, rolling vol histogram (window=5), tail survival (log-log).
+
+![Heston Diagnostics](../../results/Heston/TimeGAN/plots/heston_diagnostics.png)
 
 ---
 
