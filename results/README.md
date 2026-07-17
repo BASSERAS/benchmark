@@ -60,31 +60,31 @@ SBTS is a **non-parametric kernel method** with no neural network and no trainin
 "Perfect recovery" = two independent halves of the real dataset evaluated against each other
 (i.e., what you'd see if the generator perfectly recovered the true distribution).
 
-| Metric | Perfect Recovery | SBTS | TimeGAN | Winner |
-|--------|:---------------:|:----:|:-------:|:------:|
-| A1  Path MMD² ↓      | 0.0018 ± 0.0002 | **0.0110 ± 0.0016** | 0.0180 ± 0.0147 | **SBTS** |
-| A2  Terminal MMD² ↓  | 0.0016 ± 0.0002 | **0.0090 ± 0.0035** | 0.0296 ± 0.0235 | **SBTS** |
-| A3  Increment MMD² ↓ | 0.0008 ± 0.0000 | **0.0071 ± 0.0005** | 0.0078 ± 0.0037 | **SBTS** |
-| A4  Volatility MMD ↓ | 0.0082 ± 0.0006 | **0.3125 ± 0.0176** | 0.3798 ± 0.2351 | **SBTS** |
-| A5  Terminal SWD ↓   | 0.763 ± 0.117   | 3.465 ± 0.588 | **2.850 ± 1.079** | **TimeGAN** |
-| A6  Path SWD ↓       | 0.554 ± 0.062   | 2.497 ± 0.288 | **1.501 ± 0.583** | **TimeGAN** |
-| A7  Cov Error (%) ↓  | 4.76 ± 2.50     | 145.35 ± 4.89 | **17.75 ± 6.71** | **TimeGAN** |
-| A8  Mean RMSE ↓      | 0.140 ± 0.130   | 1.301 ± 0.278 | **0.739 ± 0.455** | **TimeGAN** |
-| A9  Std Error ↓      | 0.0048 ± 0.0031 | 0.249 ± 0.002 | **0.152 ± 0.089** | **TimeGAN** |
-| A10 Kurtosis Error ↓ | 0.017 ± 0.016   | **0.119 ± 0.006** | 2.955 ± 2.099 | **SBTS** |
-| A11 ACF Abs Error ↓  | 0.0017 ± 0.0007 | **0.057 ± 0.001** | 0.134 ± 0.073 | **SBTS** |
-| A12 ACF Sq Error ↓   | 0.0015 ± 0.0006 | **0.062 ± 0.001** | 0.092 ± 0.039 | **SBTS** |
-| A13 Disc GRU ↓       | 0.0042 ± 0.0048 | **0.029 ± 0.028** | 0.050 ± 0.034 | **SBTS** |
-| A13 Disc MLP ↓       | 0.0112 ± 0.0079 | **0.071 ± 0.008** | 0.151 ± 0.142 | **SBTS** |
-| A14 Pred GRU ↓       | 0.0085 ± 0.0001 | 0.0091 ± 0.0000 | **0.0087 ± 0.0002** | ≈ tie |
-| A14 Pred MLP ↓       | 0.0087 ± 0.0002 | 0.0093 ± 0.0006 | **0.0090 ± 0.0005** | ≈ tie |
-| A15 Sigma Corr ↑     | 0.614 ± 0.002 ⁽¹⁾ | **0.0046 ± 0.0019** | 0.0021 ± 0.0090 | ≈ tie |
-| A15 Sigma RMSE ↓     | 0.065 ± 0.000 ⁽²⁾ | **0.096 ± 0.000** | 0.118 ± 0.018 | **SBTS** |
-| PS-MC CRPS H=32 ↓    | — | **2.761 ± 0.004** | 3.087 ± 0.340 | **SBTS** |
-| PS-MC CRPS H=64 ↓    | — | **3.900 ± 0.008** | 4.372 ± 0.431 | **SBTS** |
-| A16 Tail Survival ↓  | 0.0009 ± 0.0005 | 0.0367 ± 0.0002 | **0.0216 ± 0.0111** | **TimeGAN** |
-| Training (8 192×128) | — | — (no training) | **~6.5 min / A100** | **SBTS** |
-| Generation (8 192×128) | — | ~6.3 min / 64 CPUs | **<1 s / A100** | **TimeGAN** |
+| Metric | Perfect Recovery | SBTS | TimeGAN | Winner | RW (GBM) |
+|--------|:---------------:|:----:|:-------:|:------:|:--------:|
+| A1  Path MMD² ↓ | 0.0018 ± 0.0002 | 0.0110 ± 0.0016 | 0.0180 ± 0.0147 | **RW** | **0.0049 ± 0.0018** |
+| A2  Terminal MMD² ↓ | 0.0016 ± 0.0002 | 0.0090 ± 0.0035 | 0.0296 ± 0.0235 | **RW** | **0.0053 ± 0.0022** |
+| A3  Increment MMD² ↓ | 0.0008 ± 0.0000 | 0.0071 ± 0.0005 | 0.0078 ± 0.0037 | **RW** | **0.0014 ± 0.0000** |
+| A4  Volatility MMD ↓ | 0.0082 ± 0.0006 | 0.3125 ± 0.0176 | 0.3798 ± 0.2351 | **RW** | **0.054 ± 0.006** |
+| A5  Terminal SWD ↓ | 0.763 ± 0.117 | 3.465 ± 0.588 | 2.850 ± 1.079 | **RW** | **1.865 ± 0.364** |
+| A6  Path SWD ↓ | 0.554 ± 0.062 | 2.497 ± 0.288 | 1.501 ± 0.583 | **RW** | **1.163 ± 0.254** |
+| A7  Cov Error (%) ↓ | 4.76 ± 2.50 | 145.35 ± 4.89 | 17.75 ± 6.71 | **RW** | **17.47 ± 3.01** |
+| A8  Mean RMSE ↓ | 0.140 ± 0.130 | 1.301 ± 0.278 | 0.739 ± 0.455 | **RW** | **0.090 ± 0.059** |
+| A9  Std Error ↓ | 0.0048 ± 0.0031 | 0.249 ± 0.002 | 0.152 ± 0.089 | **RW** | **0.049 ± 0.001** |
+| A10 Kurtosis Error ↓ | 0.017 ± 0.016 | **0.119 ± 0.006** | 2.955 ± 2.099 | **SBTS** | 0.482 ± 0.008 |
+| A11 ACF Abs Error ↓ | 0.0017 ± 0.0007 | 0.057 ± 0.001 | 0.134 ± 0.073 | **RW** | **0.033 ± 0.000** |
+| A12 ACF Sq Error ↓ | 0.0015 ± 0.0006 | 0.062 ± 0.001 | 0.092 ± 0.039 | **RW** | **0.029 ± 0.000** |
+| A13 Disc GRU ↓ | 0.0042 ± 0.0048 | 0.029 ± 0.028 | 0.050 ± 0.034 | **RW** | **0.010 ± 0.008** |
+| A13 Disc MLP ↓ | 0.0112 ± 0.0079 | 0.071 ± 0.008 | 0.151 ± 0.142 | **RW** | **0.021 ± 0.018** |
+| A14 Pred GRU ↓ | 0.0085 ± 0.0001 | 0.0091 ± 0.0000 | 0.0087 ± 0.0002 | **RW** | **0.0083 ± 0.0000** |
+| A14 Pred MLP ↓ | 0.0087 ± 0.0002 | 0.0093 ± 0.0006 | 0.0090 ± 0.0005 | **RW** | **0.0087 ± 0.0001** |
+| A15 Sigma Corr ↑ | 0.614 ± 0.002 ⁽¹⁾ | **0.0046 ± 0.0019** | 0.0021 ± 0.0090 | **SBTS** | −0.003 ± 0.004 |
+| A15 Sigma RMSE ↓ | 0.065 ± 0.000 ⁽²⁾ | 0.096 ± 0.000 | 0.118 ± 0.018 | **RW** | **0.085 ± 0.000** |
+| PS-MC CRPS H=32 ↓ | — | **2.761 ± 0.004** | 3.087 ± 0.340 | **SBTS** | — |
+| PS-MC CRPS H=64 ↓ | — | **3.900 ± 0.008** | 4.372 ± 0.431 | **SBTS** | — |
+| A16 Tail Survival ↓ | 0.0009 ± 0.0005 | 0.0367 ± 0.0002 | 0.0216 ± 0.0111 | **RW** | **0.0075 ± 0.0003** |
+| Training (8 192×128) | — | — (no training) | **~6.5 min / A100** | **SBTS** | <1 s / any CPU |
+| Generation (8 192×128) | — | ~6.3 min / 64 CPUs | **<1 s / A100** | **TimeGAN** | <1 s / any CPU |
 
 > ⁽¹⁾ **A15 Sigma Corr floor = 0.614** (not 1.0): 5-step rolling QV is a noisy estimator
 > of instantaneous variance vₜ. Even for real Heston paths vs their own true variance, Pearson ρ ≈ 0.614.
@@ -94,7 +94,7 @@ SBTS is a **non-parametric kernel method** with no neural network and no trainin
 > baseline even for real paths. Both SBTS (0.096) and TimeGAN (0.118) correctly score **above** the floor,
 > confirming the metric is well-calibrated. SBTS wins (lower RMSE = less vol mis-estimation).
 
-**SBTS wins 12/21, TimeGAN wins 6/21, 3 ties.**
+**RW wins 17/21, SBTS wins 4/21, TimeGAN wins 0/21.** (RW = calibrated GBM baseline)
 
 **Interpretation:**
 - **SBTS wins on distribution matching** (A1–A4, A10–A12): the kernel method matches marginal and return distributions. MMD and ACF errors are consistently lower.

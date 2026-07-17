@@ -1,0 +1,11 @@
+{
+  "seed": 3,
+  "method": "RW",
+  "shape": [
+    8192,
+    128
+  ],
+  "mu_dt": 0.0001321280136456386,
+  "sig_dt": 0.012646663439921173,
+  "description": "Calibrated GBM (i.i.d. Gaussian log-returns)"
+}
