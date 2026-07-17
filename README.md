@@ -68,6 +68,36 @@ Detailed per-seed results and plots:
 
 ---
 
+## Timing — Training & Generation
+
+Measured on this cluster (8 192 Heston paths, seq\_len=128).
+
+### SBTS — Generation time vs number of workers (no training phase)
+
+| Workers | Time / seed | Time / path | Note |
+|--------:|:-----------:|:-----------:|------|
+| 8 | ~49 min | 2.9 s | undersized |
+| 16 | ~25 min | 2.9 s | (seed 0 observed: 23.4 min) |
+| 32 | ~12 min | 2.9 s | |
+| **64** | **~6.3 min** | **2.9 s** | seeds 1–4 observed: 370–384 s |
+| 128 | ~3.1 min | 2.9 s | diminishing returns past 64 |
+
+Scaling rule: `total_time ≈ (8 192 / n_workers) × 2.9 s`  
+Paper reference: 548 s for 1 000 paths at T=252 on 12 cores → ~6.6 s/path (we have T=128, 64 workers).
+
+### TimeGAN — Training time per GPU (generation < 1 s)
+
+| Seeds | GPU | Training time | Note |
+|-------|-----|:-------------:|------|
+| 0, 1 | A100 80 GB | ~8 min (480–486 s) | first batch, slight overhead |
+| 2, 3, 4 | A100 80 GB | ~5.5 min (323–335 s) | |
+| **Average** | | **~6.5 min/seed** | |
+
+2 seeds run in parallel (GPU 0 + GPU 3) → 3 batches × ~7 min ≈ **~22 min total** for 5 seeds.  
+Generation after training: < 1 s (single GRU forward pass).
+
+---
+
 ## Metrics (A1–A15)
 
 | ID | Name | Lower = better | Perfect score |
