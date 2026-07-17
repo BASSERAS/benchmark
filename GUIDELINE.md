@@ -731,12 +731,12 @@ SBTS/
 `scikit_learn==1.2.2`, `pandas==1.5.3`, `seaborn==0.12.2`.
 SBTS states Python 3.11. Check compatibility with gpu-venv before starting.
 
-**Open questions — Theo must answer before implementation begins:**
+**All decisions confirmed (2026-07-17):**
 
-| # | Question | Why it blocks |
-|---|----------|--------------|
-| SB-Q1 | Use `sbts_uni.py` (non-Markovian) or `sbts_uni_markovian.py` (Markovian)? | Heston price path is non-Markovian (hidden vol), but Markovian may train faster with similar quality |
-| SB-Q2 | Does SBTS output price paths or log-return paths? | Determines denormalisation step before saving generated_paths_8192x128.npy |
-| SB-Q3 | Is our `gpu-venv` compatible with `torch==2.2.2`? Or do we need a separate `sbts-venv`? | Blocks training setup |
-| SB-Q4 | What are the paper's canonical hyperparameters for the SB model on a 128-step sequence? | The notebook uses their own datasets; we need to adapt to seq_len=128 |
-| SB-Q5 | Does the SB training have an exploitable loss signal to log every 100 steps? | Required for `losses/seed_{i}_losses.csv` |
+| # | Decision | Detail |
+|---|----------|--------|
+| SB-Q1 | **`sbts_uni_markovian.py`, k=1** | Paper explicitly uses k=1 for Heston (Appendix C). Heston is truly Markovian: given (Sₜ, vₜ) the future is independent of the past. Full non-Markovian variant produces null kernel weights on long series. |
+| SB-Q2 | **1D price paths, same format as TimeGAN** | SBTS internally operates on scaled log-returns R̃ = R × √Δt / σ(R). After generation, invert: R_gen = R̃_gen × σ(R) / √Δt, then S_gen[:,t+1] = S_gen[:,t] × exp(R_gen[:,t]) with S_gen[:,0] = S_real[:,0] ≈ 100. Save price paths (8192×128, float64). All metrics and plots in price space. |
+| SB-Q3 | **CPU + Numba for generation; GPU for A13/A14 metrics only** | SBTS has no neural network. Paper used CPU+Numba (12 cores, 548s for 1000 samples). Run 5 seeds in parallel via multiprocessing (5 workers, ≤16 cores total). GPUs 0+3 only for disc/pred scores. Check Numba compatibility with gpu-venv; if conflict, install numba==0.56.4 in gpu-venv or create sbts-venv. |
+| SB-Q4 | **h=0.4, k=1, N^π=200, Δt=1/250** | From Appendix C Table 4: h=0.4 for Heston T=100, Δt=1/252. We start with h=0.4 and run CV bandwidth selection (Section 3 of paper) for our T=128, M=8192. Grid H = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6} — pick h* minimising MSEₕ. |
+| SB-Q5 | **No loss CSV — log bandwidth CV curve instead** | SBTS is pure kernel density estimation — no parameters, no gradient, no training loop. Instead save: `losses/bandwidth_cv.csv` (h, MSEₕ per seed) and `losses/generation_time.csv` (seed, n_samples, elapsed_sec). Plot MSEₕ vs h in place of loss convergence plot. |
