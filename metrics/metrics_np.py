@@ -14,10 +14,10 @@ A10  Return Kurtosis Error
 A11  ACF Error (absolute returns)
 A12  ACF Error (squared returns)
 A15  Teacher-Sigma Correlation + RMSE  (Heston-specific)
-A16  Tail Survival Error (RMS + per-quantile q90/q95/q99)
-A17  Oracle Mean
-A18  Agent Mean
-A19  Oracle-Agent Correlation
+A16  Tail Survival Error on log-returns (RMS + per-quantile q90/q95/q99)
+A17  Oracle MAE  (AR(5) trained on real data, tested on real data)
+A18  Agent MAE   (AR(5) trained on synthetic data, tested on real data)
+A19  Oracle-Agent Prediction Correlation
 A20  Realized Volatility Law Loss
 
 A13 and A14 are implemented separately in discriminative_score.py
@@ -383,10 +383,10 @@ def tail_survival_error(
     Y: np.ndarray,
     quantiles: Tuple[float, ...] = (0.90, 0.95, 0.99),
 ) -> Tuple[float, float, float, float]:
-    """A16. Tail Survival Error — RMS of survival probability difference.
+    """A16. Tail Survival Error — RMS of survival probability difference (on log-returns).
 
     For each quantile alpha in {0.90, 0.95, 0.99}:
-      - q_alpha = alpha-quantile of real |returns|
+      - q_alpha = alpha-quantile of real |log-returns|
       - real_surv(alpha) = P_real(|r| > q_alpha)   (by definition ~= 1-alpha)
       - fake_surv(alpha) = P_gen (|r| > q_alpha)
 
@@ -404,8 +404,9 @@ def tail_survival_error(
     Y : ndarray (N, T, d)  — generated paths
     quantiles : tail quantile levels (default: 0.90, 0.95, 0.99)
     """
-    real_abs_r = np.abs(np.diff(X, axis=1)).ravel()
-    fake_abs_r = np.abs(np.diff(Y, axis=1)).ravel()
+    # log-returns (consistent with A11/A12 — price increments mix scale with tail)
+    real_abs_r = np.abs(np.diff(np.log(np.maximum(X, 1e-10)), axis=1)).ravel()
+    fake_abs_r = np.abs(np.diff(np.log(np.maximum(Y, 1e-10)), axis=1)).ravel()
     thresholds = np.quantile(real_abs_r, quantiles)
     real_surv = np.array([(real_abs_r > t).mean() for t in thresholds])
     fake_surv = np.array([(fake_abs_r > t).mean() for t in thresholds])
@@ -473,9 +474,9 @@ def oracle_metrics(
 
     Returns
     -------
-    oracle_mean : mean of oracle predictions on test set
-    agent_mean  : mean of agent predictions on test set
-    correlation : Pearson r between oracle and agent predictions
+    oracle_mae  : MAE of oracle predictor (AR on real) on real held-out test set
+    agent_mae   : MAE of agent predictor (AR on synthetic) on real held-out test set
+    correlation : Pearson r between oracle and agent predictions on test set
     """
     rng = np.random.default_rng(seed)
 
@@ -514,22 +515,24 @@ def oracle_metrics(
     # Oracle: train OLS on real data, predict on held-out real features
     X_train_r = X_real_all[idx_train]
     y_train_r = y_real_all[idx_train]
+    y_test_r  = y_real_all[idx_test]
     X_test = X_real_all[idx_test]
 
     from numpy.linalg import lstsq
     coeff_r = lstsq(X_train_r, y_train_r, rcond=1e-8)[0]
     oracle_pred = X_test @ coeff_r
-    oracle_mean = float(np.mean(oracle_pred))
+    oracle_mae = float(np.mean(np.abs(oracle_pred - y_test_r)))
 
-    # Agent: train OLS on generated data, predict on same test features
+    # Agent: train OLS on generated data, predict on REAL test features
+    # TSTR: Train on Synthetic, Test on Real
     X_gen_all, y_gen_all = make_ar_stacked(r_gen, ar_order)
     X_train_g = X_gen_all[idx_train]
     y_train_g = y_gen_all[idx_train]
     coeff_g = lstsq(X_train_g, y_train_g, rcond=1e-8)[0]
-    agent_pred = X_test @ coeff_g
-    agent_mean = float(np.mean(agent_pred))
+    agent_pred = X_test @ coeff_g   # predict on REAL test inputs
+    agent_mae = float(np.mean(np.abs(agent_pred - y_test_r)))
 
-    # Pearson correlation between oracle and agent predictions
+    # Pearson correlation between oracle and agent predictions on the same test inputs
     with np.errstate(invalid='ignore'):
         corr = float(np.corrcoef(oracle_pred, agent_pred)[0, 1]) if len(oracle_pred) > 2 else 0.0
     if np.isnan(corr):
@@ -537,7 +540,7 @@ def oracle_metrics(
         _w.warn("oracle_metrics: correlation is NaN (constant input or insufficient variance)")
         corr = 0.0
 
-    return oracle_mean, agent_mean, corr
+    return oracle_mae, agent_mae, corr
 
 
 __all__ = [

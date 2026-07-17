@@ -8,40 +8,72 @@ to the TF1 reference implementation.
 
 ---
 
-## Metrics — mean ± std across 5 seeds
+## Metrics A1–A20 — mean ± std across 5 seeds
 
-| ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect |
-|----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------|
-| A1 | Path MMD² | Distribution | ↓ | 0.0180 ± 0.0147 | 0.0095 | 0.0035 | 0.0345 | 0.0054 | 0.0373 | 0 |
-| A2 | Terminal MMD² | Distribution | ↓ | 0.0296 ± 0.0234 | 0.0202 | 0.0086 | 0.0646 | 0.0051 | 0.0494 | 0 |
-| A3 | Increment MMD² | Distribution | ↓ | 0.0078 ± 0.0037 | 0.0054 | 0.0076 | 0.0117 | 0.0023 | 0.0121 | 0 |
-| A4 | Volatility MMD | Distribution | ↓ | 0.3798 ± 0.2351 | 0.1746 | 0.3673 | 0.6468 | 0.0709 | 0.6394 | 0 |
-| A5 | Terminal SWD | Distribution | ↓ | 2.8497 ± 1.0789 | 2.7650 | 1.8201 | 4.3392 | 1.5522 | 3.7720 | 0 |
-| A6 | Path SWD | Distribution | ↓ | 1.5006 ± 0.5834 | 1.2791 | 0.8390 | 2.3493 | 1.0207 | 2.0149 | 0 |
-| A7 | Cov Error (%) | Statistics | ↓ | 17.7510 ± 6.7074 | 8.8300 | 18.7648 | 14.8070 | 29.3730 | 16.9801 | 0 |
-| A8 | Mean RMSE | Statistics | ↓ | 0.7385 ± 0.4552 | 0.8320 | 0.3890 | 1.0560 | 1.3412 | 0.0743 | 0 |
-| A9 | Std Error | Statistics | ↓ | 0.1519 ± 0.0888 | 0.1519 | 0.2379 | 0.0302 | 0.0788 | 0.2608 | 0 |
-| A10 | Kurtosis Error | Statistics | ↓ | 2.9545 ± 2.0988 | 0.0148 | 5.3599 | 3.7677 | 0.9581 | 4.6722 | 0 |
-| A11 | ACF Abs Error | Temporal | ↓ | 0.1339 ± 0.0728 | 0.0821 | 0.1065 | 0.2184 | 0.0421 | 0.2203 | 0 |
-| A12 | ACF Sq Error | Temporal | ↓ | 0.0919 ± 0.0386 | 0.0588 | 0.0833 | 0.1318 | 0.0445 | 0.1412 | 0 |
-| A13 | Disc Score GRU | Adversarial | ↓ | 0.0499 ± 0.0336 | 0.0468 | 0.0224 | 0.1088 | 0.0133 | 0.0581 | **0** |
-| A13 | Disc Score MLP | Adversarial | ↓ | 0.1508 ± 0.1415 | 0.0368 | 0.0352 | 0.2901 | 0.0374 | 0.3544 | **0** |
-| A14 | Pred Score GRU (TSTR) | Predictive | ↓ | 0.0087 ± 0.0002 | 0.0085 | 0.0090 | 0.0085 | 0.0088 | 0.0085 | baseline |
-| A14 | Pred Score MLP (TSTR) | Predictive | ↓ | 0.0090 ± 0.0005 | 0.0090 | 0.0087 | 0.0090 | 0.0084 | 0.0099 | baseline |
-| A15 | Sigma Corr | Heston-specific | ↑ | 0.0031 ± 0.0101 | 0.0008 | 0.0079 | -0.0100 | -0.0029 | 0.0196 | **1** |
-| A15 | Sigma RMSE | Heston-specific | ↓ | 0.9659 ± 0.1237 | 0.9279 | 0.8392 | 1.0714 | 1.1474 | 0.8436 | 0 |
-| A16 | Tail Survival Error | Fat-tail | ↓ | 0.0216 ± 0.0111 | 0.0209 | 0.0397 | 0.0107 | 0.0097 | 0.0270 | **0** |
+> All metrics on **log-returns** r_t = log(S_{t+1}/S_t). A11/A12/A13/A14/A16 were fixed from
+> price increments ΔS_t after validation against the ACF/tail-survival stylized-facts literature.
 
-> **A13 discriminative score**: `|accuracy − 0.5|` on a held-out test set (80/20 split).
-> 0 = generator is indistinguishable from real data. 0.5 = perfect separation (bad generator).
->
-> **A14 predictive score**: TSTR MAE — predictor trained on *synthetic*, evaluated on *real*.
->
-> **A15 sigma**: Heston-specific. Compares inferred instantaneous vol from generated paths
-> against the true variance paths.
->
-> **A16 tail survival error**: RMS of survival probability difference at quantiles {0.90, 0.95, 0.99}.
-> Tests fat-tail reproduction. 0 = perfect. Lower is better.
+| ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
+|----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|--------|
+| A1  | Path MMD²                       | Distribution  | ↓ | 0.0181 ± 0.0147 | 0.0093 | 0.0046 | 0.0322 | 0.0051 | 0.0393 | 0.0018 |
+| A2  | Terminal MMD²                   | Distribution  | ↓ | 0.0308 ± 0.0229 | 0.0256 | 0.0103 | 0.0681 | 0.0060 | 0.0439 | 0.0016 |
+| A3  | Increment MMD²                  | Distribution  | ↓ | 0.0077 ± 0.0039 | 0.0048 | 0.0070 | 0.0112 | 0.0023 | 0.0129 | 0.0008 |
+| A4  | Volatility MMD                  | Distribution  | ↓ | 0.3933 ± 0.2553 | 0.1700 | 0.3416 | 0.6572 | 0.0797 | 0.7179 | 0.0082 |
+| A5  | Terminal SWD                    | Distribution  | ↓ | 3.128 ± 0.923   | 2.951  | 2.058  | 4.531  | 2.310  | 3.793  | 0.763  |
+| A6  | Path SWD                        | Distribution  | ↓ | 1.634 ± 0.576   | 1.279  | 0.970  | 2.462  | 1.289  | 2.171  | 0.554  |
+| A7  | Cov Error (%)                   | Statistics    | ↓ | 17.75 ± 6.71    | 8.83   | 18.76  | 14.81  | 29.37  | 16.98  | 4.76   |
+| A8  | Mean RMSE                       | Statistics    | ↓ | 0.739 ± 0.455   | 0.832  | 0.389  | 1.056  | 1.341  | 0.074  | 0.140  |
+| A9  | Return Std Error                | Statistics    | ↓ | 0.152 ± 0.089   | 0.152  | 0.238  | 0.030  | 0.079  | 0.261  | 0.0048 |
+| A10 | Kurtosis Error                  | Statistics    | ↓ | 2.955 ± 2.099   | 0.015  | 5.360  | 3.768  | 0.958  | 4.672  | 0.017  |
+| A11 | ACF Error \|log-returns\|       | Temporal      | ↓ | 0.125 ± 0.067   | 0.065  | 0.105  | 0.201  | 0.048  | 0.208  | 0.0017 |
+| A12 | ACF Error log-returns²          | Temporal      | ↓ | 0.084 ± 0.035   | 0.045  | 0.079  | 0.117  | 0.048  | 0.130  | 0.0014 |
+| A13 | Disc Score GRU (log-ret.)       | Adversarial   | ↓ | 0.010 ± 0.008   | 0.004  | 0.012  | 0.002  | 0.025  | 0.006  | 0.012  |
+| A13 | Disc Score MLP (log-ret.)       | Adversarial   | ↓ | 0.092 ± 0.046   | 0.128  | 0.005  | 0.083  | 0.118  | 0.126  | 0.008  |
+| A14 | Pred Score GRU — TSTR           | Predictive    | ↓ | 0.057 ± 0.001   | 0.055  | 0.059  | 0.058  | 0.056  | 0.057  | 0.056  |
+| A14 | Pred Score MLP — TSTR           | Predictive    | ↓ | 0.057 ± 0.002   | 0.056  | 0.059  | 0.057  | 0.056  | 0.059  | 0.057  |
+| A15 | Sigma Corr (vol recovery)       | Heston-specif.| ↑ | 0.002 ± 0.009   | 0.001  | 0.007  | −0.008 | −0.006 | 0.017  | 0.614  |
+| A15 | Sigma RMSE                      | Heston-specif.| ↓ | 0.118 ± 0.018   | 0.102  | 0.111  | 0.148  | 0.100  | 0.131  | 0.065  |
+| A16 | Tail Survival (log-ret.)        | Fat-tail      | ↓ | 0.023 ± 0.011   | 0.030  | 0.037  | 0.008  | 0.014  | 0.028  | ≈0     |
+| A17 | Oracle MAE — AR(5) on real      | Predictive    | ↓ | 0.0097 ± 0.0000 | 0.0097 | 0.0097 | 0.0097 | 0.0097 | 0.0097 | ≈0.0097|
+| A18 | Agent MAE — AR(5) TSTR          | Predictive    | ↓ | 0.0101 ± 0.0003 | 0.0098 | 0.0106 | 0.0100 | 0.0100 | 0.0099 | =A17   |
+| A19 | Oracle-Agent Corr               | Predictive    | ↑ | −0.33 ± 0.31    | −0.77  | −0.04  | −0.21  | −0.03  | −0.61  | ≈1     |
+| A20 | RV Law Loss (W₁ on ann. RV)     | Distribution  | ↓ | 1.551 ± 0.379   | 1.491  | 1.754  | 1.827  | 0.837  | 1.847  | ≈0     |
+
+> **A11–A12**: ACF on log-returns r_t = log(S_{t+1}/S_t). ARCH signal: |r_t| has positive lag-1 ACF ~0.05 in Heston.
+> **A13**: Discriminative classifier trained on log-returns (not raw prices). Score = |accuracy − 0.5|; 0 = indistinguishable.
+> **A14**: TSTR MAE; all methods cluster near 0.056–0.059 (irreducible log-return noise floor). Differences are small.
+> **A16**: Tail survival on |log-returns|. Quantiles {0.90, 0.95, 0.99} of real used as thresholds.
+> **A17–A19**: OLS AR(5) oracle/agent protocol on log-returns. A19 negative = Heston has near-zero autocorrelation, so predictions are white noise — metric is near floor.
+> **A20**: W₁(RV_real, RV_gen), RV_i = Σ_t r²_{i,t}/dt (ann. realized variance per path). Ref: Barndorff-Nielsen & Shephard (2002).
+
+---
+
+## Stylized Metrics B1–B14 — mean ± std across 5 seeds
+
+> One scalar per diagnostic plot panel. Extracted from the same data as the 8-panel PNG.
+> All ↓ lower is better.
+
+| ID  | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
+|-----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------------|
+| B1  | Mean Path RMSE        | Distribution | ↓ | 0.5289 ± 0.2624 | 0.5327 | 0.2184 | 0.8536 | 0.7866 | 0.2533 | 0.1511 ± 0.0708 |
+| B2  | Cross-Sect. Vol RMSE  | Distribution | ↓ | 0.3534 ± 0.1253 | 0.2220 | 0.4752 | 0.2585 | 0.5320 | 0.2790 | 0.1355 ± 0.0735 |
+| B3  | KS on Log-returns     | Distribution | ↓ | 0.0848 ± 0.0374 | 0.0400 | 0.0627 | 0.1259 | 0.0628 | 0.1329 | 0.0018 ± 0.0009 |
+| B4  | Skewness Error        | Distribution | ↓ | 0.3404 ± 0.3344 | 0.0025 | 0.4473 | 0.0891 | 0.2252 | 0.9379 | 0.0060 ± 0.0048 |
+| B5  | QQ RMSE (300-pt)      | Distribution | ↓ | 0.0025 ± 0.0006 | 0.0019 | 0.0026 | 0.0028 | 0.0017 | 0.0035 | 0.0001 ± 0.0000 |
+| B6  | Tail QQ Error         | Fat-tail     | ↓ | 0.0034 ± 0.0015 | 0.0042 | 0.0054 | 0.0016 | 0.0017 | 0.0041 | 0.0001 ± 0.0001 |
+| B7  | ACF lag-1 |r| Err     | Temporal     | ↓ | 0.2282 ± 0.1042 | 0.1549 | 0.2137 | 0.3698 | 0.0847 | 0.3180 | 0.0018 ± 0.0016 |
+| B8  | ARCH Persistence Err  | Temporal     | ↓ | 0.0591 ± 0.0359 | 0.0272 | 0.0436 | 0.0895 | 0.0221 | 0.1130 | 0.0011 ± 0.0005 |
+| B9  | ACF lag-1 r² Err      | Temporal     | ↓ | 0.1732 ± 0.0631 | 0.1186 | 0.2016 | 0.2655 | 0.0881 | 0.1923 | 0.0017 ± 0.0014 |
+| B10 | GARCH Persistence Err | Temporal     | ↓ | 0.0328 ± 0.0151 | 0.0173 | 0.0265 | 0.0380 | 0.0224 | 0.0598 | 0.0010 ± 0.0006 |
+| B11 | Rolling Vol KS        | Volatility   | ↓ | 0.2540 ± 0.1093 | 0.1877 | 0.2705 | 0.3619 | 0.0805 | 0.3695 | 0.0046 ± 0.0024 |
+| B12 | Vol-of-Vol Error      | Volatility   | ↓ | 0.0009 ± 0.0009 | 0.0004 | 0.0003 | 0.0025 | 0.0003 | 0.0011 | 0.0000 ± 0.0000 |
+| B13 | Terminal Price KS     | Distribution | ↓ | 0.1121 ± 0.0556 | 0.1077 | 0.0573 | 0.2074 | 0.0574 | 0.1307 | 0.0145 ± 0.0043 |
+| B14 | Hill Tail Index Err   | Fat-tail     | ↓ | 36.88 ± 17.05   | 40.70  | 18.78  | 51.75  | 15.49  | 57.70  | 0.499 ± 0.610   |
+
+> **B7–B10** (ACF metrics): Heston true ACF(|r|, lag=1) ≈ +0.052, ACF(r², lag=1) ≈ +0.050.
+> TimeGAN often collapses to near-zero ACF, missing the ARCH signature (seeds 2, 4 worst).
+> **B14**: Hill estimator on terminal prices S_T. Large variance across seeds → noisy estimate.
+> This metric is informative across methods but noisy per seed. Use the mean.
 
 ---
 

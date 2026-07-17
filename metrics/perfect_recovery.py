@@ -11,7 +11,7 @@ Usage
 What it computes
 ----------------
 Split real data (8 192 paths) into two halves of 4 096, compute all A1-A20
-metrics treating one half as "real" and the other as "generated".
+metrics + B1-B14 stylized metrics treating one half as "real" and the other as "generated".
 Repeat N_RUNS=5 times with different random seeds.
 
 This gives the **empirical floor** for each metric — what a perfect generative
@@ -59,6 +59,7 @@ from metrics_np import (
 )
 from discriminative_score import compute_discriminative_score
 from predictive_score import compute_predictive_score
+from stylized_metrics import compute_stylized_metrics
 
 # ── constants ─────────────────────────────────────────────────────────────────
 N_RUNS = 5      # number of random half-splits
@@ -75,7 +76,7 @@ def compute_one_run(
     rng: np.random.Generator,
     run_idx: int = 0,  # seed for oracle_metrics
 ) -> dict:
-    """Compute all A1-A20 metrics between S_a ("real") and S_b ("generated")."""
+    """Compute all A1-A20 metrics + B1-B14 stylized metrics between S_a ("real") and S_b ("generated")."""
     N = len(S_a)
 
     # 3D view needed by most metric functions
@@ -131,14 +132,18 @@ def compute_one_run(
     out["A16_q95_error"]     = a16_q95
     out["A16_q99_error"]     = a16_q99
 
-    # A17-A19 Oracle metrics
+    # A17-A19 Oracle AR(5) TSTR
     o_mean, a_mean, oa_corr = oracle_metrics(real3, fake3, ar_order=5, seed=run_idx)
-    out["A17_oracle_mean"] = o_mean
-    out["A18_agent_mean"]  = a_mean
-    out["A19_oa_corr"]     = oa_corr
+    out["A17_oracle_mae"] = o_mean
+    out["A18_agent_mae"]  = a_mean
+    out["A19_oa_corr"]    = oa_corr
 
     # A20 RV Law Loss
     out["A20_rv_law_loss"] = rv_law_loss(real3, fake3)
+
+    # B1-B14 Stylized metrics
+    stylized = compute_stylized_metrics(S_a, S_b)
+    out.update(stylized)
 
     return out
 

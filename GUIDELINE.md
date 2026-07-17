@@ -234,10 +234,10 @@ Log every **100 steps** (or every epoch if step-based logging is not applicable)
 
 ---
 
-## 5. The 16 Metrics (A1–A16)
+## 5. The 20 Metrics (A1–A20) + 14 Stylized Metrics (B1–B14)
 
 **All metrics are pre-implemented** in `metrics/metrics_np.py`,
-`metrics/discriminative_score.py`, and `metrics/predictive_score.py`.
+`metrics/discriminative_score.py`, `metrics/predictive_score.py`, and `metrics/stylized_metrics.py`.
 Do NOT reimplement them.
 
 Run everything with:
@@ -278,9 +278,40 @@ cd metrics
 | A14 MLP | Predictive Score MLP (TSTR) | Predictive | ↓ | baseline |
 | A15 Corr | Teacher-Sigma Correlation | Heston-specific | ↑ | 1 |
 | A15 RMSE | Teacher-Sigma RMSE | Heston-specific | ↓ | 0 |
-| A16 | Tail Survival Error | Fat-tail | ↓ | 0 |
+| A16 | Tail Survival Error (log-returns) | Fat-tail | ↓ | 0 |
+| A17 | Oracle MAE — AR(5) on real data | Predictive (OLS) | ↓ | 0 |
+| A18 | Agent MAE — AR(5) on synthetic, tested on real (TSTR) | Predictive (OLS) | ↓ | = A17 |
+| A19 | Oracle-Agent Correlation | Predictive (OLS) | ↑ | 1 |
+| A20 | RV Law Loss (W₁ on annualized realized variance) | Distribution | ↓ | 0 |
 
-Total: 19 numbers (some IDs have two variants).
+**A17–A19 (oracle AR(5) TSTR):** OLS AR(5) on log-returns. Oracle = trained on real; Agent = trained on
+synthetic, evaluated on real test inputs. A19 correlation close to 1 means synthetic has the same
+AR(5) temporal structure as real data. Reference: Esteban et al. (2017) TSTR protocol.
+
+**A20 (RV Law Loss):** W₁(RV_real, RV_gen) where RV_i = Σ_t r²_{i,t} / dt (annualized realized
+variance per path). Measures whether the cross-path distribution of realized variances matches.
+Reference: Barndorff-Nielsen & Shephard (2002).
+
+**B1–B14 (Stylized metrics from 8 diagnostic plots):**
+
+| ID | Name | Corresponds to plot | Direction | Reference |
+|----|------|--------------------|-----------|----|
+| B1 | Mean Path RMSE | Plots 1+2 (sample paths) | ↓ | Cont 2001 |
+| B2 | Cross-Sect. Vol RMSE | Plots 1+2 | ↓ | Hull & White 1987 |
+| B3 | KS Stat (log-returns) | Plot 3 (histogram) | ↓ | Massey 1951 |
+| B4 | Skewness Error | Plot 3 | ↓ | Harvey & Siddique 1999 |
+| B5 | QQ RMSE | Plot 4 (QQ plot) | ↓ | Wilk & Gnanadesikan 1968 |
+| B6 | Tail QQ Error | Plot 4 (5th/95th extremes) | ↓ | — |
+| B7 | ACF Lag-1 Error (\|r\|) | Plot 5 (ACF abs returns) | ↓ | Ding et al. 1993 |
+| B8 | ARCH Persistence Error | Plot 5 | ↓ | Engle 1982 |
+| B9 | ACF Lag-1 Error (r²) | Plot 6 (ACF sq returns) | ↓ | Bollerslev 1986 |
+| B10 | GARCH Persistence Error | Plot 6 | ↓ | Bollerslev 1986 |
+| B11 | Rolling Vol KS Stat | Plot 7 (vol histogram) | ↓ | Cont 2001 |
+| B12 | Vol-of-Vol Error | Plot 7 | ↓ | Hull & White 1987 |
+| B13 | Terminal Price KS Stat | Plot 8 (tail survival) | ↓ | Massey 1951 |
+| B14 | Tail Index Error (Hill) | Plot 8 | ↓ | Hill 1975 |
+
+Total A-metrics: 23 numbers. Total B-metrics: 14 numbers. **Grand total: 37 scalar metrics per seed.**
 
 ### 5.3 Output files
 
@@ -288,7 +319,7 @@ Total: 19 numbers (some IDs have two variants).
 
 | File | Contents |
 |------|---------|
-| `results/Heston/<Method>/seed_{i}_metrics.json` | All 19 metric values for seed i |
+| `results/Heston/<Method>/seed_{i}_metrics.json` | All 37 metric values for seed i (A1-A20 + B1-B14) |
 | `results/Heston/<Method>/metrics_summary.json` | Mean ± std across 5 seeds |
 | `results/Heston/<Method>/metrics_summary.csv` | Same, CSV format |
 | `results/Heston/<Method>/plots/disc_classifier_loss.png` | A13 BCE training loss, GRU + MLP, 5 seeds |

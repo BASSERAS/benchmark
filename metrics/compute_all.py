@@ -59,6 +59,7 @@ from metrics_np import (
 )
 from discriminative_score import compute_discriminative_score
 from predictive_score import compute_predictive_score
+from stylized_metrics import compute_stylized_metrics
 
 import matplotlib
 matplotlib.use("Agg")
@@ -178,17 +179,23 @@ def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray) -> dict:
     print(f"rms={a16_rms:.6f}  q90={a16_q90:.6f}  q95={a16_q95:.6f}  q99={a16_q99:.6f}")
 
     # A17-A19 Oracle metrics
-    print("  A17-A18 oracle predictions (AR(5) TSTR) ...", end=" ", flush=True)
+    print("  A17-A19 oracle AR(5) TSTR ...", end=" ", flush=True)
     o_mean, a_mean, oa_corr = oracle_metrics(real3, fake3, ar_order=5, seed=seed)
-    results["A17_oracle_mean"] = o_mean
-    results["A18_agent_mean"]  = a_mean
-    results["A19_oa_corr"]     = oa_corr
-    print(f"o={o_mean:.4f}  a={a_mean:.4f}  corr={oa_corr:.4f}")
+    results["A17_oracle_mae"] = o_mean
+    results["A18_agent_mae"]  = a_mean
+    results["A19_oa_corr"]    = oa_corr
+    print(f"oracle_mae={o_mean:.5f}  agent_mae={a_mean:.5f}  corr={oa_corr:.4f}")
 
     # A20 RV Law Loss
     print("  A20 RV law loss ...", end=" ", flush=True)
     results["A20_rv_law_loss"] = rv_law_loss(real3, fake3)
     print(f"{results['A20_rv_law_loss']:.6f}")
+
+    # B1-B14 Stylized metrics (from 8 diagnostic plots)
+    print("  B1-B14 stylized metrics ...", end=" ", flush=True)
+    stylized = compute_stylized_metrics(S, fake)
+    results.update(stylized)
+    print(f"B3_ks={stylized['B3_ks_logreturns']:.4f}  B7_acf1={stylized['B7_acf_lag1_abs']:.4f}  B13_ks={stylized['B13_terminal_ks']:.4f}")
 
     results["compute_time_sec"] = round(time.perf_counter() - t0, 2)
     print(f"  Done in {results['compute_time_sec']:.1f}s")
