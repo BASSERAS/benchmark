@@ -23,10 +23,10 @@ Cross-method comparison on 8 192 Heston price paths (seq\_len=128).
 | A6  Path SWD ↓ | 0.554 ± 0.062 | 2.497 ± 0.288 | 1.501 ± 0.583 | **RW** | **1.163 ± 0.254** |
 | A7  Cov Error (%) ↓ | 4.76 ± 2.50 | 145.35 ± 4.89 | 17.75 ± 6.71 | **RW** | **17.47 ± 3.01** |
 | A8  Mean RMSE ↓ | 0.140 ± 0.130 | 1.301 ± 0.278 | 0.739 ± 0.455 | **RW** | **0.090 ± 0.059** |
-| A9  Std Error ↓ | 0.0048 ± 0.0031 | 0.249 ± 0.002 | 0.152 ± 0.089 | **RW** | **0.049 ± 0.001** |
-| A10 Kurtosis Error ↓ | 0.017 ± 0.016 | **0.119 ± 0.006** | 2.955 ± 2.099 | **SBTS** | 0.482 ± 0.008 |
-| A11 ACF Abs Error ↓ | 0.0017 ± 0.0006 | 0.060 ± 0.000 | 0.125 ± 0.067 | **RW** | **0.049 ± 0.000** |
-| A12 ACF Sq Error ↓ | 0.0014 ± 0.0006 | 0.062 ± 0.001 | 0.084 ± 0.035 | **RW** | **0.044 ± 0.000** |
+| A9  Return std. error ↓ | 0.0048 ± 0.0031 | 0.249 ± 0.002 | 0.152 ± 0.089 | **RW** | **0.049 ± 0.001** |
+| A10 Return Kurtosis (target κ, model κ) ↓ | 0.017 ± 0.016 | **0.119 ± 0.006** | 2.955 ± 2.099 | **SBTS** | 0.482 ± 0.008 |
+| A11 ACF |r| error (across lags) ↓ | 0.0017 ± 0.0006 | 0.060 ± 0.000 | 0.125 ± 0.067 | **RW** | **0.049 ± 0.000** |
+| A12 ACF r² error (across lags) ↓ | 0.0014 ± 0.0006 | 0.062 ± 0.001 | 0.084 ± 0.035 | **RW** | **0.044 ± 0.000** |
 | A13 Disc Score GRU ↓ | 0.0042 ± 0.0048 | 0.029 ± 0.028 | 0.050 ± 0.034 | **RW** | **0.010 ± 0.008** |
 | A13 Disc Score MLP ↓ | 0.0112 ± 0.0079 | 0.071 ± 0.008 | 0.151 ± 0.142 | **RW** | **0.021 ± 0.018** |
 | A14 Pred Score GRU ↓ | 0.0085 ± 0.0001 | 0.0091 ± 0.0000 | 0.0087 ± 0.0002 | **RW** | **0.0083 ± 0.0000** |
@@ -35,7 +35,11 @@ Cross-method comparison on 8 192 Heston price paths (seq\_len=128).
 | A15 Sigma RMSE ↓ | 0.065 ± 0.000 ⁽²⁾ | 0.096 ± 0.000 | 0.118 ± 0.018 | **RW** | **0.085 ± 0.000** |
 | PS-MC CRPS H=32 ↓ | — | **2.761 ± 0.004** | 3.087 ± 0.340 | **SBTS** | — |
 | PS-MC CRPS H=64 ↓ | — | **3.900 ± 0.008** | 4.372 ± 0.431 | **SBTS** | — |
-| A16 Tail Survival ↓ | 0.0009 ± 0.0005 | 0.0367 ± 0.0002 | 0.0216 ± 0.0111 | **RW** | **0.0075 ± 0.0003** |
+| A16 Tail Survival Error (rms, r q90, r q95, ir q99) ↓ | 0.0009 ± 0.0005 | 0.0367 ± 0.0002 | 0.0216 ± 0.0111 | **RW** | **0.0075 ± 0.0003** |
+| A17 Target oracle o mean ↑ | 1.000 ± 0.000 | depends | depends | — | depends on method |
+| A18 Generated a mean ↑ | 1.000 ± 0.000 | depends | depends | — | depends on method |
+| A19 Learned oracle a corr. ↑ | 1.000 ± 0.000 | depends | depends | — | depends on method |
+| A20 Realized-vol law loss ↓ | **0.000 ± 0.000** | depends | depends | — | depends on method |
 | Training (8 192×128) | — | — (no training) | **~6.5 min / A100** | **SBTS** | <1 s / any CPU |
 | Generation (8 192×128) | — | ~6.3 min / 64 CPUs | **<1 s / A100** | **TimeGAN** | <1 s / any CPU |
 
@@ -82,7 +86,7 @@ Detailed per-seed results and plots:
 
 ---
 
-## Metrics (A1–A16)
+## Metrics (A1–A20)
 
 | ID | Name | Lower = better | Perfect score |
 |----|------|---------------|---------------|
@@ -94,17 +98,21 @@ Detailed per-seed results and plots:
 | A6 | Path SWD | ✓ | 0 |
 | A7 | Cov Error (%) | ✓ | 0 |
 | A8 | Mean RMSE | ✓ | 0 |
-| A9 | Std Error | ✓ | 0 |
-| A10 | Kurtosis Error | ✓ | 0 |
-| A11 | ACF Abs Error | ✓ | 0 |
-| A12 | ACF Sq Error | ✓ | 0 |
+| A9 | Return std. error | ✓ | 0 |
+| A10 | Return Kurtosis (target κ, model κ) | ✓ | target κ ≈ model κ |
+| A11 | ACF |r| error (across lags) | ✓ | 0 |
+| A12 | ACF r² error (across lags) | ✓ | 0 |
 | A13 | Disc Score (GRU) | ✓ | 0 |
 | A13 | Disc Score (MLP) | ✓ | 0 |
 | A14 | Pred Score (GRU) | ✓ | baseline MAE |
 | A14 | Pred Score (MLP) | ✓ | baseline MAE |
 | A15 | Sigma Corr | ✗ (↑) | 1 |
 | A15 | Sigma RMSE | ✓ | 0 |
-| A16 | Tail Survival Error | ✓ | 0 |
+| A16 | Tail Survival Error (rms, r q90, r q95, ir q99) | ✓ | 0 |
+| A17 | Target oracle o mean | ✓ (match real) | real mean |
+| A18 | Generated a mean | ✓ (match real) | real mean |
+| A19 | Learned oracle a corr. | ✗ (↑) | 1 |
+| A20 | Realized-vol law loss | ✓ | 0 |
 
 Full formulas and per-seed results:
 → [`results/Heston/SBTS/README.md`](results/Heston/SBTS/README.md)

@@ -1,4 +1,4 @@
-# Metrics — A1 to A16
+# Metrics — A1 to A20
 
 Evaluation suite for generative models of financial time series.
 All metrics compare **real paths** $X \sim P$ against **generated paths** $\tilde{X} \sim Q$.
@@ -144,7 +144,7 @@ For $d=1$ this is simply $|\mathbb{E}[X_T] - \mathbb{E}[\tilde{X}_T]|$. **Perfec
 
 ---
 
-## A9 — Return Std Error · *Absolute difference of return standard deviations*
+## A9 — Return std. error · *Absolute difference of return standard deviations*
 
 $$
 \left| \sigma(r_{\text{real}}) - \sigma(r_{\text{fake}}) \right|
@@ -154,20 +154,21 @@ Tests whether the overall **volatility level** is correctly reproduced. **Perfec
 
 ---
 
-## A10 — Return Kurtosis Error · *Absolute difference of excess kurtosis*
+## A10 — Return Kurtosis (target κ, model κ) · *Target and generated excess kurtosis*
 
 $$
-\left| \kappa(r_{\text{real}}) - \kappa(r_{\text{fake}}) \right|
+\kappa_{\text{real}} = \dfrac{\mathbb{E}[(r-\mu)^4]}{\sigma^4} - 3, \qquad
+\kappa_{\text{fake}} = \dfrac{\mathbb{E}[(\tilde{r}-\mu)^4]}{\sigma^4} - 3
 $$
 
-where $\kappa(Z) = \dfrac{\mathbb{E}[(Z-\mu)^4]}{\sigma^4} - 3$.
+Output: **target κ** (κ of real returns) and **model κ** (κ of generated returns).
 Excess kurtosis = 0 for a Gaussian. Financial returns typically show $\kappa > 0$ (**fat tails**).
 Computed using Fisher's definition with bias correction (`scipy.stats.kurtosis(fisher=True, bias=False)`).
-**Perfect: 0. ↓**
+**Perfect: target κ ≈ model κ.**
 
 ---
 
-## A11 — ACF Error (abs returns) · *Mean absolute error of sample-mean ACF on |r|*
+## A11 — ACF |r| error (across lags) · *Mean absolute error of sample-mean ACF on |r|*
 
 $$
 \frac{1}{|L|} \sum_{\ell \in L}
@@ -186,7 +187,7 @@ A11 tests this via absolute returns. **Perfect: 0. ↓**
 
 ---
 
-## A12 — ACF Error (sq returns) · *Mean absolute error of sample-mean ACF on r²*
+## A12 — ACF r² error (across lags) · *Mean absolute error of sample-mean ACF on r²*
 
 Same formula as A11 applied to squared returns $r_t^2$ instead of $|r_t|$.
 Complementary to A11: also tests the ARCH effect but is more sensitive to large moves.
@@ -376,6 +377,62 @@ Tests whether the generator reproduces the **fat tail** of the return distributi
 90th, 95th, and 99th percentile levels.
 A score of 0 means survival probabilities match exactly at all three quantile levels.
 **Perfect: 0. Direction: ↓**
+
+Per-level outputs:
+
+| Output | Description |
+|--------|-------------|
+| `rms` (A16_tail_survival) | RMS of survival probability differences across all levels |
+| `r q90 error` | Survival probability error at the 90th percentile |
+| `r q95 error` | Survival probability error at the 95th percentile |
+| `ir q99 error` | Survival probability error at the 99th percentile |
+
+---
+
+## A17-A18 — Target oracle o mean · Generated a mean · *AR(p) prediction means*
+
+Train an AR(p) predictor on **real** log-returns, predict held-out test returns $\rightarrow$ **oracle mean** $\mu_o$.
+Train the same AR(p) on **generated** log-returns, predict the same test set $\rightarrow$ **agent mean** $\mu_g$.
+
+$$
+\mu_o = \frac{1}{N_{\text{test}}} \sum_{i=1}^{N_{\text{test}}} \hat{r}_i^{(o)}, \qquad
+\mu_g = \frac{1}{N_{\text{test}}} \sum_{i=1}^{N_{\text{test}}} \hat{r}_i^{(g)}
+$$
+
+where $\hat{r}_i^{(o)} = \sum_{k=1}^p \beta_k^{(o)} r_{i-k}$ (AR(p) fitted on real data)
+and $\hat{r}_i^{(g)}$ from AR(p) fitted on generated data.
+
+Default: $p=5$, $20\%$ held out. **Perfect: match real mean. Direction: closer to real mean = better.**
+
+---
+
+## A19 — Learned oracle a corr. · *Pearson correlation*
+
+$$
+\rho_{o,g} = \frac{\sum_i (\hat{r}_i^{(o)} - \mu_o)(\hat{r}_i^{(g)} - \mu_g)}
+{\sqrt{\sum_i (\hat{r}_i^{(o)} - \mu_o)^2} \sqrt{\sum_i (\hat{r}_i^{(g)} - \mu_g)^2}}
+$$
+
+Measures whether the generated data preserves the **same predictive relationships** as real data.
+$\rho \approx 1$ = perfect preservation. $\rho \approx 0$ = signal destroyed.
+**Perfect: 1. Direction: $\uparrow$**
+
+---
+
+## A20 — Realized-vol law loss · *Wasserstein-1 on RV distribution*
+
+$$
+\text{RV}_i = \frac{1}{\Delta t} \sum_{t=1}^{T-1} r_{i,t}^2 \quad \text{(annualized realized variance)}
+$$
+
+$$
+\mathcal{L}_{\text{RV}} = W_1\big(P_{\text{real}}(\text{RV}), P_{\text{gen}}(\text{RV})\big)
+= \int_{-\infty}^{\infty} \big| F_{\text{real}}^{\text{RV}}(x) - F_{\text{gen}}^{\text{RV}}(x) \big| \, dx
+$$
+
+where $W_1$ is the 1-Wasserstein (Earth Mover's) distance and $F$ the empirical CDF.
+Tests whether the unconditional volatility regime distribution is reproduced.
+**Perfect: 0. $\downarrow$**
 
 ---
 

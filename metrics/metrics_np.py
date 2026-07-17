@@ -1,5 +1,5 @@
 """
-Metrics A1–A12 and A15 for time-series generation benchmarking.
+Metrics A1–A20 for time-series generation benchmarking.
 
 A1   Full joint-path MMD²
 A2   Terminal MMD²
@@ -14,6 +14,11 @@ A10  Return Kurtosis Error
 A11  ACF Error (absolute returns)
 A12  ACF Error (squared returns)
 A15  Teacher-Sigma Correlation + RMSE  (Heston-specific)
+A16  Tail Survival Error (RMS + per-quantile q90/q95/q99)
+A17  Oracle Mean
+A18  Agent Mean
+A19  Oracle-Agent Correlation
+A20  Realized Volatility Law Loss
 
 A13 and A14 are implemented separately in discriminative_score.py
 and predictive_score.py using PyTorch.
@@ -137,7 +142,7 @@ def volatility_mmd(
         out = np.zeros_like(x_sq)
         for i in range(x_sq.shape[1]):
             out[:,i,:] = np.mean(x_pad[:,i:i+window,:], axis=1)
-        return np.sqrt(out**2 + 1e-6)
+        return np.sqrt(np.maximum(out, 0.0) + 1e-6)
 
     rvol_X = rolling_vol(dX**2)
     rvol_Y = rolling_vol(dY**2)
@@ -377,7 +382,7 @@ def tail_survival_error(
     X: np.ndarray,
     Y: np.ndarray,
     quantiles: Tuple[float, ...] = (0.90, 0.95, 0.99),
-) -> float:
+) -> Tuple[float, float, float, float]:
     """A16. Tail Survival Error — RMS of survival probability difference.
 
     For each quantile alpha in {0.90, 0.95, 0.99}:
@@ -385,11 +390,13 @@ def tail_survival_error(
       - real_surv(alpha) = P_real(|r| > q_alpha)   (by definition ~= 1-alpha)
       - fake_surv(alpha) = P_gen (|r| > q_alpha)
 
-    Score = sqrt( mean_alpha( (real_surv - fake_surv)^2 ) )
+    Returns (rms, q90, q95, q99) where:
+      - rms = sqrt( mean_alpha( (real_surv - fake_surv)^2 ) )
+      - qXX = abs(real_surv - fake_surv) at that quantile level
 
     Tests whether the generator reproduces the fat tail of the return
     distribution at the 90th, 95th, and 99th percentile levels.
-    Perfect: 0. Direction: lower is better.
+    Perfect: (0, 0, 0, 0). Direction: lower is better.
 
     Parameters
     ----------
@@ -402,7 +409,135 @@ def tail_survival_error(
     thresholds = np.quantile(real_abs_r, quantiles)
     real_surv = np.array([(real_abs_r > t).mean() for t in thresholds])
     fake_surv = np.array([(fake_abs_r > t).mean() for t in thresholds])
-    return float(np.sqrt(np.mean((real_surv - fake_surv) ** 2)))
+    rms = float(np.sqrt(np.mean((real_surv - fake_surv) ** 2)))
+    q90 = float(abs(real_surv[0] - fake_surv[0]))
+    q95 = float(abs(real_surv[1] - fake_surv[1]))
+    q99 = float(abs(real_surv[2] - fake_surv[2]))
+    return rms, q90, q95, q99
+
+
+# ======================================================================
+# A20  Realized Volatility Law Loss
+# ======================================================================
+
+def rv_law_loss(X: np.ndarray, Y: np.ndarray, dt: float = 1.0/250.0) -> float:
+    """A20. Realized Volatility Law Loss — Wasserstein-1 distance between RV distributions.
+
+    For each path i:
+      RV_i = (1/dt) * sum_t r_{i,t}^2   (annualized realized variance)
+
+    where r_{i,t} = log(S_{i,t+1}/S_{i,t}) are log-returns.
+    Returns W_1(distribution of RV_real, distribution of RV_gen).
+    Perfect: 0. Direction: lower is better.
+
+    Parameters
+    ----------
+    X : ndarray (N, T, d)  — real paths
+    Y : ndarray (N, T, d)  — generated paths
+    dt : float  — time step in years (default 1/250)
+    """
+    log_r_real = np.diff(np.log(np.maximum(X, 1e-10)), axis=1)  # (N, T-1, d)
+    log_r_gen  = np.diff(np.log(np.maximum(Y, 1e-10)), axis=1)
+    rv_real = np.sum(log_r_real ** 2, axis=1) / dt  # (N, d)
+    rv_gen  = np.sum(log_r_gen ** 2, axis=1) / dt
+    rv_r = rv_real.ravel()
+    rv_g = rv_gen.ravel()
+    return float(wasserstein_distance(rv_r, rv_g))
+
+
+# ======================================================================
+# A17–A19  Oracle evaluation protocol
+# ======================================================================
+
+def oracle_metrics(
+    X_real: np.ndarray, X_gen: np.ndarray,
+    ar_order: int = 5, test_frac: float = 0.2, seed: int = 0,
+) -> Tuple[float, float, float]:
+    """A17-A19. Oracle evaluation protocol (per-path AR, no cross-path leakage).
+
+    For each path independently, build AR(p) (lag features, target) pairs.
+    Stack all paths' (X_lag, y) into a single matrix, then randomly split
+    into train/test sets (shuffled, not temporal — paths are i.i.d. MC draws).
+
+    Train an AR(p) on REAL log-returns -> predict test -> oracle mean.
+    Train same AR(p) on GENERATED log-returns -> predict test -> agent mean.
+    Compute Pearson correlation between oracle and agent predictions.
+
+    Parameters
+    ----------
+    X_real : (N, T, d) real paths
+    X_gen  : (N, T, d) generated paths
+    ar_order : order of AR model (default 5)
+    test_frac : fraction of AR transitions held out for testing (default 0.2)
+    seed : random seed for reproducibility (shuffle)
+
+    Returns
+    -------
+    oracle_mean : mean of oracle predictions on test set
+    agent_mean  : mean of agent predictions on test set
+    correlation : Pearson r between oracle and agent predictions
+    """
+    rng = np.random.default_rng(seed)
+
+    # Log-returns: r_t = log(S_{t+1}/S_t)
+    r_real = np.diff(np.log(np.maximum(X_real, 1e-10)), axis=1)  # (N, T-1, d)
+    r_gen  = np.diff(np.log(np.maximum(X_gen,  1e-10)), axis=1)
+
+    # Build per-path AR(p) matrices, then STACK (no cross-path lags)
+    def make_ar_stacked(data, order):
+        """data: (N, T, d) -> X_lag: (M, order), y: (M,) where M = N*(T-order)*d"""
+        X_list, y_list = [], []
+        for n in range(data.shape[0]):
+            for f in range(data.shape[2]):
+                seq = data[n, :, f]
+                for t in range(order, len(seq)):
+                    X_list.append(seq[t-order:t])
+                    y_list.append(seq[t])
+        return np.array(X_list, dtype=np.float64), np.array(y_list, dtype=np.float64)
+
+    X_real_all, y_real_all = make_ar_stacked(r_real, ar_order)
+
+    # Guard: AR(p) order must be < available transitions
+    if len(X_real_all) < ar_order + 2:
+        import warnings as _w
+        _w.warn(f"oracle_metrics: ar_order={ar_order} too large for data (T={X_real.shape[1]}, "
+                f"N={X_real.shape[0]}). Returning (0, 0, 0).")
+        return (0.0, 0.0, 0.0)
+
+    # Shuffled train/test split (paths are i.i.d., no temporal ordering)
+    n_total = len(X_real_all)
+    n_test = max(1, int(n_total * test_frac))
+    idx = rng.permutation(n_total)
+    idx_test = idx[:n_test]
+    idx_train = idx[n_test:]
+
+    # Oracle: train OLS on real data, predict on held-out real features
+    X_train_r = X_real_all[idx_train]
+    y_train_r = y_real_all[idx_train]
+    X_test = X_real_all[idx_test]
+
+    from numpy.linalg import lstsq
+    coeff_r = lstsq(X_train_r, y_train_r, rcond=1e-8)[0]
+    oracle_pred = X_test @ coeff_r
+    oracle_mean = float(np.mean(oracle_pred))
+
+    # Agent: train OLS on generated data, predict on same test features
+    X_gen_all, y_gen_all = make_ar_stacked(r_gen, ar_order)
+    X_train_g = X_gen_all[idx_train]
+    y_train_g = y_gen_all[idx_train]
+    coeff_g = lstsq(X_train_g, y_train_g, rcond=1e-8)[0]
+    agent_pred = X_test @ coeff_g
+    agent_mean = float(np.mean(agent_pred))
+
+    # Pearson correlation between oracle and agent predictions
+    with np.errstate(invalid='ignore'):
+        corr = float(np.corrcoef(oracle_pred, agent_pred)[0, 1]) if len(oracle_pred) > 2 else 0.0
+    if np.isnan(corr):
+        import warnings as _w
+        _w.warn("oracle_metrics: correlation is NaN (constant input or insufficient variance)")
+        corr = 0.0
+
+    return oracle_mean, agent_mean, corr
 
 
 __all__ = [
@@ -414,4 +549,6 @@ __all__ = [
     "acf", "acf_error",
     "teacher_sigma_metrics",
     "tail_survival_error",
+    "rv_law_loss",
+    "oracle_metrics",
 ]

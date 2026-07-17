@@ -33,6 +33,7 @@ See [`code/README.md`](code/README.md) for source, original paper, and implement
 | A14 | Pred Score MLP (TSTR) | Predictive | ↓ | 0.0093 ± 0.0006 | 0.0092 | 0.0090 | 0.0104 | 0.0088 | 0.0088 | baseline |
 | A15 | Sigma Corr | Heston-specific | ↑ | 0.0011 ± 0.0035 | −0.0024 | 0.0031 | −0.0038 | 0.0039 | 0.0045 | **1** |
 | A15 | Sigma RMSE | Heston-specific | ↓ | 0.8207 ± 0.0019 | 0.8198 | 0.8181 | 0.8214 | 0.8205 | 0.8238 | 0 |
+| A16 | Tail Survival Error | Fat-tail | ↓ | 0.0367 ± 0.0002 | 0.0369 | 0.0369 | 0.0365 | 0.0366 | 0.0363 | **0** |
 
 > **A13 discriminative score**: `|accuracy − 0.5|` on a held-out test set (80/20 split).
 > 0 = indistinguishable from real. 0.5 = perfect separation (bad generator).
@@ -41,6 +42,9 @@ See [`code/README.md`](code/README.md) for source, original paper, and implement
 >
 > **A15 sigma**: Heston-specific. Compares inferred instantaneous vol from generated paths
 > against the true variance paths.
+>
+> **A16 tail survival error**: RMS of survival probability difference at quantiles {0.90, 0.95, 0.99}.
+> Tests fat-tail reproduction. 0 = perfect. Lower is better.
 
 ---
 

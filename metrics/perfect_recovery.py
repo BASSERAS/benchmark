@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Perfect-recovery baseline: compute all A1-A15 metrics on two independent
+Perfect-recovery baseline: compute all A1-A20 metrics on two independent
 random halves of the real dataset.
 
 Usage
@@ -10,7 +10,7 @@ Usage
 
 What it computes
 ----------------
-Split real data (8 192 paths) into two halves of 4 096, compute all A1-A15
+Split real data (8 192 paths) into two halves of 4 096, compute all A1-A20
 metrics treating one half as "real" and the other as "generated".
 Repeat N_RUNS=5 times with different random seeds.
 
@@ -54,6 +54,8 @@ from metrics_np import (
     acf_error,
     teacher_sigma_metrics,
     tail_survival_error,
+    rv_law_loss,
+    oracle_metrics,
 )
 from discriminative_score import compute_discriminative_score
 from predictive_score import compute_predictive_score
@@ -71,8 +73,9 @@ def compute_one_run(
     S_b: np.ndarray,   # (N//2, T) — treated as "generated"
     v_a: np.ndarray,   # (N//2, T) — true variance matching S_b rows (NOT S_a rows!)
     rng: np.random.Generator,
+    run_idx: int = 0,  # seed for oracle_metrics
 ) -> dict:
-    """Compute all A1-A15 metrics between S_a ("real") and S_b ("generated")."""
+    """Compute all A1-A20 metrics between S_a ("real") and S_b ("generated")."""
     N = len(S_a)
 
     # 3D view needed by most metric functions
@@ -105,12 +108,14 @@ def compute_one_run(
     out["A12_acf_sq"]  = float(acf_error(_lr_fake ** 2, _lr_real ** 2))
 
     # ── A13: discriminative score (GRU + MLP, GPU) ────────────────────────────
-    d13 = compute_discriminative_score(S_a, S_b, n_steps=2000, device=DEVICE)
+    _lr_a = np.diff(np.log(S_a[:, :, None]), axis=1).squeeze(-1)
+    _lr_b = np.diff(np.log(S_b[:, :, None]), axis=1).squeeze(-1)
+    d13 = compute_discriminative_score(_lr_a, _lr_b, n_steps=2000, device=DEVICE)
     out["A13_disc_gru"] = float(d13["disc_score_gru"])
     out["A13_disc_mlp"] = float(d13["disc_score_mlp"])
 
     # ── A14: predictive score TSTR (GRU + MLP, GPU) ──────────────────────────
-    d14 = compute_predictive_score(S_a, S_b, n_steps=5000, device=DEVICE)
+    d14 = compute_predictive_score(_lr_a, _lr_b, n_steps=5000, device=DEVICE)
     out["A14_pred_gru"] = float(d14["pred_score_gru"])
     out["A14_pred_mlp"] = float(d14["pred_score_mlp"])
 
@@ -120,7 +125,20 @@ def compute_one_run(
     out["A15_sigma_rmse"] = float(rmse15)
 
     # ── A16: tail survival error ───────────────────────────────────────────────
-    out["A16_tail_survival"] = float(tail_survival_error(real3, fake3))
+    a16_rms, a16_q90, a16_q95, a16_q99 = tail_survival_error(real3, fake3)
+    out["A16_tail_survival"] = a16_rms
+    out["A16_q90_error"]     = a16_q90
+    out["A16_q95_error"]     = a16_q95
+    out["A16_q99_error"]     = a16_q99
+
+    # A17-A19 Oracle metrics
+    o_mean, a_mean, oa_corr = oracle_metrics(real3, fake3, ar_order=5, seed=run_idx)
+    out["A17_oracle_mean"] = o_mean
+    out["A18_agent_mean"]  = a_mean
+    out["A19_oa_corr"]     = oa_corr
+
+    # A20 RV Law Loss
+    out["A20_rv_law_loss"] = rv_law_loss(real3, fake3)
 
     return out
 
@@ -180,7 +198,7 @@ def main():
         # Must use v_b (variance for S_b rows), NOT v_a (variance for S_a rows).
         v_b = v_all[idx_b]   # (4096, 128) — variance for A15, same rows as S_b
 
-        result = compute_one_run(S_a, S_b, v_b, rng)
+        result = compute_one_run(S_a, S_b, v_b, rng, run_idx=run)
         result["elapsed_sec"] = round(time.time() - t0, 1)
 
         print(

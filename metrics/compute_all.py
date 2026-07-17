@@ -1,10 +1,11 @@
 """
-compute_all.py — Run all 14 metrics (A1-A14 + A15) for each of 5 seeds.
+compute_all.py — Run all 20 metrics (A1-A20) for each of 5 seeds.
 
 For each seed:
   - Loads real paths from dataset/<dataset>/
   - Loads generated paths from methods/<method>/generated_paths/seed_i/
-  - Computes A1-A12 (numpy), A13 (PyTorch GRU+MLP), A14 (PyTorch GRU+MLP), A15 (numpy)
+  - Computes A1-A12 (numpy), A13 (PyTorch GRU+MLP), A14 (PyTorch GRU+MLP),
+    A15-A20 (numpy)
   - Saves results/<dataset>/<method>/seed_i_metrics.json
   - Generates PCA + t-SNE plots
 
@@ -53,6 +54,8 @@ from metrics_np import (
     acf_error,
     teacher_sigma_metrics,
     tail_survival_error,
+    rv_law_loss,
+    oracle_metrics,
 )
 from discriminative_score import compute_discriminative_score
 from predictive_score import compute_predictive_score
@@ -124,9 +127,11 @@ def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray) -> dict:
     print("  A12 ACF sq returns ...", end=" ", flush=True)
     results["A12_acf_sq"]          = float(acf_error(_lr_fake**2, _lr_real**2));           print(f"{results['A12_acf_sq']:.6f}")
 
-    # A13 Discriminative Score
+    # A13 Discriminative Score — on log-returns (detects ARCH, fat tails, leverage)
     print("  A13 discriminative (GRU + MLP) ...", flush=True)
-    d13 = compute_discriminative_score(S, fake, n_steps=2000, device=DEVICE)
+    _lr_S    = np.diff(np.log(S[:, :, None]),    axis=1).squeeze(-1)  # (N, T-1)
+    _lr_fake = np.diff(np.log(fake[:, :, None]), axis=1).squeeze(-1)  # (N, T-1)
+    d13 = compute_discriminative_score(_lr_S, _lr_fake, n_steps=2000, device=DEVICE)
     results["A13_disc_score_gru"] = d13["disc_score_gru"]
     results["A13_disc_score_mlp"] = d13["disc_score_mlp"]
     print(f"       GRU={d13['disc_score_gru']:.4f}  MLP={d13['disc_score_mlp']:.4f}")
@@ -138,9 +143,9 @@ def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray) -> dict:
             w = csv.DictWriter(lf, fieldnames=["step", "train_bce"])
             w.writeheader(); w.writerows(d13[f"loss_history_{arch}"])
 
-    # A14 Predictive Score (TSTR)
+    # A14 Predictive Score (TSTR) — on log-returns
     print("  A14 predictive TSTR (GRU + MLP) ...", flush=True)
-    d14 = compute_predictive_score(S, fake, n_steps=5000, device=DEVICE)
+    d14 = compute_predictive_score(_lr_S, _lr_fake, n_steps=5000, device=DEVICE)
     results.update({f"A14_{k}": v for k, v in d14.items()
                     if not k.startswith("loss_history")})
     print(f"       GRU={d14['pred_score_gru']:.4f}  MLP={d14['pred_score_mlp']:.4f}")
@@ -165,8 +170,25 @@ def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray) -> dict:
 
     # A16 Tail Survival Error
     print("  A16 tail survival ...", end=" ", flush=True)
-    results["A16_tail_survival"] = float(tail_survival_error(real3, fake3))
-    print(f"{results['A16_tail_survival']:.6f}")
+    a16_rms, a16_q90, a16_q95, a16_q99 = tail_survival_error(real3, fake3)
+    results["A16_tail_survival"] = float(a16_rms)
+    results["A16_q90_error"]     = float(a16_q90)
+    results["A16_q95_error"]     = float(a16_q95)
+    results["A16_q99_error"]     = float(a16_q99)
+    print(f"rms={a16_rms:.6f}  q90={a16_q90:.6f}  q95={a16_q95:.6f}  q99={a16_q99:.6f}")
+
+    # A17-A19 Oracle metrics
+    print("  A17-A18 oracle predictions (AR(5) TSTR) ...", end=" ", flush=True)
+    o_mean, a_mean, oa_corr = oracle_metrics(real3, fake3, ar_order=5, seed=seed)
+    results["A17_oracle_mean"] = o_mean
+    results["A18_agent_mean"]  = a_mean
+    results["A19_oa_corr"]     = oa_corr
+    print(f"o={o_mean:.4f}  a={a_mean:.4f}  corr={oa_corr:.4f}")
+
+    # A20 RV Law Loss
+    print("  A20 RV law loss ...", end=" ", flush=True)
+    results["A20_rv_law_loss"] = rv_law_loss(real3, fake3)
+    print(f"{results['A20_rv_law_loss']:.6f}")
 
     results["compute_time_sec"] = round(time.perf_counter() - t0, 2)
     print(f"  Done in {results['compute_time_sec']:.1f}s")
