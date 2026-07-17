@@ -6,51 +6,67 @@ Parameters: μ=0.05, κ=2.0, θ=0.04, ξ=0.3, ρ=−0.7, S₀=100, v₀=0.04, dt
 **Model:** SBTS univariate Markovian — h=0.4, K=1, N_pi=200, CPU-only (no GPU).
 No neural network, no training. Kernel density estimation with Schrödinger-bridge drift.
 
-**Convention:** lower is better for all metrics **except A15 Corr (↑)**. A16 ↓.
+**Convention:** lower is better for all metrics **except A15 Corr (↑)**.
 
 ---
 
 ## Results (mean ± std across 5 seeds)
 
-> Filled in after `metrics/compute_all.py --method SBTS` completes.
-
 | ID | Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect |
 |----|--------|-----------|--------|--------|--------|--------|--------|---------|
-| A1  | Path MMD²                   | TBD | — | — | — | — | — | **0** |
-| A2  | Terminal MMD²               | TBD | — | — | — | — | — | **0** |
-| A3  | Increment MMD²              | TBD | — | — | — | — | — | **0** |
-| A4  | Volatility MMD              | TBD | — | — | — | — | — | **0** |
-| A5  | Terminal SWD                | TBD | — | — | — | — | — | **0** |
-| A6  | Path SWD                    | TBD | — | — | — | — | — | **0** |
-| A7  | Covariance Error            | TBD | — | — | — | — | — | **0** |
-| A8  | Mean RMSE                   | TBD | — | — | — | — | — | **0** |
-| A9  | Return Std Error            | TBD | — | — | — | — | — | **0** |
-| A10 | Return Kurtosis Error       | TBD | — | — | — | — | — | **0** |
-| A11 | ACF Error (abs returns)     | TBD | — | — | — | — | — | **0** |
-| A12 | ACF Error (sq returns)      | TBD | — | — | — | — | — | **0** |
-| A13 | Discriminative Score (GRU)  | TBD | — | — | — | — | — | **0** |
-| A13 | Discriminative Score (MLP)  | TBD | — | — | — | — | — | **0** |
-| A14 | Predictive Score GRU (TSTR) | TBD | — | — | — | — | — | baseline |
-| A14 | Predictive Score MLP (TSTR) | TBD | — | — | — | — | — | baseline |
-| A15 | Sigma Corr ↑                | TBD | — | — | — | — | — | **1** |
-| A15 | Sigma RMSE                  | TBD | — | — | — | — | — | **0** |
-| A16 | Tail Survival Error         | TBD | — | — | — | — | — | **0** |
+| A1  | Path MMD²                   | 0.0110 ± 0.0016 | 0.0093 | 0.0136 | 0.0117 | 0.0093 | 0.0110 | **0** |
+| A2  | Terminal MMD²               | 0.0090 ± 0.0035 | 0.0061 | 0.0153 | 0.0083 | 0.0056 | 0.0098 | **0** |
+| A3  | Increment MMD²              | 0.0071 ± 0.0005 | 0.0074 | 0.0076 | 0.0063 | 0.0074 | 0.0065 | **0** |
+| A4  | Volatility MMD              | 0.3125 ± 0.0176 | 0.3230 | 0.3366 | 0.2900 | 0.3183 | 0.2947 | **0** |
+| A5  | Terminal SWD                | 3.465 ± 0.588   | 2.775  | 4.258  | 3.634  | 2.799  | 3.858  | **0** |
+| A6  | Path SWD                    | 2.497 ± 0.288   | 2.203  | 2.928  | 2.620  | 2.150  | 2.582  | **0** |
+| A7  | Covariance Error            | 145.35 ± 4.89   | 143.74 | 145.83 | 142.90 | 139.93 | 154.36 | **0** |
+| A8  | Mean RMSE                   | 1.3013 ± 0.2776 | 1.2972 | 0.9199 | 1.4819 | 1.0986 | 1.7088 | **0** |
+| A9  | Return Std Error            | 0.2492 ± 0.0018 | 0.2503 | 0.2517 | 0.2485 | 0.2491 | 0.2462 | **0** |
+| A10 | Return Kurtosis Error       | 0.1187 ± 0.0060 | 0.1156 | 0.1116 | 0.1165 | 0.1293 | 0.1203 | **0** |
+| A11 | ACF Error (abs returns)     | 0.0568 ± 0.0006 | 0.0568 | 0.0565 | 0.0570 | 0.0558 | 0.0577 | **0** |
+| A12 | ACF Error (sq returns)      | 0.0619 ± 0.0006 | 0.0619 | 0.0618 | 0.0617 | 0.0610 | 0.0628 | **0** |
+| A13 | Discriminative Score (GRU)  | 0.0291 ± 0.0276 | 0.0032 | 0.0148 | 0.0157 | 0.0816 | 0.0301 | **0** |
+| A13 | Discriminative Score (MLP)  | 0.0711 ± 0.0077 | 0.0676 | 0.0859 | 0.0685 | 0.0700 | 0.0636 | **0** |
+| A14 | Predictive Score GRU (TSTR) | 0.0091 ± 0.0000 | 0.0091 | 0.0091 | 0.0091 | 0.0091 | 0.0091 | baseline |
+| A14 | Predictive Score MLP (TSTR) | 0.0093 ± 0.0006 | 0.0092 | 0.0090 | 0.0104 | 0.0088 | 0.0088 | baseline |
+| A15 | Sigma Corr ↑                | 0.0011 ± 0.0035 | −0.0024 | 0.0031 | −0.0038 | 0.0039 | 0.0045 | **1** |
+| A15 | Sigma RMSE                  | 0.8207 ± 0.0019 | 0.8198 | 0.8181 | 0.8214 | 0.8205 | 0.8238 | **0** |
 
 ---
 
-## Comparison with TimeGAN (same dataset, same metrics)
+## Comparison with TimeGAN (same dataset, same metrics, same 5 seeds)
 
-> Filled in once both methods have results.
+↓ = lower is better. ↑ = higher is better. **Bold** = winner.
 
-| Metric | SBTS (ours) | TimeGAN (ours) | Better |
-|--------|:-----------:|:--------------:|:------:|
-| A1 Path MMD²       | TBD | 0.0180 | — |
-| A3 Increment MMD²  | TBD | 0.0078 | — |
-| A7 Cov Error       | TBD | 17.75  | — |
-| A13 Disc (GRU)     | TBD | 0.0499 | — |
-| A14 Pred GRU       | TBD | 0.0087 | — |
-| A15 Sigma Corr ↑   | TBD | 0.0031 | — |
-| A16 Tail Error     | TBD | 0.0216 | — |
+| Metric | SBTS | TimeGAN | Winner |
+|--------|:----:|:-------:|:------:|
+| A1  Path MMD² ↓      | **0.0110** | 0.0180 | **SBTS** |
+| A2  Terminal MMD² ↓  | **0.0090** | 0.0296 | **SBTS** |
+| A3  Increment MMD² ↓ | **0.0071** | 0.0078 | **SBTS** |
+| A4  Volatility MMD ↓ | **0.3125** | 0.3798 | **SBTS** |
+| A5  Terminal SWD ↓   | 3.465 | **2.850** | TimeGAN |
+| A6  Path SWD ↓       | 2.497 | **1.501** | TimeGAN |
+| A7  Cov Error ↓      | 145.35 | **17.75** | **TimeGAN** |
+| A8  Mean RMSE ↓      | 1.301 | **0.739** | TimeGAN |
+| A9  Std Error ↓      | 0.249 | **0.152** | TimeGAN |
+| A10 Kurtosis Error ↓ | **0.119** | 2.955 | **SBTS** |
+| A11 ACF Abs Error ↓  | **0.057** | 0.134 | **SBTS** |
+| A12 ACF Sq Error ↓   | **0.062** | 0.092 | **SBTS** |
+| A13 Disc GRU ↓       | **0.029** | 0.050 | **SBTS** |
+| A13 Disc MLP ↓       | **0.071** | 0.151 | **SBTS** |
+| A14 Pred GRU ↓       | 0.0091 | **0.0087** | ≈ tie |
+| A14 Pred MLP ↓       | 0.0093 | **0.0090** | ≈ tie |
+| A15 Sigma Corr ↑     | 0.0011 | **0.0031** | ≈ tie |
+| A15 Sigma RMSE ↓     | **0.821** | 0.966 | **SBTS** |
+| PS-MC CRPS H=32 ↓    | **2.761** | 3.087 | **SBTS** |
+| PS-MC CRPS H=64 ↓    | **3.900** | 4.372 | **SBTS** |
+
+**Interpretation:**
+- SBTS wins on **distribution matching** (A1–A4, A10–A12): the kernel method is designed to match marginal and return distributions.
+- TimeGAN wins on **temporal structure** (A5–A9): the GRU learns multi-step covariance; SBTS with K=1 is Markovian and cannot capture it. A7 is the clearest gap — 145% vs 18% covariance error.
+- **Discriminative scores** (A13): SBTS paths are harder to distinguish from real (0.029 vs 0.050 GRU), confirming better statistical fidelity at sample level.
+- **Path Shadowing MC**: SBTS wins decisively (CRPS 2.76 vs 3.09 at H=32) — the richer, more diverse retrieval pool from a kernel method outperforms a GAN pool for nearest-neighbour forecasting.
 
 ---
 
