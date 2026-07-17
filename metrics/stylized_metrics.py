@@ -1,5 +1,9 @@
 """
-stylized_metrics.py — B1–B14: Quantitative metrics extracted from the 8 diagnostic plots.
+stylized_metrics.py — B1–B12: Quantitative metrics extracted from the 8 diagnostic plots.
+
+B8 (ARCH Persistence Error) and B10 (GARCH Persistence Error) removed:
+they are redundant with A11 (ACF |r| at lags {1,2,5,10}) and A12 (ACF r² at same lags).
+Renumbering: old B9→B8, old B11→B9, old B12→B10, old B13→B11, old B14→B12.
 
 Each metric corresponds directly to one (or two paired) diagnostic panels so that
 every number in this table can be visually verified against the PNG diagnostic figure.
@@ -26,13 +30,11 @@ Plot  3    (log-return histogram)  B3  KS Statistic (log-returns)
 Plot  4    (QQ plot)               B5  QQ RMSE
                                    B6  Tail QQ Error (5th/95th extremes)
 Plot  5    (ACF |r|)               B7  ACF Lag-1 Error (|r|)
-                                   B8  ARCH Persistence Error
-Plot  6    (ACF r²)                B9  ACF Lag-1 Error (r²)
-                                   B10 GARCH Persistence Error
-Plot  7    (rolling vol histogram)  B11 Rolling Vol KS Statistic
-                                   B12 Vol-of-Vol Error
-Plot  8    (tail survival log-log) B13 Terminal Price KS Statistic
-                                   B14 Tail Index Error (Hill estimator)
+Plot  6    (ACF r²)                B8  ACF Lag-1 Error (r²)
+Plot  7    (rolling vol histogram)  B9  Rolling Vol KS Statistic
+                                   B10 Vol-of-Vol Error
+Plot  8    (tail survival log-log) B11 Terminal Price KS Statistic
+                                   B12 Tail Index Error (Hill estimator)
 """
 
 import numpy as np
@@ -109,7 +111,7 @@ def compute_stylized_metrics(
 
     Returns
     -------
-    dict with keys B1..B14 (floats, all ↓ lower is better)
+    dict with keys B1..B12 (floats, all ↓ lower is better)
     """
     N_r, T = S_real.shape
     N_g    = S_gen.shape[0]
@@ -173,60 +175,47 @@ def compute_stylized_metrics(
     acf1_abs_g = _acf_mean(np.abs(R_gen),  lag=1)
     out["B7_acf_lag1_abs"] = float(abs(acf1_abs_r - acf1_abs_g))
 
-    # ── B8  ARCH Persistence Error (Plot 5) ──────────────────────────────────
-    # |mean_k(ACF_real(|r|,k)) - mean_k(ACF_gen(|r|,k))| for k=1..acf_lags
-    # Integrated autocorrelation of absolute returns measures ARCH persistence.
-    acf_abs_r = np.array([_acf_mean(np.abs(R_real), k) for k in range(1, acf_lags + 1)])
-    acf_abs_g = np.array([_acf_mean(np.abs(R_gen),  k) for k in range(1, acf_lags + 1)])
-    out["B8_arch_persistence_error"] = float(abs(acf_abs_r.mean() - acf_abs_g.mean()))
-
-    # ── B9  ACF Lag-1 Error r² (Plot 6) ──────────────────────────────────────
+    # ── B8  ACF Lag-1 Error r² (Plot 6) ──────────────────────────────────────
     # |ACF_real(r², lag=1) - ACF_gen(r², lag=1)|
     # Squared returns ACF captures GARCH effect. Ref: Bollerslev (1986).
     acf1_sq_r = _acf_mean(R_real ** 2, lag=1)
     acf1_sq_g = _acf_mean(R_gen  ** 2, lag=1)
-    out["B9_acf_lag1_sq"] = float(abs(acf1_sq_r - acf1_sq_g))
+    out["B8_acf_lag1_sq"] = float(abs(acf1_sq_r - acf1_sq_g))
 
-    # ── B10  GARCH Persistence Error (Plot 6) ────────────────────────────────
-    # |mean_k(ACF_real(r²,k)) - mean_k(ACF_gen(r²,k))| for k=1..acf_lags
-    acf_sq_r = np.array([_acf_mean(R_real ** 2, k) for k in range(1, acf_lags + 1)])
-    acf_sq_g = np.array([_acf_mean(R_gen  ** 2, k) for k in range(1, acf_lags + 1)])
-    out["B10_garch_persistence_error"] = float(abs(acf_sq_r.mean() - acf_sq_g.mean()))
-
-    # ── B11  Rolling Vol KS Statistic (Plot 7) ───────────────────────────────
+    # ── B9  Rolling Vol KS Statistic (Plot 7) ────────────────────────────────
     # Two-sample KS on rolling volatility distributions (window=vol_window)
     # Ref: Cont (2001) stylized fact: "volatility clusters in time"
     rv_r = _rolling_vol(S_real, vol_window).ravel()
     rv_g = _rolling_vol(S_gen,  vol_window).ravel()
     ks_vol, _ = ks_2samp(rv_r, rv_g)
-    out["B11_rolling_vol_ks"] = float(ks_vol)
+    out["B9_rolling_vol_ks"] = float(ks_vol)
 
-    # ── B12  Vol-of-Vol Error (Plot 7) ───────────────────────────────────────
+    # ── B10  Vol-of-Vol Error (Plot 7) ───────────────────────────────────────
     # |std(roll_vol_real) - std(roll_vol_gen)| normalized by real std
     # Measures whether the dispersion of the vol distribution is reproduced.
     # Ref: Hull & White (1987) — vol-of-vol drives option smile.
     std_rv_r = float(rv_r.std())
     std_rv_g = float(rv_g.std())
-    out["B12_vol_of_vol_error"] = float(abs(std_rv_r - std_rv_g))
+    out["B10_vol_of_vol_error"] = float(abs(std_rv_r - std_rv_g))
 
-    # ── B13  Terminal Price KS Statistic (Plot 8) ─────────────────────────────
+    # ── B11  Terminal Price KS Statistic (Plot 8) ─────────────────────────────
     # Two-sample KS on terminal price S_T distribution
     # Tests whether the generator reproduces the terminal marginal (log-normal for GBM).
     term_r = S_real[:, -1]
     term_g = S_gen[:,  -1]
     ks_term, _ = ks_2samp(term_r, term_g)
-    out["B13_terminal_ks"] = float(ks_term)
+    out["B11_terminal_ks"] = float(ks_term)
 
-    # ── B14  Tail Index Error — Hill estimator (Plot 8) ───────────────────────
+    # ── B12  Tail Index Error — Hill estimator (Plot 8) ───────────────────────
     # |α̂_real - α̂_gen| where α̂ = Hill(1975) estimator on terminal prices
     # Uses top 10% of terminal prices. α > 4 → finite 4th moment; α > 2 → finite variance.
     # Ref: Hill (1975); Mandelbrot (1963) — empirical tail indices for stocks ≈ 3–5.
     alpha_r = _hill_estimator(term_r, k_frac=0.10)
     alpha_g = _hill_estimator(term_g, k_frac=0.10)
     if np.isfinite(alpha_r) and np.isfinite(alpha_g):
-        out["B14_tail_index_error"] = float(abs(alpha_r - alpha_g))
+        out["B12_tail_index_error"] = float(abs(alpha_r - alpha_g))
     else:
-        out["B14_tail_index_error"] = float("nan")
+        out["B12_tail_index_error"] = float("nan")
 
     return out
 

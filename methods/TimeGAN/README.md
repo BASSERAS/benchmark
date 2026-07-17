@@ -48,7 +48,7 @@ to the TF1 reference implementation.
 
 ---
 
-## Stylized Metrics B1–B14 — mean ± std across 5 seeds
+## Stylized Metrics B1–B12 — mean ± std across 5 seeds
 
 > One scalar per diagnostic plot panel. Extracted from the same data as the 8-panel PNG.
 > All ↓ lower is better.
@@ -62,18 +62,16 @@ to the TF1 reference implementation.
 | B5  | QQ RMSE (300-pt)      | Distribution | ↓ | 0.0025 ± 0.0006 | 0.0019 | 0.0026 | 0.0028 | 0.0017 | 0.0035 | 0.0001 ± 0.0000 |
 | B6  | Tail QQ Error         | Fat-tail     | ↓ | 0.0034 ± 0.0015 | 0.0042 | 0.0054 | 0.0016 | 0.0017 | 0.0041 | 0.0001 ± 0.0001 |
 | B7  | ACF lag-1 |r| Err     | Temporal     | ↓ | 0.2282 ± 0.1042 | 0.1549 | 0.2137 | 0.3698 | 0.0847 | 0.3180 | 0.0018 ± 0.0016 |
-| B8  | ARCH Persistence Err  | Temporal     | ↓ | 0.0591 ± 0.0359 | 0.0272 | 0.0436 | 0.0895 | 0.0221 | 0.1130 | 0.0011 ± 0.0005 |
-| B9  | ACF lag-1 r² Err      | Temporal     | ↓ | 0.1732 ± 0.0631 | 0.1186 | 0.2016 | 0.2655 | 0.0881 | 0.1923 | 0.0017 ± 0.0014 |
-| B10 | GARCH Persistence Err | Temporal     | ↓ | 0.0328 ± 0.0151 | 0.0173 | 0.0265 | 0.0380 | 0.0224 | 0.0598 | 0.0010 ± 0.0006 |
-| B11 | Rolling Vol KS        | Volatility   | ↓ | 0.2540 ± 0.1093 | 0.1877 | 0.2705 | 0.3619 | 0.0805 | 0.3695 | 0.0046 ± 0.0024 |
-| B12 | Vol-of-Vol Error      | Volatility   | ↓ | 0.0009 ± 0.0009 | 0.0004 | 0.0003 | 0.0025 | 0.0003 | 0.0011 | 0.0000 ± 0.0000 |
-| B13 | Terminal Price KS     | Distribution | ↓ | 0.1121 ± 0.0556 | 0.1077 | 0.0573 | 0.2074 | 0.0574 | 0.1307 | 0.0145 ± 0.0043 |
-| B14 | Hill Tail Index Err   | Fat-tail     | ↓ | 36.88 ± 17.05   | 40.70  | 18.78  | 51.75  | 15.49  | 57.70  | 0.499 ± 0.610   |
+| B8  | ACF lag-1 r² Err      | Temporal     | ↓ | 0.1732 ± 0.0631 | 0.1186 | 0.2016 | 0.2655 | 0.0881 | 0.1923 | 0.0017 ± 0.0014 |
+| B9  | Rolling Vol KS        | Volatility   | ↓ | 0.2540 ± 0.1093 | 0.1877 | 0.2705 | 0.3619 | 0.0805 | 0.3695 | 0.0046 ± 0.0024 |
+| B10 | Vol-of-Vol Error      | Volatility   | ↓ | 0.0009 ± 0.0009 | 0.0004 | 0.0003 | 0.0025 | 0.0003 | 0.0011 | 0.0000 ± 0.0000 |
+| B11 | Terminal Price KS     | Distribution | ↓ | 0.1121 ± 0.0556 | 0.1077 | 0.0573 | 0.2074 | 0.0574 | 0.1307 | 0.0145 ± 0.0043 |
+| B12 | Hill Tail Index Err   | Fat-tail     | ↓ | 36.88 ± 17.05   | 40.70  | 18.78  | 51.75  | 15.49  | 57.70  | 0.499 ± 0.610   |
 
-> **B7–B10** (ACF metrics): Heston true ACF(|r|, lag=1) ≈ +0.052, ACF(r², lag=1) ≈ +0.050.
+> **B7–B8** (ACF lag-1 errors): Heston true ACF(|r|, lag=1) ≈ +0.052, ACF(r², lag=1) ≈ +0.050.
 > TimeGAN often collapses to near-zero ACF, missing the ARCH signature (seeds 2, 4 worst).
-> **B14**: Hill estimator on terminal prices S_T. Large variance across seeds → noisy estimate.
-> This metric is informative across methods but noisy per seed. Use the mean.
+> B8 (ARCH Persistence, lags 1–20) and B10 (GARCH Persistence) removed as redundant with A11/A12.
+> **B12**: Hill estimator on terminal prices S_T. Large variance across seeds — use the mean.
 
 ---
 

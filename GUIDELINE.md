@@ -288,11 +288,18 @@ cd metrics
 synthetic, evaluated on real test inputs. A19 correlation close to 1 means synthetic has the same
 AR(5) temporal structure as real data. Reference: Esteban et al. (2017) TSTR protocol.
 
+**⚠️ Heston caveat (A17–A19):** Heston log-returns are near i.i.d. (near-zero autocorrelation).
+- A17 (Oracle MAE) ≈ 0.0097 for ALL seeds and ALL methods — this is the unconditional std(r). This is CORRECT; it is not a bug.
+- A19 (Oracle-Agent Corr) ≈ −0.06 ± 0.43 for perfect-recovery: AR(5) predictions are white-noise for i.i.d. data,
+  making their mutual correlation undefined/random. A19 is DEGENERATE for Heston.
+- These two metrics are MEANINGFUL for datasets with genuine temporal structure (e.g. financial time series with strong autocorrelation, regime-switching).
+- The perfect_recovery.json floor for A17 = 0.0097 ± 0.0000 and for A19 = −0.058 ± 0.430 confirms this interpretation.
+
 **A20 (RV Law Loss):** W₁(RV_real, RV_gen) where RV_i = Σ_t r²_{i,t} / dt (annualized realized
 variance per path). Measures whether the cross-path distribution of realized variances matches.
 Reference: Barndorff-Nielsen & Shephard (2002).
 
-**B1–B14 (Stylized metrics from 8 diagnostic plots):**
+**B1–B12 (Stylized metrics from 8 diagnostic plots — B8 ARCH Persistence and B10 GARCH Persistence removed as redundant with A11/A12):**
 
 | ID | Name | Corresponds to plot | Direction | Reference |
 |----|------|--------------------|-----------|----|
@@ -303,15 +310,13 @@ Reference: Barndorff-Nielsen & Shephard (2002).
 | B5 | QQ RMSE | Plot 4 (QQ plot) | ↓ | Wilk & Gnanadesikan 1968 |
 | B6 | Tail QQ Error | Plot 4 (5th/95th extremes) | ↓ | — |
 | B7 | ACF Lag-1 Error (\|r\|) | Plot 5 (ACF abs returns) | ↓ | Ding et al. 1993 |
-| B8 | ARCH Persistence Error | Plot 5 | ↓ | Engle 1982 |
-| B9 | ACF Lag-1 Error (r²) | Plot 6 (ACF sq returns) | ↓ | Bollerslev 1986 |
-| B10 | GARCH Persistence Error | Plot 6 | ↓ | Bollerslev 1986 |
-| B11 | Rolling Vol KS Stat | Plot 7 (vol histogram) | ↓ | Cont 2001 |
-| B12 | Vol-of-Vol Error | Plot 7 | ↓ | Hull & White 1987 |
-| B13 | Terminal Price KS Stat | Plot 8 (tail survival) | ↓ | Massey 1951 |
-| B14 | Tail Index Error (Hill) | Plot 8 | ↓ | Hill 1975 |
+| B8 | ACF Lag-1 Error (r²) | Plot 6 (ACF sq returns) | ↓ | Bollerslev 1986 |
+| B9 | Rolling Vol KS Stat | Plot 7 (vol histogram) | ↓ | Cont 2001 |
+| B10 | Vol-of-Vol Error | Plot 7 | ↓ | Hull & White 1987 |
+| B11 | Terminal Price KS Stat | Plot 8 (tail survival) | ↓ | Massey 1951 |
+| B12 | Tail Index Error (Hill) | Plot 8 | ↓ | Hill 1975 |
 
-Total A-metrics: 23 numbers. Total B-metrics: 14 numbers. **Grand total: 37 scalar metrics per seed.**
+Total A-metrics: 23 numbers. Total B-metrics: 12 numbers. **Grand total: 35 scalar metrics per seed.**
 
 ### 5.3 Output files
 
@@ -319,7 +324,7 @@ Total A-metrics: 23 numbers. Total B-metrics: 14 numbers. **Grand total: 37 scal
 
 | File | Contents |
 |------|---------|
-| `results/Heston/<Method>/seed_{i}_metrics.json` | All 37 metric values for seed i (A1-A20 + B1-B14) |
+| `results/Heston/<Method>/seed_{i}_metrics.json` | All 35 metric values for seed i (A1-A20 + B1-B12) |
 | `results/Heston/<Method>/metrics_summary.json` | Mean ± std across 5 seeds |
 | `results/Heston/<Method>/metrics_summary.csv` | Same, CSV format |
 | `results/Heston/<Method>/plots/disc_classifier_loss.png` | A13 BCE training loss, GRU + MLP, 5 seeds |
@@ -824,3 +829,131 @@ SBTS states Python 3.11. Check compatibility with gpu-venv before starting.
 
 Paper timing for reference: Alouadi et al. report 548 s for 1 000 samples at T=252 with 12 CPU cores (~6.6 s/path).
 Our T=128 (vs their T=252) explains the faster per-path time (~2.9 s vs ~6.6 s).
+
+---
+
+## 15. README Writing Protocol (Precise Format)
+
+This section specifies the EXACT format for every README type in the benchmark.
+Follow it exactly when adding a new method. Do NOT deviate from section titles or ordering.
+
+---
+
+### 15.1 Method README (`methods/<Method>/README.md`) — Required Sections
+
+#### Title
+```markdown
+# <Method> on Heston
+```
+
+#### Section 2 — Metrics A1–A20
+```markdown
+## Metrics A1–A20 — mean ± std across 5 seeds
+
+> Note about log-returns if applicable.
+
+| ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
+|----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------------|
+| A1  | Path MMD²   | Distribution | ↓ | X.XXXX ± X.XXXX | ... | 0.0018 ± 0.0002 |
+...
+| A20 | RV Law Loss | Distribution | ↓ | ... | ≈0 |
+
+> **A11–A12**: ACF computed on log-returns r_t = log(S_{t+1}/S_t) at lags L = {1, 2, 5, 10}. ↓
+> **A13**: Discriminative classifier trained on log-returns. Score = |accuracy − 0.5|; 0 = indistinguishable.
+> **A14**: TSTR MAE; cluster near 0.056–0.059 (irreducible log-return noise floor for Heston).
+> **A16**: Tail survival on |log-returns|. Quantiles {0.90, 0.95, 0.99} of real used as thresholds.
+> **A17–A19**: OLS AR(5) oracle/agent protocol on log-returns. A17 ≈ 0.0097 constant for Heston (i.i.d. returns). A19 degenerate for Heston (near-zero autocorrelation → white-noise predictions → random correlation).
+> **A20**: W₁(RV_real, RV_gen), RV_i = Σ_t r²_{i,t} / dt (annualized realized variance per path). Ref: Barndorff-Nielsen & Shephard (2002).
+```
+
+#### Section 3 — Stylized Metrics B1–B12
+```markdown
+## Stylized Metrics B1–B12 — mean ± std across 5 seeds
+
+> One scalar per diagnostic plot panel. Extracted from the same data as the 8-panel PNG.
+> All ↓ lower is better.
+
+| ID  | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
+|-----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------------|
+| B1  | Mean Path RMSE        | Distribution | ↓ | ... |
+| B2  | Cross-Sect. Vol RMSE  | Distribution | ↓ | ... |
+| B3  | KS on Log-returns     | Distribution | ↓ | ... |
+| B4  | Skewness Error        | Distribution | ↓ | ... |
+| B5  | QQ RMSE (300-pt)      | Distribution | ↓ | ... |
+| B6  | Tail QQ Error         | Fat-tail     | ↓ | ... |
+| B7  | ACF lag-1 |r| Err     | Temporal     | ↓ | ... |
+| B8  | ACF lag-1 r² Err      | Temporal     | ↓ | ... |
+| B9  | Rolling Vol KS        | Volatility   | ↓ | ... |
+| B10 | Vol-of-Vol Error      | Volatility   | ↓ | ... |
+| B11 | Terminal Price KS     | Distribution | ↓ | ... |
+| B12 | Hill Tail Index Err   | Fat-tail     | ↓ | ... |
+
+> **B7–B8** (ACF lag-1 errors): note the expected values and what wrong scores mean.
+> **B12**: Hill estimator — use the mean; noisy per seed.
+```
+
+---
+
+### 15.2 Results README (`results/Heston/<Method>/README.md`) — Required Sections
+
+**Section order (mandatory):**
+
+1. **Header** — method name, paper citation, one-line description, convention note (↓ lower is better except A15 Corr ↑)
+
+2. **What we generate** (if applicable) — SDE, scaling steps, pipeline
+
+3. **Results (mean ± std across 5 seeds)**
+   - Subsection **A1–A20 Core metrics**: full table with columns `ID | Metric | Mean ± Std | Seed 0..4 | Perfect floor`
+   - Subsection **B1–B12 Stylized metrics**: same format
+   - Footnotes for A13, A14, A15, A16, A17–A19, A20
+
+4. **Comparison with the paper**
+   - ⚠️ Warning that direct comparison may not be meaningful (state why: different dataset, different T, different d)
+   - Subsection A: Hyperparameter verification table (columns: `Setting | Our reimplementation | Paper (source)`)
+   - Subsection B: Score comparison table — **Fetch the paper's Table of results. Find metrics that are comparable to ours (discriminative score, predictive score, or equivalent). Create a table:**
+     ```
+     | Metric | Paper — Dataset1 (d=X, T=Y) | Paper — Dataset2 | Ours — Heston GRU (d=1, T=128) | Ours — Heston MLP |
+     ```
+     Quote the exact paper table, dataset used, and metric definition (same metric? different metric?).
+   - Subsection C (if applicable): Scaling / implementation notes
+
+5. **Stylised Metrics B1–B12** ← *copied verbatim from Section 3 of the method README*
+   - Include the metric-to-plot mapping table
+   - Include all LaTeX formulas for B1–B12
+   - Include the 8-panel diagnostic PNG: `![Heston Diagnostics](plots/heston_diagnostics.png)`
+
+> **Note:** The Metric Definitions section (A1–A20 with LaTeX formulas) lives in `methods/<Method>/README.md`
+> and `methods/<Method>/code/README.md` — NOT in the results README. The results README contains
+> tables only; cross-link to the method README for formula details.
+
+---
+
+### 15.3 Code README (`methods/<Method>/code/README.md`) — Required Sections
+
+**Section order (mandatory):**
+
+1. **Original work** table: Paper, Authors, Venue, arXiv, GitHub, Original framework
+2. **Our implementation** — what changed vs the reference
+3. **Architecture table** (if neural network): component, layers, output shape
+4. **Fixes applied vs the reference** — numbered list, each fix: `Location | Reference (buggy) | Our fix`
+5. **Hyperparameters (from paper)** table: `Parameter | Value | Source in paper (§, Table, Appendix)`
+6. **How to change hyperparameters** — explicit instructions per parameter; how to pass CLI args or edit config
+7. **How to use a different dataset** — required file format (.npy, shape, dtype, scale); which lines to change in the code
+8. **How to produce new seeds** — command to run single seed; command for all 5; where outputs land
+9. **Reproduce** — exact bash commands for: single seed, all seeds, compute metrics
+10. **Sanity check results** (optional but recommended) — show small-scale test output
+
+---
+
+### 15.4 GUIDELINE.md Update Protocol
+
+When a new standard is established (new metric, new section format, new B metric removed, new method added):
+1. Update section 5.2 metric list (add/remove/rename)
+2. Update section 13 checklist (any new file to check?)
+3. Add a dated note in section 14 (SBTS-Specific Notes) or a new section
+4. Update this section (15) with the new format requirement
+
+**History of changes:**
+- 2026-07-17: B8 (ARCH Persistence Error, lags 1-20) and B10 (GARCH Persistence Error, lags 1-20) removed from B metrics as redundant with A11 and A12. Renumbered: old B9→B8, old B11→B9, old B12→B10, old B13→B11, old B14→B12. Total B metrics: 14 → 12. Total grand total: 37 → 35 scalars per seed.
+- 2026-07-17: Added A16–A20 to metric list; documented A17 (constant for Heston) and A19 (degenerate for i.i.d.) behavior.
+- 2026-07-17: Added §15 (README Writing Protocol) with exact section order and format for method, results, and code READMEs.

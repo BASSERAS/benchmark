@@ -134,3 +134,63 @@ Log-return statistics (generated vs training):
 Variance compression at N_train=200 is expected: the kernel estimator underestimates
 the tails on small training sets. It disappears at N_train=8192 (full run),
 confirmed by seed 0: σ_train=0.01265, price range [51.8, 210.6].
+
+---
+
+## Changing hyperparameters
+
+All hyperparameters are taken verbatim from **paper Appendix C, Table 4** (Heston, K=1 Markovian).
+To experiment, override the constants at the top of `run_all.py` or pass them explicitly
+to `generate_paths()` in `sbts_generate.py`.
+
+| Hyperparameter | Paper default | Where to change | Effect |
+|----------------|---------------|-----------------|--------|
+| `h` | 0.4 | `run_all.py` constant `H_BW` | Kernel bandwidth. Larger h → smoother paths, smaller variance. |
+| `K` | 1 | `run_all.py` constant `K_ORDER` | Markovian order. K=1: weights on last state only. K=2 adds lag-1 state (non-Markovian). |
+| `N_pi` | 200 | `run_all.py` constant `N_PI` | Euler substeps per Δt. More substeps → smoother approximation, slower generation. |
+| `n_workers` | 64 | `SBTS_NWORK` env var | CPU parallelism. Set to number of available cores (max 64 recommended). |
+| `dt` | 1/250 | `sbts_generate.py` `DT` | Observation interval. 1/250 = daily (250 trading days/year). |
+
+**Example — wider bandwidth:**
+```bash
+SBTS_H=0.6 SBTS_NWORK=64 python run_all.py
+```
+
+(requires reading `SBTS_H` in `run_all.py`; add `H_BW = float(os.getenv("SBTS_H", "0.4"))`)
+
+---
+
+## Using a different dataset
+
+`run_all.py` loads training data from `dataset/Heston/heston_S_8192x128.npy` by default.
+To use a different dataset:
+
+1. Provide a `.npy` file of shape `(N_train, T)`, dtype `float64`, in price space (S₀ ≈ 100).
+2. Update the constants in `run_all.py`:
+```python
+DATA_PATH = "/path/to/your/data.npy"   # was heston_S_8192x128.npy
+OUT_DIR   = "generated_paths/"          # output root
+```
+3. The scaling step `R̃ = R × √dt / σ(R)` is automatic — no manual adjustment needed.
+4. If your series has a different length T, SBTS adapts automatically (no architecture change).
+
+---
+
+## Producing new seeds
+
+Each seed initialises a new `np.random.default_rng(seed)` for the Numba simulation noise.
+To add a single extra seed:
+
+```bash
+# One extra seed on 64 workers
+SBTS_SEEDS=5 SBTS_NWORK=64 python run_all.py
+```
+
+To reproduce all 5 seeds from scratch:
+```bash
+SBTS_NWORK=64 python run_all.py          # runs seeds 0–4 sequentially
+```
+
+Each seed takes ~6–23 min (depends on worker count). Results land in:
+- `generated_paths/seed_{i}/generated_paths_8192x128.npy`
+- `losses/seed_{i}_bandwidth.json`  (records h, K, N_pi — no loss since kernel method)

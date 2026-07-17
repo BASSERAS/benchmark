@@ -66,3 +66,69 @@ python train.py --gpu0 0 --gpu1 3
 ```
 
 Outputs written to `methods/TimeGAN/{generated_paths,weights,losses}/`.
+
+---
+
+## Changing hyperparameters
+
+Edit `timegan_torch.py` or pass overrides via `train_seed.py` arguments.
+The canonical paper hyperparameters are in the table below; do NOT tune on Heston
+without documenting the change and why.
+
+| Hyperparameter | Default | Where to change | Effect |
+|----------------|---------|-----------------|--------|
+| `hidden_dim` | 24 | `timegan_torch.py` line ~10 | GRU hidden state size for all 5 components |
+| `num_layers` | 3 | `timegan_torch.py` line ~11 | GRU depth (Embedder, Recovery, Generator, Discriminator); Supervisor = num_layers − 1 |
+| `batch_size` | 128 | `timegan_torch.py` line ~12 | Mini-batch size (affects memory and noise level) |
+| `embed_steps` | 5 000 | `train_seed.py --embed_steps` | Phase-1 embedding pre-training steps |
+| `sup_steps` | 5 000 | `train_seed.py --sup_steps` | Phase-2 supervisor pre-training steps |
+| `joint_steps` | 10 000 | `train_seed.py --joint_steps` | Phase-3 adversarial joint training steps |
+| `lr` | 1e-3 | `timegan_torch.py` | Adam learning rate for all components |
+
+**Example — double the joint training steps:**
+```bash
+CUDA_VISIBLE_DEVICES=0 python train_seed.py --seed 0 --joint_steps 20000
+```
+
+---
+
+## Using a different dataset
+
+`train_seed.py` expects a path to a `.npy` file containing price paths of shape `(N, T)`,
+dtype `float64`, in the original price scale (e.g. S₀ ≈ 100).
+
+```bash
+# Train on a custom dataset
+CUDA_VISIBLE_DEVICES=0 python train_seed.py \
+    --seed 0 \
+    --data_path /path/to/my_paths_Nx128.npy \
+    --out_dir   /path/to/my_method_output/seed_0/
+```
+
+Inside `train_seed.py`, the data is min-max normalised to [0, 1] before training
+and denormalised back to the original scale before saving generated paths.
+If your data has a different time dimension, update `seq_len` in the config.
+
+---
+
+## Producing new seeds
+
+Each seed initialises a new random state (PyTorch, NumPy, CUDA) via `torch.manual_seed(seed)`.
+To run a single extra seed without modifying the orchestrator:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 taskset -c 0-7 OMP_NUM_THREADS=8 \
+    python train_seed.py --seed 5
+```
+
+To run all seeds (0–4) in the standard parallel configuration:
+
+```bash
+python train.py --gpu0 0 --gpu1 3
+```
+
+Outputs land in:
+- `generated_paths/seed_{i}/generated_paths_8192x128.npy`
+- `weights/seed_{i}_model.pt`
+- `weights/seed_{i}_config.json`
+- `losses/seed_{i}_losses.csv`

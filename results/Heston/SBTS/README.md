@@ -73,7 +73,7 @@ matching the theoretical SDE diffusion coefficient and stabilising the kernel br
 | A19 | Oracle-Agent Corr ↑   | −0.342 ± 0.171  | −0.561 | −0.045 | −0.421 | −0.378 | −0.303 | −0.058 ± 0.430 |
 | A20 | RV Law Loss           | 2.1482 ± 0.0074 | 2.1559 | 2.1510 | 2.1552 | 2.1411 | 2.1380 | 0.0673 ± 0.0362 |
 
-### B1–B14 — Stylized metrics
+### B1–B12 — Stylized metrics
 
 | ID | Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |----|--------|-----------|--------|--------|--------|--------|--------|---------------|
@@ -83,14 +83,12 @@ matching the theoretical SDE diffusion coefficient and stabilising the kernel br
 | B4  | Skewness Error        | 0.0227 ± 0.0037 | 0.0196 | 0.0184 | 0.0217 | 0.0249 | 0.0287 | 0.0060 ± 0.0048 |
 | B5  | QQ RMSE (300-pt)      | 0.0028 ± 0.0000 | 0.0028 | 0.0028 | 0.0028 | 0.0028 | 0.0028 | 0.0001 ± 0.0000 |
 | B6  | Tail QQ Error         | 0.0062 ± 0.0000 | 0.0063 | 0.0062 | 0.0062 | 0.0062 | 0.0062 | 0.0001 ± 0.0001 |
-| B7  | ACF lag-1 |r| Err     | 0.1449 ± 0.0012 | 0.1447 | 0.1431 | 0.1450 | 0.1448 | 0.1468 | 0.0018 ± 0.0016 |
-| B8  | ARCH Persistence Err  | 0.0274 ± 0.0004 | 0.0276 | 0.0278 | 0.0272 | 0.0267 | 0.0275 | 0.0011 ± 0.0005 |
-| B9  | ACF lag-1 r² Err      | 0.1678 ± 0.0017 | 0.1687 | 0.1650 | 0.1672 | 0.1681 | 0.1701 | 0.0017 ± 0.0014 |
-| B10 | GARCH Persistence Err | 0.0227 ± 0.0004 | 0.0229 | 0.0232 | 0.0225 | 0.0221 | 0.0229 | 0.0010 ± 0.0006 |
-| B11 | Rolling Vol KS        | 0.3435 ± 0.0006 | 0.3444 | 0.3433 | 0.3440 | 0.3430 | 0.3426 | 0.0046 ± 0.0024 |
-| B12 | Vol-of-Vol Error      | 0.0021 ± 0.0000 | 0.0021 | 0.0021 | 0.0021 | 0.0021 | 0.0021 | 0.0000 ± 0.0000 |
-| B13 | Terminal Price KS     | 0.0921 ± 0.0051 | 0.0892 | 0.0938 | 0.0903 | 0.0863 | 0.1011 | 0.0145 ± 0.0043 |
-| B14 | Hill Tail Index Err   | 9.499 ± 0.346   | 9.286  | 9.201  | 9.853  | 9.981  | 9.175  | 0.499 ± 0.610   |
+| B7  | ACF lag-1 \|r\| Err   | 0.1449 ± 0.0012 | 0.1447 | 0.1431 | 0.1450 | 0.1448 | 0.1468 | 0.0018 ± 0.0016 |
+| B8  | ACF lag-1 r² Err      | 0.1678 ± 0.0017 | 0.1687 | 0.1650 | 0.1672 | 0.1681 | 0.1701 | 0.0017 ± 0.0014 |
+| B9  | Rolling Vol KS        | 0.3435 ± 0.0006 | 0.3444 | 0.3433 | 0.3440 | 0.3430 | 0.3426 | 0.0046 ± 0.0024 |
+| B10 | Vol-of-Vol Error      | 0.0021 ± 0.0000 | 0.0021 | 0.0021 | 0.0021 | 0.0021 | 0.0021 | 0.0000 ± 0.0000 |
+| B11 | Terminal Price KS     | 0.0921 ± 0.0051 | 0.0892 | 0.0938 | 0.0903 | 0.0863 | 0.1011 | 0.0145 ± 0.0043 |
+| B12 | Hill Tail Index Err   | 9.499 ± 0.346   | 9.286  | 9.201  | 9.853  | 9.981  | 9.175  | 0.499 ± 0.610   |
 
 ---
 
@@ -170,338 +168,101 @@ variance of R̃ matches the theoretical SDE variance Δt, which stabilises the k
 
 ---
 
-## Metric Definitions
+## Stylised Metrics B1–B12 — mean ± std across 5 seeds
 
-**Notation.**
-$X \sim P$ = real paths $(N \times T \times d)$,
-$\tilde{X} \sim Q$ = generated paths,
-$r_t = \log X_{t+1} - \log X_t$ = log-returns,
-$k(x, x') = \exp(-\|x-x'\|^2 / 2\sigma^2)$ = RBF kernel.
+Extracted directly from the 8 diagnostic plot panels (return distribution, QQ, ACF,
+volatility clustering, terminal distribution, tail survival).
+Each metric quantifies how well SBTS reproduces a known stylized fact (Cont 2001).
+B8 (ARCH Persistence) and B10 (GARCH Persistence) have been removed as redundant
+with A11 and A12 respectively.
 
----
+> Metric-to-plot mapping (matches `metrics/plot_diagnostics.py` panel order):
 
-### A1 — Path MMD² · *Maximum Mean Discrepancy on full paths*
+| Plots | B metric | What you see |
+|-------|----------|-------------|
+| 1 + 2 (sample paths) | B1 Mean Path RMSE, B2 Cross-Sect. Vol RMSE | Systematic drift + spread of the fan |
+| 3 (log-return histogram) | B3 KS Stat, B4 Skewness Error | Shape, centre, asymmetry of density |
+| 4 (QQ plot) | B5 QQ RMSE (300-pt), B6 Tail QQ Error | Diagonal alignment; 5th/95th deviation |
+| 5 (ACF \|r\|) | B7 ACF lag-1 \|r\| error | Volatility clustering: lag-1 bar height |
+| 6 (ACF r²) | B8 ACF lag-1 r² error | GARCH effect: lag-1 bar height |
+| 7 (rolling vol hist.) | B9 Rolling Vol KS, B10 Vol-of-Vol Error | Width and spread of the vol histogram |
+| 8 (tail survival) | B11 Terminal Price KS, B12 Tail Index Error (Hill) | Log-log alignment + slope (tail heaviness) |
 
-$$
-\widehat{\text{MMD}}^2(P, Q)
-= \frac{1}{N^2}\sum_{i,j} k(x_i, x_j)
-- \frac{2}{N^2}\sum_{i,j} k(x_i, \tilde{x}_j)
-+ \frac{1}{N^2}\sum_{i,j} k(\tilde{x}_i, \tilde{x}_j)
-$$
+### Formulas
 
-Applied to the **concatenated full path** $x = (X_1, \ldots, X_T) \in \mathbb{R}^{T \cdot d}$.
-Tests whether the joint path distribution $P$ is correctly reproduced. **Perfect: 0.**
+**B1 — Mean Path RMSE**
 
----
+$$B1 = \sqrt{rac{1}{T}\sum_{t=1}^{T}\!\left(ar{S}^{	ext{real}}_t - ar{S}^{	ext{gen}}_tight)^2}$$
 
-### A2 — Terminal MMD² · *Maximum Mean Discrepancy on terminal values*
+**B2 — Cross-Sectional Vol RMSE**
 
-Same estimator applied only to **terminal prices** $x = X_T \in \mathbb{R}^d$.
-Tests whether the marginal distribution at maturity is correct. **Perfect: 0.**
+$$B2 = \sqrt{rac{1}{T}\sum_{t=1}^{T}\!\left(\sigma^{	ext{real}}_t - \sigma^{	ext{gen}}_tight)^2}$$
 
----
+where $\sigma_t = 	ext{std}_{i}(S_{i,t})$ is the cross-sectional standard deviation at time $t$.
 
-### A3 — Increment MMD² · *Maximum Mean Discrepancy on returns*
+**B3 — KS Statistic on log-returns**
 
-$$
-\widehat{\text{MMD}}^2\!\left(\{r_t\}_{t<T},\, \{\tilde{r}_t\}_{t<T}\right),
-\quad r_t = X_{t+1} - X_t
-$$
+$$B3 = \sup_x\!\left|F^{	ext{real}}_r(x) - F^{	ext{gen}}_r(x)ight|,\quad r_t = \log(S_{t+1}/S_t)$$
 
-Applied to all increments pooled across time. Tests the return distribution. **Perfect: 0.**
+Two-sample Kolmogorov-Smirnov statistic on all pooled log-returns. Perfect: 0.
 
----
+**B4 — Skewness Error**
 
-### A4 — Volatility MMD · *Maximum Mean Discrepancy on realised volatility*
+$$B4 = \left|	ext{skew}(r^{	ext{real}}) - 	ext{skew}(r^{	ext{gen}})ight|,\quad 	ext{skew}(Z)=rac{\mathbb{E}[(Z-\mu)^3]}{\sigma^3}$$
 
-Rolling realised volatility with window $w = 5$:
+Heston generates negative skew (ρ < 0 leverage). Perfect: 0.
 
-$$
-\hat{\sigma}_t = \sqrt{\frac{1}{w}\sum_{s=t-w}^{t-1} r_s^2}
-$$
+**B5 — QQ RMSE (300-pt)**
 
-MMD between $\{\hat{\sigma}_t^{\text{real}}\}$ and $\{\hat{\sigma}_t^{\text{fake}}\}$.
-Tests **volatility clustering** and the vol level distribution. **Perfect: 0.**
+$$B5 = \sqrt{rac{1}{G}\sum_{g=1}^{G}\!\left(Q^{	ext{real}}_r(p_g) - Q^{	ext{gen}}_r(p_g)ight)^2},\quad p_g \in [0.005,\,0.995]$$
 
----
+300 uniformly spaced quantile points. Tests bulk distributional match. Perfect: 0.
 
-### A5 — Terminal SWD · *Sliced Wasserstein Distance on terminal values*
+**B6 — Tail QQ Error**
 
-$$
-\text{SWD}(P_T, Q_T)
-= \mathbb{E}_{\theta \sim \mathcal{U}(\mathbb{S}^{d-1})}
-  \left[W_1\!\left(\theta_\sharp P_T,\, \theta_\sharp Q_T\right)\right]
-$$
+Same as B5 but restricted to tail quantile levels $p \in [0.01,0.05]\cup[0.95,0.99]$ (10 points). Perfect: 0.
 
-$W_1$ = 1-Wasserstein distance, $\theta_\sharp$ = projection onto direction $\theta$.
-Approximated with 512 random slices. More robust to heavy tails than MMD. **Perfect: 0.**
+**B7 — ACF lag-1 Error on |r|**
 
----
+$$B7 = \left|\,	ext{ACF}(|r^{	ext{real}}|,\,\ell=1) - 	ext{ACF}(|r^{	ext{gen}}|,\,\ell=1)\,ight|$$
 
-### A6 — Path SWD · *Sliced Wasserstein Distance on full paths*
+Lag-1 absolute-return autocorrelation. Positive in Heston (~0.05): the dominant ARCH signal. Perfect: 0.
 
-Same SWD formula applied to full paths $x \in \mathbb{R}^{T \cdot d}$.
-Captures the geometry of the entire path distribution. **Perfect: 0.**
+**B8 — ACF lag-1 Error on r²**
 
----
+$$B8 = \left|\,	ext{ACF}({r^{	ext{real}}}^2,\,\ell=1) - 	ext{ACF}({r^{	ext{gen}}}^2,\,\ell=1)\,ight|$$
 
-### A7 — Covariance Error · *Frobenius norm of covariance difference*
+Lag-1 squared-return autocorrelation (GARCH effect). Perfect: 0.
 
-$$
-\|\Sigma_{\text{real}} - \Sigma_{\text{fake}}\|_F,
-\quad \Sigma = \text{Cov}(X_T) \in \mathbb{R}^{d \times d}
-$$
+**B9 — Rolling Vol KS Statistic**
 
-Measures how well the cross-asset covariance structure is reproduced at maturity.
-For $d=1$ (Heston) this reduces to $|\text{Var}(X_T^{\text{real}}) - \text{Var}(X_T^{\text{fake}})|$.
-SBTS (Markov-1) cannot capture the full multi-step covariance — hence A7 = 145% error. **Perfect: 0.**
+$$B9 = 	ext{KS}\!\left(\{\hat{\sigma}^{	ext{real}}_{i,t}\},\,\{\hat{\sigma}^{	ext{gen}}_{i,t}\}ight),\quad \hat{\sigma}_{i,t}=	ext{std}(r_{i,t-4:t})$$
 
----
+Two-sample KS on rolling std of log-returns (window = 5 days). Perfect: 0.
 
-### A8 — Mean RMSE · *Root Mean Square Error of terminal means*
+**B10 — Vol-of-Vol Error**
 
-$$
-\sqrt{\frac{1}{d}\left\|\mathbb{E}[X_T] - \mathbb{E}[\tilde{X}_T]\right\|^2}
-$$
+$$B10 = \left|\,	ext{std}(\hat{\sigma}^{	ext{real}}) - 	ext{std}(\hat{\sigma}^{	ext{gen}})\,ight|$$
 
-Measures systematic bias in the generated terminal price level. **Perfect: 0.**
+Dispersion of the rolling volatility distribution. Perfect: 0.
+
+**B11 — Terminal Price KS Statistic**
+
+$$B11 = 	ext{KS}\!\left(S^{	ext{real}}_T,\,S^{	ext{gen}}_Tight)$$
+
+Two-sample KS on the terminal marginal $S_T$. Perfect: 0.
+
+**B12 — Hill Tail Index Error**
+
+$$B12 = \left|\hat{lpha}^{	ext{real}} - \hat{lpha}^{	ext{gen}}ight|,\quad \hat{lpha} = \left[rac{1}{k}\sum_{i=1}^{k}\lograc{X_{(n-i+1)}}{X_{(n-k)}}ight]^{-1}$$
+
+Hill (1975) estimator on top 10% of terminal prices $S_T$. $lpha > 4$ → finite kurtosis. Perfect: 0.
 
 ---
 
-### A9 — Return Std Error · *Mean Absolute Error of return standard deviation*
+## Stylised Facts Diagnostic (Heston vs SBTS, seed 0)
 
-$$
-\left|\,\sigma(r_{\text{real}}) - \sigma(r_{\text{fake}})\,\right|
-$$
+Eight-panel comparison: sample paths, return distribution, QQ plot, ACF of |returns|,
+ACF of squared returns, rolling vol histogram (window=5), tail survival (log-log).
 
-Tests whether the overall volatility level (standard deviation of returns) is correct. **Perfect: 0.**
-
----
-
-### A10 — Return Kurtosis Error · *Mean Absolute Error of excess kurtosis*
-
-$$
-\left|\,\kappa(r_{\text{real}}) - \kappa(r_{\text{fake}})\,\right|,
-\quad \kappa(Z) = \frac{\mathbb{E}[(Z-\mu)^4]}{\sigma^4} - 3
-$$
-
-Tests fat-tail reproduction. Excess kurtosis = 0 for Gaussian; financial returns typically show
-$\kappa > 0$. SBTS scores 0.119 (small) vs TimeGAN 2.955 (large). **Perfect: 0.**
-
----
-
-### A11 — ACF Error (abs returns) · *Mean Absolute Error of autocorrelation function on |r|*
-
-$$
-\frac{1}{|L|}\sum_{\ell \in L}
-\left|\,\text{ACF}(|r_{\text{real}}|, \ell) - \text{ACF}(|r_{\text{fake}}|, \ell)\,\right|,
-\quad L = \{1, 2, 5, 10\}
-$$
-
-Tests **volatility clustering**: real financial returns exhibit significant positive autocorrelation
-in $|r_t|$ and $r_t^2$ (ARCH effect). **Perfect: 0.**
-
----
-
-### A12 — ACF Error (sq returns) · *Mean Absolute Error of autocorrelation function on r²*
-
-Same formula as A11 applied to squared returns $r_t^2$ instead of $|r_t|$.
-Also tests the ARCH/GARCH effect; provides a complementary view to A11. **Perfect: 0.**
-
----
-
-### A13 — Discriminative Score · *Post-hoc binary classification accuracy offset*
-
-$$
-\text{DS} = \left|\,\text{Acc}_{\text{test}} - 0.5\,\right|
-$$
-
-**Principle.** If a binary classifier trained to separate real from fake achieves test
-accuracy close to 50 %, the two distributions are indistinguishable — the generator is
-good. If accuracy is close to 100 %, the distributions are trivially different — the
-generator is bad.
-
-**Data preparation.**
-The combined dataset of 8 192 real paths + 8 192 generated paths (16 384 total,
-label 1 = real, 0 = fake) is split 80/20 into train (13 107 samples) and test (3 277 samples).
-Splitting is done once before training; the test set is never seen during training.
-
-**Training.**
-Both classifiers are trained for 2 000 steps with Adam (lr = 1 × 10⁻³), batch size 128,
-Binary Cross-Entropy loss.
-
----
-
-#### GRU Discriminator
-
-```
-Input: path (128, 1)
-  └─ GRU, hidden = 8, num_layers = 2, batch_first = True
-       └─ last hidden state h_T  (8,)
-            └─ Linear(8 → 1)  → logit
-```
-
-The GRU reads the path **step by step**, building a hidden state that encodes the full
-temporal trajectory. It can exploit **temporal patterns** (autocorrelation, vol clustering,
-mean-reversion) to distinguish real from fake.
-
-Score 0.029 ± 0.028: high variance across seeds (seed 3 = 0.082 vs seed 0 = 0.003) but
-mean near zero — SBTS paths are largely indistinguishable from real temporally.
-
----
-
-#### MLP Discriminator
-
-```
-Input: path (128, 1) → Flatten → (128,)
-  └─ Linear(128 → 128) → ReLU
-       └─ Linear(128 → 64) → ReLU
-            └─ Linear(64 → 1)  → logit
-```
-
-The MLP receives the **entire path as a flat vector** with no notion of ordering.
-It detects differences in the **joint marginal distribution** but has no structural
-inductive bias toward temporal dependencies.
-
-Score 0.071 ± 0.008: consistently higher than GRU, suggesting the MLP finds marginal
-distributional differences that the GRU misses (e.g., price scale drift over the path).
-
-**Key difference between GRU and MLP:**
-- GRU ≈ test for *temporal structure* (autocorrelation, clustering, dynamics).
-- MLP ≈ test for *marginal distributional match* (moments, price levels, shape).
-
-**Evaluation.** After training, the classifier scores every sample in the held-out 20 %
-test set. `DS = |accuracy − 0.5|`. **Perfect score = 0** (random guessing). **Worst = 0.5**
-(perfect separation).
-
----
-
-### A14 — Predictive Score · *Train-on-Synthetic Test-on-Real (TSTR) MAE*
-
-$$
-\text{PS} = \frac{1}{N \cdot (T-1)} \sum_{i=1}^{N} \sum_{t=1}^{T-1}
-\left|\hat{X}_{i,t+1} - X_{i,t+1}^{\text{real}}\right|
-$$
-
-**Principle (TSTR).** A one-step-ahead predictor is trained **exclusively on synthetic
-paths**. It is then evaluated **on real paths**. If the predictor generalises well (low MAE
-on real data), the synthetic data has captured the true temporal dynamics.
-
-**Training.**
-Both predictors are trained for 5 000 steps with Adam (lr = 1 × 10⁻³), batch size 128,
-L1 (MAE) loss on normalised paths.
-
----
-
-#### GRU Predictor
-
-```
-Input: prefix X[0:T-1]  shape (127, 1)
-  └─ GRU, hidden = 8, num_layers = 2, batch_first = True
-       └─ output at every step  (127, 8)
-            └─ Linear(8 → 1) applied at each step → (127, 1)
-```
-
-The GRU sees the **full causal history** up to step $t$ and predicts $X_{t+1}$ for
-every $t \in \{1, \ldots, T-1\}$ simultaneously (sequence-to-sequence).
-
-Score 0.0091 ± 0.0000: extremely stable across seeds — SBTS log-return distribution
-well predicts the real path dynamics.
-
----
-
-#### MLP Predictor
-
-```
-Input: sliding window X[t-8:t]  shape (8, 1)
-  └─ Flatten → (8,)
-       └─ Linear(8 → 64) → ReLU
-            └─ Linear(64 → 32) → ReLU
-                 └─ Linear(32 → 1) → X̂_{t+1}
-```
-
-The MLP predicts $X_{t+1}$ from a **local context window of the 8 most recent steps**.
-Tests whether **short-range temporal patterns** in the synthetic data match real data.
-
-**Key difference between GRU and MLP:**
-- GRU ≈ test for *long-range temporal predictability* (mean-reversion, trends, vol regimes).
-- MLP ≈ test for *local (8-step) temporal predictability* (short-term momentum).
-
-**Evaluation.** Both predictors are evaluated on all 8 192 real paths.
-PS = mean absolute error on next-step predictions, in the normalised [0, 1] scale.
-**Perfect score = 0** (zero prediction error, unreachable). A score matching the real-data
-auto-regression baseline means synthetic data has the same short-range predictability as real data.
-
----
-
-### A15 — Teacher-Sigma Correlation · *Pearson correlation, realised vol vs true vol* ↑
-
-$$
-\rho = \text{Corr}\!\left(\hat{\sigma}^{\text{gen}},\, \sqrt{v_{\text{true}}}\right)
-$$
-
-$\hat{\sigma}^{\text{gen}}$ = rolling realised volatility (window 5) computed from generated
-log-returns: $\hat{\sigma}_t = \sqrt{\text{mean}(\log(S_{t+1}/S_t)^2 / \Delta t)}$ over 5-step window.
-$\sqrt{v_{\text{true}}}$ = true instantaneous vol from the Heston latent process
-(stored in `dataset/Heston/heston_v_8192x128.npy`).
-
-A generator that reproduces stochastic volatility correctly should show $\rho \approx 1$.
-**Heston-specific metric.** **Perfect: 1 ↑ (floor: 0.614).**
-
-> **Floor = 0.614:** 5-step rolling QV is a noisy estimator of vₜ. Even for real Heston
-> paths vs their own true variance, Pearson ρ ≈ 0.614 due to measurement noise.
-> SBTS scores 0.005 — neither this method nor TimeGAN captures stochastic volatility.
-
----
-
-### A15 — Teacher-Sigma RMSE · *Root Mean Square Error, realised vol vs true vol*
-
-$$
-\text{RMSE} = \sqrt{\frac{1}{N \cdot T}
-\sum_{i=1}^{N}\sum_{t=1}^{T}
-\!\left(\hat{\sigma}^{\text{gen}}_{i,t} - \sqrt{v_{\text{true},i,t}}\right)^2}
-$$
-
-Complementary to the correlation: measures absolute scale accuracy of the reproduced
-volatility process. **Perfect: 0 (floor: 0.065).**
-
-> **Floor = 0.065:** rolling-QV measurement noise gives an irreducible baseline.
-> SBTS (0.096) and TimeGAN (0.118) both score above the floor — SBTS wins.
-
----
-
-### A16 — Tail Survival Error · *RMS survival-probability error at extreme quantiles*
-
-$$
-\text{Tail Error} = \sqrt{\frac{1}{3}\sum_{q \in \{0.90,0.95,0.99\}} (S^{\text{real}}(q) - S^{\text{gen}}(q))^2}
-$$
-
-where $S(q) = \Pr(X_T > F_{\text{real}}^{-1}(q))$ is the survival probability evaluated at the
-$q$-quantile of the **real** terminal distribution. Tests fat-tail and extreme-event reproduction.
-
-SBTS scores 0.037 vs TimeGAN 0.022 — TimeGAN better reproduces the tails, likely because its GRU
-captures longer-range trends that push terminal prices into extreme quantiles. **Perfect: 0.**
-
----
-
-## CRPS, MAE, RMSE (Path Shadowing context)
-
-These three metrics are used in the **Path Shadowing MC** evaluation
-(`results/Heston/SBTS/path_shadowing/`):
-
-**CRPS** (Continuous Ranked Probability Score):
-
-$$\text{CRPS}(F, y) = \int_{-\infty}^{\infty} (F(z) - \mathbf{1}_{z \ge y})^2 \, dz = \mathbb{E}_{X \sim F}|X - y| - \frac{1}{2}\mathbb{E}_{X,X' \sim F}|X - X'|$$
-
-Lower is better. A proper scoring rule: minimised in expectation only by the true distribution.
-Reduces to MAE when $F$ is a point mass.
-
-**MAE** (Mean Absolute Error):
-
-$$\text{MAE} = \frac{1}{H}\sum_{u=t+1}^{t+H} |\bar{X}(u) - X_{\text{real}}(u)|$$
-
-where $\bar{X}$ is the ensemble mean forecast.
-
-**RMSE** (Root Mean Squared Error):
-
-$$\text{RMSE} = \sqrt{\frac{1}{H}\sum_{u=t+1}^{t+H} (\bar{X}(u) - X_{\text{real}}(u))^2}$$
+![Heston Diagnostics](plots/heston_diagnostics.png)

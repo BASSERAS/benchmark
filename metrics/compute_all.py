@@ -195,7 +195,7 @@ def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray) -> dict:
     print("  B1-B14 stylized metrics ...", end=" ", flush=True)
     stylized = compute_stylized_metrics(S, fake)
     results.update(stylized)
-    print(f"B3_ks={stylized['B3_ks_logreturns']:.4f}  B7_acf1={stylized['B7_acf_lag1_abs']:.4f}  B13_ks={stylized['B13_terminal_ks']:.4f}")
+    print(f"B3_ks={stylized['B3_ks_logreturns']:.4f}  B7_acf1={stylized['B7_acf_lag1_abs']:.4f}  B11_ks={stylized['B11_terminal_ks']:.4f}")
 
     results["compute_time_sec"] = round(time.perf_counter() - t0, 2)
     print(f"  Done in {results['compute_time_sec']:.1f}s")
