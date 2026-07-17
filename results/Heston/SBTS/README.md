@@ -8,7 +8,7 @@ Parameters: μ=0.05, κ=2.0, θ=0.04, ξ=0.3, ρ=−0.7, S₀=100, v₀=0.04, dt
 **Model:** SBTS univariate Markovian — h=0.4, K=1, N_pi=200, CPU-only (no GPU).
 No neural network, no training. Kernel density estimation with Schrödinger-bridge drift.
 
-**Convention:** lower is better for all metrics **except A15 Corr (↑)**. A16 ↓.
+**Convention:** lower is better for all metrics **except A15 Corr ↑ and A21 Corr ↑**. A19 Kurtosis Ratio: perfect = 1.0.
 
 ---
 
@@ -42,7 +42,7 @@ matching the theoretical SDE diffusion coefficient and stabilising the kernel br
 
 ## Results (mean ± std across 5 seeds)
 
-### A1–A20 — Core metrics
+### A1–A24 — Core metrics
 
 | ID | Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |----|--------|-----------|--------|--------|--------|--------|--------|---------------|
@@ -64,14 +64,15 @@ matching the theoretical SDE diffusion coefficient and stabilising the kernel br
 | A14 | Pred Score MLP (TSTR) | 0.0582 ± 0.0002 | 0.0584 | 0.0579 | 0.0584 | 0.0581 | 0.0582 | 0.0565 ± 0.0022 |
 | A15 | Sigma Corr ↑          | 0.0046 ± 0.0019 | 0.0046 | 0.0045 | 0.0016 | 0.0048 | 0.0074 | 0.6135 ± 0.0019 |
 | A15 | Sigma RMSE            | 0.0955 ± 0.0001 | 0.0955 | 0.0955 | 0.0957 | 0.0954 | 0.0954 | 0.0653 ± 0.0002 |
-| A16 | Tail RMS              | 0.0428 ± 0.0002 | 0.0431 | 0.0427 | 0.0428 | 0.0426 | 0.0425 | 0.0008 ± 0.0008 |
-| A16 | q90 Error             | 0.0630 ± 0.0003 | 0.0636 | 0.0629 | 0.0631 | 0.0628 | 0.0627 | 0.0010 ± 0.0010 |
-| A16 | q95 Error             | 0.0378 ± 0.0001 | 0.0379 | 0.0377 | 0.0379 | 0.0378 | 0.0376 | 0.0009 ± 0.0009 |
-| A16 | q99 Error             | 0.0092 ± 0.0000 | 0.0092 | 0.0092 | 0.0092 | 0.0092 | 0.0091 | 0.0004 ± 0.0004 |
-| A17 | Oracle MAE (AR5)      | 0.0097 ± 0.0000 | 0.0097 | 0.0097 | 0.0097 | 0.0097 | 0.0097 | 0.0097 ± 0.0000 |
-| A18 | Agent MAE (AR5 TSTR)  | 0.0106 ± 0.0000 | 0.0106 | 0.0107 | 0.0106 | 0.0106 | 0.0107 | 0.0097 ± 0.0000 |
-| A19 | Oracle-Agent Corr ↑   | −0.342 ± 0.171  | −0.561 | −0.045 | −0.421 | −0.378 | −0.303 | −0.058 ± 0.430 |
-| A20 | RV Law Loss           | 2.1482 ± 0.0074 | 2.1559 | 2.1510 | 2.1552 | 2.1411 | 2.1380 | 0.0673 ± 0.0362 |
+| A16 | Log-Return Std Error                       | 0.0030 ± 0.0000      | 0.0030  | 0.0030  | 0.0030  | 0.0030  | 0.0030  | — |
+| A17 | |r| q95 Error                              | 0.0063 ± 0.0000      | 0.0064  | 0.0063  | 0.0063  | 0.0063  | 0.0063  | — |
+| A18 | |r| q99 Error                              | 0.0098 ± 0.0000      | 0.0098  | 0.0098  | 0.0099  | 0.0098  | 0.0097  | — |
+| A19 | Kurtosis Ratio (target/model)              | 1.9890 ± 0.0182      | 1.9907  | 1.9978  | 1.9877  | 2.0121  | 1.9569  | — |
+| A20 | Sigma Mean Error                           | 0.0440 ± 0.0002      | 0.0442  | 0.0440  | 0.0441  | 0.0437  | 0.0437  | — |
+| A21 | Learned/Oracle Sigma Corr                  | 0.0046 ± 0.0019      | 0.0046  | 0.0045  | 0.0016  | 0.0048  | 0.0074  | — |
+| A22 | ACF |r| Lag-1 Error                        | 0.1437 ± 0.0012      | 0.1436  | 0.1419  | 0.1439  | 0.1436  | 0.1456  | — |
+| A23 | ACF r² Lag-1 Error                         | 0.1665 ± 0.0017      | 0.1674  | 0.1637  | 0.1659  | 0.1668  | 0.1688  | — |
+| A24 | RV Law Loss (W₁ on ann. RV)                | 2.1482 ± 0.0074      | 2.1559  | 2.1510  | 2.1552  | 2.1411  | 2.1380  | — |
 
 ### B1–B12 — Stylized metrics
 
@@ -188,75 +189,7 @@ with A11 and A12 respectively.
 | 7 (rolling vol hist.) | B9 Rolling Vol KS, B10 Vol-of-Vol Error | Width and spread of the vol histogram |
 | 8 (tail survival) | B11 Terminal Price KS, B12 Tail Index Error (Hill) | Log-log alignment + slope (tail heaviness) |
 
-### Formulas
-
-**B1 — Mean Path RMSE**
-
-$$B1 = \sqrt{rac{1}{T}\sum_{t=1}^{T}\!\left(ar{S}^{	ext{real}}_t - ar{S}^{	ext{gen}}_tight)^2}$$
-
-**B2 — Cross-Sectional Vol RMSE**
-
-$$B2 = \sqrt{rac{1}{T}\sum_{t=1}^{T}\!\left(\sigma^{	ext{real}}_t - \sigma^{	ext{gen}}_tight)^2}$$
-
-where $\sigma_t = 	ext{std}_{i}(S_{i,t})$ is the cross-sectional standard deviation at time $t$.
-
-**B3 — KS Statistic on log-returns**
-
-$$B3 = \sup_x\!\left|F^{	ext{real}}_r(x) - F^{	ext{gen}}_r(x)ight|,\quad r_t = \log(S_{t+1}/S_t)$$
-
-Two-sample Kolmogorov-Smirnov statistic on all pooled log-returns. Perfect: 0.
-
-**B4 — Skewness Error**
-
-$$B4 = \left|	ext{skew}(r^{	ext{real}}) - 	ext{skew}(r^{	ext{gen}})ight|,\quad 	ext{skew}(Z)=rac{\mathbb{E}[(Z-\mu)^3]}{\sigma^3}$$
-
-Heston generates negative skew (ρ < 0 leverage). Perfect: 0.
-
-**B5 — QQ RMSE (300-pt)**
-
-$$B5 = \sqrt{rac{1}{G}\sum_{g=1}^{G}\!\left(Q^{	ext{real}}_r(p_g) - Q^{	ext{gen}}_r(p_g)ight)^2},\quad p_g \in [0.005,\,0.995]$$
-
-300 uniformly spaced quantile points. Tests bulk distributional match. Perfect: 0.
-
-**B6 — Tail QQ Error**
-
-Same as B5 but restricted to tail quantile levels $p \in [0.01,0.05]\cup[0.95,0.99]$ (10 points). Perfect: 0.
-
-**B7 — ACF lag-1 Error on |r|**
-
-$$B7 = \left|\,	ext{ACF}(|r^{	ext{real}}|,\,\ell=1) - 	ext{ACF}(|r^{	ext{gen}}|,\,\ell=1)\,ight|$$
-
-Lag-1 absolute-return autocorrelation. Positive in Heston (~0.05): the dominant ARCH signal. Perfect: 0.
-
-**B8 — ACF lag-1 Error on r²**
-
-$$B8 = \left|\,	ext{ACF}({r^{	ext{real}}}^2,\,\ell=1) - 	ext{ACF}({r^{	ext{gen}}}^2,\,\ell=1)\,ight|$$
-
-Lag-1 squared-return autocorrelation (GARCH effect). Perfect: 0.
-
-**B9 — Rolling Vol KS Statistic**
-
-$$B9 = 	ext{KS}\!\left(\{\hat{\sigma}^{	ext{real}}_{i,t}\},\,\{\hat{\sigma}^{	ext{gen}}_{i,t}\}ight),\quad \hat{\sigma}_{i,t}=	ext{std}(r_{i,t-4:t})$$
-
-Two-sample KS on rolling std of log-returns (window = 5 days). Perfect: 0.
-
-**B10 — Vol-of-Vol Error**
-
-$$B10 = \left|\,	ext{std}(\hat{\sigma}^{	ext{real}}) - 	ext{std}(\hat{\sigma}^{	ext{gen}})\,ight|$$
-
-Dispersion of the rolling volatility distribution. Perfect: 0.
-
-**B11 — Terminal Price KS Statistic**
-
-$$B11 = 	ext{KS}\!\left(S^{	ext{real}}_T,\,S^{	ext{gen}}_Tight)$$
-
-Two-sample KS on the terminal marginal $S_T$. Perfect: 0.
-
-**B12 — Hill Tail Index Error**
-
-$$B12 = \left|\hat{lpha}^{	ext{real}} - \hat{lpha}^{	ext{gen}}ight|,\quad \hat{lpha} = \left[rac{1}{k}\sum_{i=1}^{k}\lograc{X_{(n-i+1)}}{X_{(n-k)}}ight]^{-1}$$
-
-Hill (1975) estimator on top 10% of terminal prices $S_T$. $lpha > 4$ → finite kurtosis. Perfect: 0.
+> Formulas for all B metrics: [`metrics/README.md`](../../../metrics/README.md#b112--stylized-metrics--one-scalar-per-diagnostic-plot-panel)
 
 ---
 

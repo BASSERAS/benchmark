@@ -68,7 +68,7 @@ benchmark/
     └── Heston/
         └── <Method>/
             ├── README.md                 summary table + per-seed breakdown (see §9)
-            ├── seed_0_metrics.json       all A1–A16 values for seed 0
+            ├── seed_0_metrics.json       all A1–A24 values for seed 0
             ├── … seed_4_metrics.json
             ├── metrics_summary.json      mean ± std across 5 seeds
             ├── plots/
@@ -234,7 +234,7 @@ Log every **100 steps** (or every epoch if step-based logging is not applicable)
 
 ---
 
-## 5. The 20 Metrics (A1–A20) + 14 Stylized Metrics (B1–B14)
+## 5. The 24 Metrics (A1–A24) + 12 Stylized Metrics (B1–B12)
 
 **All metrics are pre-implemented** in `metrics/metrics_np.py`,
 `metrics/discriminative_score.py`, `metrics/predictive_score.py`, and `metrics/stylized_metrics.py`.
@@ -278,24 +278,23 @@ cd metrics
 | A14 MLP | Predictive Score MLP (TSTR) | Predictive | ↓ | baseline |
 | A15 Corr | Teacher-Sigma Correlation | Heston-specific | ↑ | 1 |
 | A15 RMSE | Teacher-Sigma RMSE | Heston-specific | ↓ | 0 |
-| A16 | Tail Survival Error (log-returns) | Fat-tail | ↓ | 0 |
-| A17 | Oracle MAE — AR(5) on real data | Predictive (OLS) | ↓ | 0 |
-| A18 | Agent MAE — AR(5) on synthetic, tested on real (TSTR) | Predictive (OLS) | ↓ | = A17 |
-| A19 | Oracle-Agent Correlation | Predictive (OLS) | ↑ | 1 |
-| A20 | RV Law Loss (W₁ on annualized realized variance) | Distribution | ↓ | 0 |
+| A16 | Log-Return Std Error | Statistics | ↓ | 0 |
+| A17 | |r| q95 Error | Fat-tail | ↓ | 0 |
+| A18 | |r| q99 Error | Fat-tail | ↓ | 0 |
+| A19 | Kurtosis Ratio (target/model) | Statistics | — | 1.0 |
+| A20 | Sigma Mean Error | Statistics | ↓ | 0 |
+| A21 | Learned/Oracle Sigma Corr (Heston-specific) | Heston-specific | ↑ | 1 |
+| A22 | ACF |r| Lag-1 Error | Temporal | ↓ | 0 |
+| A23 | ACF r² Lag-1 Error | Temporal | ↓ | 0 |
+| A24 | RV Law Loss (W₁ on annualized realized variance) | Distribution | ↓ | 0 |
 
-**A17–A19 (oracle AR(5) TSTR):** OLS AR(5) on log-returns. Oracle = trained on real; Agent = trained on
-synthetic, evaluated on real test inputs. A19 correlation close to 1 means synthetic has the same
-AR(5) temporal structure as real data. Reference: Esteban et al. (2017) TSTR protocol.
-
-**⚠️ Heston caveat (A17–A19):** Heston log-returns are near i.i.d. (near-zero autocorrelation).
-- A17 (Oracle MAE) ≈ 0.0097 for ALL seeds and ALL methods — this is the unconditional std(r). This is CORRECT; it is not a bug.
-- A19 (Oracle-Agent Corr) ≈ −0.06 ± 0.43 for perfect-recovery: AR(5) predictions are white-noise for i.i.d. data,
-  making their mutual correlation undefined/random. A19 is DEGENERATE for Heston.
-- These two metrics are MEANINGFUL for datasets with genuine temporal structure (e.g. financial time series with strong autocorrelation, regime-switching).
-- The perfect_recovery.json floor for A17 = 0.0097 ± 0.0000 and for A19 = −0.058 ± 0.430 confirms this interpretation.
-
-**A20 (RV Law Loss):** W₁(RV_real, RV_gen) where RV_i = Σ_t r²_{i,t} / dt (annualized realized
+**A16**: |σ(log-ret real) − σ(log-ret gen)| — log-return std error (distinct from A9 which uses ΔS_t).
+**A17–A18**: |Q_0.95(|r_real|) − Q_0.95(|r_gen|)| and same at 0.99. Tail quantile reproduction.
+**A19**: κ_real / κ_gen — excess kurtosis ratio (Fisher, bias-corrected). Perfect = 1.0. Negative means gen has lighter-than-Gaussian tails.
+**A20**: |mean_paths(σ_i^real) − mean_paths(σ_i^gen)| — annualized per-path vol averaged across paths.
+**A21**: Pearson(σ̂_gen, √v_true) — identical to A15 Corr; grouped here for cohesion.
+**A22–A23**: Single-lag (lag=1) version of A11/A12. Heston true values ≈ +0.052 / +0.050.
+**A24 (RV Law Loss):** W₁(RV_real, RV_gen) where RV_i = Σ_t r²_{i,t} / dt (annualized realized
 variance per path). Measures whether the cross-path distribution of realized variances matches.
 Reference: Barndorff-Nielsen & Shephard (2002).
 
@@ -316,7 +315,7 @@ Reference: Barndorff-Nielsen & Shephard (2002).
 | B11 | Terminal Price KS Stat | Plot 8 (tail survival) | ↓ | Massey 1951 |
 | B12 | Tail Index Error (Hill) | Plot 8 | ↓ | Hill 1975 |
 
-Total A-metrics: 23 numbers. Total B-metrics: 12 numbers. **Grand total: 35 scalar metrics per seed.**
+Total A-metrics: 27 numbers (A1–A24 + A13×2 + A14×2 + A15×2). Total B-metrics: 12 numbers. **Grand total: 39 scalar metrics per seed.**
 
 ### 5.3 Output files
 
@@ -324,7 +323,7 @@ Total A-metrics: 23 numbers. Total B-metrics: 12 numbers. **Grand total: 35 scal
 
 | File | Contents |
 |------|---------|
-| `results/Heston/<Method>/seed_{i}_metrics.json` | All 35 metric values for seed i (A1-A20 + B1-B12) |
+| `results/Heston/<Method>/seed_{i}_metrics.json` | All 39 metric values for seed i (A1-A24 + B1-B12) |
 | `results/Heston/<Method>/metrics_summary.json` | Mean ± std across 5 seeds |
 | `results/Heston/<Method>/metrics_summary.csv` | Same, CSV format |
 | `results/Heston/<Method>/plots/disc_classifier_loss.png` | A13 BCE training loss, GRU + MLP, 5 seeds |
@@ -504,12 +503,21 @@ See [`code/README.md`](code/README.md) for source, paper citation, and list of f
 |----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------|
 | A1 | Path MMD² | Distribution | ↓ | X.XXXX ± X.XXXX | X.XXXX | ... | 0 |
 ...
-| A16 | Tail Survival Error | Fat-tail | ↓ | ... | **0** |
+| A16 | Log-Return Std Error | Statistics | ↓ | ... | 0 |
+| A17 | \|r\| q95 Error | Fat-tail | ↓ | ... | 0 |
+| A18 | \|r\| q99 Error | Fat-tail | ↓ | ... | 0 |
+| A19 | Kurtosis Ratio (target/model) | Statistics | — | ... | 1.0 |
+| A20 | Sigma Mean Error | Statistics | ↓ | ... | 0 |
+| A21 | Learned/Oracle Sigma Corr | Heston-specific | ↑ | ... | **1** |
+| A22 | ACF \|r\| Lag-1 Error | Temporal | ↓ | ... | 0 |
+| A23 | ACF r² Lag-1 Error | Temporal | ↓ | ... | 0 |
+| A24 | RV Law Loss | Distribution | ↓ | ... | 0 |
 ```
 
 Rules:
 - 4 decimal places everywhere
-- Bold the Perfect column for A13 (perfect = **0**) and A15 Corr (perfect = **1**)
+- Bold the Perfect column for A13 (perfect = **0**), A15 Corr (perfect = **1**), A21 (perfect = **1**)
+- Use `1.0` (not bold) for A19 Perfect column
 - Use `baseline` (not bold) for A14 Perfect column
 
 Include the footnotes block verbatim:
@@ -522,8 +530,11 @@ Include the footnotes block verbatim:
 > **A15 sigma**: Heston-specific. Compares inferred instantaneous vol from generated paths
 > against the true variance paths.
 >
-> **A16 tail survival error**: RMS of survival probability difference at quantiles {0.90, 0.95, 0.99}.
-> Tests fat-tail reproduction. 0 = perfect. Lower is better.
+> **A16–A18**: Log-return std error and tail quantile errors (95th/99th) on |log-returns|.
+> **A19**: Kurtosis ratio real/gen. Perfect = 1.0; negative = gen lighter-tailed than Gaussian.
+> **A20**: Annualized per-path vol mean error. **A21**: Learned/oracle sigma corr (Heston-specific).
+> **A22–A23**: ACF lag-1 errors on |r| and r² (single-lag version of A11/A12).
+> **A24**: W₁(RV_real, RV_gen). Ref: Barndorff-Nielsen & Shephard (2002).
 ```
 
 #### Section 3 — Stylised Facts Diagnostic
@@ -632,7 +643,7 @@ Required sections:
 
 1. **Header**: method name, paper reference, one-line description
 2. **Metrics table**: same 19-number table as §8 Section 2 (keep in sync)
-3. **Per-seed breakdown**: for the 4 most diagnostic metrics (A1 Path MMD², A13 GRU, A15 Corr, A16), list each seed's value and note which seed is weakest and why
+3. **Per-seed breakdown**: for the 4 most diagnostic metrics (A1 Path MMD², A13 GRU, A15 Corr, A24 RV Law Loss), list each seed's value and note which seed is weakest and why
 4. **Observations**: 3–5 bullet points on what the metrics reveal — strengths, weaknesses, unexpected findings
 5. **File index table**
 
@@ -704,7 +715,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 Examples:
 ```
 feat(sbts): train 5 seeds, save generated paths + weights
-feat(sbts): compute A1–A16 metrics, heston_diagnostics figure
+feat(sbts): compute A1–A24 metrics, heston_diagnostics figure
 feat(sbts): run PS-MC evaluation, add path_shadowing README
 feat(sbts): write all READMEs — method + results + path_shadowing
 ```
@@ -743,8 +754,8 @@ TRAINING
 
 METRICS
   [ ] results/Heston/<Method>/seed_{0..4}_metrics.json  — 19 values each
-  [ ] A16 present in every seed JSON — verify:
-       python -c "import json,glob; [print(f, json.load(open(f)).get('A16_tail_survival','MISSING')) for f in sorted(glob.glob('results/Heston/<Method>/seed_*_metrics.json'))]"
+  [ ] A16-A24 present in every seed JSON — verify:
+       python -c "import json,glob; [print(f, json.load(open(f)).get('A24_rv_law_loss','MISSING')) for f in sorted(glob.glob('results/Heston/<Method>/seed_*_metrics.json'))]"
   [ ] results/Heston/<Method>/metrics_summary.json  — mean ± std present
   [ ] results/Heston/<Method>/plots/heston_diagnostics.png  — 8 panels visible
   [ ] results/Heston/<Method>/plots/disc_classifier_loss.png
@@ -846,24 +857,26 @@ Follow it exactly when adding a new method. Do NOT deviate from section titles o
 # <Method> on Heston
 ```
 
-#### Section 2 — Metrics A1–A20
+#### Section 2 — Metrics A1–A24
 ```markdown
-## Metrics A1–A20 — mean ± std across 5 seeds
+## Metrics A1–A24 — mean ± std across 5 seeds
 
-> Note about log-returns if applicable.
+> All metrics use log-returns r_t = log(S_{t+1}/S_t) unless noted. A9 uses price increments ΔS_t.
 
 | ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------------|
 | A1  | Path MMD²   | Distribution | ↓ | X.XXXX ± X.XXXX | ... | 0.0018 ± 0.0002 |
 ...
-| A20 | RV Law Loss | Distribution | ↓ | ... | ≈0 |
+| A24 | RV Law Loss | Distribution | ↓ | ... | ≈0 |
 
-> **A11–A12**: ACF computed on log-returns r_t = log(S_{t+1}/S_t) at lags L = {1, 2, 5, 10}. ↓
-> **A13**: Discriminative classifier trained on log-returns. Score = |accuracy − 0.5|; 0 = indistinguishable.
-> **A14**: TSTR MAE; cluster near 0.056–0.059 (irreducible log-return noise floor for Heston).
-> **A16**: Tail survival on |log-returns|. Quantiles {0.90, 0.95, 0.99} of real used as thresholds.
-> **A17–A19**: OLS AR(5) oracle/agent protocol on log-returns. A17 ≈ 0.0097 constant for Heston (i.i.d. returns). A19 degenerate for Heston (near-zero autocorrelation → white-noise predictions → random correlation).
-> **A20**: W₁(RV_real, RV_gen), RV_i = Σ_t r²_{i,t} / dt (annualized realized variance per path). Ref: Barndorff-Nielsen & Shephard (2002).
+> **A11–A12**: ACF on log-returns at lags L = {1, 2, 5, 10}. ↓
+> **A13**: Discriminative classifier. Score = |accuracy − 0.5|; 0 = indistinguishable.
+> **A14**: TSTR MAE; cluster near 0.056–0.059 (irreducible noise floor for Heston).
+> **A16–A18**: Log-ret std error; |r| q95 and q99 errors.
+> **A19**: Kurtosis ratio real/gen. Perfect = 1.0. Negative = gen lighter-tailed than Gaussian.
+> **A20**: Sigma mean error (annualized per-path vol). **A21**: Learned/oracle sigma corr (Heston).
+> **A22–A23**: ACF lag-1 errors on |r| and r². Heston true values ≈ +0.052 / +0.050.
+> **A24**: W₁(RV_real, RV_gen), RV_i = Σ_t r²_{i,t} / dt. Ref: Barndorff-Nielsen & Shephard (2002).
 ```
 
 #### Section 3 — Stylized Metrics B1–B12
@@ -903,9 +916,9 @@ Follow it exactly when adding a new method. Do NOT deviate from section titles o
 2. **What we generate** (if applicable) — SDE, scaling steps, pipeline
 
 3. **Results (mean ± std across 5 seeds)**
-   - Subsection **A1–A20 Core metrics**: full table with columns `ID | Metric | Mean ± Std | Seed 0..4 | Perfect floor`
+   - Subsection **A1–A24 Core metrics**: full table with columns `ID | Metric | Mean ± Std | Seed 0..4 | Perfect floor`
    - Subsection **B1–B12 Stylized metrics**: same format
-   - Footnotes for A13, A14, A15, A16, A17–A19, A20
+   - Footnotes for A13, A14, A15, A16–A24
 
 4. **Comparison with the paper**
    - ⚠️ Warning that direct comparison may not be meaningful (state why: different dataset, different T, different d)
@@ -922,7 +935,7 @@ Follow it exactly when adding a new method. Do NOT deviate from section titles o
    - Include all LaTeX formulas for B1–B12
    - Include the 8-panel diagnostic PNG: `![Heston Diagnostics](plots/heston_diagnostics.png)`
 
-> **Note:** The Metric Definitions section (A1–A20 with LaTeX formulas) lives in `methods/<Method>/README.md`
+> **Note:** The Metric Definitions section (A1–A24 with LaTeX formulas) lives in `metrics/README.md`
 > and `methods/<Method>/code/README.md` — NOT in the results README. The results README contains
 > tables only; cross-link to the method README for formula details.
 
@@ -955,5 +968,5 @@ When a new standard is established (new metric, new section format, new B metric
 
 **History of changes:**
 - 2026-07-17: B8 (ARCH Persistence Error, lags 1-20) and B10 (GARCH Persistence Error, lags 1-20) removed from B metrics as redundant with A11 and A12. Renumbered: old B9→B8, old B11→B9, old B12→B10, old B13→B11, old B14→B12. Total B metrics: 14 → 12. Total grand total: 37 → 35 scalars per seed.
-- 2026-07-17: Added A16–A20 to metric list; documented A17 (constant for Heston) and A19 (degenerate for i.i.d.) behavior.
+- 2026-07-17: Replaced A16–A20 (tail survival, oracle AR, RV law) with A16–A24 (log-ret std, tail quantile errors, kurtosis ratio, sigma mean error, learned/oracle sigma corr, ACF lag-1 errors, RV law loss).
 - 2026-07-17: Added §15 (README Writing Protocol) with exact section order and format for method, results, and code READMEs.

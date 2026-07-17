@@ -5,13 +5,13 @@ Parameters: μ=0.05, κ=2.0, θ=0.04, ξ=0.3, ρ=−0.7, S₀=100, v₀=0.04, dt
 
 **Model:** PyTorch TimeGAN, 20 k steps (5 k embed + 5 k supervised + 10 k adversarial), 2×A100 80 GB.
 
-**Convention:** lower is better for all metrics **except A15 Corr (↑)**. A16 ↓.
+**Convention:** lower is better for all metrics **except A15 Corr ↑ and A21 Corr ↑**. A19 Kurtosis Ratio: perfect = 1.0.
 
 ---
 
 ## Results (mean ± std across 5 seeds)
 
-### A1–A20 — Core metrics
+### A1–A24 — Core metrics
 
 | ID | Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |----|--------|-----------|--------|--------|--------|--------|--------|---------------|
@@ -33,14 +33,15 @@ Parameters: μ=0.05, κ=2.0, θ=0.04, ξ=0.3, ρ=−0.7, S₀=100, v₀=0.04, dt
 | A14 | Pred Score MLP (TSTR) | 0.0573 ± 0.0015 | 0.0556 | 0.0593 | 0.0570 | 0.0559 | 0.0588 | 0.0565 ± 0.0022 |
 | A15 | Sigma Corr ↑          | 0.0021 ± 0.0090 | 0.0010 | 0.0069 | −0.0082 | −0.0057 | 0.0166 | 0.6135 ± 0.0019 |
 | A15 | Sigma RMSE            | 0.1183 ± 0.0184 | 0.1016 | 0.1108 | 0.1479  | 0.1004  | 0.1308 | 0.0653 ± 0.0002 |
-| A16 | Tail RMS              | 0.0234 ± 0.0109 | 0.0301 | 0.0374 | 0.0076 | 0.0143 | 0.0278 | 0.0008 ± 0.0008 |
-| A16 | q90 Error             | 0.0337 ± 0.0188 | 0.0422 | 0.0560 | 0.0021 | 0.0241 | 0.0441 | 0.0010 ± 0.0010 |
-| A16 | q95 Error             | 0.0191 ± 0.0107 | 0.0296 | 0.0321 | 0.0096 | 0.0047 | 0.0194 | 0.0009 ± 0.0009 |
-| A16 | q99 Error             | 0.0052 ± 0.0031 | 0.0080 | 0.0058 | 0.0087 | 0.0029 | 0.0005 | 0.0004 ± 0.0004 |
-| A17 | Oracle MAE (AR5)      | 0.0097 ± 0.0000 | 0.0097 | 0.0097 | 0.0097 | 0.0097 | 0.0097 | 0.0097 ± 0.0000 |
-| A18 | Agent MAE (AR5 TSTR)  | 0.0101 ± 0.0003 | 0.0098 | 0.0106 | 0.0100 | 0.0100 | 0.0099 | 0.0097 ± 0.0000 |
-| A19 | Oracle-Agent Corr ↑   | −0.332 ± 0.306  | −0.773 | −0.038 | −0.206 | −0.030 | −0.614 | −0.058 ± 0.430 |
-| A20 | RV Law Loss           | 1.5512 ± 0.3788 | 1.4914 | 1.7536 | 1.8266 | 0.8373 | 1.8470 | 0.0673 ± 0.0362 |
+| A16 | Log-Return Std Error                       | 0.0017 ± 0.0008      | 0.0020  | 0.0023  | 0.0006  | 0.0010  | 0.0025  | — |
+| A17 | |r| q95 Error                              | 0.0032 ± 0.0018      | 0.0042  | 0.0056  | 0.0016  | 0.0005  | 0.0040  | — |
+| A18 | |r| q99 Error                              | 0.0043 ± 0.0028      | 0.0074  | 0.0069  | 0.0052  | 0.0017  | 0.0004  | — |
+| A19 | Kurtosis Ratio (target/model)              | -1.0947 ± 3.5247     | 1.9788  | 0.1360  | 0.2451  | -8.0053 | 0.1718  | — |
+| A20 | Sigma Mean Error                           | 0.0307 ± 0.0089      | 0.0301  | 0.0373  | 0.0273  | 0.0164  | 0.0422  | — |
+| A21 | Learned/Oracle Sigma Corr                  | 0.0021 ± 0.0090      | 0.0010  | 0.0069  | -0.0082 | -0.0057 | 0.0166  | — |
+| A22 | ACF |r| Lag-1 Error                        | 0.2264 ± 0.1034      | 0.1537  | 0.2120  | 0.3669  | 0.0840  | 0.3155  | — |
+| A23 | ACF r² Lag-1 Error                         | 0.1719 ± 0.0626      | 0.1177  | 0.2000  | 0.2634  | 0.0874  | 0.1908  | — |
+| A24 | RV Law Loss (W₁ on ann. RV)                | 1.5512 ± 0.3788      | 1.4914  | 1.7536  | 1.8266  | 0.8373  | 1.8470  | — |
 
 ### B1–B12 — Stylized metrics
 
@@ -96,79 +97,7 @@ A11 and A12 respectively. All ↓ lower is better.
 | 7 (rolling vol hist.) | B9 Rolling Vol KS, B10 Vol-of-Vol Error | Width and spread of the vol histogram |
 | 8 (tail survival) | B11 Terminal Price KS, B12 Tail Index Error (Hill) | Log-log alignment + slope (tail heaviness) |
 
-### Formulas
-
-**B1 — Mean Path RMSE**
-
-$$B1 = \sqrt{\frac{1}{T}\sum_{t=1}^{T}\!\left(\bar{S}^{\text{real}}_t - \bar{S}^{\text{gen}}_t\right)^2}$$
-
-**B2 — Cross-Sectional Vol RMSE**
-
-$$B2 = \sqrt{\frac{1}{T}\sum_{t=1}^{T}\!\left(\sigma^{\text{real}}_t - \sigma^{\text{gen}}_t\right)^2}$$
-
-where $\sigma_t = \text{std}_{i}(S_{i,t})$ is the cross-sectional standard deviation at time $t$.
-
-**B3 — KS Statistic on log-returns**
-
-$$B3 = \sup_x\!\left|F^{\text{real}}_r(x) - F^{\text{gen}}_r(x)\right|, \quad r_t = \log(S_{t+1}/S_t)$$
-
-Two-sample Kolmogorov-Smirnov statistic on all pooled log-returns. Perfect: 0.
-
-**B4 — Skewness Error**
-
-$$B4 = \left|\text{skew}(r^{\text{real}}) - \text{skew}(r^{\text{gen}})\right|$$
-
-Heston generates negative skew ($\rho < 0$ leverage). Perfect: 0.
-
-**B5 — QQ RMSE (300-pt)**
-
-$$B5 = \sqrt{\frac{1}{300}\sum_{g=1}^{300}\!\left(Q^{\text{real}}_r(p_g) - Q^{\text{gen}}_r(p_g)\right)^2}, \quad p_g \in [0.005,\,0.995]$$
-
-Tests bulk distributional match. Perfect: 0.
-
-**B6 — Tail QQ Error**
-
-Same as B5 restricted to $p \in [0.01,0.05]\cup[0.95,0.99]$ (10 points). Perfect: 0.
-
-**B7 — ACF lag-1 Error on |r|**
-
-$$B7 = \left|\,\text{ACF}(|r^{\text{real}}|,\,\ell=1) - \text{ACF}(|r^{\text{gen}}|,\,\ell=1)\,\right|$$
-
-Lag-1 absolute-return ACF. Positive in Heston (~0.05): dominant ARCH signal. Perfect: 0.
-
-**B8 — ACF lag-1 Error on r²**
-
-$$B8 = \left|\,\text{ACF}({r^{\text{real}}}^2,\,\ell=1) - \text{ACF}({r^{\text{gen}}}^2,\,\ell=1)\,\right|$$
-
-Lag-1 squared-return ACF (GARCH effect). Perfect: 0.
-
-**B9 — Rolling Vol KS Statistic**
-
-$$B9 = \text{KS}\!\left(\{\hat{\sigma}^{\text{real}}_{i,t}\},\,\{\hat{\sigma}^{\text{gen}}_{i,t}\}\right), \quad \hat{\sigma}_{i,t}=\text{std}(r_{i,t-4:t})$$
-
-Two-sample KS on rolling std of log-returns (window = 5 days). Perfect: 0.
-
-**B10 — Vol-of-Vol Error**
-
-$$B10 = \left|\,\text{std}(\hat{\sigma}^{\text{real}}) - \text{std}(\hat{\sigma}^{\text{gen}})\,\right|$$
-
-Dispersion of the rolling volatility distribution. Perfect: 0.
-
-**B11 — Terminal Price KS Statistic**
-
-$$B11 = \text{KS}\!\left(S^{\text{real}}_T,\,S^{\text{gen}}_T\right)$$
-
-Two-sample KS on the terminal marginal $S_T$. Perfect: 0.
-
-**B12 — Hill Tail Index Error**
-
-$$B12 = \left|\hat{\alpha}^{\text{real}} - \hat{\alpha}^{\text{gen}}\right|, \quad \hat{\alpha} = \left[\frac{1}{k}\sum_{i=1}^{k}\log\frac{X_{(n-i+1)}}{X_{(n-k)}}\right]^{-1}$$
-
-Hill (1975) estimator on top 10% of terminal prices $S_T$. Perfect: 0.
-
-> **B7–B8** (ACF metrics): Heston true ACF(|r|, lag=1) ≈ +0.052, ACF(r², lag=1) ≈ +0.050.
-> TimeGAN often collapses to near-zero ACF, missing the ARCH signature (seeds 2, 4 worst).
-> **B12**: Hill estimator on terminal prices $S_T$. Large variance across seeds — use the mean.
+> Formulas for all B metrics: [`metrics/README.md`](../../../metrics/README.md#b112--stylized-metrics--one-scalar-per-diagnostic-plot-panel)
 
 ---
 

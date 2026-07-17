@@ -8,10 +8,9 @@ to the TF1 reference implementation.
 
 ---
 
-## Metrics A1–A20 — mean ± std across 5 seeds
+## Metrics A1–A24 — mean ± std across 5 seeds
 
-> All metrics on **log-returns** r_t = log(S_{t+1}/S_t). A11/A12/A13/A14/A16 were fixed from
-> price increments ΔS_t after validation against the ACF/tail-survival stylized-facts literature.
+> All metrics on **log-returns** $r_t = \log(S_{t+1}/S_t)$. A9 uses price increments $\Delta S_t$; A11/A12/A16–A24 use log-returns.
 
 | ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|--------|
@@ -33,18 +32,26 @@ to the TF1 reference implementation.
 | A14 | Pred Score MLP — TSTR           | Predictive    | ↓ | 0.057 ± 0.002   | 0.056  | 0.059  | 0.057  | 0.056  | 0.059  | 0.057  |
 | A15 | Sigma Corr (vol recovery)       | Heston-specif.| ↑ | 0.002 ± 0.009   | 0.001  | 0.007  | −0.008 | −0.006 | 0.017  | 0.614  |
 | A15 | Sigma RMSE                      | Heston-specif.| ↓ | 0.118 ± 0.018   | 0.102  | 0.111  | 0.148  | 0.100  | 0.131  | 0.065  |
-| A16 | Tail Survival (log-ret.)        | Fat-tail      | ↓ | 0.023 ± 0.011   | 0.030  | 0.037  | 0.008  | 0.014  | 0.028  | ≈0     |
-| A17 | Oracle MAE — AR(5) on real      | Predictive    | ↓ | 0.0097 ± 0.0000 | 0.0097 | 0.0097 | 0.0097 | 0.0097 | 0.0097 | ≈0.0097|
-| A18 | Agent MAE — AR(5) TSTR          | Predictive    | ↓ | 0.0101 ± 0.0003 | 0.0098 | 0.0106 | 0.0100 | 0.0100 | 0.0099 | =A17   |
-| A19 | Oracle-Agent Corr               | Predictive    | ↑ | −0.33 ± 0.31    | −0.77  | −0.04  | −0.21  | −0.03  | −0.61  | ≈1     |
-| A20 | RV Law Loss (W₁ on ann. RV)     | Distribution  | ↓ | 1.551 ± 0.379   | 1.491  | 1.754  | 1.827  | 0.837  | 1.847  | ≈0     |
+| A16 | Log-Return Std Error                       | Statistics     | ↓ | 0.0017 ± 0.0008      | 0.0020  | 0.0023  | 0.0006  | 0.0010  | 0.0025  | — |
+| A17 | |r| q95 Error                              | Fat-tail       | ↓ | 0.0032 ± 0.0018      | 0.0042  | 0.0056  | 0.0016  | 0.0005  | 0.0040  | — |
+| A18 | |r| q99 Error                              | Fat-tail       | ↓ | 0.0043 ± 0.0028      | 0.0074  | 0.0069  | 0.0052  | 0.0017  | 0.0004  | — |
+| A19 | Kurtosis Ratio (target/model)              | Statistics     | — | -1.0947 ± 3.5247     | 1.9788  | 0.1360  | 0.2451  | -8.0053 | 0.1718  | — |
+| A20 | Sigma Mean Error                           | Statistics     | ↓ | 0.0307 ± 0.0089      | 0.0301  | 0.0373  | 0.0273  | 0.0164  | 0.0422  | — |
+| A21 | Learned/Oracle Sigma Corr                  | Heston-specif. | ↑ | 0.0021 ± 0.0090      | 0.0010  | 0.0069  | -0.0082 | -0.0057 | 0.0166  | — |
+| A22 | ACF |r| Lag-1 Error                        | Temporal       | ↓ | 0.2264 ± 0.1034      | 0.1537  | 0.2120  | 0.3669  | 0.0840  | 0.3155  | — |
+| A23 | ACF r² Lag-1 Error                         | Temporal       | ↓ | 0.1719 ± 0.0626      | 0.1177  | 0.2000  | 0.2634  | 0.0874  | 0.1908  | — |
+| A24 | RV Law Loss (W₁ on ann. RV)                | Distribution   | ↓ | 1.5512 ± 0.3788      | 1.4914  | 1.7536  | 1.8266  | 0.8373  | 1.8470  | — |
 
 > **A11–A12**: ACF on log-returns r_t = log(S_{t+1}/S_t). ARCH signal: |r_t| has positive lag-1 ACF ~0.05 in Heston.
 > **A13**: Discriminative classifier trained on log-returns (not raw prices). Score = |accuracy − 0.5|; 0 = indistinguishable.
 > **A14**: TSTR MAE; all methods cluster near 0.056–0.059 (irreducible log-return noise floor). Differences are small.
-> **A16**: Tail survival on |log-returns|. Quantiles {0.90, 0.95, 0.99} of real used as thresholds.
-> **A17–A19**: OLS AR(5) oracle/agent protocol on log-returns. A19 negative = Heston has near-zero autocorrelation, so predictions are white noise — metric is near floor.
-> **A20**: W₁(RV_real, RV_gen), RV_i = Σ_t r²_{i,t}/dt (ann. realized variance per path). Ref: Barndorff-Nielsen & Shephard (2002).
+> **A16**: Log-return std error (A16 ↓). Uses $r_t = \log(S_{t+1}/S_t)$ (vs price increments in A9).
+> **A17–A18**: 95th/99th quantile error on |log-returns|. Measures tail reproduction accuracy.
+> **A19**: Kurtosis ratio real/gen. Perfect = 1.0. Negative kurtosis ratio means gen has negative excess kurtosis (lighter-than-Gaussian tails).
+> **A20**: Sigma mean error — annualized per-path vol, averaged over paths.
+> **A21**: Learned/oracle sigma corr — identical to A15 Corr; included to group all vol metrics.
+> **A22–A23**: ACF lag-1 error on |r| and r². Single-lag version of A11/A12. Heston true values ≈ +0.052 / +0.050.
+> **A24**: W₁(RV_real, RV_gen), RV_i = Σ_t r²_{i,t}/dt. Ref: Barndorff-Nielsen & Shephard (2002).
 
 ---
 

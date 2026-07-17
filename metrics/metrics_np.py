@@ -1,5 +1,5 @@
 """
-Metrics A1–A20 for time-series generation benchmarking.
+Metrics A1–A24 for time-series generation benchmarking.
 
 A1   Full joint-path MMD²
 A2   Terminal MMD²
@@ -9,16 +9,20 @@ A5   Terminal Sliced Wasserstein Distance
 A6   Path Sliced Wasserstein Distance
 A7   Terminal Covariance Error
 A8   Terminal Mean RMSE
-A9   Return Std Error
-A10  Return Kurtosis Error
-A11  ACF Error (absolute returns)
-A12  ACF Error (squared returns)
+A9   Return Std Error  (price increments, legacy)
+A10  Return Kurtosis Error  (absolute difference)
+A11  ACF Error on |r| at lags {1,2,5,10}
+A12  ACF Error on r² at lags {1,2,5,10}
 A15  Teacher-Sigma Correlation + RMSE  (Heston-specific)
-A16  Tail Survival Error on log-returns (RMS + per-quantile q90/q95/q99)
-A17  Oracle MAE  (AR(5) trained on real data, tested on real data)
-A18  Agent MAE   (AR(5) trained on synthetic data, tested on real data)
-A19  Oracle-Agent Prediction Correlation
-A20  Realized Volatility Law Loss
+A16  Log-Return Std Error
+A17  |r| q95 Error
+A18  |r| q99 Error
+A19  Kurtosis Ratio  (target / model, excess kurtosis)
+A20  Sigma Mean Error  (mean annualised per-path vol)
+A21  Learned / Oracle Sigma Correlation  (Heston-specific)
+A22  ACF |r| Lag-1 Error
+A23  ACF r² Lag-1 Error
+A24  Realized Volatility Law Loss  (W₁ on per-path RV)
 
 A13 and A14 are implemented separately in discriminative_score.py
 and predictive_score.py using PyTorch.
@@ -375,172 +379,238 @@ def teacher_sigma_metrics(
 
 
 # ======================================================================
-# A16  Tail Survival Error
+# A16  Log-Return Standard Deviation Error
 # ======================================================================
 
-def tail_survival_error(
-    X: np.ndarray,
-    Y: np.ndarray,
-    quantiles: Tuple[float, ...] = (0.90, 0.95, 0.99),
-) -> Tuple[float, float, float, float]:
-    """A16. Tail Survival Error — RMS of survival probability difference (on log-returns).
+def logreturn_std_error(X: np.ndarray, Y: np.ndarray) -> float:
+    r"""A16. Absolute error in log-return standard deviation.
 
-    For each quantile alpha in {0.90, 0.95, 0.99}:
-      - q_alpha = alpha-quantile of real |log-returns|
-      - real_surv(alpha) = P_real(|r| > q_alpha)   (by definition ~= 1-alpha)
-      - fake_surv(alpha) = P_gen (|r| > q_alpha)
+    A_16 = |sigma(r_real) - sigma(r_gen)|
 
-    Returns (rms, q90, q95, q99) where:
-      - rms = sqrt( mean_alpha( (real_surv - fake_surv)^2 ) )
-      - qXX = abs(real_surv - fake_surv) at that quantile level
+    where r_{i,t} = log(S_{i,t+1} / S_{i,t}) are log-returns
+    flattened over all paths i and time steps t.
 
-    Tests whether the generator reproduces the fat tail of the return
-    distribution at the 90th, 95th, and 99th percentile levels.
-    Perfect: (0, 0, 0, 0). Direction: lower is better.
+    Similar to A9 but A9 uses raw price increments; A16 uses log-returns
+    (the financially correct convention consistent with A11/A12).
+    Perfect: 0.  Direction: lower is better.
 
     Parameters
     ----------
-    X : ndarray (N, T, d)  — real paths
-    Y : ndarray (N, T, d)  — generated paths
-    quantiles : tail quantile levels (default: 0.90, 0.95, 0.99)
+    X : (N, T, d)  real price paths
+    Y : (N, T, d)  generated price paths
     """
-    # log-returns (consistent with A11/A12 — price increments mix scale with tail)
-    real_abs_r = np.abs(np.diff(np.log(np.maximum(X, 1e-10)), axis=1)).ravel()
-    fake_abs_r = np.abs(np.diff(np.log(np.maximum(Y, 1e-10)), axis=1)).ravel()
-    thresholds = np.quantile(real_abs_r, quantiles)
-    real_surv = np.array([(real_abs_r > t).mean() for t in thresholds])
-    fake_surv = np.array([(fake_abs_r > t).mean() for t in thresholds])
-    rms = float(np.sqrt(np.mean((real_surv - fake_surv) ** 2)))
-    q90 = float(abs(real_surv[0] - fake_surv[0]))
-    q95 = float(abs(real_surv[1] - fake_surv[1]))
-    q99 = float(abs(real_surv[2] - fake_surv[2]))
-    return rms, q90, q95, q99
+    lr_r = np.diff(np.log(np.maximum(X, 1e-10)), axis=1).ravel()
+    lr_f = np.diff(np.log(np.maximum(Y, 1e-10)), axis=1).ravel()
+    return float(abs(lr_r.std() - lr_f.std()))
 
 
 # ======================================================================
-# A20  Realized Volatility Law Loss
+# A17–A18  Absolute log-return quantile errors
 # ======================================================================
 
-def rv_law_loss(X: np.ndarray, Y: np.ndarray, dt: float = 1.0/250.0) -> float:
-    """A20. Realized Volatility Law Loss — Wasserstein-1 distance between RV distributions.
+def abs_return_quantile_error(
+    X: np.ndarray, Y: np.ndarray, q: float,
+) -> float:
+    r"""A17 / A18. Absolute error at quantile q of the |log-return| distribution.
 
-    For each path i:
-      RV_i = (1/dt) * sum_t r_{i,t}^2   (annualized realized variance)
+    A_17/18 = |Q_q(|r_real|) - Q_q(|r_gen|)|
 
-    where r_{i,t} = log(S_{i,t+1}/S_{i,t}) are log-returns.
-    Returns W_1(distribution of RV_real, distribution of RV_gen).
-    Perfect: 0. Direction: lower is better.
+    where r is the flattened vector of all log-returns r_{i,t} = log(S_{i,t+1}/S_{i,t}).
+    Use q=0.95 for A17, q=0.99 for A18.
+
+    Directly measures the ability of the generator to reproduce the right tail
+    of the absolute-return distribution (fat tails, Cont 2001 stylised fact).
+    Perfect: 0.  Direction: lower is better.
 
     Parameters
     ----------
-    X : ndarray (N, T, d)  — real paths
-    Y : ndarray (N, T, d)  — generated paths
-    dt : float  — time step in years (default 1/250)
+    X : (N, T, d)  real price paths
+    Y : (N, T, d)  generated price paths
+    q : quantile level in (0, 1)
     """
-    log_r_real = np.diff(np.log(np.maximum(X, 1e-10)), axis=1)  # (N, T-1, d)
+    abs_r = np.abs(np.diff(np.log(np.maximum(X, 1e-10)), axis=1)).ravel()
+    abs_g = np.abs(np.diff(np.log(np.maximum(Y, 1e-10)), axis=1)).ravel()
+    return float(abs(np.quantile(abs_r, q) - np.quantile(abs_g, q)))
+
+
+# ======================================================================
+# A19  Kurtosis ratio
+# ======================================================================
+
+def kurtosis_ratio(X: np.ndarray, Y: np.ndarray) -> float:
+    r"""A19. Ratio of excess kurtosis: kappa_target / kappa_model.
+
+    A_19 = kappa_real / kappa_gen
+
+    where kappa = E[(r - mu)^4] / sigma^4 - 3  is Fisher's excess kurtosis
+    on log-returns (unbiased, Fisher=True).
+
+    Perfect: 1.0.  Values > 1 mean the model underestimates tail heaviness
+    (lighter tails than target); values < 1 mean the model overestimates.
+    Unlike A10 (absolute difference), the ratio is scale-invariant and
+    directly shows the *fraction* of fat-tailedness reproduced.
+
+    Parameters
+    ----------
+    X : (N, T, d)  real price paths
+    Y : (N, T, d)  generated price paths
+    """
+    lr_r = np.diff(np.log(np.maximum(X, 1e-10)), axis=1).ravel()
+    lr_f = np.diff(np.log(np.maximum(Y, 1e-10)), axis=1).ravel()
+    k_r = float(kurtosis(lr_r, fisher=True, bias=False))
+    k_g = float(kurtosis(lr_f, fisher=True, bias=False))
+    if abs(k_g) < 1e-8 or np.isnan(k_g):
+        return float('nan')
+    return float(k_r / k_g)
+
+
+# ======================================================================
+# A20  Sigma mean error
+# ======================================================================
+
+def sigma_mean_error(
+    X: np.ndarray, Y: np.ndarray,
+    dt: float = 1.0 / 250.0,
+) -> float:
+    r"""A20. Absolute error in mean annualised per-path volatility.
+
+    For each path i, annualised vol:
+
+        sigma_i = std_t(r_{i,t}) * sqrt(1/dt)
+
+    where r_{i,t} = log(S_{i,t+1}/S_{i,t}).
+
+    A_20 = |mean_i(sigma_i^real) - mean_i(sigma_i^gen)|
+
+    Measures whether the model reproduces the average level of volatility
+    (i.e. the mean of the vol distribution, not just a global std).
+    Perfect: 0.  Direction: lower is better.
+
+    Parameters
+    ----------
+    X  : (N, T, d)  real price paths
+    Y  : (N, T, d)  generated price paths
+    dt : time step in years (default 1/250)
+    """
+    ann = np.sqrt(1.0 / dt)
+    lr_r = np.diff(np.log(np.maximum(X, 1e-10)), axis=1)   # (N, T-1, d)
+    lr_f = np.diff(np.log(np.maximum(Y, 1e-10)), axis=1)
+    N_r, N_f = lr_r.shape[0], lr_f.shape[0]
+    # Per-path std over all time steps (and features for d>1)
+    sigma_r = lr_r.reshape(N_r, -1).std(axis=1) * ann       # (N_r,)
+    sigma_f = lr_f.reshape(N_f, -1).std(axis=1) * ann       # (N_f,)
+    return float(abs(sigma_r.mean() - sigma_f.mean()))
+
+
+# ======================================================================
+# A21  Learned / Oracle sigma correlation  (Heston-specific)
+# ======================================================================
+
+def learned_oracle_sigma_corr(
+    X_gen: np.ndarray, v_true: np.ndarray,
+    dt: float = 1.0 / 250.0,
+) -> float:
+    r"""A21. Pearson correlation between learned vol and oracle vol (Heston-specific).
+
+    Estimates instantaneous vol from generated paths via rolling window-5 QV:
+
+        sigma_hat_t = sqrt( rolling_mean_5(r_t^2) / dt )
+
+    and compares against the oracle (true Heston) vol:
+
+        sigma*_t = sqrt(v_t)
+
+        A_21 = Pearson_corr( flatten(sigma_hat_gen), flatten(sigma*) )
+
+    Perfect: 1.0.  Direction: higher is better.
+    Requires the true latent variance process v_t (Heston-specific).
+
+    Parameters
+    ----------
+    X_gen  : (N, T, d)  generated price paths
+    v_true : (N, T)     true latent variance paths (annualised)
+    dt     : time step in years (default 1/250)
+    """
+    corr, _ = teacher_sigma_metrics(X_gen, v_true, dt=dt)
+    return float(corr)
+
+
+# ======================================================================
+# A22–A23  ACF lag-1 errors
+# ======================================================================
+
+def acf_lag1_abs_error(X: np.ndarray, Y: np.ndarray) -> float:
+    r"""A22. ACF lag-1 error on absolute log-returns.
+
+    A_22 = |E_i[ACF(|r_i|, lag=1)]_real - E_i[ACF(|r_i|, lag=1)]_gen|
+
+    where ACF(x, 1) = corr(x_t, x_{t+1}) per path i.
+
+    Captures the ARCH effect: |r_t| is positively autocorrelated in real
+    data (volatility clustering, Engle 1982). A perfect generator reproduces
+    this first-lag autocorrelation.
+    Perfect: 0.  Direction: lower is better.
+
+    Parameters
+    ----------
+    X : (N, T, d)  real price paths
+    Y : (N, T, d)  generated price paths
+    """
+    lr_r = np.diff(np.log(np.maximum(X, 1e-10)), axis=1)
+    lr_f = np.diff(np.log(np.maximum(Y, 1e-10)), axis=1)
+    return float(acf_error(np.abs(lr_f), np.abs(lr_r), lags=(1,)))
+
+
+def acf_lag1_sq_error(X: np.ndarray, Y: np.ndarray) -> float:
+    r"""A23. ACF lag-1 error on squared log-returns.
+
+    A_23 = |E_i[ACF(r_i^2, lag=1)]_real - E_i[ACF(r_i^2, lag=1)]_gen|
+
+    Captures the GARCH effect: r_t^2 is autocorrelated (variance clustering,
+    Bollerslev 1986). Complementary to A22 — squared returns emphasise large
+    moves while |r| weights all moves equally.
+    Perfect: 0.  Direction: lower is better.
+
+    Parameters
+    ----------
+    X : (N, T, d)  real price paths
+    Y : (N, T, d)  generated price paths
+    """
+    lr_r = np.diff(np.log(np.maximum(X, 1e-10)), axis=1)
+    lr_f = np.diff(np.log(np.maximum(Y, 1e-10)), axis=1)
+    return float(acf_error(lr_f ** 2, lr_r ** 2, lags=(1,)))
+
+
+# ======================================================================
+# A24  Realized Volatility Law Loss
+# ======================================================================
+
+def rv_law_loss(X: np.ndarray, Y: np.ndarray, dt: float = 1.0 / 250.0) -> float:
+    r"""A24. Realized Volatility Law Loss — W₁ distance between RV distributions.
+
+    For each path i, annualised realised variance:
+
+        RV_i = (1/dt) * sum_t r_{i,t}^2
+
+    where r_{i,t} = log(S_{i,t+1}/S_{i,t}).
+
+    A_24 = W_1( {RV_i}_real, {RV_i}_gen )
+
+    Tests whether the generator reproduces the *distribution* of realised
+    volatility across paths (not just the mean captured by A20).
+    Perfect: 0.  Direction: lower is better.
+
+    Parameters
+    ----------
+    X  : (N, T, d)  real price paths
+    Y  : (N, T, d)  generated price paths
+    dt : time step in years (default 1/250)
+    """
+    log_r_real = np.diff(np.log(np.maximum(X, 1e-10)), axis=1)
     log_r_gen  = np.diff(np.log(np.maximum(Y, 1e-10)), axis=1)
-    rv_real = np.sum(log_r_real ** 2, axis=1) / dt  # (N, d)
-    rv_gen  = np.sum(log_r_gen ** 2, axis=1) / dt
-    rv_r = rv_real.ravel()
-    rv_g = rv_gen.ravel()
-    return float(wasserstein_distance(rv_r, rv_g))
-
-
-# ======================================================================
-# A17–A19  Oracle evaluation protocol
-# ======================================================================
-
-def oracle_metrics(
-    X_real: np.ndarray, X_gen: np.ndarray,
-    ar_order: int = 5, test_frac: float = 0.2, seed: int = 0,
-) -> Tuple[float, float, float]:
-    """A17-A19. Oracle evaluation protocol (per-path AR, no cross-path leakage).
-
-    For each path independently, build AR(p) (lag features, target) pairs.
-    Stack all paths' (X_lag, y) into a single matrix, then randomly split
-    into train/test sets (shuffled, not temporal — paths are i.i.d. MC draws).
-
-    Train an AR(p) on REAL log-returns -> predict test -> oracle mean.
-    Train same AR(p) on GENERATED log-returns -> predict test -> agent mean.
-    Compute Pearson correlation between oracle and agent predictions.
-
-    Parameters
-    ----------
-    X_real : (N, T, d) real paths
-    X_gen  : (N, T, d) generated paths
-    ar_order : order of AR model (default 5)
-    test_frac : fraction of AR transitions held out for testing (default 0.2)
-    seed : random seed for reproducibility (shuffle)
-
-    Returns
-    -------
-    oracle_mae  : MAE of oracle predictor (AR on real) on real held-out test set
-    agent_mae   : MAE of agent predictor (AR on synthetic) on real held-out test set
-    correlation : Pearson r between oracle and agent predictions on test set
-    """
-    rng = np.random.default_rng(seed)
-
-    # Log-returns: r_t = log(S_{t+1}/S_t)
-    r_real = np.diff(np.log(np.maximum(X_real, 1e-10)), axis=1)  # (N, T-1, d)
-    r_gen  = np.diff(np.log(np.maximum(X_gen,  1e-10)), axis=1)
-
-    # Build per-path AR(p) matrices, then STACK (no cross-path lags)
-    def make_ar_stacked(data, order):
-        """data: (N, T, d) -> X_lag: (M, order), y: (M,) where M = N*(T-order)*d"""
-        X_list, y_list = [], []
-        for n in range(data.shape[0]):
-            for f in range(data.shape[2]):
-                seq = data[n, :, f]
-                for t in range(order, len(seq)):
-                    X_list.append(seq[t-order:t])
-                    y_list.append(seq[t])
-        return np.array(X_list, dtype=np.float64), np.array(y_list, dtype=np.float64)
-
-    X_real_all, y_real_all = make_ar_stacked(r_real, ar_order)
-
-    # Guard: AR(p) order must be < available transitions
-    if len(X_real_all) < ar_order + 2:
-        import warnings as _w
-        _w.warn(f"oracle_metrics: ar_order={ar_order} too large for data (T={X_real.shape[1]}, "
-                f"N={X_real.shape[0]}). Returning (0, 0, 0).")
-        return (0.0, 0.0, 0.0)
-
-    # Shuffled train/test split (paths are i.i.d., no temporal ordering)
-    n_total = len(X_real_all)
-    n_test = max(1, int(n_total * test_frac))
-    idx = rng.permutation(n_total)
-    idx_test = idx[:n_test]
-    idx_train = idx[n_test:]
-
-    # Oracle: train OLS on real data, predict on held-out real features
-    X_train_r = X_real_all[idx_train]
-    y_train_r = y_real_all[idx_train]
-    y_test_r  = y_real_all[idx_test]
-    X_test = X_real_all[idx_test]
-
-    from numpy.linalg import lstsq
-    coeff_r = lstsq(X_train_r, y_train_r, rcond=1e-8)[0]
-    oracle_pred = X_test @ coeff_r
-    oracle_mae = float(np.mean(np.abs(oracle_pred - y_test_r)))
-
-    # Agent: train OLS on generated data, predict on REAL test features
-    # TSTR: Train on Synthetic, Test on Real
-    X_gen_all, y_gen_all = make_ar_stacked(r_gen, ar_order)
-    X_train_g = X_gen_all[idx_train]
-    y_train_g = y_gen_all[idx_train]
-    coeff_g = lstsq(X_train_g, y_train_g, rcond=1e-8)[0]
-    agent_pred = X_test @ coeff_g   # predict on REAL test inputs
-    agent_mae = float(np.mean(np.abs(agent_pred - y_test_r)))
-
-    # Pearson correlation between oracle and agent predictions on the same test inputs
-    with np.errstate(invalid='ignore'):
-        corr = float(np.corrcoef(oracle_pred, agent_pred)[0, 1]) if len(oracle_pred) > 2 else 0.0
-    if np.isnan(corr):
-        import warnings as _w
-        _w.warn("oracle_metrics: correlation is NaN (constant input or insufficient variance)")
-        corr = 0.0
-
-    return oracle_mae, agent_mae, corr
+    rv_real = (np.sum(log_r_real ** 2, axis=1) / dt).ravel()
+    rv_gen  = (np.sum(log_r_gen  ** 2, axis=1) / dt).ravel()
+    return float(wasserstein_distance(rv_real, rv_gen))
 
 
 __all__ = [
@@ -551,7 +621,13 @@ __all__ = [
     "return_std_error", "return_kurtosis_error",
     "acf", "acf_error",
     "teacher_sigma_metrics",
-    "tail_survival_error",
+    # A16–A24
+    "logreturn_std_error",
+    "abs_return_quantile_error",
+    "kurtosis_ratio",
+    "sigma_mean_error",
+    "learned_oracle_sigma_corr",
+    "acf_lag1_abs_error",
+    "acf_lag1_sq_error",
     "rv_law_loss",
-    "oracle_metrics",
 ]

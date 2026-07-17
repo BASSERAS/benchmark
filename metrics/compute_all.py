@@ -53,9 +53,14 @@ from metrics_np import (
     return_std_error, return_kurtosis_error,
     acf_error,
     teacher_sigma_metrics,
-    tail_survival_error,
+    logreturn_std_error,
+    abs_return_quantile_error,
+    kurtosis_ratio,
+    sigma_mean_error,
+    learned_oracle_sigma_corr,
+    acf_lag1_abs_error,
+    acf_lag1_sq_error,
     rv_law_loss,
-    oracle_metrics,
 )
 from discriminative_score import compute_discriminative_score
 from predictive_score import compute_predictive_score
@@ -169,27 +174,54 @@ def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray) -> dict:
         results["A15_sigma_rmse"] = None
         print(f"SKIPPED ({ex})")
 
-    # A16 Tail Survival Error
-    print("  A16 tail survival ...", end=" ", flush=True)
-    a16_rms, a16_q90, a16_q95, a16_q99 = tail_survival_error(real3, fake3)
-    results["A16_tail_survival"] = float(a16_rms)
-    results["A16_q90_error"]     = float(a16_q90)
-    results["A16_q95_error"]     = float(a16_q95)
-    results["A16_q99_error"]     = float(a16_q99)
-    print(f"rms={a16_rms:.6f}  q90={a16_q90:.6f}  q95={a16_q95:.6f}  q99={a16_q99:.6f}")
+    # A16 Log-Return Std Error
+    print("  A16 logreturn std error ...", end=" ", flush=True)
+    results["A16_logreturn_std_error"] = float(logreturn_std_error(real3, fake3))
+    print(f"{results['A16_logreturn_std_error']:.6f}")
 
-    # A17-A19 Oracle metrics
-    print("  A17-A19 oracle AR(5) TSTR ...", end=" ", flush=True)
-    o_mean, a_mean, oa_corr = oracle_metrics(real3, fake3, ar_order=5, seed=seed)
-    results["A17_oracle_mae"] = o_mean
-    results["A18_agent_mae"]  = a_mean
-    results["A19_oa_corr"]    = oa_corr
-    print(f"oracle_mae={o_mean:.5f}  agent_mae={a_mean:.5f}  corr={oa_corr:.4f}")
+    # A17 |r| q95 Error
+    print("  A17 |r| q95 error ...", end=" ", flush=True)
+    results["A17_abs_r_q95_error"] = float(abs_return_quantile_error(real3, fake3, q=0.95))
+    print(f"{results['A17_abs_r_q95_error']:.6f}")
 
-    # A20 RV Law Loss
-    print("  A20 RV law loss ...", end=" ", flush=True)
-    results["A20_rv_law_loss"] = rv_law_loss(real3, fake3)
-    print(f"{results['A20_rv_law_loss']:.6f}")
+    # A18 |r| q99 Error
+    print("  A18 |r| q99 error ...", end=" ", flush=True)
+    results["A18_abs_r_q99_error"] = float(abs_return_quantile_error(real3, fake3, q=0.99))
+    print(f"{results['A18_abs_r_q99_error']:.6f}")
+
+    # A19 Kurtosis Ratio
+    print("  A19 kurtosis ratio ...", end=" ", flush=True)
+    results["A19_kurtosis_ratio"] = float(kurtosis_ratio(real3, fake3))
+    print(f"{results['A19_kurtosis_ratio']:.4f}")
+
+    # A20 Sigma Mean Error
+    print("  A20 sigma mean error ...", end=" ", flush=True)
+    results["A20_sigma_mean_error"] = float(sigma_mean_error(real3, fake3))
+    print(f"{results['A20_sigma_mean_error']:.6f}")
+
+    # A21 Learned/Oracle Sigma Corr (Heston-specific)
+    print("  A21 learned/oracle sigma corr ...", end=" ", flush=True)
+    try:
+        results["A21_learned_oracle_sigma_corr"] = float(learned_oracle_sigma_corr(fake3, v))
+        print(f"{results['A21_learned_oracle_sigma_corr']:.4f}")
+    except Exception as ex:
+        results["A21_learned_oracle_sigma_corr"] = None
+        print(f"SKIPPED ({ex})")
+
+    # A22 ACF |r| Lag-1 Error
+    print("  A22 ACF |r| lag-1 error ...", end=" ", flush=True)
+    results["A22_acf_lag1_abs_error"] = float(acf_lag1_abs_error(real3, fake3))
+    print(f"{results['A22_acf_lag1_abs_error']:.6f}")
+
+    # A23 ACF r2 Lag-1 Error
+    print("  A23 ACF r2 lag-1 error ...", end=" ", flush=True)
+    results["A23_acf_lag1_sq_error"] = float(acf_lag1_sq_error(real3, fake3))
+    print(f"{results['A23_acf_lag1_sq_error']:.6f}")
+
+    # A24 Realized Vol Law Loss
+    print("  A24 RV law loss ...", end=" ", flush=True)
+    results["A24_rv_law_loss"] = float(rv_law_loss(real3, fake3))
+    print(f"{results['A24_rv_law_loss']:.6f}")
 
     # B1-B14 Stylized metrics (from 8 diagnostic plots)
     print("  B1-B14 stylized metrics ...", end=" ", flush=True)

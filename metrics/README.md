@@ -1,4 +1,4 @@
-# Metrics — A1 to A20
+# Metrics — A1 to A24
 
 Evaluation suite for generative models of financial time series.
 All metrics compare **real paths** $X \sim P$ against **generated paths** $\tilde{X} \sim Q$.
@@ -7,7 +7,7 @@ All metrics compare **real paths** $X \sim P$ against **generated paths** $\tild
 
 | File | Purpose |
 |------|---------|
-| `metrics_np.py` | A1–A12, A15–A16 — NumPy/SciPy implementations |
+| `metrics_np.py` | A1–A12, A15–A24 — NumPy/SciPy implementations |
 | `discriminative_score.py` | A13 — post-hoc GRU + MLP classifiers (PyTorch) |
 | `predictive_score.py` | A14 — GRU + MLP predictors, TSTR protocol (PyTorch) |
 | `compute_all.py` | Orchestrator: all metrics × N seeds → JSON + CSV + plots |
@@ -355,86 +355,220 @@ volatility process. **Perfect: 0. Direction: ↓**
 
 ---
 
-## A16 — Tail Survival Error · *RMS of survival probability difference*
-
-For each tail quantile level $\alpha \in \{0.90, 0.95, 0.99\}$:
-
-- $q_\alpha$ = $\alpha$-quantile of real absolute returns $|r_t|$
-- $\text{surv}_{\text{real}}(\alpha) = P_{\text{real}}(|r| > q_\alpha)$ (by construction $\approx 1 - \alpha$)
-- $\text{surv}_{\text{gen}}(\alpha) = P_{\text{gen}}(|r| > q_\alpha)$
+## A16 — Log-Return Std Error · *Absolute difference of log-return standard deviations*
 
 $$
-\text{TSE}(P, Q)
-= \sqrt{
-  \frac{1}{|\mathcal{A}|}
-  \sum_{\alpha \in \mathcal{A}}
-  \left( \text{surv}_{\text{real}}(\alpha) - \text{surv}_{\text{gen}}(\alpha) \right)^2
-}
-\quad \mathcal{A} = \{0.90,\, 0.95,\, 0.99\}
+\left| \sigma(\log\text{-returns}_{\text{real}}) - \sigma(\log\text{-returns}_{\text{gen}}) \right|
 $$
 
-Tests whether the generator reproduces the **fat tail** of the return distribution at the
-90th, 95th, and 99th percentile levels.
-A score of 0 means survival probabilities match exactly at all three quantile levels.
-**Perfect: 0. Direction: ↓**
-
-Per-level outputs:
-
-| Output | Description |
-|--------|-------------|
-| `rms` (A16_tail_survival) | RMS of survival probability differences across all levels |
-| `r q90 error` | Survival probability error at the 90th percentile |
-| `r q95 error` | Survival probability error at the 95th percentile |
-| `ir q99 error` | Survival probability error at the 99th percentile |
+where $r_t = \log(S_{t+1}/S_t)$ are log-returns pooled across all paths and time steps.
+Unlike A9 (which uses price increments $\Delta S_t$), A16 uses log-returns — the standard
+volatility representation in quantitative finance.
+Tests whether the overall **log-return volatility level** is correctly reproduced. **Perfect: 0. ↓**
 
 ---
 
-## A17-A18 — Target oracle o mean · Generated a mean · *AR(p) prediction means*
-
-Train an AR(p) predictor on **real** log-returns, predict held-out test returns $\rightarrow$ **oracle mean** $\mu_o$.
-Train the same AR(p) on **generated** log-returns, predict the same test set $\rightarrow$ **agent mean** $\mu_g$.
+## A17 — |r| q95 Error · *Absolute error at the 95th percentile of absolute log-returns*
 
 $$
-\mu_o = \frac{1}{N_{\text{test}}} \sum_{i=1}^{N_{\text{test}}} \hat{r}_i^{(o)}, \qquad
-\mu_g = \frac{1}{N_{\text{test}}} \sum_{i=1}^{N_{\text{test}}} \hat{r}_i^{(g)}
+\left| Q_{0.95}(|r_{\text{real}}|) - Q_{0.95}(|r_{\text{gen}}|) \right|
 $$
 
-where $\hat{r}_i^{(o)} = \sum_{k=1}^p \beta_k^{(o)} r_{i-k}$ (AR(p) fitted on real data)
-and $\hat{r}_i^{(g)}$ from AR(p) fitted on generated data.
-
-Default: $p=5$, $20\%$ held out. **Perfect: match real mean. Direction: closer to real mean = better.**
+where $Q_p$ denotes the $p$-th quantile and $r_t = \log(S_{t+1}/S_t)$.
+Tests whether the **upper tail (95th percentile)** of the absolute log-return distribution is reproduced.
+**Perfect: 0. ↓**
 
 ---
 
-## A19 — Learned oracle a corr. · *Pearson correlation*
+## A18 — |r| q99 Error · *Absolute error at the 99th percentile of absolute log-returns*
 
 $$
-\rho_{o,g} = \frac{\sum_i (\hat{r}_i^{(o)} - \mu_o)(\hat{r}_i^{(g)} - \mu_g)}
-{\sqrt{\sum_i (\hat{r}_i^{(o)} - \mu_o)^2} \sqrt{\sum_i (\hat{r}_i^{(g)} - \mu_g)^2}}
+\left| Q_{0.99}(|r_{\text{real}}|) - Q_{0.99}(|r_{\text{gen}}|) \right|
 $$
 
-Measures whether the generated data preserves the **same predictive relationships** as real data.
-$\rho \approx 1$ = perfect preservation. $\rho \approx 0$ = signal destroyed.
-**Perfect: 1. Direction: $\uparrow$**
+Same as A17 at the more extreme **99th percentile**. Tests deeper tail reproduction.
+**Perfect: 0. ↓**
 
 ---
 
-## A20 — Realized-vol law loss · *Wasserstein-1 on RV distribution*
+## A19 — Kurtosis Ratio (target/model) · *Ratio of excess kurtosis values*
 
 $$
-\text{RV}_i = \frac{1}{\Delta t} \sum_{t=1}^{T-1} r_{i,t}^2 \quad \text{(annualized realized variance)}
+\text{KR} = \frac{\kappa_{\text{real}}}{\kappa_{\text{gen}}}
 $$
 
-$$
-\mathcal{L}_{\text{RV}} = W_1\big(P_{\text{real}}(\text{RV}), P_{\text{gen}}(\text{RV})\big)
-= \int_{-\infty}^{\infty} \big| F_{\text{real}}^{\text{RV}}(x) - F_{\text{gen}}^{\text{RV}}(x) \big| \, dx
-$$
-
-where $W_1$ is the 1-Wasserstein (Earth Mover's) distance and $F$ the empirical CDF.
-Tests whether the unconditional volatility regime distribution is reproduced.
-**Perfect: 0. $\downarrow$**
+where $\kappa = \dfrac{\mathbb{E}[(r-\mu)^4]}{\sigma^4} - 3$ is the excess kurtosis (Fisher definition,
+bias-corrected) of all pooled log-returns $r_t = \log(S_{t+1}/S_t)$.
+A ratio of **1.0** means the generator reproduces the exact tail heaviness. Ratio > 1 means
+the generated distribution is lighter-tailed than real; < 1 means heavier-tailed.
+**Perfect: 1.0. Closer to 1 = better.**
 
 ---
+
+## A20 — Sigma Mean Error · *Absolute error of mean per-path annualized volatility*
+
+$$
+\left| \frac{1}{N}\sum_{i=1}^{N} \hat{\sigma}_i^{\text{real}} - \frac{1}{N}\sum_{i=1}^{N} \hat{\sigma}_i^{\text{gen}} \right|
+$$
+
+where $\hat{\sigma}_i = \text{std}(r_{i,\cdot}) \times \sqrt{1/\Delta t}$ is the annualized realized
+volatility of path $i$ (log-returns $r_{i,t} = \log(S_{i,t+1}/S_{i,t})$, $\Delta t = 1/250$).
+Tests whether the **unconditional mean volatility** is correctly reproduced across paths.
+**Perfect: 0. ↓**
+
+---
+
+## A21 — Learned/Oracle Sigma Corr · *Pearson correlation, realised vol vs true vol (Heston-specific)*
+
+$$
+\rho = \text{Corr}\!\left( \hat{\sigma}^{\text{gen}}, \sqrt{v_{\text{true}}} \right)
+$$
+
+$\hat{\sigma}_{i,t}^{\text{gen}}$ = rolling realised volatility (window $w=5$) from generated price increments.
+$\sqrt{v_{\text{true},i,t}}$ = true Heston latent volatility from `dataset/Heston/heston_v_8192x128.npy`.
+Identical to A15 Corr. Included as A21 to group all new tail/vol metrics together.
+**Heston-specific bonus.** **Perfect: 1. ↑**
+
+---
+
+## A22 — ACF |r| Lag-1 Error · *Absolute error at lag 1 of the ACF of absolute log-returns*
+
+$$
+\left| \text{ACF}(|r_{\text{real}}|,\,\ell=1) - \text{ACF}(|r_{\text{gen}}|,\,\ell=1) \right|
+$$
+
+where $\text{ACF}(q,\ell)$ is the sample autocorrelation at lag $\ell$, averaged over paths.
+Lag-1 absolute-return ACF is the dominant **ARCH signal** (volatility clustering).
+Heston true value ≈ +0.052. **Perfect: 0. ↓**
+
+Complements A11 (which averages over lags $\{1,2,5,10\}$): A22 isolates the single most
+important lag.
+
+---
+
+## A23 — ACF r² Lag-1 Error · *Absolute error at lag 1 of the ACF of squared log-returns*
+
+$$
+\left| \text{ACF}(r_{\text{real}}^2,\,\ell=1) - \text{ACF}(r_{\text{gen}}^2,\,\ell=1) \right|
+$$
+
+Squared-return lag-1 ACF is the dominant **GARCH signal**.
+Heston true value ≈ +0.050. **Perfect: 0. ↓**
+
+Complements A12 (which averages over lags $\{1,2,5,10\}$): A23 isolates the single most
+important lag.
+
+---
+
+## A24 — Realized-Vol Law Loss · *Wasserstein-1 on the distribution of annualized realized variance*
+
+$$
+\text{RV}_i = \frac{1}{\Delta t} \sum_{t=1}^{T-1} r_{i,t}^2 \qquad \text{(annualized realized variance, path }i\text{)}
+$$
+
+$$
+\mathcal{L}_{\text{RV}} = W_1\!\left(P_{\text{real}}(\text{RV}),\, P_{\text{gen}}(\text{RV})\right)
+= \int_{-\infty}^{\infty} \left| F_{\text{real}}^{\text{RV}}(x) - F_{\text{gen}}^{\text{RV}}(x) \right| dx
+$$
+
+where $W_1$ is the 1-Wasserstein (Earth Mover's) distance and $F$ is the empirical CDF.
+Tests whether the full **volatility regime distribution** is reproduced — not just its mean (A20).
+**Perfect: 0. ↓**
+
+Ref: Barndorff-Nielsen & Shephard (2002), *Econometric Analysis of Realized Volatility*.
+
+---
+
+## B1–B12 — Stylized Metrics · *One scalar per diagnostic plot panel*
+
+These metrics are extracted from the same data as the 8-panel diagnostic PNG (see
+`metrics/plot_diagnostics.py`). Each captures a known **stylized fact** of financial returns
+(Cont 2001, *Empirical properties of asset returns: stylized facts and statistical issues*).
+
+> Metric-to-plot mapping:
+
+| Plots | B metric | What you see |
+|-------|----------|-------------|
+| 1 + 2 (sample paths) | B1 Mean Path RMSE, B2 Cross-Sect. Vol RMSE | Systematic drift + spread of the fan |
+| 3 (log-return histogram) | B3 KS Stat, B4 Skewness Error | Shape, centre, asymmetry of density |
+| 4 (QQ plot) | B5 QQ RMSE (300-pt), B6 Tail QQ Error | Diagonal alignment; 5th/95th deviation |
+| 5 (ACF \|r\|) | B7 ACF lag-1 \|r\| error | Volatility clustering: lag-1 bar height |
+| 6 (ACF r²) | B8 ACF lag-1 r² error | GARCH effect: lag-1 bar height |
+| 7 (rolling vol hist.) | B9 Rolling Vol KS, B10 Vol-of-Vol Error | Width and spread of the vol histogram |
+| 8 (tail survival) | B11 Terminal Price KS, B12 Tail Index Error (Hill) | Log-log alignment + slope (tail heaviness) |
+
+**B1 — Mean Path RMSE**
+
+$$B1 = \sqrt{\frac{1}{T}\sum_{t=1}^{T}\left(\bar{S}^{\text{real}}_t - \bar{S}^{\text{gen}}_t\right)^2}$$
+
+**B2 — Cross-Sectional Vol RMSE**
+
+$$B2 = \sqrt{\frac{1}{T}\sum_{t=1}^{T}\left(\sigma^{\text{real}}_t - \sigma^{\text{gen}}_t\right)^2}$$
+
+where $\sigma_t = \text{std}_{i}(S_{i,t})$ is the cross-sectional standard deviation at time $t$.
+
+**B3 — KS Statistic on log-returns**
+
+$$B3 = \sup_x \left|F^{\text{real}}_r(x) - F^{\text{gen}}_r(x)\right|, \quad r_t = \log(S_{t+1}/S_t)$$
+
+Two-sample Kolmogorov-Smirnov statistic on all pooled log-returns. Perfect: 0.
+
+**B4 — Skewness Error**
+
+$$B4 = \left|\text{skew}(r^{\text{real}}) - \text{skew}(r^{\text{gen}})\right|$$
+
+Heston generates negative skew ($\rho < 0$ leverage). Perfect: 0.
+
+**B5 — QQ RMSE (300-pt)**
+
+$$B5 = \sqrt{\frac{1}{300}\sum_{g=1}^{300}\left(Q^{\text{real}}_r(p_g) - Q^{\text{gen}}_r(p_g)\right)^2}, \quad p_g \in [0.005,\,0.995]$$
+
+Tests bulk distributional match. Perfect: 0.
+
+**B6 — Tail QQ Error**
+
+Same as B5 restricted to $p \in [0.01,0.05] \cup [0.95,0.99]$ (10 points). Perfect: 0.
+
+**B7 — ACF lag-1 Error on |r|**
+
+$$B7 = \left|\text{ACF}(|r^{\text{real}}|,\,\ell=1) - \text{ACF}(|r^{\text{gen}}|,\,\ell=1)\right|$$
+
+Lag-1 absolute-return ACF. Positive in Heston (~0.05): dominant ARCH signal. Perfect: 0.
+
+**B8 — ACF lag-1 Error on r²**
+
+$$B8 = \left|\text{ACF}({r^{\text{real}}}^2,\,\ell=1) - \text{ACF}({r^{\text{gen}}}^2,\,\ell=1)\right|$$
+
+Lag-1 squared-return ACF (GARCH effect). Perfect: 0.
+
+**B9 — Rolling Vol KS Statistic**
+
+$$B9 = \text{KS}\!\left(\{\hat{\sigma}^{\text{real}}_{i,t}\},\,\{\hat{\sigma}^{\text{gen}}_{i,t}\}\right), \quad \hat{\sigma}_{i,t}=\text{std}(r_{i,t-4:t})$$
+
+Two-sample KS on rolling std of log-returns (window = 5 days). Perfect: 0.
+
+**B10 — Vol-of-Vol Error**
+
+$$B10 = \left|\text{std}(\hat{\sigma}^{\text{real}}) - \text{std}(\hat{\sigma}^{\text{gen}})\right|$$
+
+Dispersion of the rolling volatility distribution. Perfect: 0.
+
+**B11 — Terminal Price KS Statistic**
+
+$$B11 = \text{KS}\!\left(S^{\text{real}}_T,\,S^{\text{gen}}_T\right)$$
+
+Two-sample KS on the terminal marginal $S_T$. Perfect: 0.
+
+**B12 — Hill Tail Index Error**
+
+$$B12 = \left|\hat{\alpha}^{\text{real}} - \hat{\alpha}^{\text{gen}}\right|, \quad \hat{\alpha} = \left[\frac{1}{k}\sum_{i=1}^{k}\log\frac{X_{(n-i+1)}}{X_{(n-k)}}\right]^{-1}$$
+
+Hill (1975) estimator on top 10% of terminal prices $S_T$. $\alpha > 4$ implies finite kurtosis. Perfect: 0.
+
+> Ref: Cont (2001), *Quantitative Finance* 1, 223–236.
+
+---
+
 
 ## Forecast Metrics — MAE, RMSE, CRPS
 
