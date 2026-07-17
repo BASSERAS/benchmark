@@ -1,0 +1,22 @@
+{
+  "seed": 0,
+  "A1_path_mmd2": 0.009337653491404918,
+  "A2_terminal_mmd2": 0.006054891924186179,
+  "A3_increment_mmd2": 0.007400004725994336,
+  "A4_volatility_mmd": 0.32301440851618685,
+  "A5_terminal_swd": 2.7753899541528995,
+  "A6_path_swd": 2.2031561048847044,
+  "A7_cov_error": 143.73609623732273,
+  "A8_mean_rmse": 1.297231716181244,
+  "A9_std_error": 0.2503382235358116,
+  "A10_kurtosis_error": 0.11562695735654893,
+  "A11_acf_abs": 0.05679477806556526,
+  "A12_acf_sq": 0.06193427821777769,
+  "A13_disc_score_gru": 0.003204,
+  "A13_disc_score_mlp": 0.067592,
+  "A14_pred_score_gru": 0.009086,
+  "A14_pred_score_mlp": 0.009224,
+  "A15_sigma_corr": -0.002402871974455776,
+  "A15_sigma_rmse": 0.8197885397759139,
+  "compute_time_sec": 56.46
+}
