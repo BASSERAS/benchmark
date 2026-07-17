@@ -25,8 +25,8 @@ Cross-method comparison on 8 192 Heston price paths (seq\_len=128).
 | A8  Mean RMSE ↓ | 0.140 ± 0.130 | 1.301 ± 0.278 | 0.739 ± 0.455 | **RW** | **0.090 ± 0.059** |
 | A9  Std Error ↓ | 0.0048 ± 0.0031 | 0.249 ± 0.002 | 0.152 ± 0.089 | **RW** | **0.049 ± 0.001** |
 | A10 Kurtosis Error ↓ | 0.017 ± 0.016 | **0.119 ± 0.006** | 2.955 ± 2.099 | **SBTS** | 0.482 ± 0.008 |
-| A11 ACF Abs Error ↓ | 0.0017 ± 0.0007 | 0.057 ± 0.001 | 0.134 ± 0.073 | **RW** | **0.033 ± 0.000** |
-| A12 ACF Sq Error ↓ | 0.0015 ± 0.0006 | 0.062 ± 0.001 | 0.092 ± 0.039 | **RW** | **0.029 ± 0.000** |
+| A11 ACF Abs Error ↓ | 0.0017 ± 0.0006 | 0.060 ± 0.000 | 0.125 ± 0.067 | **RW** | **0.049 ± 0.000** |
+| A12 ACF Sq Error ↓ | 0.0014 ± 0.0006 | 0.062 ± 0.001 | 0.084 ± 0.035 | **RW** | **0.044 ± 0.000** |
 | A13 Disc Score GRU ↓ | 0.0042 ± 0.0048 | 0.029 ± 0.028 | 0.050 ± 0.034 | **RW** | **0.010 ± 0.008** |
 | A13 Disc Score MLP ↓ | 0.0112 ± 0.0079 | 0.071 ± 0.008 | 0.151 ± 0.142 | **RW** | **0.021 ± 0.018** |
 | A14 Pred Score GRU ↓ | 0.0085 ± 0.0001 | 0.0091 ± 0.0000 | 0.0087 ± 0.0002 | **RW** | **0.0083 ± 0.0000** |
@@ -46,10 +46,12 @@ Cross-method comparison on 8 192 Heston price paths (seq\_len=128).
 > baseline. Both methods score above the floor (SBTS 0.096, TimeGAN 0.118) — correct ordering. SBTS wins.
 
 > ⚠️ **RW baseline:** A calibrated GBM (i.i.d. Gaussian log-returns, matched μ and σ) wins 17/21
-> metrics over SBTS and TimeGAN. The 4 metrics that discriminate Heston from RW are **A10** (kurtosis —
-> fat tails absent in GBM), **A15 Sigma Corr** (no stochastic volatility), and **PS-MC CRPS** (path
-> shadowing exploits genuine temporal structure). This reveals which metrics actually test Heston-specific
-> features vs. merely matched marginals.
+> metrics over SBTS and TimeGAN. The 4 metrics where another method beats RW are **A10** (kurtosis —
+> fat tails absent in GBM), **A15 Sigma Corr** (no stochastic volatility), and **PS-MC CRPS H=32/64** (path
+> shadowing exploits genuine temporal structure). A11/A12 (log-return ACF) reveal that RW also fails
+> to match Heston's ARCH autocorrelation (RW = 0.049 vs. perfect = 0.0017, i.e. 29× worse), but since
+> SBTS and TimeGAN fail even more (0.060 and 0.125), RW happens to rank best among the three. This
+> reveals which metrics actually test Heston-specific features vs. merely matched marginals.
 
 **RW wins 17/21, SBTS wins 4/21, TimeGAN wins 0/21.** (RW = calibrated GBM baseline — see note below.)
 

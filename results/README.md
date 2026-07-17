@@ -72,8 +72,8 @@ SBTS is a **non-parametric kernel method** with no neural network and no trainin
 | A8  Mean RMSE ↓ | 0.140 ± 0.130 | 1.301 ± 0.278 | 0.739 ± 0.455 | **RW** | **0.090 ± 0.059** |
 | A9  Std Error ↓ | 0.0048 ± 0.0031 | 0.249 ± 0.002 | 0.152 ± 0.089 | **RW** | **0.049 ± 0.001** |
 | A10 Kurtosis Error ↓ | 0.017 ± 0.016 | **0.119 ± 0.006** | 2.955 ± 2.099 | **SBTS** | 0.482 ± 0.008 |
-| A11 ACF Abs Error ↓ | 0.0017 ± 0.0007 | 0.057 ± 0.001 | 0.134 ± 0.073 | **RW** | **0.033 ± 0.000** |
-| A12 ACF Sq Error ↓ | 0.0015 ± 0.0006 | 0.062 ± 0.001 | 0.092 ± 0.039 | **RW** | **0.029 ± 0.000** |
+| A11 ACF Abs Error ↓ | 0.0017 ± 0.0006 | 0.060 ± 0.000 | 0.125 ± 0.067 | **RW** | **0.049 ± 0.000** |
+| A12 ACF Sq Error ↓ | 0.0014 ± 0.0006 | 0.062 ± 0.001 | 0.084 ± 0.035 | **RW** | **0.044 ± 0.000** |
 | A13 Disc GRU ↓ | 0.0042 ± 0.0048 | 0.029 ± 0.028 | 0.050 ± 0.034 | **RW** | **0.010 ± 0.008** |
 | A13 Disc MLP ↓ | 0.0112 ± 0.0079 | 0.071 ± 0.008 | 0.151 ± 0.142 | **RW** | **0.021 ± 0.018** |
 | A14 Pred GRU ↓ | 0.0085 ± 0.0001 | 0.0091 ± 0.0000 | 0.0087 ± 0.0002 | **RW** | **0.0083 ± 0.0000** |
@@ -97,7 +97,7 @@ SBTS is a **non-parametric kernel method** with no neural network and no trainin
 **RW wins 17/21, SBTS wins 4/21, TimeGAN wins 0/21.** (RW = calibrated GBM baseline)
 
 **Interpretation:**
-- **SBTS wins on distribution matching** (A1–A4, A10–A12): the kernel method matches marginal and return distributions. MMD and ACF errors are consistently lower.
+- **SBTS wins on distribution matching** (A1–A4, A10): the kernel method matches marginal return distributions. MMD and kurtosis errors are consistently lower. A11/A12 (ACF) are won by RW since a calibrated GBM automatically matches the marginal autocorrelation structure of any i.i.d.-return dataset; the ACF gap to Heston is non-zero but smaller than expected (fat tails and stochastic volatility are better captured by A10 and A15).
 - **TimeGAN wins on temporal structure** (A5–A9): the GRU captures multi-step covariance that Markov-1 SBTS cannot. A7 (covariance error) is the starkest gap: **145% vs 18%**.
 - **Discriminative scores** (A13): SBTS paths are harder to tell from real (0.029 vs 0.050 GRU) — better statistical fidelity at sample level.
 - **Path Shadowing MC**: SBTS wins decisively (CRPS 2.76 vs 3.09 at H=32) — richer kernel pool → better nearest-neighbour forecasts.

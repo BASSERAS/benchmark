@@ -119,10 +119,10 @@ def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray) -> dict:
     print("  A10 kurtosis error ...", end=" ", flush=True)
     results["A10_kurtosis_error"]  = float(return_kurtosis_error(real3, fake3));print(f"{results['A10_kurtosis_error']:.6f}")
     print("  A11 ACF abs returns ...", end=" ", flush=True)
-    _d_real = np.diff(real3, axis=1); _d_fake = np.diff(fake3, axis=1)
-    results["A11_acf_abs"]         = float(acf_error(np.abs(_d_fake), np.abs(_d_real))); print(f"{results['A11_acf_abs']:.6f}")
+    _lr_real = np.diff(np.log(real3), axis=1); _lr_fake = np.diff(np.log(fake3), axis=1)
+    results["A11_acf_abs"]         = float(acf_error(np.abs(_lr_fake), np.abs(_lr_real))); print(f"{results['A11_acf_abs']:.6f}")
     print("  A12 ACF sq returns ...", end=" ", flush=True)
-    results["A12_acf_sq"]          = float(acf_error(_d_fake**2, _d_real**2));           print(f"{results['A12_acf_sq']:.6f}")
+    results["A12_acf_sq"]          = float(acf_error(_lr_fake**2, _lr_real**2));           print(f"{results['A12_acf_sq']:.6f}")
 
     # A13 Discriminative Score
     print("  A13 discriminative (GRU + MLP) ...", flush=True)

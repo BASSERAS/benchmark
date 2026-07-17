@@ -99,10 +99,10 @@ def compute_one_run(
     out["A9_std_error"]       = float(return_std_error(real3, fake3))
     out["A10_kurtosis_error"] = float(return_kurtosis_error(real3, fake3))
 
-    _d_real = np.diff(real3, axis=1)  # first differences (proxy for returns)
-    _d_fake = np.diff(fake3, axis=1)
-    out["A11_acf_abs"] = float(acf_error(np.abs(_d_fake), np.abs(_d_real)))
-    out["A12_acf_sq"]  = float(acf_error(_d_fake ** 2, _d_real ** 2))
+    _lr_real = np.diff(np.log(real3), axis=1)  # log-returns (correct for ARCH/ACF)
+    _lr_fake = np.diff(np.log(fake3), axis=1)
+    out["A11_acf_abs"] = float(acf_error(np.abs(_lr_fake), np.abs(_lr_real)))
+    out["A12_acf_sq"]  = float(acf_error(_lr_fake ** 2, _lr_real ** 2))
 
     # ── A13: discriminative score (GRU + MLP, GPU) ────────────────────────────
     d13 = compute_discriminative_score(S_a, S_b, n_steps=2000, device=DEVICE)
