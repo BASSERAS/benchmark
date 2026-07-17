@@ -83,42 +83,7 @@ that SBTS achieves low discriminative scores on Heston-type data.
 The key hyperparameters (h, K, N_pi) are taken verbatim from the paper's Appendix C Table 4,
 confirming our reimplementation uses the authors' recommended settings.
 
----
-
-## Comparison with TimeGAN (same dataset, same metrics, same 5 seeds)
-
-↓ = lower is better. ↑ = higher is better. **Bold** = winner.
-
-| Metric | SBTS (mean ± std) | TimeGAN (mean ± std) | Winner |
-|--------|:-----------------:|:--------------------:|:------:|
-| A1  Path MMD² ↓      | **0.0110 ± 0.0016** | 0.0180 ± 0.0147 | **SBTS** |
-| A2  Terminal MMD² ↓  | **0.0090 ± 0.0035** | 0.0296 ± 0.0235 | **SBTS** |
-| A3  Increment MMD² ↓ | **0.0071 ± 0.0005** | 0.0078 ± 0.0037 | **SBTS** |
-| A4  Volatility MMD ↓ | **0.3125 ± 0.0176** | 0.3798 ± 0.2351 | **SBTS** |
-| A5  Terminal SWD ↓   | 3.465 ± 0.588 | **2.850 ± 1.079** | **TimeGAN** |
-| A6  Path SWD ↓       | 2.497 ± 0.288 | **1.501 ± 0.583** | **TimeGAN** |
-| A7  Cov Error ↓      | 145.35 ± 4.89 | **17.75 ± 6.71** | **TimeGAN** |
-| A8  Mean RMSE ↓      | 1.301 ± 0.278 | **0.739 ± 0.455** | **TimeGAN** |
-| A9  Std Error ↓      | 0.249 ± 0.002 | **0.152 ± 0.089** | **TimeGAN** |
-| A10 Kurtosis Error ↓ | **0.119 ± 0.006** | 2.955 ± 2.099 | **SBTS** |
-| A11 ACF Abs Error ↓  | **0.057 ± 0.001** | 0.134 ± 0.073 | **SBTS** |
-| A12 ACF Sq Error ↓   | **0.062 ± 0.001** | 0.092 ± 0.039 | **SBTS** |
-| A13 Disc GRU ↓       | **0.029 ± 0.028** | 0.050 ± 0.034 | **SBTS** |
-| A13 Disc MLP ↓       | **0.071 ± 0.008** | 0.151 ± 0.142 | **SBTS** |
-| A14 Pred GRU ↓       | 0.0091 ± 0.0000 | **0.0087 ± 0.0002** | ≈ tie |
-| A14 Pred MLP ↓       | 0.0093 ± 0.0006 | **0.0090 ± 0.0005** | ≈ tie |
-| A15 Sigma Corr ↑     | 0.0011 ± 0.0035 | **0.0031 ± 0.0101** | ≈ tie |
-| A15 Sigma RMSE ↓     | **0.821 ± 0.002** | 0.966 ± 0.124 | **SBTS** |
-| PS-MC CRPS H=32 ↓    | **2.761 ± 0.004** | 3.087 ± 0.340 | **SBTS** |
-| PS-MC CRPS H=64 ↓    | **3.900 ± 0.008** | 4.372 ± 0.431 | **SBTS** |
-
-**SBTS wins 12/20, TimeGAN wins 6/20, 2 ties.**
-
-**Interpretation:**
-- SBTS wins on **distribution matching** (A1–A4, A10–A12): the kernel method is designed to match marginal and return distributions.
-- TimeGAN wins on **temporal structure** (A5–A9): the GRU learns multi-step covariance; SBTS with K=1 is Markovian and cannot capture it. A7 is the clearest gap — 145% vs 18% covariance error.
-- **Discriminative scores** (A13): SBTS paths are harder to distinguish from real (0.029 vs 0.050 GRU), confirming better statistical fidelity at sample level.
-- **Path Shadowing MC**: SBTS wins decisively (CRPS 2.76 vs 3.09 at H=32) — the richer, more diverse retrieval pool from a kernel method outperforms a GAN pool for nearest-neighbour forecasting.
+→ Cross-method comparison with TimeGAN: [`results/README.md`](../../README.md)
 
 ---
 

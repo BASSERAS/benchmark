@@ -282,17 +282,39 @@ cd metrics
 
 Total: 19 numbers (some IDs have two variants).
 
-### 5.3 Output files produced by `compute_all.py`
+### 5.3 Output files
 
-All land in `results/Heston/<Method>/`:
+**`compute_all.py`** produces:
 
 | File | Contents |
 |------|---------|
-| `seed_{i}_metrics.json` | All 19 metric values for seed i |
-| `metrics_summary.json` | Mean ± std across 5 seeds, plus per_seed array |
-| `plots/heston_diagnostics.png` | 8-panel stylised facts figure (seed 0 vs real) |
-| `plots/disc_classifier_loss.png` | A13 BCE training loss, GRU + MLP, 5 seeds |
-| `plots/pred_score_loss.png` | A14 MAE training loss, GRU + MLP, 5 seeds |
+| `results/Heston/<Method>/seed_{i}_metrics.json` | All 19 metric values for seed i |
+| `results/Heston/<Method>/metrics_summary.json` | Mean ± std across 5 seeds |
+| `results/Heston/<Method>/metrics_summary.csv` | Same, CSV format |
+| `results/Heston/<Method>/plots/disc_classifier_loss.png` | A13 BCE training loss, GRU + MLP, 5 seeds |
+| `results/Heston/<Method>/plots/pred_score_loss.png` | A14 MAE training loss, GRU + MLP, 5 seeds |
+| `results/Heston/<Method>/plots/seed_{i}_pca.png` | PCA of 500 real vs fake paths (per seed) |
+| `results/Heston/<Method>/plots/seed_{i}_tsne.png` | t-SNE of 200 real vs fake paths (per seed) |
+
+**`metrics/plot_diagnostics.py`** produces (run separately after compute_all):
+```bash
+python metrics/plot_diagnostics.py --method <Method> --dataset Heston --seed 0
+```
+
+| File | Contents |
+|------|---------|
+| `results/Heston/<Method>/plots/heston_diagnostics.png` | 8-panel stylised facts (50 sample paths, see §7.1) |
+
+### 5.4 Perfect-Recovery Baseline
+
+Run this once per dataset to establish what metrics look like when the generative model is perfect (i.e., comparing two independent halves of the real data):
+
+```bash
+python metrics/perfect_recovery.py --dataset Heston
+# Output: results/Heston/perfect_recovery.json
+```
+
+Add the resulting numbers as a "Perfect Recovery" column in `results/README.md` and the global comparison table. This makes the metric scale interpretable — any method should aim to approach these values.
 
 ---
 
@@ -343,22 +365,35 @@ The KNN is a plain nearest-neighbour scan (not a combinatorial search). For each
 ### 7.1 Heston Diagnostics — 8-panel figure
 
 Compares real Heston (seed 0) vs generated paths (seed 0) on 8 stylised facts.
-Produced automatically by `compute_all.py`, saved to `results/Heston/<Method>/plots/heston_diagnostics.png`.
 
-Layout: 2 rows × 4 columns, figure size 18×8 inches, 150 dpi.
+**Use the shared reusable script — do NOT inline plot code in method files:**
+```bash
+python metrics/plot_diagnostics.py --method <Method> --dataset Heston --seed 0
+# Output: results/Heston/<Method>/plots/heston_diagnostics.png
+```
+
+Layout: **4 rows × 2 columns**, 14×18 inches, 120 dpi.
+These constants are **benchmark standards** — do NOT change per method:
+
+| Constant | Value | Meaning |
+|----------|-------|---------|
+| `N_SHOW` | **50** | paths shown in panels [0,0] and [0,1] (alpha=0.25, lw=0.6) |
+| `N_STAT` | 5000 | paths used for statistical panels 2–7 |
+| Real colour | `#2196F3` | blue |
+| Gen colour | `#FF5722` | orange-red |
 
 | Panel | Title | Content |
 |-------|-------|---------|
-| Row 0, Col 0 | Real Sample Paths | 5 random real paths, x=step (0–127), y=price |
-| Row 0, Col 1 | Generated Sample Paths | 5 random generated paths, same axes |
-| Row 0, Col 2 | Return Distribution | Overlaid KDE of all log-returns, real (blue) vs generated (orange) |
-| Row 0, Col 3 | QQ Plot | Quantile-quantile of generated vs real log-returns |
-| Row 1, Col 0 | ACF of \|r\| | Mean ACF of absolute returns, lags 1–20, real vs generated |
-| Row 1, Col 1 | ACF of r² | Mean ACF of squared returns, lags 1–20, real vs generated |
-| Row 1, Col 2 | Rolling Vol Histogram | Distribution of rolling σ (window=5), real vs generated |
-| Row 1, Col 3 | Tail Survival (log-log) | P(\|r\| > x) for x ∈ [0.01, 0.2], real vs generated |
+| Row 0, Col 0 | Real Sample Paths | **50** random real paths + thick mean line, y=price |
+| Row 0, Col 1 | Generated Sample Paths | **50** random generated paths + thick mean line, y=price |
+| Row 1, Col 0 | Return Distribution | Overlaid histogram (80 bins) of log-returns, real vs gen |
+| Row 1, Col 1 | QQ Plot | Gen vs real log-return quantiles (300 points), y=x reference |
+| Row 2, Col 0 | ACF of \|r\| | Mean ACF of absolute returns, lags 1–20 |
+| Row 2, Col 1 | ACF of r² | Mean ACF of squared returns, lags 1–20 |
+| Row 3, Col 0 | Rolling Vol Histogram | Distribution of 5-day rolling σ of log-returns |
+| Row 3, Col 1 | Tail Survival (log-log) | P(S_T > threshold) on terminal price S_T |
 
-Colours: real = blue, generated = orange. Always include a legend on each panel.
+Always include a legend on each panel.
 
 ### 7.2 Discriminative Classifier Loss (A13)
 
@@ -690,6 +725,10 @@ DOCUMENTATION
   [ ] results/Heston/<Method>/README.md  — metrics table, per-seed breakdown, observations
   [ ] results/Heston/<Method>/path_shadowing/README.md  — method detail, results, figures
 
+PERFECT RECOVERY BASELINE
+  [ ] results/Heston/perfect_recovery.json — run: python metrics/perfect_recovery.py --dataset Heston
+  [ ] results/README.md — "Perfect Recovery" column filled (no *(pending)* remaining)
+
 GITHUB
   [ ] All files committed with correct message format
   [ ] Pushed to origin/master
@@ -737,6 +776,18 @@ SBTS states Python 3.11. Check compatibility with gpu-venv before starting.
 |---|----------|--------|
 | SB-Q1 | **`sbts_uni_markovian.py`, k=1** | Paper explicitly uses k=1 for Heston (Appendix C). Heston is truly Markovian: given (Sₜ, vₜ) the future is independent of the past. Full non-Markovian variant produces null kernel weights on long series. |
 | SB-Q2 | **1D price paths, same format as TimeGAN** | SBTS internally operates on scaled log-returns R̃ = R × √Δt / σ(R). After generation, invert: R_gen = R̃_gen × σ(R) / √Δt, then S_gen[:,t+1] = S_gen[:,t] × exp(R_gen[:,t]) with S_gen[:,0] = S_real[:,0] ≈ 100. Save price paths (8192×128, float64). All metrics and plots in price space. |
-| SB-Q3 | **CPU + Numba for generation; GPU for A13/A14 metrics only** | SBTS has no neural network. Paper used CPU+Numba (12 cores, 548s for 1000 samples). Run 5 seeds in parallel via multiprocessing (5 workers, ≤16 cores total). GPUs 0+3 only for disc/pred scores. Check Numba compatibility with gpu-venv; if conflict, install numba==0.56.4 in gpu-venv or create sbts-venv. |
+| SB-Q3 | **CPU + Numba for generation; GPU for A13/A14 metrics only** | SBTS has no neural network. Paper used CPU+Numba (12 cores, 548 s for 1 000 samples at T=252). Our setup (8 192 paths, T=128): **64 workers → ~6.3 min/seed** (seeds 1-4: 370-384 s); 16 workers → ~23 min/seed. Rule: total time ≈ (8 192 / n_workers) × 2.9 s. GPUs 0+3 only for disc/pred scores. Check Numba compatibility with gpu-venv; if conflict, install numba==0.56.4 in gpu-venv or create sbts-venv. |
 | SB-Q4 | **h=0.4, k=1, N^π=200, Δt=1/250** | From Appendix C Table 4: h=0.4 for Heston T=100, Δt=1/252. We start with h=0.4 and run CV bandwidth selection (Section 3 of paper) for our T=128, M=8192. Grid H = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6} — pick h* minimising MSEₕ. |
 | SB-Q5 | **No loss CSV — log bandwidth CV curve instead** | SBTS is pure kernel density estimation — no parameters, no gradient, no training loop. Instead save: `losses/bandwidth_cv.csv` (h, MSEₕ per seed) and `losses/generation_time.csv` (seed, n_samples, elapsed_sec). Plot MSEₕ vs h in place of loss convergence plot. |
+
+**Measured timing on this cluster (8 192 paths, T=128, Numba JIT, sbts-venv):**
+
+| Method | Hardware | Workers / GPUs | Time / seed | Notes |
+|--------|----------|----------------|-------------|-------|
+| SBTS generation | CPU (EPYC 7763) | 64 workers | **~6.3 min** (376 s avg) | ~2.9 s/path; rule: (8192/W) × 2.9 s |
+| SBTS generation | CPU (EPYC 7763) | 16 workers | ~23.4 min (1 405 s) | Only for seed 0 (initial test) |
+| TimeGAN training | 1 × A100 80 GB | 1 GPU | **5.5–8 min** (323–487 s) | Variance reflects shared-machine load |
+| TimeGAN generation | 1 × A100 80 GB | 1 GPU | < 1 s | GRU forward pass, milliseconds |
+
+Paper timing for reference: Alouadi et al. report 548 s for 1 000 samples at T=252 with 12 CPU cores (~6.6 s/path).
+Our T=128 (vs their T=252) explains the faster per-path time (~2.9 s vs ~6.6 s).
