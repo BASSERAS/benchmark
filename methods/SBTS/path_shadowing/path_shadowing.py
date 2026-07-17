@@ -6,36 +6,51 @@ Reference: Morel, Mallat, Bouchaud (2023) — arXiv:2308.01486
 
 Algorithm
 ---------
-1. Embed every path prefix as a vector of multi-scale log-returns (eq. 13).
+1. Embed every path prefix as a 65D feature vector (see Embedding below).
 2. For each real query path, retrieve the K nearest generated paths by L2
-   distance in that embedding space.
+   distance in the z-scored embedding space.
 3. Use the futures of those K paths as a forecast ensemble (price-anchored).
 4. Evaluate with CRPS, MAE, RMSE at multiple forecast horizons.
 
-Embedding — eq. (13) of arXiv:2308.01486
------------------------------------------
-    h_{α,β}(x)[m] = ( log S_t − log S_{t−ℓ_m} ) / ℓ_m^β,   ℓ_m = ⌊α^m⌋
-
-Optimal parameters calibrated on S&P (Table I of the paper):
-    α = 1.15  →  lags are geometrically spaced (coarser for the distant past)
-    β = 0.9   →  power-law down-weighting of distant increments
-
-With prefix_len=64 (63 available returns) this yields M=22 unique lags
-{1,2,3,4,5,6,7,8,9,10,12,14,16,18,21,24,28,32,37,43,50,57}
-and an embedding of dimension 22.  (Paper achieves dim=34 with its 126-day
-prefix; we are limited by the shorter Heston path length of 128 steps.)
-
-Gaussian bandwidth — per-query normalisation
+Embedding — 65D murex-style prefix features
 --------------------------------------------
-    η_i = η̃ · ‖h(x̃_past_i)‖,    η̃ = 0.075  (calibrated in the paper)
+Adapted from Murex/deep-mkv-gen-path-dt (experiments/path_dt_experiments/shadowing.py).
+For a prefix of length L (L−1 available log-returns):
 
-This normalises the L2 distance by the query's own embedding norm, making
-the kernel scale-invariant across different market regimes.
+    Component 1 — full log-return trajectory (L−1 dims):
+        r_t = log S_t − log S_{t−1},  for t = 1 … L−1
+
+    Component 2 — terminal cumulative return (1 dim):
+        R = log S_{L−1} − log S_0
+
+    Component 3 — realized volatility (1 dim):
+        σ = sqrt( mean(r_t²) )
+
+Total dimension: (L−1) + 1 + 1 = L+1.  With prefix_len=64 → 65D.
+
+Each feature dimension is z-scored using the mean and std of the GENERATED
+pool, so distances are scale-invariant across feature dimensions.
+
+Why this outperforms the 22D eq.(13) embedding from arXiv:2308.01486:
+    Eq.(13) captures only endpoint-relative multi-scale differences
+    (market regime), not the full path shape.  Two paths with different
+    trajectories can share the same 22D embedding if their endpoint-to-lag
+    differences coincide.  The 65D embedding retains the full return
+    trajectory, so the KNN selects paths whose PREFIX SHAPE is closest.
+
+Gaussian bandwidth — adaptive per-run calibration
+--------------------------------------------------
+    η̃_adapt = median(distances) / median(‖z(x̃_past)‖)
+    η_i     = η̃_adapt · ‖z(x̃_past_i)‖
+
+where ‖z(·)‖ is the L2 norm of the z-scored feature vector.
+This replaces the paper's fixed η̃=0.075 (calibrated on S&P) with a
+data-driven value matched to the embedding scale.
 
 KNN selection — NOT combinatorial
 ----------------------------------
 sklearn NearestNeighbors computes L2(query_emb, pool_emb) for all pool paths
-and returns the K with the smallest distance.  Cost: O(N × M) per batch.
+and returns the K with the smallest distance.  Cost: O(N × D) per batch.
 No subset enumeration; no combinatorial search.
 """
 
@@ -45,103 +60,78 @@ from sklearn.neighbors import NearestNeighbors
 
 # ── Embedding ─────────────────────────────────────────────────────────────────
 
-def _get_lags(prefix_len, alpha=1.15):
-    """Return sorted list of unique lags ℓ = ⌊α^m⌋ ≤ prefix_len − 1."""
-    lags, m = [], 1
-    while True:
-        lag = int(alpha ** m)
-        if lag > prefix_len - 1:
-            break
-        if not lags or lag != lags[-1]:
-            lags.append(lag)
-        m += 1
-    return lags
-
-
-def _multiscale_embedding(X, prefix_len, alpha=1.15, beta=0.9):
+def _murex_embedding(X, prefix_len, eps=1e-8):
     """
-    Multi-scale log-return embedding — eq. (13) of arXiv:2308.01486.
+    65D prefix embedding:
+      - (prefix_len-1) log-returns, flattened
+      - 1 terminal cumulative return
+      - 1 realized volatility = sqrt(mean(r²))
 
-    For each lag ℓ_m = ⌊α^m⌋:
-        component_m = ( log S_{t} − log S_{t−ℓ_m} ) / ℓ_m^β
-
-    where t = prefix_len − 1 is the last observed prefix step.
-
-    Unlike flat log-returns (our previous approach), this embedding:
-    - emphasises recent dynamics (divided by ℓ^0.9 ≈ small for small ℓ)
-    - is lower-dimensional (22D vs 63D) → less curse of dimensionality
-    - uses logarithmic lag spacing → scale-invariant representation
-
-    Parameters
-    ----------
-    X          : (N, T) price paths
-    prefix_len : int — steps available for embedding
-    alpha      : float — geometric spacing (paper: 1.15)
-    beta       : float — power-law decay (paper: 0.9)
-
-    Returns
-    -------
-    emb : (N, M) float32
+    Returns (N, prefix_len+1) float32.
     """
-    lags = _get_lags(prefix_len, alpha)
-    log_p = np.log(np.clip(
-        X[:, :prefix_len].astype(np.float64), 1e-8, None
-    ))                                     # (N, prefix_len)
-    t = prefix_len - 1                     # index of last prefix step
-    components = [
-        (log_p[:, t] - log_p[:, t - ell]) / (ell ** beta)
-        for ell in lags
-    ]
-    return np.stack(components, axis=1).astype(np.float32)   # (N, M)
+    prefix   = np.log(np.clip(X[:, :prefix_len].astype(np.float64), 1e-8, None))
+    returns  = prefix[:, 1:] - prefix[:, :-1]          # (N, prefix_len-1)
+    terminal = prefix[:, -1] - prefix[:, 0]             # (N,)
+    rvol     = np.sqrt(np.mean(returns ** 2, axis=1))   # (N,)
+    return np.concatenate(
+        [returns, terminal[:, None], rvol[:, None]], axis=1
+    ).astype(np.float32)                                 # (N, prefix_len+1)
 
 
 # ── Core retrieval ────────────────────────────────────────────────────────────
 
-def ps_mc_retrieve(X_real, X_fake, prefix_len=64, K=77, alpha=1.15, beta=0.9):
+def ps_mc_retrieve(X_real, X_fake, prefix_len=64, K=77, eps=1e-8, **_ignored):
     """
     Retrieve K nearest fake paths for every real query path.
 
-    Distance is computed in the multi-scale embedding space (eq. 13).
+    Distance is computed in the 65D murex embedding space, z-scored using
+    the generated pool distribution.
 
     Parameters
     ----------
     X_real     : (N, T) real paths
-    X_fake     : (M, T) generated paths (search pool)
+    X_fake     : (P, T) generated paths (search pool)
     prefix_len : int — steps used for embedding / distance
     K          : int — number of nearest neighbours
-    alpha, beta: embedding hyperparameters (paper: 1.15, 0.9)
+    eps        : float — numerical floor for std normalisation
 
     Returns
     -------
     ensemble        : (N, K, T-prefix_len) — price-anchored futures of K neighbours
-    distances       : (N, K) — L2 distances in embedding space
+    distances       : (N, K) — L2 distances in z-scored embedding space
     indices         : (N, K) — pool indices of the K neighbours
-    real_emb_norms  : (N,)   — ‖h(x̃_past_i)‖, needed for per-query η
+    real_emb_norms  : (N,)   — ‖z(x̃_past_i)‖, needed for adaptive Gaussian η
     """
-    real_emb = _multiscale_embedding(X_real, prefix_len, alpha, beta)  # (N, M)
-    fake_emb = _multiscale_embedding(X_fake, prefix_len, alpha, beta)  # (P, M)
-    fake_fut = X_fake[:, prefix_len:]                                   # (P, H)
+    real_emb = _murex_embedding(X_real, prefix_len, eps)  # (N, D)
+    fake_emb = _murex_embedding(X_fake, prefix_len, eps)  # (P, D)
+
+    # Z-score each dimension using the generated pool
+    mean = fake_emb.mean(axis=0, keepdims=True).astype(np.float32)
+    std  = fake_emb.std(axis=0, keepdims=True).astype(np.float32)
+    std  = np.where(std < float(eps), float(eps), std)
+
+    real_std = (real_emb - mean) / std                    # (N, D)
+    fake_std = (fake_emb - mean) / std                    # (P, D)
 
     nn = NearestNeighbors(n_neighbors=K, metric="euclidean",
                           algorithm="auto", n_jobs=16)
-    nn.fit(fake_emb)
-    distances, indices = nn.kneighbors(real_emb)          # both (N, K)
+    nn.fit(fake_std)
+    distances, indices = nn.kneighbors(real_std)           # both (N, K)
 
-    # Raw futures of the K neighbours
+    fake_fut     = X_fake[:, prefix_len:]                  # (P, H)
     ensemble_raw = fake_fut[indices]                       # (N, K, H)
 
     # Price anchoring: scale each fake future so it starts at the real path's
-    # last prefix price.  Without this, a fake path at level 98 → 110 would be
-    # compared against a real path that ended at 103 — a spurious level offset.
-    S_real_last = np.clip(X_real[:, prefix_len - 1], 1e-8, None)         # (N,)
-    S_fake_last = np.clip(X_fake[indices, prefix_len - 1], 1e-8, None)   # (N, K)
-    scale       = S_real_last[:, None] / S_fake_last                      # (N, K)
-    ensemble    = ensemble_raw * scale[:, :, None]                        # (N, K, H)
+    # last prefix price.
+    S_real_last = np.clip(X_real[:, prefix_len - 1], 1e-8, None)        # (N,)
+    S_fake_last = np.clip(X_fake[indices, prefix_len - 1], 1e-8, None)  # (N, K)
+    scale       = S_real_last[:, None] / S_fake_last                     # (N, K)
+    ensemble    = ensemble_raw * scale[:, :, None]                       # (N, K, H)
 
-    # Embedding norms of real query paths (for per-query Gaussian bandwidth)
+    # Norms of z-scored real embeddings (for adaptive Gaussian bandwidth)
     real_emb_norms = np.linalg.norm(
-        real_emb.astype(np.float64), axis=1
-    )                                                                      # (N,)
+        real_std.astype(np.float64), axis=1
+    )                                                                     # (N,)
 
     return ensemble, distances, indices, real_emb_norms
 

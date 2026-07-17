@@ -32,8 +32,10 @@ H        = 0.4    # bandwidth (paper: h=0.4 for Heston T=100, Δt=1/252)
 K        = 1      # Markovian order (paper: k=1 for Heston)
 N_PI     = 200    # Euler substeps  (paper: N^π=200 for Heston)
 M_SIMU   = 8192   # paths to generate per seed
-N_WORK   = 16     # CPU workers (hard limit on this machine)
-SEEDS    = [0, 1, 2, 3, 4]
+# Override via env: SBTS_NWORK=64 SBTS_SEEDS=1,2,3,4 python run_all.py
+N_WORK   = int(os.environ.get("SBTS_NWORK",  "16"))
+_seeds_env = os.environ.get("SBTS_SEEDS", "0,1,2,3,4")
+SEEDS    = [int(s) for s in _seeds_env.split(",")]
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 DATA_PATH  = os.path.join(BENCH, "dataset/Heston/heston_S_8192x128.npy")

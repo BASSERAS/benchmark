@@ -327,14 +327,14 @@ Results save automatically to `results/Heston/<Method>/path_shadowing/`.
 
 ### 6.3 What PS-MC does (for documentation)
 
-1. **Embedding**: prefix (steps 0–63) → 22D multi-scale log-return vector via eq. (13) of arXiv:2308.01486, α=1.15, β=0.9, lags {1,2,3,4,5,6,7,8,9,10,12,14,16,18,21,24,28,32,37,43,50,57}
-2. **KNN retrieval**: L2 distance in that 22D space → 77 nearest generated paths (sklearn NearestNeighbors, `metric="euclidean"`)
+1. **Embedding**: prefix (steps 0–63) → 65D murex-style feature vector: 63 step-by-step log-returns + 1 terminal cumulative return + 1 realized volatility (= sqrt(mean(r²))), z-scored per dimension using the generated pool distribution
+2. **KNN retrieval**: L2 distance in the 65D z-scored space → 77 nearest generated paths (sklearn NearestNeighbors, `metric="euclidean"`)
 3. **Price anchoring**: each retrieved fake future is scaled by `S_real(t=63) / S_fake(t=63)`
-4. **Weighting**: Uniform (flat 1/77) and Gaussian (per-query η = η̃·‖h(x̃)‖, η̃ = median_dist/median_norm, calibrated from data)
+4. **Weighting**: Uniform (flat 1/77) and Gaussian (per-query η = η̃·‖z(x̃)‖, η̃ = median_dist/median_norm, calibrated from data)
 5. **Evaluation**: CRPS, MAE, RMSE at H=32 (steps 64–95) and H=64 (steps 64–127)
 6. **Baseline**: naive random walk (repeat last prefix price) — CRPS_h32=3.732, CRPS_h64=5.301
 
-The KNN is a plain nearest-neighbour scan (not a combinatorial search). For each of the 8 192 real query paths, all 8 192 fake path embeddings are scanned and the 77 with smallest L2 distance are returned. Cost: O(8192 × 22) per query.
+The KNN is a plain nearest-neighbour scan (not a combinatorial search). For each of the 8 192 real query paths, all 8 192 fake path embeddings are scanned and the 77 with smallest L2 distance are returned. Cost: O(8192 × 65) per query.
 
 ---
 

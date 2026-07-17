@@ -81,11 +81,12 @@ MAE loss during GRU and MLP predictor training on *synthetic* data (5 000 steps,
 
 ## Path Shadowing MC (arXiv:2308.01486)
 
-Given a real path prefix (steps 0–63), embed it via the paper's multi-scale log-return
-embedding (eq. 13, α=1.15, β=0.9, dim=22), retrieve K=77 nearest TimeGAN paths by L2
-distance in that space, then use their price-anchored futures (steps 64–127) as a forecast
-ensemble. Two variants: flat average (**Uniform**) and distance-weighted (**Gaussian**,
-per-query η = η̃·‖h(x̃)‖ with η̃ calibrated from data).
+Given a real path prefix (steps 0–63), embed it as a **65D murex-style feature vector**
+(63 step-by-step log-returns + terminal cumulative return + realized volatility, z-scored
+using the generated pool distribution), retrieve K=77 nearest TimeGAN paths by L2 distance
+in that space, then use their price-anchored futures (steps 64–127) as a forecast ensemble.
+Two variants: flat average (**Uniform**) and distance-weighted (**Gaussian**,
+per-query η = η̃·‖z(x̃)‖ with η̃ = median(dist)/median(‖z‖) calibrated from data).
 
 ### Example ensemble fan-out (seed 0)
 
@@ -97,19 +98,18 @@ per-query η = η̃·‖h(x̃)‖ with η̃ calibrated from data).
 
 ### Results (mean ± std, 5 seeds)
 
-Embedding: **multi-scale log-returns** eq. (13) of the paper — `h[m] = (log S_t − log S_{t−ℓ}) / ℓ^β`,
-α=1.15, β=0.9 → 22-dimensional (lags {1,2,3,4,5,6,7,8,9,10,12,14,16,18,21,24,28,32,37,43,50,57}).
-Gaussian bandwidth calibrated adaptively: η = η̃·‖h(x̃)‖, η̃ = median(dist)/median(‖h‖).
+Embedding: **65D murex-style prefix features** — 63 log-returns + 1 terminal return + 1 realized vol,
+z-scored per dimension using the generated pool. Adaptive Gaussian bandwidth: η = η̃·‖z(x̃)‖, η̃ = median(dist)/median(‖z‖).
 
 | Metric | H=32 Uniform | H=32 Gaussian | H=64 Uniform | H=64 Gaussian | Naive RW |
 |--------|:------------:|:-------------:|:------------:|:-------------:|:--------:|
-| **CRPS** | **3.134 ± 0.450** | 3.137 ± 0.451 | **4.410 ± 0.560** | 4.415 ± 0.561 | 3.73 / 5.30 |
-| MAE    | 4.059 ± 0.222 | 4.062 ± 0.222 | 5.669 ± 0.216 | 5.673 ± 0.215 | 3.73 / 5.30 |
-| RMSE   | 5.481 ± 0.293 | 5.484 ± 0.293 | 7.662 ± 0.291 | 7.667 ± 0.291 | 5.07 / 7.18 |
+| **CRPS** | **3.087 ± 0.340** | 3.087 ± 0.341 | **4.372 ± 0.431** | 4.373 ± 0.432 | 3.73 / 5.30 |
+| MAE    | 4.039 ± 0.228 | 4.039 ± 0.229 | 5.680 ± 0.178 | 5.681 ± 0.179 | 3.73 / 5.30 |
+| RMSE   | 5.452 ± 0.293 | 5.452 ± 0.293 | 7.667 ± 0.203 | 7.668 ± 0.203 | 5.07 / 7.18 |
 
-PS-MC **beats the naive RW on CRPS** at both horizons (3.13 < 3.73 at H=32; 4.41 < 5.30 at H=64).
+PS-MC **beats the naive RW on CRPS** at both horizons (3.09 < 3.73 at H=32; 4.37 < 5.30 at H=64).
 Uniform ≈ Gaussian: Heston is time-homogeneous, so K nearest neighbours are roughly equally predictive.
-The paper's η̃=0.075 (calibrated on S&P) requires re-calibration for synthetic Heston paths.
+The 65D embedding selects paths by full trajectory shape (vs 22D eq.13 which captures only market regime).
 
 Full analysis: [`results/Heston/TimeGAN/path_shadowing/README.md`](../../results/Heston/TimeGAN/path_shadowing/README.md)
 
