@@ -53,6 +53,7 @@ from metrics_np import (
     return_kurtosis_error,
     acf_error,
     teacher_sigma_metrics,
+    tail_survival_error,
 )
 from discriminative_score import compute_discriminative_score
 from predictive_score import compute_predictive_score
@@ -68,7 +69,7 @@ DEVICE = "cuda" # for A13 / A14 (falls back to cpu if cuda unavailable)
 def compute_one_run(
     S_a: np.ndarray,   # (N//2, T) — treated as "real"
     S_b: np.ndarray,   # (N//2, T) — treated as "generated"
-    v_a: np.ndarray,   # (N//2, T) — true variance for A15 (from S_a rows)
+    v_a: np.ndarray,   # (N//2, T) — true variance matching S_b rows (NOT S_a rows!)
     rng: np.random.Generator,
 ) -> dict:
     """Compute all A1-A15 metrics between S_a ("real") and S_b ("generated")."""
@@ -117,6 +118,9 @@ def compute_one_run(
     corr15, rmse15 = teacher_sigma_metrics(fake3, v_a)
     out["A15_sigma_corr"] = float(corr15)
     out["A15_sigma_rmse"] = float(rmse15)
+
+    # ── A16: tail survival error ───────────────────────────────────────────────
+    out["A16_tail_survival"] = float(tail_survival_error(real3, fake3))
 
     return out
 
@@ -172,9 +176,11 @@ def main():
 
         S_a = S_all[idx_a]   # (4096, 128) — "real"
         S_b = S_all[idx_b]   # (4096, 128) — "generated"
-        v_a = v_all[idx_a]   # (4096, 128) — variance for A15
+        # A15: teacher_sigma_metrics compares S_b (generated) to its own variance path.
+        # Must use v_b (variance for S_b rows), NOT v_a (variance for S_a rows).
+        v_b = v_all[idx_b]   # (4096, 128) — variance for A15, same rows as S_b
 
-        result = compute_one_run(S_a, S_b, v_a, rng)
+        result = compute_one_run(S_a, S_b, v_b, rng)
         result["elapsed_sec"] = round(time.time() - t0, 1)
 
         print(
@@ -197,6 +203,7 @@ def main():
     print(f"  A13 Disc GRU     floor: {summary['A13_disc_gru']['mean']:.4f} ± {summary['A13_disc_gru']['std']:.4f}")
     print(f"  A15 Sigma Corr   floor: {summary['A15_sigma_corr']['mean']:.4f} ± {summary['A15_sigma_corr']['std']:.4f}")
     print(f"  A15 Sigma RMSE   floor: {summary['A15_sigma_rmse']['mean']:.4f} ± {summary['A15_sigma_rmse']['std']:.4f}")
+    print(f"  A16 Tail Surv    floor: {summary['A16_tail_survival']['mean']:.4f} ± {summary['A16_tail_survival']['std']:.4f}")
 
 
 if __name__ == "__main__":

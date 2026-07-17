@@ -52,6 +52,7 @@ from metrics_np import (
     return_std_error, return_kurtosis_error,
     acf_error,
     teacher_sigma_metrics,
+    tail_survival_error,
 )
 from discriminative_score import compute_discriminative_score
 from predictive_score import compute_predictive_score
@@ -161,6 +162,11 @@ def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray) -> dict:
         results["A15_sigma_corr"] = None
         results["A15_sigma_rmse"] = None
         print(f"SKIPPED ({ex})")
+
+    # A16 Tail Survival Error
+    print("  A16 tail survival ...", end=" ", flush=True)
+    results["A16_tail_survival"] = float(tail_survival_error(real3, fake3))
+    print(f"{results['A16_tail_survival']:.6f}")
 
     results["compute_time_sec"] = round(time.perf_counter() - t0, 2)
     print(f"  Done in {results['compute_time_sec']:.1f}s")

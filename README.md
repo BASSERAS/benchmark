@@ -35,13 +35,16 @@ Cross-method comparison on 8 192 Heston price paths (seq\_len=128).
 | A15 Sigma RMSE ↓     | 1.054 ± 0.002 ⁽²⁾ | **0.821 ± 0.002** | 0.966 ± 0.124 | **SBTS** |
 | PS-MC CRPS H=32 ↓    | — | **2.761 ± 0.004** | 3.087 ± 0.340 | **SBTS** |
 | PS-MC CRPS H=64 ↓    | — | **3.900 ± 0.008** | 4.372 ± 0.431 | **SBTS** |
+| A16 Tail Survival ↓  | 0.0009 ± 0.0005 | 0.0367 ± 0.0002 | **0.0216 ± 0.0111** | **TimeGAN** |
+| Training (8 192×128) | — | — (no training) | **~6.5 min / A100** | **SBTS** |
+| Generation (8 192×128) | — | ~6.3 min / 64 CPUs | **<1 s / A100** | **TimeGAN** |
 
 > ⁽¹⁾ A15 Sigma Corr floor = 0.505 (not 1.0): quadratic variation is a noisy estimator of vₜ —
 > two halves of real data share the same variance path but have independent path noise (~0.5 correlation).
 > ⁽²⁾ A15 Sigma RMSE floor = 1.054 — SBTS (0.821) scores below the floor due to variance compression
 > in generated paths (narrower return distributions → smaller inferred variance). Warning sign, not a win.
 
-**SBTS wins 12/20, TimeGAN wins 6/20, 2 ties.**
+**SBTS wins 12/21, TimeGAN wins 7/21, 2 ties.**
 
 Detailed per-seed results and plots:
 → [`results/Heston/SBTS/`](results/Heston/SBTS/) — SBTS metrics, diagnostics, PS-MC
@@ -68,37 +71,7 @@ Detailed per-seed results and plots:
 
 ---
 
-## Timing — Training & Generation
-
-Measured on this cluster (8 192 Heston paths, seq\_len=128).
-
-### SBTS — Generation time vs number of workers (no training phase)
-
-| Workers | Time / seed | Time / path | Note |
-|--------:|:-----------:|:-----------:|------|
-| 8 | ~49 min | 2.9 s | undersized |
-| 16 | ~25 min | 2.9 s | (seed 0 observed: 23.4 min) |
-| 32 | ~12 min | 2.9 s | |
-| **64** | **~6.3 min** | **2.9 s** | seeds 1–4 observed: 370–384 s |
-| 128 | ~3.1 min | 2.9 s | diminishing returns past 64 |
-
-Scaling rule: `total_time ≈ (8 192 / n_workers) × 2.9 s`  
-Paper reference: 548 s for 1 000 paths at T=252 on 12 cores → ~6.6 s/path (we have T=128, 64 workers).
-
-### TimeGAN — Training time per GPU (generation < 1 s)
-
-| Seeds | GPU | Training time | Note |
-|-------|-----|:-------------:|------|
-| 0, 1 | A100 80 GB | ~8 min (480–486 s) | first batch, slight overhead |
-| 2, 3, 4 | A100 80 GB | ~5.5 min (323–335 s) | |
-| **Average** | | **~6.5 min/seed** | |
-
-2 seeds run in parallel (GPU 0 + GPU 3) → 3 batches × ~7 min ≈ **~22 min total** for 5 seeds.  
-Generation after training: < 1 s (single GRU forward pass).
-
----
-
-## Metrics (A1–A15)
+## Metrics (A1–A16)
 
 | ID | Name | Lower = better | Perfect score |
 |----|------|---------------|---------------|
@@ -120,6 +93,7 @@ Generation after training: < 1 s (single GRU forward pass).
 | A14 | Pred Score (MLP) | ✓ | baseline MAE |
 | A15 | Sigma Corr | ✗ (↑) | 1 |
 | A15 | Sigma RMSE | ✓ | 0 |
+| A16 | Tail Survival Error | ✓ | 0 |
 
 Full formulas and per-seed results:
 → [`results/Heston/SBTS/README.md`](results/Heston/SBTS/README.md)

@@ -707,6 +707,8 @@ TRAINING
 
 METRICS
   [ ] results/Heston/<Method>/seed_{0..4}_metrics.json  — 19 values each
+  [ ] A16 present in every seed JSON — verify:
+       python -c "import json,glob; [print(f, json.load(open(f)).get('A16_tail_survival','MISSING')) for f in sorted(glob.glob('results/Heston/<Method>/seed_*_metrics.json'))]"
   [ ] results/Heston/<Method>/metrics_summary.json  — mean ± std present
   [ ] results/Heston/<Method>/plots/heston_diagnostics.png  — 8 panels visible
   [ ] results/Heston/<Method>/plots/disc_classifier_loss.png

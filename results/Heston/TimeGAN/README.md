@@ -52,24 +52,6 @@ next-step prediction is inherently simpler than 5-D Sines.
 
 ---
 
-## v1 (buggy) → v2 (fixed) improvement
-
-5 bugs fixed in `timegan_torch.py`: Recovery sigmoid, Phase-1 loss scaling,
-Generator supervised coeff ×100, Embedder loss form, moment-matching gradient flow.
-
-| Metric | v1 | v2 | Factor |
-|--------|:--:|:--:|:------:|
-| A1 Path MMD²        | 0.755 | **0.018** | 42× |
-| A2 Terminal MMD²    | 0.741 | **0.030** | 25× |
-| A3 Increment MMD²   | 0.233 | **0.008** | 29× |
-| A7 Cov Error        | 199.6 | **17.75** | 11× |
-| A9 Std Error        | 1.224 | **0.152** |  8× |
-| A10 Kurtosis Error  | 71.44 | **2.955** | 24× |
-| A13 Disc (GRU)      | 0.078 | **0.050** | 1.6× |
-| A14 Pred GRU        | 0.053 | **0.009** |  6× |
-
----
-
 ## Metric Definitions
 
 **Notation.**

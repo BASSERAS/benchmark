@@ -8,7 +8,7 @@ Parameters: μ=0.05, κ=2.0, θ=0.04, ξ=0.3, ρ=−0.7, S₀=100, v₀=0.04, dt
 **Model:** SBTS univariate Markovian — h=0.4, K=1, N_pi=200, CPU-only (no GPU).
 No neural network, no training. Kernel density estimation with Schrödinger-bridge drift.
 
-**Convention:** lower is better for all metrics **except A15 Corr (↑)**.
+**Convention:** lower is better for all metrics **except A15 Corr (↑)**. A16 ↓.
 
 ---
 
@@ -55,7 +55,8 @@ We never divide by √σ in the output; the √dt/σ scaling is only internal to
 | A14 | Predictive Score GRU (TSTR) | 0.0091 ± 0.0000 | 0.0091 | 0.0091 | 0.0091 | 0.0091 | 0.0091 | baseline |
 | A14 | Predictive Score MLP (TSTR) | 0.0093 ± 0.0006 | 0.0092 | 0.0090 | 0.0104 | 0.0088 | 0.0088 | baseline |
 | A15 | Sigma Corr ↑                | 0.0011 ± 0.0035 | −0.0024 | 0.0031 | −0.0038 | 0.0039 | 0.0045 | **1** |
-| A15 | Sigma RMSE                  | 0.8207 ± 0.0019 | 0.8198 | 0.8181 | 0.8214 | 0.8205 | 0.8238 | **0** |
+| A15 | Sigma RMSE                  | 0.8207 ± 0.0019 | 0.8198  | 0.8181  | 0.8214  | 0.8205  | 0.8238  | **0** |
+| A16 | Tail Survival Error         | 0.0367 ± 0.0002 | 0.0369  | 0.0369  | 0.0365  | 0.0366  | 0.0363  | **0** |
 
 ---
 
@@ -87,83 +88,6 @@ We never divide by √σ in the output; the √dt/σ scaling is only internal to
 > Our faster time (extrapolated ~47 s for 1 000 paths at T=128 with 64 workers) is explained by
 > shorter series (T=128 vs 252) and more workers (64 vs 12). Per-path cost: ~2.9 s/path at T=128
 > vs ~6.6 s/path at T=252 — consistent with O(T²) kernel computation.
-
----
-
-### B. Paper Table 1 — Real-world datasets (Stocks, Energy, Air) — SBTS results
-
-Source: Alouadi et al. Table 1. T=24, N≈3 000 training paths, 10 runs mean±std.
-Evaluation on base-one-scale log-returns. **SBTS outperforms TimeGAN on all three datasets.**
-
-| Dataset | SBTS Disc Score ↓ | TimeGAN Disc Score ↓ | SBTS Pred Score ↓ | TimeGAN Pred Score ↓ |
-|---------|:-----------------:|:--------------------:|:-----------------:|:--------------------:|
-| **Stocks** | **0.010 ± 0.008** | 0.102 ± 0.031 | **0.017 ± 0.000** | 0.017 ± 0.004 |
-| Energy | 0.356 ± 0.020 | **0.236 ± 0.012** | **0.072 ± 0.001** | 0.273 ± 0.004 |
-| **Air** | **0.036 ± 0.016** | 0.447 ± 0.017 | **0.005 ± 0.001** | 0.017 ± 0.004 |
-
-> Energy is the hardest dataset for SBTS (high disc score 0.356) due to abrupt jumps in the data
-> not suited to the smooth-SDE assumption. On Stocks and Air, SBTS is the top performer.
-
----
-
-### C. Paper Table 2 — Toy datasets (Sine, AR) — SBTS results
-
-Source: Alouadi et al. Table 2. T=24, N≈3 000 training paths, 10 runs.
-
-| Dataset | SBTS Disc Score ↓ | TimeGAN Disc Score ↓ | SBTS Pred Score ↓ | TimeGAN Pred Score ↓ |
-|---------|:-----------------:|:--------------------:|:-----------------:|:--------------------:|
-| Sine | 0.061 ± 0.010 | **0.011 ± 0.008** | 0.095 ± 0.002 | **0.093 ± 0.019** |
-| **AR** | **0.034 ± 0.003** | 0.174 ± 0.012 | **0.092 ± 0.007** | 0.412 ± 0.002 |
-
-> SBTS wins convincingly on AR (Markov-1 compatible). Sine is periodic and non-Markovian — TimeGAN wins.
-
----
-
-### D. Paper Table 3 — Additional metrics on fBM and Stock datasets
-
-Source: Alouadi et al. Table 3. Auto-C = Auto-Correlation error, Cross-C = Cross-Correlation error,
-Disc = discriminative score, Pred = predictive score, ONND = Outgoing Nearest Neighbour Distance.
-**Bold = best method.**
-
-| Dataset | Metric | RCGAN | TimeGAN | PCFGAN | **SBTS** |
-|---------|--------|:-----:|:-------:|:------:|:--------:|
-| fBM | Auto-C ↓ | 0.105±0.001 | 0.459±0.003 | 0.125±0.003 | **0.017±0.004** |
-| fBM | Cross-C ↓ | 0.051±0.001 | 0.092±0.001 | 0.047±0.001 | **0.005±0.000** |
-| fBM | Disc ↓ | 0.207±0.008 | 0.480±0.002 | 0.265±0.006 | **0.005±0.005** |
-| fBM | Pred ↓ | 0.456±0.004 | 0.686±0.013 | 0.474±0.003 | **0.423±0.000** |
-| fBM | ONND ↓ | 0.622±0.002 | 0.632±0.002 | 0.654±0.002 | **0.471±0.004** |
-| Stock | Auto-C ↓ | 0.239±0.016 | 0.228±0.110 | 0.192±0.008 | **0.192±0.008** |
-| Stock | Cross-C ↓ | 0.067±0.011 | 0.056±0.002 | 0.055±0.002 | **0.032±0.001** |
-| Stock | Disc ↓ | 0.134±0.058 | 0.020±0.021 | 0.028±0.017 | **0.012±0.010** |
-| Stock | Pred ↓ | 0.010±0.000 | 0.009±0.000 | 0.009±0.000 | **0.008±0.000** |
-| Stock | ONND ↓ | 0.017±0.001 | 0.017±0.000 | 0.016±0.000 | **0.025±0.000** |
-
-> SBTS wins on 9/10 metrics across fBM and Stock. Only fBM Pred and Stock ONND are close calls.
-
----
-
-### E. Heston robustness — Parameter recovery (Paper §5, Figures 5 & 8)
-
-The paper's §5 evaluates whether SBTS-generated paths preserve the **underlying SDE parameters** of
-Heston (κ, θ, r, ξ, ρ), inferred via MLE from the generated paths.
-
-**Figure 5 — Random parameter regime** (parameters uniformly sampled from wide ranges):
-- κ, θ, r: SBTS recovers these well — the inferred distribution (orange) aligns with data distribution (blue)
-- **ξ (vol of vol) and ρ (correlation): SBTS fails** — generates a Gaussian distribution centered at the
-  midpoint of the prior range, rather than matching the true variability
-- Root cause: SBTS assumes constant variance in its kernel, which is incompatible with stochastic
-  volatility. The drift estimate α* cannot capture Heston's vol-of-vol dynamics.
-
-**Figure 8 — Fixed parameter regime** (same parameters for all samples):
-- With fixed κ=0.5, θ=0.04, ξ=0.7, ρ=0.7, r=0.02: SBTS recovers all parameters correctly
-- Orange (SBTS) and blue (data) densities align tightly; black line (truth) is inside both
-- Confirms SBTS is well-calibrated when the process has constant parameters
-
-**Interpretation for our benchmark:**
-Our Heston dataset uses fixed parameters (κ=2.0, θ=0.04, ξ=0.3, ρ=−0.7), placing us in the
-**fixed-parameter regime where SBTS should perform well** (Figure 8 case). The A15 Sigma Corr
-score of 0.001 (vs floor 0.505) reflects SBTS's known limitation on stochastic variance, consistent
-with Figure 5 of the paper.
 
 ---
 

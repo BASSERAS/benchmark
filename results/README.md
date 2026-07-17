@@ -82,17 +82,20 @@ SBTS is a **non-parametric kernel method** with no neural network and no trainin
 | A15 Sigma RMSE ↓     | 1.054 ± 0.002 ⁽²⁾ | **0.821 ± 0.002** | 0.966 ± 0.124 | **SBTS** |
 | PS-MC CRPS H=32 ↓    | — | **2.761 ± 0.004** | 3.087 ± 0.340 | **SBTS** |
 | PS-MC CRPS H=64 ↓    | — | **3.900 ± 0.008** | 4.372 ± 0.431 | **SBTS** |
+| A16 Tail Survival ↓  | 0.0009 ± 0.0005 | 0.0367 ± 0.0002 | **0.0216 ± 0.0111** | **TimeGAN** |
+| Training (8 192×128) | — | — (no training) | **~6.5 min / A100** | **SBTS** |
+| Generation (8 192×128) | — | ~6.3 min / 64 CPUs | **<1 s / A100** | **TimeGAN** |
 
-> ⁽¹⁾ **A15 Sigma Corr floor = 0.505** (not 1.0): quadratic variation is a noisy estimator of v_t.
-> Two independent halves of real data share the same variance path but have independent path noise,
-> giving ~0.5 correlation. Neither SBTS (0.001) nor TimeGAN (0.003) preserves instantaneous variance.
+> ⁽¹⁾ **A15 Sigma Corr floor = 0.505** (not 1.0): rolling-window QV (5 steps) is a noisy estimator
+> of instantaneous variance. Even for real Heston paths vs their own true variance path, Pearson ρ ≈ 0.5
+> due to measurement noise. Neither SBTS (0.001) nor TimeGAN (0.003) preserves instantaneous variance.
 >
 > ⁽²⁾ **A15 Sigma RMSE floor = 1.054** — paradoxically, SBTS (0.821) and TimeGAN (0.966) both score
 > **below** the floor. This is due to **variance compression**: generated paths have narrower return
 > distributions than real Heston paths, making the RMSE of the inferred variance artificially small.
 > A lower-than-floor Sigma RMSE is a warning sign, not a win.
 
-**SBTS wins 12/20, TimeGAN wins 6/20, 2 ties.**
+**SBTS wins 12/21, TimeGAN wins 7/21, 2 ties.**
 
 **Interpretation:**
 - **SBTS wins on distribution matching** (A1–A4, A10–A12): the kernel method matches marginal and return distributions. MMD and ACF errors are consistently lower.
