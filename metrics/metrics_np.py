@@ -322,26 +322,39 @@ def _rolling_mean_std_5(dX_sq: np.ndarray) -> np.ndarray:
 
 def teacher_sigma_metrics(
     X_gen: np.ndarray, v_true: np.ndarray,
+    dt: float = 1.0 / 250.0,
 ) -> Tuple[float, float]:
     """A15. Teacher-Sigma Correlation and RMSE (Heston-specific).
 
-    Estimates latent vol as rolling window-5 std of returns and compares
-    it against the true latent vol sqrt(v_true).
+    Estimates instantaneous vol as rolling window-5 QV of log-returns
+    (annualised by 1/dt) and compares against true latent vol sqrt(v_true).
+
+    Correct formula: sigma_hat = sqrt( rolling_mean(r_t^2) / dt )
+    where r_t = log(S_{t+1}/S_t) are log-returns.
+    This gives sigma_hat ~ sqrt(v_t), same units as sqrt(v_true).
+
+    IMPORTANT: do NOT use price increments (np.diff on prices) — they produce
+    a scale mismatch of factor ~S_t * sqrt(dt) ~ 6x, ruining the metric.
+    Always use log-returns normalised by dt.
 
     Parameters
     ----------
-    X_gen  : ndarray (N, T, d)  — generated price paths
-    v_true : ndarray (N, T)     — true latent variance paths
+    X_gen  : ndarray (N, T, d)  — generated price paths (must be positive)
+    v_true : ndarray (N, T)     — true latent variance paths (annualised)
+    dt     : float              — time step in years (default 1/250)
 
     Returns
     -------
     corr : float  — Pearson correlation (perfect = 1, higher is better)
     rmse : float  — RMSE (perfect = 0)
     """
-    dX = np.diff(X_gen, axis=1)                    # (N, T-1, d)
-    sigma_hat = _rolling_mean_std_5(dX**2)          # (N, T-1, d)
+    # Log-returns: r_t = log(S_{t+1}/S_t),  shape (N, T-1, d)
+    log_r = np.diff(np.log(np.maximum(X_gen, 1e-10)), axis=1)
+    # _rolling_mean_std_5 returns sqrt(rolling_mean(input)).
+    # Passing r_t^2/dt makes it return sqrt(rolling_mean(r_t^2)/dt) ~ sqrt(v_t).
+    sigma_hat = _rolling_mean_std_5(log_r ** 2 / dt)   # (N, T-1, d), units: sqrt(annualised var)
 
-    if v_true.shape[1] > dX.shape[1]:
+    if v_true.shape[1] > log_r.shape[1]:
         v_sqrt = np.sqrt(np.maximum(v_true[:, 1:], 0.0))
     else:
         v_sqrt = np.sqrt(np.maximum(v_true, 0.0))

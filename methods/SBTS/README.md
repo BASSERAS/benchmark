@@ -1,6 +1,6 @@
 # SBTS on Heston
 
-**Score-Based Time Series generation** (Principato et al., arXiv 2025) applied to 8 192
+**Schrödinger Bridge Time Series generation** (Principato et al., arXiv 2025) applied to 8 192
 Heston stochastic-volatility price paths (seq\_len = 128).
 
 SBTS is a **non-parametric, kernel-based** method: no neural network, no training loss,

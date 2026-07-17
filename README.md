@@ -31,20 +31,21 @@ Cross-method comparison on 8 192 Heston price paths (seq\_len=128).
 | A13 Disc Score MLP ↓ | 0.0112 ± 0.0079 | **0.071 ± 0.008** | 0.151 ± 0.142 | **SBTS** |
 | A14 Pred Score GRU ↓ | 0.0085 ± 0.0001 | 0.0091 ± 0.0000 | **0.0087 ± 0.0002** | ≈ tie |
 | A14 Pred Score MLP ↓ | 0.0087 ± 0.0002 | 0.0093 ± 0.0006 | **0.0090 ± 0.0005** | ≈ tie |
-| A15 Sigma Corr ↑     | 0.505 ± 0.001 ⁽¹⁾ | 0.0011 ± 0.0035 | **0.0031 ± 0.0101** | ≈ tie |
-| A15 Sigma RMSE ↓     | 1.054 ± 0.002 ⁽²⁾ | **0.821 ± 0.002** | 0.966 ± 0.124 | **SBTS** |
+| A15 Sigma Corr ↑     | 0.614 ± 0.002 ⁽¹⁾ | **0.0046 ± 0.0019** | 0.0021 ± 0.0090 | ≈ tie |
+| A15 Sigma RMSE ↓     | 0.065 ± 0.000 ⁽²⁾ | **0.096 ± 0.000** | 0.118 ± 0.018 | **SBTS** |
 | PS-MC CRPS H=32 ↓    | — | **2.761 ± 0.004** | 3.087 ± 0.340 | **SBTS** |
 | PS-MC CRPS H=64 ↓    | — | **3.900 ± 0.008** | 4.372 ± 0.431 | **SBTS** |
 | A16 Tail Survival ↓  | 0.0009 ± 0.0005 | 0.0367 ± 0.0002 | **0.0216 ± 0.0111** | **TimeGAN** |
 | Training (8 192×128) | — | — (no training) | **~6.5 min / A100** | **SBTS** |
 | Generation (8 192×128) | — | ~6.3 min / 64 CPUs | **<1 s / A100** | **TimeGAN** |
 
-> ⁽¹⁾ A15 Sigma Corr floor = 0.505 (not 1.0): quadratic variation is a noisy estimator of vₜ —
-> two halves of real data share the same variance path but have independent path noise (~0.5 correlation).
-> ⁽²⁾ A15 Sigma RMSE floor = 1.054 — SBTS (0.821) scores below the floor due to variance compression
-> in generated paths (narrower return distributions → smaller inferred variance). Warning sign, not a win.
+> ⁽¹⁾ A15 Sigma Corr floor = 0.614 (not 1.0): 5-step rolling QV is a noisy estimator of vₜ even
+> for real Heston paths vs their own true variance (ρ≈0.614). Neither SBTS (0.005) nor TimeGAN (0.002)
+> preserves stochastic volatility; both score near zero. ≈ tie.
+> ⁽²⁾ A15 Sigma RMSE floor = 0.065 (not 0): rolling-QV measurement noise creates an irreducible
+> baseline. Both methods score above the floor (SBTS 0.096, TimeGAN 0.118) — correct ordering. SBTS wins.
 
-**SBTS wins 12/21, TimeGAN wins 7/21, 2 ties.**
+**SBTS wins 12/21, TimeGAN wins 6/21, 3 ties.**
 
 Detailed per-seed results and plots:
 → [`results/Heston/SBTS/`](results/Heston/SBTS/) — SBTS metrics, diagnostics, PS-MC
@@ -67,7 +68,7 @@ Detailed per-seed results and plots:
 | Method | Full name | Paper | Authors | Year | Venue | Original code |
 |--------|-----------|-------|---------|------|-------|---------------|
 | [TimeGAN](methods/TimeGAN/) | Time-series GAN | [arXiv:2010.00782](https://arxiv.org/abs/2010.00782) | Yoon, Jarrett, van der Schaar | 2019 | NeurIPS | [jsyoon0823/TimeGAN](https://github.com/jsyoon0823/TimeGAN) |
-| [SBTS](methods/SBTS/) | Score-Based Time Series (Schrödinger Bridge) | [arXiv:2503.02943](https://arxiv.org/abs/2503.02943) | Alouadi, Barreau, Carlier, Pham | 2025 | ICAIF | [alexouadi/SBTS](https://github.com/alexouadi/SBTS) |
+| [SBTS](methods/SBTS/) | Schrödinger Bridge Time Series | [arXiv:2503.02943](https://arxiv.org/abs/2503.02943) | Alouadi, Barreau, Carlier, Pham | 2025 | ICAIF | [alexouadi/SBTS](https://github.com/alexouadi/SBTS) |
 
 ---
 

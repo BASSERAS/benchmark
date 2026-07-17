@@ -16,8 +16,8 @@
   "A13_disc_score_mlp": 0.035246,
   "A14_pred_score_gru": 0.008989,
   "A14_pred_score_mlp": 0.008683,
-  "A15_sigma_corr": 0.007922463559173669,
-  "A15_sigma_rmse": 0.8391521848704337,
+  "A15_sigma_corr": 0.006885363210664993,
+  "A15_sigma_rmse": 0.11078514230316738,
   "compute_time_sec": 46.73,
   "tail_survival_error": 0.03973659509792195
 }

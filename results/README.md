@@ -22,7 +22,7 @@ TimeGAN is a **neural GAN** with five interacting GRU components:
 **Hardware**: GPU required (A100 80 GB). ~6–8 min/seed.
 **Generation**: Milliseconds (GRU forward pass). Sequences start near S₀=100 via internal min-max denorm.
 
-### SBTS — Score-Based Time Series (Schrödinger Bridge)
+### SBTS — Schrödinger Bridge Time Series
 **Paper:** Alouadi, Barreau, Carlier, Pham — *Robust Time Series Generation via Schrödinger Bridge* — ICAIF 2025, [arXiv:2503.02943](https://arxiv.org/abs/2503.02943)
 **Code:** [alexouadi/SBTS](https://github.com/alexouadi/SBTS) — Numba-accelerated reimplementation in this repo
 
@@ -78,24 +78,23 @@ SBTS is a **non-parametric kernel method** with no neural network and no trainin
 | A13 Disc MLP ↓       | 0.0112 ± 0.0079 | **0.071 ± 0.008** | 0.151 ± 0.142 | **SBTS** |
 | A14 Pred GRU ↓       | 0.0085 ± 0.0001 | 0.0091 ± 0.0000 | **0.0087 ± 0.0002** | ≈ tie |
 | A14 Pred MLP ↓       | 0.0087 ± 0.0002 | 0.0093 ± 0.0006 | **0.0090 ± 0.0005** | ≈ tie |
-| A15 Sigma Corr ↑     | 0.505 ± 0.001 ⁽¹⁾ | 0.0011 ± 0.0035 | **0.0031 ± 0.0101** | ≈ tie |
-| A15 Sigma RMSE ↓     | 1.054 ± 0.002 ⁽²⁾ | **0.821 ± 0.002** | 0.966 ± 0.124 | **SBTS** |
+| A15 Sigma Corr ↑     | 0.614 ± 0.002 ⁽¹⁾ | **0.0046 ± 0.0019** | 0.0021 ± 0.0090 | ≈ tie |
+| A15 Sigma RMSE ↓     | 0.065 ± 0.000 ⁽²⁾ | **0.096 ± 0.000** | 0.118 ± 0.018 | **SBTS** |
 | PS-MC CRPS H=32 ↓    | — | **2.761 ± 0.004** | 3.087 ± 0.340 | **SBTS** |
 | PS-MC CRPS H=64 ↓    | — | **3.900 ± 0.008** | 4.372 ± 0.431 | **SBTS** |
 | A16 Tail Survival ↓  | 0.0009 ± 0.0005 | 0.0367 ± 0.0002 | **0.0216 ± 0.0111** | **TimeGAN** |
 | Training (8 192×128) | — | — (no training) | **~6.5 min / A100** | **SBTS** |
 | Generation (8 192×128) | — | ~6.3 min / 64 CPUs | **<1 s / A100** | **TimeGAN** |
 
-> ⁽¹⁾ **A15 Sigma Corr floor = 0.505** (not 1.0): rolling-window QV (5 steps) is a noisy estimator
-> of instantaneous variance. Even for real Heston paths vs their own true variance path, Pearson ρ ≈ 0.5
-> due to measurement noise. Neither SBTS (0.001) nor TimeGAN (0.003) preserves instantaneous variance.
+> ⁽¹⁾ **A15 Sigma Corr floor = 0.614** (not 1.0): 5-step rolling QV is a noisy estimator
+> of instantaneous variance vₜ. Even for real Heston paths vs their own true variance, Pearson ρ ≈ 0.614.
+> Neither SBTS (0.005) nor TimeGAN (0.002) preserves stochastic volatility — both are near zero.
 >
-> ⁽²⁾ **A15 Sigma RMSE floor = 1.054** — paradoxically, SBTS (0.821) and TimeGAN (0.966) both score
-> **below** the floor. This is due to **variance compression**: generated paths have narrower return
-> distributions than real Heston paths, making the RMSE of the inferred variance artificially small.
-> A lower-than-floor Sigma RMSE is a warning sign, not a win.
+> ⁽²⁾ **A15 Sigma RMSE floor = 0.065** (not 0): measurement noise from rolling QV creates an irreducible
+> baseline even for real paths. Both SBTS (0.096) and TimeGAN (0.118) correctly score **above** the floor,
+> confirming the metric is well-calibrated. SBTS wins (lower RMSE = less vol mis-estimation).
 
-**SBTS wins 12/21, TimeGAN wins 7/21, 2 ties.**
+**SBTS wins 12/21, TimeGAN wins 6/21, 3 ties.**
 
 **Interpretation:**
 - **SBTS wins on distribution matching** (A1–A4, A10–A12): the kernel method matches marginal and return distributions. MMD and ACF errors are consistently lower.

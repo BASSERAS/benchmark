@@ -4,7 +4,7 @@
 
 | Field | Details |
 |-------|---------|
-| **Paper** | *Score-Based Time Series Generation via Stochastic Bridges* |
+| **Paper** | *Schrödinger Bridge Time Series* |
 | **Authors** | Guillaume Principato, Luca De Gennaro Aquino, Gustavo Boretto, Brieuc Lehmann |
 | **Venue** | arXiv 2025 |
 | **arXiv** | https://arxiv.org/abs/2503.02943 |
