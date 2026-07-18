@@ -1,4 +1,4 @@
-# Metrics — A1 to A24
+# Metrics — A1 to A34 + B Curve Metrics
 
 Evaluation suite for generative models of financial time series.
 All metrics compare **real paths** $X \sim P$ against **generated paths** $\tilde{X} \sim Q$.
@@ -7,10 +7,13 @@ All metrics compare **real paths** $X \sim P$ against **generated paths** $\tild
 
 | File | Purpose |
 |------|---------|
-| `metrics_np.py` | A1–A12, A15–A24 — NumPy/SciPy implementations |
+| `metrics_np.py` | A1–A12, A15–A34 — all NumPy/SciPy metric functions (unified) |
 | `discriminative_score.py` | A13 — post-hoc GRU + MLP classifiers (PyTorch) |
 | `predictive_score.py` | A14 — GRU + MLP predictors, TSTR protocol (PyTorch) |
-| `compute_all.py` | Orchestrator: all metrics × N seeds → JSON + CSV + plots |
+| `stylized_metrics.py` | B curve metrics — `compute_curve_metrics()` (18 keys, 6×3) |
+| `compute_all.py` | Orchestrator: A1–A34 + B metrics × N seeds → JSON + CSV + plots |
+| `compute_perfect_recovery.py` | Row-shuffle baseline: all metrics on permuted real data (floor) |
+| `patch_v2.py` | In-place JSON patcher: adds A25–A34 + B to existing seed JSONs |
 
 ## Run
 
@@ -479,93 +482,132 @@ Ref: Barndorff-Nielsen & Shephard (2002), *Econometric Analysis of Realized Vola
 
 ---
 
-## B1–B12 — Stylized Metrics · *One scalar per diagnostic plot panel*
+## A25 — Mean Path RMSE
 
-These metrics are extracted from the same data as the 8-panel diagnostic PNG (see
-`metrics/plot_diagnostics.py`). Each captures a known **stylized fact** of financial returns
-(Cont 2001, *Empirical properties of asset returns: stylized facts and statistical issues*).
+$$A_{25} = \sqrt{\frac{1}{T}\sum_{t=1}^{T}\left(\bar{S}^{\text{real}}_t - \bar{S}^{\text{gen}}_t\right)^2}$$
 
-> Metric-to-plot mapping:
+where $\bar{S}_t = \frac{1}{N}\sum_i S_{i,t}$ is the cross-sectional mean at time $t$.
+Tests whether the generator reproduces the **ensemble-mean trajectory**. **Perfect: 0. ↓**
 
-| Plots | B metric | What you see |
-|-------|----------|-------------|
-| 1 + 2 (sample paths) | B1 Mean Path RMSE, B2 Cross-Sect. Vol RMSE | Systematic drift + spread of the fan |
-| 3 (log-return histogram) | B3 KS Stat, B4 Skewness Error | Shape, centre, asymmetry of density |
-| 4 (QQ plot) | B5 QQ RMSE (300-pt), B6 Tail QQ Error | Diagonal alignment; 5th/95th deviation |
-| 5 (ACF \|r\|) | B7 ACF lag-1 \|r\| error | Volatility clustering: lag-1 bar height |
-| 6 (ACF r²) | B8 ACF lag-1 r² error | GARCH effect: lag-1 bar height |
-| 7 (rolling vol hist.) | B9 Rolling Vol KS, B10 Vol-of-Vol Error | Width and spread of the vol histogram |
-| 8 (tail survival) | B11 Terminal Price KS, B12 Tail Index Error (Hill) | Log-log alignment + slope (tail heaviness) |
+---
 
-**B1 — Mean Path RMSE**
+## A26 — Cross-Sectional Vol Path RMSE
 
-$$B1 = \sqrt{\frac{1}{T}\sum_{t=1}^{T}\left(\bar{S}^{\text{real}}_t - \bar{S}^{\text{gen}}_t\right)^2}$$
+$$A_{26} = \sqrt{\frac{1}{T}\sum_{t=1}^{T}\left(\sigma^{\text{real}}_t - \sigma^{\text{gen}}_t\right)^2}$$
 
-**B2 — Cross-Sectional Vol RMSE**
+where $\sigma_t = \text{std}_i(S_{i,t})$ is the cross-sectional standard deviation at time $t$.
+Tests whether the **spread of the path fan** is correctly reproduced over time. **Perfect: 0. ↓**
 
-$$B2 = \sqrt{\frac{1}{T}\sum_{t=1}^{T}\left(\sigma^{\text{real}}_t - \sigma^{\text{gen}}_t\right)^2}$$
+---
 
-where $\sigma_t = \text{std}_{i}(S_{i,t})$ is the cross-sectional standard deviation at time $t$.
+## A27 — KS Statistic on Log-returns
 
-**B3 — KS Statistic on log-returns**
+$$A_{27} = \sup_x \left|F^{\text{real}}_r(x) - F^{\text{gen}}_r(x)\right|, \quad r_t = \log(S_{t+1}/S_t)$$
 
-$$B3 = \sup_x \left|F^{\text{real}}_r(x) - F^{\text{gen}}_r(x)\right|, \quad r_t = \log(S_{t+1}/S_t)$$
+Two-sample Kolmogorov-Smirnov statistic on all pooled log-returns.
+**Perfect: 0. ↓**
 
-Two-sample Kolmogorov-Smirnov statistic on all pooled log-returns. Perfect: 0.
+---
 
-**B4 — Skewness Error**
+## A28 — Skewness Error
 
-$$B4 = \left|\text{skew}(r^{\text{real}}) - \text{skew}(r^{\text{gen}})\right|$$
+$$A_{28} = \left|\text{skew}(r^{\text{real}}) - \text{skew}(r^{\text{gen}})\right|$$
 
-Heston generates negative skew ($\rho < 0$ leverage). Perfect: 0.
+Heston generates negative skew ($\rho < 0$ leverage effect). **Perfect: 0. ↓**
 
-**B5 — QQ RMSE (300-pt)**
+---
 
-$$B5 = \sqrt{\frac{1}{300}\sum_{g=1}^{300}\left(Q^{\text{real}}_r(p_g) - Q^{\text{gen}}_r(p_g)\right)^2}, \quad p_g \in [0.005,\,0.995]$$
+## A29 — QQ RMSE (300-pt)
 
-Tests bulk distributional match. Perfect: 0.
+$$A_{29} = \sqrt{\frac{1}{300}\sum_{g=1}^{300}\left(Q^{\text{real}}_r(p_g) - Q^{\text{gen}}_r(p_g)\right)^2}, \quad p_g \in [0.005,\,0.995]$$
 
-**B6 — Tail QQ Error**
+Tests **bulk distributional match** across 300 quantile levels. **Perfect: 0. ↓**
 
-Same as B5 restricted to $p \in [0.01,0.05] \cup [0.95,0.99]$ (10 points). Perfect: 0.
+---
 
-**B7 — ACF lag-1 Error on |r|**
+## A30 — Tail QQ Error
 
-$$B7 = \left|\text{ACF}(|r^{\text{real}}|,\,\ell=1) - \text{ACF}(|r^{\text{gen}}|,\,\ell=1)\right|$$
+Same as A29 restricted to $p \in [0.01,0.05] \cup [0.95,0.99]$ (10 extreme percentile points).
+Tests **tail alignment** in both tails. **Perfect: 0. ↓**
 
-Lag-1 absolute-return ACF. Positive in Heston (~0.05): dominant ARCH signal. Perfect: 0.
+---
 
-**B8 — ACF lag-1 Error on r²**
+## A31 — Rolling Vol KS (window=5)
 
-$$B8 = \left|\text{ACF}({r^{\text{real}}}^2,\,\ell=1) - \text{ACF}({r^{\text{gen}}}^2,\,\ell=1)\right|$$
+$$A_{31} = \text{KS}\!\left(\{\hat{\sigma}^{\text{real}}_{i,t}\},\,\{\hat{\sigma}^{\text{gen}}_{i,t}\}\right), \quad \hat{\sigma}_{i,t}=\text{std}(r_{i,t-4:t})$$
 
-Lag-1 squared-return ACF (GARCH effect). Perfect: 0.
+Two-sample KS on rolling log-return std (window=5). Tests the **volatility distribution**. **Perfect: 0. ↓**
 
-**B9 — Rolling Vol KS Statistic**
+---
 
-$$B9 = \text{KS}\!\left(\{\hat{\sigma}^{\text{real}}_{i,t}\},\,\{\hat{\sigma}^{\text{gen}}_{i,t}\}\right), \quad \hat{\sigma}_{i,t}=\text{std}(r_{i,t-4:t})$$
+## A32 — Vol-of-Vol Error
 
-Two-sample KS on rolling std of log-returns (window = 5 days). Perfect: 0.
+$$A_{32} = \left|\text{std}(\hat{\sigma}^{\text{real}}) - \text{std}(\hat{\sigma}^{\text{gen}})\right|$$
 
-**B10 — Vol-of-Vol Error**
+Dispersion of the rolling vol distribution — measures **volatility-of-volatility** reproduction. **Perfect: 0. ↓**
 
-$$B10 = \left|\text{std}(\hat{\sigma}^{\text{real}}) - \text{std}(\hat{\sigma}^{\text{gen}})\right|$$
+---
 
-Dispersion of the rolling volatility distribution. Perfect: 0.
+## A33 — Terminal Price KS
 
-**B11 — Terminal Price KS Statistic**
+$$A_{33} = \text{KS}\!\left(S^{\text{real}}_T,\,S^{\text{gen}}_T\right)$$
 
-$$B11 = \text{KS}\!\left(S^{\text{real}}_T,\,S^{\text{gen}}_T\right)$$
+Two-sample KS on the terminal marginal $S_T$. Tests terminal price distribution. **Perfect: 0. ↓**
 
-Two-sample KS on the terminal marginal $S_T$. Perfect: 0.
+---
 
-**B12 — Hill Tail Index Error**
+## A34 — Hill Tail Index Error
 
-$$B12 = \left|\hat{\alpha}^{\text{real}} - \hat{\alpha}^{\text{gen}}\right|, \quad \hat{\alpha} = \left[\frac{1}{k}\sum_{i=1}^{k}\log\frac{X_{(n-i+1)}}{X_{(n-k)}}\right]^{-1}$$
+$$A_{34} = \left|\hat{\alpha}^{\text{real}} - \hat{\alpha}^{\text{gen}}\right|, \quad \hat{\alpha} = \left[\frac{1}{k}\sum_{i=1}^{k}\log\frac{X_{(n-i+1)}}{X_{(n-k)}}\right]^{-1}$$
 
-Hill (1975) estimator on top 10% of terminal prices $S_T$. $\alpha > 4$ implies finite kurtosis. Perfect: 0.
+Hill (1975) estimator on top 10% of terminal prices $S_T$. $\alpha > 4$ implies finite kurtosis.
+**Perfect: 0. ↓**
+
+---
+
+## B — Curve-Shape Metrics (6 plots × 3 sub-metrics)
+
+The B metrics move beyond scalars: for each of 6 diagnostic plots, three MSE values are
+computed by comparing the **full shape of the real and generated curves**, including their
+first and second finite differences.
+
+### Derivative definition
+
+Starting from a curve $L = [L_0, L_1, \ldots, L_K]$:
+
+$$L^{\text{der}}_k = L_{k+1} - L_k \qquad \text{(first finite difference)}$$
+$$L^{\text{sec}}_k = L^{\text{der}}_{k+1} - L^{\text{der}}_k \qquad \text{(second finite difference)}$$
+
+For each plot, three MSE values are reported:
+
+| Sub-metric | Formula | Interpretation |
+|------------|---------|----------------|
+| `_funct` | $\text{MSE}(L^{\text{real}}, L^{\text{gen}})$ | Overall curve alignment |
+| `_der` | $\text{MSE}(L^{\text{real,der}}, L^{\text{gen,der}})$ | First-derivative shape (slope match) |
+| `_sec_der` | $\text{MSE}(L^{\text{real,sec}}, L^{\text{gen,sec}})$ | Second-derivative shape (curvature match) |
+
+**Perfect: 0 for all sub-metrics. ↓**
+
+### The 6 plots
+
+| Plot | Key prefix | Curve $L$ |
+|------|-----------|-----------|
+| Log-return histogram | `B_log_ret_hist_*` | Density of pooled log-returns over shared bins |
+| QQ plot | `B_qq_plot_*` | Quantile function at 100 uniform percentile levels |
+| ACF \|r\| (lags 1–20) | `B_acf_abs_r_*` | Mean per-path $\text{ACF}(\|r\|, \ell)$ at each lag $\ell$ |
+| ACF r² (lags 1–20) | `B_acf_sq_r_*` | Mean per-path $\text{ACF}(r^2, \ell)$ at each lag $\ell$ |
+| Rolling vol hist. | `B_roll_vol_hist_*` | Density of rolling-5 vol over shared bins |
+| Tail survival | `B_tail_surv_*` | $P(\|r\| > x)$ at thresholds of real $\|r\|$ |
+
+All 18 keys are computed by `stylized_metrics.compute_curve_metrics(S_real, S_gen)`.
+The perfect recovery floor for all B metrics is **0** (row-shuffled real data has identical curves).
 
 > Ref: Cont (2001), *Quantitative Finance* 1, 223–236.
+
+---
+
+
+## Forecast Metrics — MAE, RMSE, CRPS
 
 ---
 

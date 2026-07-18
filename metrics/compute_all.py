@@ -1,15 +1,18 @@
 """
-compute_all.py — Run all 20 metrics (A1-A20) for each of 5 seeds.
+compute_all.py — Run all 34 A-metrics + 18 B curve metrics for each of 5 seeds.
 
 For each seed:
   - Loads real paths from dataset/<dataset>/
   - Loads generated paths from methods/<method>/generated_paths/seed_i/
-  - Computes A1-A12 (numpy), A13 (PyTorch GRU+MLP), A14 (PyTorch GRU+MLP),
-    A15-A20 (numpy)
+  - Computes A1–A12 (numpy), A13 (PyTorch GRU+MLP), A14 (PyTorch GRU+MLP),
+    A15–A34 (numpy), B curve metrics (18 keys, numpy)
   - Saves results/<dataset>/<method>/seed_i_metrics.json
   - Generates PCA + t-SNE plots
 
 After all seeds: writes results/<dataset>/<method>/metrics_summary.csv
+
+All metric functions live in metrics/metrics_np.py (A1–A34).
+B curve metrics are computed by metrics/stylized_metrics.py::compute_curve_metrics.
 """
 
 import json, os, sys, time, warnings
@@ -47,12 +50,16 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Device: {DEVICE}")
 
 from metrics_np import (
+    # A1–A6: Distribution (MMD / SWD)
     mmd2, terminal_mmd2, increment_mmd2, volatility_mmd,
     terminal_swd, path_swd,
+    # A7–A12: Statistical moments + ACF over lags
     terminal_cov_error, terminal_mean_rmse,
     return_std_error, return_kurtosis_error,
     acf_error,
+    # A15: Heston teacher-sigma
     teacher_sigma_metrics,
+    # A16–A24: Log-return vol / predictability / realized vol
     logreturn_std_error,
     abs_return_quantile_error,
     kurtosis_ratio,
@@ -61,10 +68,14 @@ from metrics_np import (
     acf_lag1_abs_error,
     acf_lag1_sq_error,
     rv_law_loss,
+    # A25–A34: Distributional shape / tail / curve-derived
+    mean_path_rmse, vol_path_rmse, ks_logreturns, skewness_error,
+    qq_rmse, tail_qq_error, rolling_vol_ks, vol_of_vol_error,
+    terminal_ks, hill_tail_index_error,
 )
 from discriminative_score import compute_discriminative_score
 from predictive_score import compute_predictive_score
-from stylized_metrics import compute_stylized_metrics
+from stylized_metrics import compute_curve_metrics
 
 import matplotlib
 matplotlib.use("Agg")
@@ -223,11 +234,53 @@ def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray) -> dict:
     results["A24_rv_law_loss"] = float(rv_law_loss(real3, fake3))
     print(f"{results['A24_rv_law_loss']:.6f}")
 
-    # B1-B14 Stylized metrics (from 8 diagnostic plots)
-    print("  B1-B14 stylized metrics ...", end=" ", flush=True)
-    stylized = compute_stylized_metrics(S, fake)
-    results.update(stylized)
-    print(f"B3_ks={stylized['B3_ks_logreturns']:.4f}  B7_acf1={stylized['B7_acf_lag1_abs']:.4f}  B11_ks={stylized['B11_terminal_ks']:.4f}")
+    # A25–A34: Distributional shape / tail / curve-derived
+    print("  A25 mean path RMSE ...", end=" ", flush=True)
+    results["A25_mean_path_rmse"] = float(mean_path_rmse(real3, fake3))
+    print(f"{results['A25_mean_path_rmse']:.6f}")
+
+    print("  A26 vol path RMSE ...", end=" ", flush=True)
+    results["A26_vol_path_rmse"] = float(vol_path_rmse(real3, fake3))
+    print(f"{results['A26_vol_path_rmse']:.6f}")
+
+    print("  A27 KS log-returns ...", end=" ", flush=True)
+    results["A27_ks_logreturns"] = float(ks_logreturns(real3, fake3))
+    print(f"{results['A27_ks_logreturns']:.6f}")
+
+    print("  A28 skewness error ...", end=" ", flush=True)
+    results["A28_skewness_error"] = float(skewness_error(real3, fake3))
+    print(f"{results['A28_skewness_error']:.6f}")
+
+    print("  A29 QQ RMSE (300-pt) ...", end=" ", flush=True)
+    results["A29_qq_rmse"] = float(qq_rmse(real3, fake3))
+    print(f"{results['A29_qq_rmse']:.6f}")
+
+    print("  A30 tail QQ error ...", end=" ", flush=True)
+    results["A30_tail_qq_error"] = float(tail_qq_error(real3, fake3))
+    print(f"{results['A30_tail_qq_error']:.6f}")
+
+    print("  A31 rolling vol KS ...", end=" ", flush=True)
+    results["A31_rolling_vol_ks"] = float(rolling_vol_ks(real3, fake3))
+    print(f"{results['A31_rolling_vol_ks']:.6f}")
+
+    print("  A32 vol-of-vol error ...", end=" ", flush=True)
+    results["A32_vol_of_vol_error"] = float(vol_of_vol_error(real3, fake3))
+    print(f"{results['A32_vol_of_vol_error']:.6f}")
+
+    print("  A33 terminal KS ...", end=" ", flush=True)
+    results["A33_terminal_ks"] = float(terminal_ks(real3, fake3))
+    print(f"{results['A33_terminal_ks']:.6f}")
+
+    print("  A34 Hill tail index error ...", end=" ", flush=True)
+    results["A34_hill_tail_index_error"] = float(hill_tail_index_error(real3, fake3))
+    print(f"{results['A34_hill_tail_index_error']:.6f}")
+
+    # B curve metrics: 6 plots × 3 sub-metrics (funct / der / sec_der)
+    # Each metric = MSE between the real and generated curve (or its finite difference)
+    print("  B curve metrics (6 plots × 3) ...", end=" ", flush=True)
+    curve = compute_curve_metrics(S, fake)
+    results.update(curve)
+    print(f"B_log_ret_hist_funct={curve['B_log_ret_hist_funct']:.4f}  B_qq_plot_funct={curve['B_qq_plot_funct']:.6f}")
 
     results["compute_time_sec"] = round(time.perf_counter() - t0, 2)
     print(f"  Done in {results['compute_time_sec']:.1f}s")

@@ -220,6 +220,114 @@ def compute_stylized_metrics(
     return out
 
 
+# ── Curve-shape B metrics  (6 plots × 3 sub-metrics) ──────────────────────────
+
+def _curve_mse(L_r: np.ndarray, L_g: np.ndarray):
+    """Return (funct_mse, der_mse, sec_der_mse) for two 1-D curve arrays."""
+    funct = float(np.mean((L_r - L_g) ** 2))
+    d_r = np.diff(L_r)
+    d_g = np.diff(L_g)
+    der = float(np.mean((d_r - d_g) ** 2))
+    dd_r = np.diff(d_r)
+    dd_g = np.diff(d_g)
+    sec = float(np.mean((dd_r - dd_g) ** 2))
+    return funct, der, sec
+
+
+def compute_curve_metrics(
+    S_real: np.ndarray,
+    S_gen:  np.ndarray,
+    n_bins: int = 100,
+    n_lags: int = 20,
+) -> Dict[str, float]:
+    """Compute the new B metrics: 6 plots x 3 sub-metrics (funct | der | sec_der).
+
+    For each diagnostic plot a 1-D curve L is constructed from real and generated
+    data using shared evaluation points. Three MSE values are returned:
+
+    * funct   -- MSE( L_real, L_gen )
+    * der     -- MSE( diff(L_real), diff(L_gen) )     diff[k] = L[k+1] - L[k]
+    * sec_der -- MSE( diff2(L_real), diff2(L_gen) )   diff2[k] = diff[k+1] - diff[k]
+
+    6 plots
+    -------
+    B_log_ret_hist   Empirical histogram density of log-returns at n_bins shared bins
+    B_qq_plot        Quantile function Q(p) at n_bins uniform percentile levels
+    B_acf_abs_r      Mean per-path ACF(|r|, lag) for lag = 1 .. n_lags
+    B_acf_sq_r       Mean per-path ACF(r^2, lag) for lag = 1 .. n_lags
+    B_roll_vol_hist  Histogram density of rolling-5 log-return vol at n_bins shared bins
+    B_tail_surv      Empirical survival P(|r| > x) at n_bins quantile thresholds of real
+    """
+    R_real = _log_returns(S_real)   # (N, T-1)
+    R_gen  = _log_returns(S_gen)
+
+    r_r = R_real.ravel()
+    r_g = R_gen.ravel()
+
+    out: Dict[str, float] = {}
+
+    # -- Plot 1: Log-return histogram --
+    combined = np.concatenate([r_r, r_g])
+    edges = np.linspace(combined.min(), combined.max(), n_bins + 1)
+    density_r, _ = np.histogram(r_r, bins=edges, density=True)
+    density_g, _ = np.histogram(r_g, bins=edges, density=True)
+    f, d, s = _curve_mse(density_r, density_g)
+    out["B_log_ret_hist_funct"]   = f
+    out["B_log_ret_hist_der"]     = d
+    out["B_log_ret_hist_sec_der"] = s
+
+    # -- Plot 2: QQ plot --
+    pp = np.linspace(0.005, 0.995, n_bins)
+    q_r = np.quantile(r_r, pp)
+    q_g = np.quantile(r_g, pp)
+    f, d, s = _curve_mse(q_r, q_g)
+    out["B_qq_plot_funct"]   = f
+    out["B_qq_plot_der"]     = d
+    out["B_qq_plot_sec_der"] = s
+
+    # -- Plot 3: ACF of |r| --
+    lags = np.arange(1, n_lags + 1)
+    acf_abs_r = np.array([_acf_mean(np.abs(R_real), lag=int(l)) for l in lags])
+    acf_abs_g = np.array([_acf_mean(np.abs(R_gen),  lag=int(l)) for l in lags])
+    f, d, s = _curve_mse(acf_abs_r, acf_abs_g)
+    out["B_acf_abs_r_funct"]   = f
+    out["B_acf_abs_r_der"]     = d
+    out["B_acf_abs_r_sec_der"] = s
+
+    # -- Plot 4: ACF of r^2 --
+    acf_sq_r = np.array([_acf_mean(R_real ** 2, lag=int(l)) for l in lags])
+    acf_sq_g = np.array([_acf_mean(R_gen  ** 2, lag=int(l)) for l in lags])
+    f, d, s = _curve_mse(acf_sq_r, acf_sq_g)
+    out["B_acf_sq_r_funct"]   = f
+    out["B_acf_sq_r_der"]     = d
+    out["B_acf_sq_r_sec_der"] = s
+
+    # -- Plot 5: Rolling vol histogram --
+    rv_r = _rolling_vol(S_real, window=5).ravel()
+    rv_g = _rolling_vol(S_gen,  window=5).ravel()
+    combined_rv = np.concatenate([rv_r, rv_g])
+    edges_rv = np.linspace(combined_rv.min(), combined_rv.max(), n_bins + 1)
+    dens_rv_r, _ = np.histogram(rv_r, bins=edges_rv, density=True)
+    dens_rv_g, _ = np.histogram(rv_g, bins=edges_rv, density=True)
+    f, d, s = _curve_mse(dens_rv_r, dens_rv_g)
+    out["B_roll_vol_hist_funct"]   = f
+    out["B_roll_vol_hist_der"]     = d
+    out["B_roll_vol_hist_sec_der"] = s
+
+    # -- Plot 6: Tail survival --
+    abs_r = np.abs(r_r)
+    abs_g = np.abs(r_g)
+    thresholds = np.quantile(abs_r, np.linspace(0.005, 0.995, n_bins))
+    surv_r = np.array([np.mean(abs_r > t) for t in thresholds])
+    surv_g = np.array([np.mean(abs_g > t) for t in thresholds])
+    f, d, s = _curve_mse(surv_r, surv_g)
+    out["B_tail_surv_funct"]   = f
+    out["B_tail_surv_der"]     = d
+    out["B_tail_surv_sec_der"] = s
+
+    return out
+
+
 # ── public ────────────────────────────────────────────────────────────────────
 
-__all__ = ["compute_stylized_metrics"]
+__all__ = ["compute_stylized_metrics", "compute_curve_metrics"]

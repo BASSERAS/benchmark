@@ -29,7 +29,7 @@ and predictive_score.py using PyTorch.
 """
 
 import numpy as np
-from scipy.stats import wasserstein_distance, kurtosis
+from scipy.stats import wasserstein_distance, kurtosis, ks_2samp, skew as scipy_skew
 from typing import Callable, Tuple
 
 
@@ -613,21 +613,211 @@ def rv_law_loss(X: np.ndarray, Y: np.ndarray, dt: float = 1.0 / 250.0) -> float:
     return float(wasserstein_distance(rv_real, rv_gen))
 
 
+# ======================================================================
+# A25–A34  Distributional shape metrics  (absorbed from old B1–B12)
+# B7/B8 = A22/A23 already — not duplicated here.
+# ======================================================================
+
+def _to2d(X: np.ndarray) -> np.ndarray:
+    """Accept (N,T) or (N,T,d) and return (N,T) by squeezing d=1 or flattening."""
+    if X.ndim == 3:
+        return X[:, :, 0] if X.shape[2] == 1 else X.reshape(X.shape[0], -1)
+    return X
+
+
+def mean_path_rmse(X: np.ndarray, Y: np.ndarray) -> float:
+    r"""A25. RMSE of cross-sectional mean paths over time.
+
+    B25 = sqrt( 1/T * sum_t ( mean_i(S_real[i,t]) - mean_i(S_gen[i,t]) )^2 )
+
+    Tests whether the average price trajectory is reproduced.
+    Perfect: 0. Direction: lower is better.
+    """
+    Xp, Yp = _to2d(X), _to2d(Y)
+    return float(np.sqrt(np.mean((Xp.mean(0) - Yp.mean(0)) ** 2)))
+
+
+def vol_path_rmse(X: np.ndarray, Y: np.ndarray) -> float:
+    r"""A26. RMSE of cross-sectional volatility (std) paths over time.
+
+    A26 = sqrt( 1/T * sum_t ( std_i(S_real[i,t]) - std_i(S_gen[i,t]) )^2 )
+
+    Tests whether the cross-sectional dispersion at each time step is reproduced.
+    Perfect: 0. Direction: lower is better.
+    """
+    Xp, Yp = _to2d(X), _to2d(Y)
+    return float(np.sqrt(np.mean((Xp.std(0) - Yp.std(0)) ** 2)))
+
+
+def ks_logreturns(X: np.ndarray, Y: np.ndarray) -> float:
+    r"""A27. Two-sample KS statistic on pooled log-returns.
+
+    A27 = sup_x | F_real(x) - F_gen(x) |   over log-returns r_t = log(S_{t+1}/S_t)
+
+    Ref: Massey (1951). Perfect: 0. Direction: lower is better.
+    """
+    Xp, Yp = _to2d(X), _to2d(Y)
+    lr_r = np.diff(np.log(np.maximum(Xp, 1e-10)), axis=1).ravel()
+    lr_g = np.diff(np.log(np.maximum(Yp, 1e-10)), axis=1).ravel()
+    stat, _ = ks_2samp(lr_r, lr_g)
+    return float(stat)
+
+
+def skewness_error(X: np.ndarray, Y: np.ndarray) -> float:
+    r"""A28. Absolute error in log-return skewness.
+
+    A28 = | skew(r_real) - skew(r_gen) |
+
+    where skew uses Fisher's definition (bias=False).
+    Heston produces negative skew (rho < 0 leverage). Ref: Cont (2001).
+    Perfect: 0. Direction: lower is better.
+    """
+    Xp, Yp = _to2d(X), _to2d(Y)
+    lr_r = np.diff(np.log(np.maximum(Xp, 1e-10)), axis=1).ravel()
+    lr_g = np.diff(np.log(np.maximum(Yp, 1e-10)), axis=1).ravel()
+    return float(abs(float(scipy_skew(lr_r, bias=False)) - float(scipy_skew(lr_g, bias=False))))
+
+
+def qq_rmse(X: np.ndarray, Y: np.ndarray, n_pts: int = 300) -> float:
+    r"""A29. RMSE between quantile functions of log-returns (300 pts).
+
+    A29 = sqrt( 1/G * sum_g ( Q_real(p_g) - Q_gen(p_g) )^2 )   p_g in [0.005, 0.995]
+
+    Ref: Wilk & Gnanadesikan (1968). Perfect: 0. Direction: lower is better.
+    """
+    Xp, Yp = _to2d(X), _to2d(Y)
+    lr_r = np.diff(np.log(np.maximum(Xp, 1e-10)), axis=1).ravel()
+    lr_g = np.diff(np.log(np.maximum(Yp, 1e-10)), axis=1).ravel()
+    pts = np.linspace(0.005, 0.995, n_pts)
+    q_r = np.quantile(lr_r, pts)
+    q_g = np.quantile(lr_g, pts)
+    return float(np.sqrt(np.mean((q_r - q_g) ** 2)))
+
+
+def tail_qq_error(X: np.ndarray, Y: np.ndarray) -> float:
+    r"""A30. Mean absolute tail quantile error on log-returns.
+
+    Evaluated at p in [0.01, 0.02, 0.03, 0.04, 0.05, 0.95, 0.96, 0.97, 0.98, 0.99] (10 pts).
+    Perfect: 0. Direction: lower is better.
+    """
+    Xp, Yp = _to2d(X), _to2d(Y)
+    lr_r = np.diff(np.log(np.maximum(Xp, 1e-10)), axis=1).ravel()
+    lr_g = np.diff(np.log(np.maximum(Yp, 1e-10)), axis=1).ravel()
+    tail_pts = np.concatenate([np.linspace(0.01, 0.05, 5), np.linspace(0.95, 0.99, 5)])
+    q_r = np.quantile(lr_r, tail_pts)
+    q_g = np.quantile(lr_g, tail_pts)
+    return float(np.mean(np.abs(q_r - q_g)))
+
+
+def _rolling_std(S: np.ndarray, window: int = 5) -> np.ndarray:
+    """(N, T) → (N, T-window) rolling std of log-returns."""
+    R = np.diff(np.log(np.maximum(S, 1e-10)), axis=1)
+    T1 = R.shape[1]
+    cols = [R[:, t - window + 1: t + 1].std(axis=1)
+            for t in range(window - 1, T1)]
+    return np.stack(cols, axis=1)
+
+
+def rolling_vol_ks(X: np.ndarray, Y: np.ndarray, window: int = 5) -> float:
+    r"""A31. Two-sample KS on rolling log-return volatility (window=5).
+
+    A31 = KS( {sigma_real_{i,t}}, {sigma_gen_{i,t}} )
+    sigma_{i,t} = std( r_{i,t-4:t} )
+
+    Ref: Cont (2001). Perfect: 0. Direction: lower is better.
+    """
+    Xp, Yp = _to2d(X), _to2d(Y)
+    rv_r = _rolling_std(Xp, window).ravel()
+    rv_g = _rolling_std(Yp, window).ravel()
+    stat, _ = ks_2samp(rv_r, rv_g)
+    return float(stat)
+
+
+def vol_of_vol_error(X: np.ndarray, Y: np.ndarray, window: int = 5) -> float:
+    r"""A32. Absolute error in vol-of-vol (std of rolling vol distribution).
+
+    A32 = | std( sigma_real ) - std( sigma_gen ) |
+
+    Ref: Hull & White (1987). Perfect: 0. Direction: lower is better.
+    """
+    Xp, Yp = _to2d(X), _to2d(Y)
+    rv_r = _rolling_std(Xp, window).ravel()
+    rv_g = _rolling_std(Yp, window).ravel()
+    return float(abs(rv_r.std() - rv_g.std()))
+
+
+def terminal_ks(X: np.ndarray, Y: np.ndarray) -> float:
+    r"""A33. Two-sample KS on terminal price S_T.
+
+    A33 = KS( S_real[:, T], S_gen[:, T] )
+
+    Tests whether the terminal marginal is reproduced (log-normal for GBM).
+    Ref: Massey (1951). Perfect: 0. Direction: lower is better.
+    """
+    Xp, Yp = _to2d(X), _to2d(Y)
+    stat, _ = ks_2samp(Xp[:, -1], Yp[:, -1])
+    return float(stat)
+
+
+def hill_tail_index_error(X: np.ndarray, Y: np.ndarray, k_frac: float = 0.10) -> float:
+    r"""A34. Absolute error in Hill tail index estimator on terminal prices.
+
+    alpha_hat = 1 / mean_i( log( X_{(n-i+1)} / X_{(n-k)} ) )  for i=1..k, k=10% of n
+
+    A34 = | alpha_real - alpha_gen |
+
+    Ref: Hill (1975). alpha > 4 => finite kurtosis. Perfect: 0. Direction: lower is better.
+    """
+    def _hill(x: np.ndarray) -> float:
+        x_pos = np.sort(x[x > 0])
+        n = len(x_pos)
+        k = max(10, int(k_frac * n))
+        if k >= n:
+            return float("nan")
+        threshold = x_pos[-(k + 1)]
+        exceedances = x_pos[-k:]
+        diffs = np.log(exceedances) - np.log(threshold)
+        m = diffs.mean()
+        return float("nan") if m <= 0 else float(1.0 / m)
+
+    Xp, Yp = _to2d(X), _to2d(Y)
+    ar = _hill(Xp[:, -1])
+    ag = _hill(Yp[:, -1])
+    if not (np.isfinite(ar) and np.isfinite(ag)):
+        return float("nan")
+    return float(abs(ar - ag))
+
+
 __all__ = [
     "rbf_multiscale_kernel",
+    # A1–A6  Distribution (MMD, SWD)
     "mmd2", "terminal_mmd2", "increment_mmd2", "volatility_mmd",
     "terminal_swd", "path_swd",
+    # A7–A10  Statistical moments
     "terminal_cov_error", "terminal_mean_rmse",
     "return_std_error", "return_kurtosis_error",
+    # A11–A12, A22–A23  ACF / Temporal
     "acf", "acf_error",
+    "acf_lag1_abs_error", "acf_lag1_sq_error",
+    # A15, A21  Heston-specific
     "teacher_sigma_metrics",
-    # A16–A24
+    "learned_oracle_sigma_corr",
+    # A16–A20  Log-return vol / distribution
     "logreturn_std_error",
     "abs_return_quantile_error",
     "kurtosis_ratio",
     "sigma_mean_error",
-    "learned_oracle_sigma_corr",
-    "acf_lag1_abs_error",
-    "acf_lag1_sq_error",
+    # A24  Realized vol
     "rv_law_loss",
+    # A25–A34  Distributional shape (absorbed from B1–B12)
+    "mean_path_rmse",
+    "vol_path_rmse",
+    "ks_logreturns",
+    "skewness_error",
+    "qq_rmse",
+    "tail_qq_error",
+    "rolling_vol_ks",
+    "vol_of_vol_error",
+    "terminal_ks",
+    "hill_tail_index_error",
 ]

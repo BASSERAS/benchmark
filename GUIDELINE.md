@@ -68,7 +68,7 @@ benchmark/
     └── Heston/
         └── <Method>/
             ├── README.md                 summary table + per-seed breakdown (see §9)
-            ├── seed_0_metrics.json       all A1–A24 values for seed 0
+            ├── seed_0_metrics.json       all A1–A34 + B_ values for seed 0
             ├── … seed_4_metrics.json
             ├── metrics_summary.json      mean ± std across 5 seeds
             ├── plots/
@@ -234,7 +234,7 @@ Log every **100 steps** (or every epoch if step-based logging is not applicable)
 
 ---
 
-## 5. The 24 Metrics (A1–A24) + 12 Stylized Metrics (B1–B12)
+## 5. The 34 A-Metrics (A1–A34) + 18 B Curve Metrics
 
 **All metrics are pre-implemented** in `metrics/metrics_np.py`,
 `metrics/discriminative_score.py`, `metrics/predictive_score.py`, and `metrics/stylized_metrics.py`.
@@ -287,6 +287,16 @@ cd metrics
 | A22 | ACF |r| Lag-1 Error | Temporal | ↓ | 0 |
 | A23 | ACF r² Lag-1 Error | Temporal | ↓ | 0 |
 | A24 | RV Law Loss (W₁ on annualized realized variance) | Distribution | ↓ | 0 |
+| A25 | Mean Path RMSE | Distribution | ↓ | 0 |
+| A26 | Cross-Sect. Vol Path RMSE | Volatility | ↓ | 0 |
+| A27 | KS on Log-returns | Distribution | ↓ | 0 |
+| A28 | Skewness Error | Statistics | ↓ | 0 |
+| A29 | QQ RMSE (300-pt) | Distribution | ↓ | 0 |
+| A30 | Tail QQ Error | Fat-tail | ↓ | 0 |
+| A31 | Rolling Vol KS (window=5) | Volatility | ↓ | 0 |
+| A32 | Vol-of-Vol Error | Volatility | ↓ | 0 |
+| A33 | Terminal Price KS | Distribution | ↓ | 0 |
+| A34 | Hill Tail Index Error | Fat-tail | ↓ | 0 |
 
 **A16**: |σ(log-ret real) − σ(log-ret gen)| — log-return std error (distinct from A9 which uses ΔS_t).
 **A17–A18**: |Q_0.95(|r_real|) − Q_0.95(|r_gen|)| and same at 0.99. Tail quantile reproduction.
@@ -297,25 +307,35 @@ cd metrics
 **A24 (RV Law Loss):** W₁(RV_real, RV_gen) where RV_i = Σ_t r²_{i,t} / dt (annualized realized
 variance per path). Measures whether the cross-path distribution of realized variances matches.
 Reference: Barndorff-Nielsen & Shephard (2002).
+**A25–A26**: Path-level RMSE between real and generated mean/vol trajectories (matched by time).
+**A27**: Kolmogorov-Smirnov statistic on pooled log-returns.
+**A28**: |skew_real − skew_gen|. Heston true skew ≈ −0.45.
+**A29**: QQ RMSE over 300 uniform quantile levels.
+**A30**: QQ error restricted to top-5% tail quantiles.
+**A31**: KS statistic on rolling-5 volatility histograms.
+**A32**: |vol-of-vol_real − vol-of-vol_gen|.
+**A33**: KS statistic on terminal prices S_T (= S_128).
+**A34**: |Hill tail index_real − Hill tail index_gen|. Hill estimator on |log-returns| above 95th pct.
 
-**B1–B12 (Stylized metrics from 8 diagnostic plots — B8 ARCH Persistence and B10 GARCH Persistence removed as redundant with A11/A12):**
+**B — Curve-shape metrics (6 plots × 3 sub-metrics = 18 B keys):**
 
-| ID | Name | Corresponds to plot | Direction | Reference |
-|----|------|--------------------|-----------|----|
-| B1 | Mean Path RMSE | Plots 1+2 (sample paths) | ↓ | Cont 2001 |
-| B2 | Cross-Sect. Vol RMSE | Plots 1+2 | ↓ | Hull & White 1987 |
-| B3 | KS Stat (log-returns) | Plot 3 (histogram) | ↓ | Massey 1951 |
-| B4 | Skewness Error | Plot 3 | ↓ | Harvey & Siddique 1999 |
-| B5 | QQ RMSE | Plot 4 (QQ plot) | ↓ | Wilk & Gnanadesikan 1968 |
-| B6 | Tail QQ Error | Plot 4 (5th/95th extremes) | ↓ | — |
-| B7 | ACF Lag-1 Error (\|r\|) | Plot 5 (ACF abs returns) | ↓ | Ding et al. 1993 |
-| B8 | ACF Lag-1 Error (r²) | Plot 6 (ACF sq returns) | ↓ | Bollerslev 1986 |
-| B9 | Rolling Vol KS Stat | Plot 7 (vol histogram) | ↓ | Cont 2001 |
-| B10 | Vol-of-Vol Error | Plot 7 | ↓ | Hull & White 1987 |
-| B11 | Terminal Price KS Stat | Plot 8 (tail survival) | ↓ | Massey 1951 |
-| B12 | Tail Index Error (Hill) | Plot 8 | ↓ | Hill 1975 |
+Three sub-metrics per plot:
+- **funct**: MSE(L\_real, L\_gen) between curve values
+- **der**: MSE of first finite difference — L\_der\[k\] = L\[k+1\] − L\[k\]
+- **sec\_der**: MSE of second finite difference — L\_sec\[k\] = L\_der\[k+1\] − L\_der\[k\]
 
-Total A-metrics: 27 numbers (A1–A24 + A13×2 + A14×2 + A15×2). Total B-metrics: 12 numbers. **Grand total: 39 scalar metrics per seed.**
+| Plot | JSON key prefix | Curve description |
+|------|----------------|-------------------|
+| Log-return histogram | `B_log_ret_hist_*` | Density of log-returns over shared bins |
+| QQ plot | `B_qq_plot_*` | Quantile function at 100 uniform percentile levels |
+| ACF \|r\| (lags 1–20) | `B_acf_abs_r_*` | Mean per-path ACF of \|r\| at each lag |
+| ACF r² (lags 1–20) | `B_acf_sq_r_*` | Mean per-path ACF of r² at each lag |
+| Rolling vol hist. | `B_roll_vol_hist_*` | Density of rolling-5 vol over shared bins |
+| Tail survival | `B_tail_surv_*` | P(\|r\|>x) at thresholds of real \|r\| |
+
+All B metrics ↓ lower is better. Perfect floor = 0 for all (row-shuffled real data has identical distribution curves).
+
+Total A-metrics: 37 numbers (A1–A34 + A13×2 + A14×2 + A15×2). Total B-metrics: 18 numbers (6 plots × 3). **Grand total: 55 scalar metrics per seed.**
 
 ### 5.3 Output files
 
@@ -323,7 +343,7 @@ Total A-metrics: 27 numbers (A1–A24 + A13×2 + A14×2 + A15×2). Total B-metri
 
 | File | Contents |
 |------|---------|
-| `results/Heston/<Method>/seed_{i}_metrics.json` | All 39 metric values for seed i (A1-A24 + B1-B12) |
+| `results/Heston/<Method>/seed_{i}_metrics.json` | All 55 metric values for seed i (A1-A34 + 18 B_ keys) |
 | `results/Heston/<Method>/metrics_summary.json` | Mean ± std across 5 seeds |
 | `results/Heston/<Method>/metrics_summary.csv` | Same, CSV format |
 | `results/Heston/<Method>/plots/disc_classifier_loss.png` | A13 BCE training loss, GRU + MLP, 5 seeds |
@@ -494,24 +514,26 @@ See [`code/README.md`](code/README.md) for source, paper citation, and list of f
 ---
 ```
 
-#### Section 2 — Metrics table
+#### Section 2 — Metrics A1–A34 + B
 
 ```markdown
-## Metrics — mean ± std across 5 seeds
+## Metrics A1–A34 + B — mean ± std across 5 seeds
 
-| ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect |
-|----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------|
-| A1 | Path MMD² | Distribution | ↓ | X.XXXX ± X.XXXX | X.XXXX | ... | 0 |
+| ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
+|----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------------|
+| A1 | Path MMD² | Distribution | ↓ | X.XXXX ± X.XXXX | ... | 0.0018 |
 ...
-| A16 | Log-Return Std Error | Statistics | ↓ | ... | 0 |
-| A17 | \|r\| q95 Error | Fat-tail | ↓ | ... | 0 |
-| A18 | \|r\| q99 Error | Fat-tail | ↓ | ... | 0 |
-| A19 | Kurtosis Ratio (target/model) | Statistics | — | ... | 1.0 |
-| A20 | Sigma Mean Error | Statistics | ↓ | ... | 0 |
-| A21 | Learned/Oracle Sigma Corr | Heston-specific | ↑ | ... | **1** |
-| A22 | ACF \|r\| Lag-1 Error | Temporal | ↓ | ... | 0 |
-| A23 | ACF r² Lag-1 Error | Temporal | ↓ | ... | 0 |
 | A24 | RV Law Loss | Distribution | ↓ | ... | 0 |
+| A25 | Mean Path RMSE | Distribution | ↓ | ... | 0 |
+| A26 | Cross-Sect. Vol Path RMSE | Volatility | ↓ | ... | 0 |
+| A27 | KS on Log-returns | Distribution | ↓ | ... | 0 |
+| A28 | Skewness Error | Statistics | ↓ | ... | 0 |
+| A29 | QQ RMSE (300-pt) | Distribution | ↓ | ... | 0 |
+| A30 | Tail QQ Error | Fat-tail | ↓ | ... | 0 |
+| A31 | Rolling Vol KS (window=5) | Volatility | ↓ | ... | 0 |
+| A32 | Vol-of-Vol Error | Volatility | ↓ | ... | 0 |
+| A33 | Terminal Price KS | Distribution | ↓ | ... | 0 |
+| A34 | Hill Tail Index Error | Fat-tail | ↓ | ... | 0 |
 ```
 
 Rules:
@@ -520,24 +542,28 @@ Rules:
 - Use `1.0` (not bold) for A19 Perfect column
 - Use `baseline` (not bold) for A14 Perfect column
 
-Include the footnotes block verbatim:
+Include footnotes for A13, A14, A15, A16–A34. See §15.1 for the exact verbatim block.
+
+#### Section 3 — B Curve-Shape Metrics
+
 ```markdown
-> **A13 discriminative score**: `|accuracy − 0.5|` on held-out test set (80/20 split).
-> 0 = indistinguishable from real. 0.5 = perfectly separated (bad generator).
->
-> **A14 predictive score**: TSTR MAE — predictor trained on *synthetic*, evaluated on *real*.
->
-> **A15 sigma**: Heston-specific. Compares inferred instantaneous vol from generated paths
-> against the true variance paths.
->
-> **A16–A18**: Log-return std error and tail quantile errors (95th/99th) on |log-returns|.
-> **A19**: Kurtosis ratio real/gen. Perfect = 1.0; negative = gen lighter-tailed than Gaussian.
-> **A20**: Annualized per-path vol mean error. **A21**: Learned/oracle sigma corr (Heston-specific).
-> **A22–A23**: ACF lag-1 errors on |r| and r² (single-lag version of A11/A12).
-> **A24**: W₁(RV_real, RV_gen). Ref: Barndorff-Nielsen & Shephard (2002).
+## B — Curve-Shape Metrics — mean ± std across 5 seeds
+
+> MSE between real and generated **curve** (not a scalar).
+> - **funct**: MSE(L\_real, L\_gen). **der**: MSE of first finite difference. **sec\_der**: second.
+> All ↓ lower is better. Perfect floor = 0 for all.
+
+| Plot | funct | der | sec\_der |
+|------|-------|-----|----------|
+| Log-return histogram | ... | ... | ... |
+| QQ plot              | ... | ~0  | ~0  |
+| ACF \|r\|            | ... | ... | ... |
+| ACF r²               | ... | ... | ... |
+| Rolling vol hist.    | ... | ... | ... |
+| Tail survival        | ... | ... | ~0  |
 ```
 
-#### Section 3 — Stylised Facts Diagnostic
+#### Section 4 — Stylised Facts Diagnostic
 
 ```markdown
 ## Stylised Facts Diagnostic (Heston vs <Method>, seed 0)
@@ -548,7 +574,7 @@ ACF of squared returns, rolling vol histogram (window=5), tail survival (log-log
 ![Heston Diagnostics](../../results/Heston/<Method>/plots/heston_diagnostics.png)
 ```
 
-#### Section 4 — Training Loss
+#### Section 5 — Training Loss
 
 ```markdown
 ## <Method> Training Loss (5 seeds)
@@ -558,7 +584,7 @@ ACF of squared returns, rolling vol histogram (window=5), tail survival (log-log
 ![<Method> Training Loss](losses/loss_convergence.png)
 ```
 
-#### Section 5 — A13
+#### Section 6 — A13
 
 ```markdown
 ## A13 — Discriminative Classifier Training Loss
@@ -569,7 +595,7 @@ A value near ln(2) ≈ 0.693 means the classifier cannot distinguish real from f
 ![Discriminative Classifier Loss](../../results/Heston/<Method>/plots/disc_classifier_loss.png)
 ```
 
-#### Section 6 — A14
+#### Section 7 — A14
 
 ```markdown
 ## A14 — Predictive Score Training Loss (TSTR)
@@ -579,7 +605,7 @@ MAE loss during GRU and MLP predictor training on *synthetic* data (5 000 steps,
 ![Predictive Score Loss](../../results/Heston/<Method>/plots/pred_score_loss.png)
 ```
 
-#### Section 7 — Path Shadowing MC
+#### Section 8 — Path Shadowing MC
 
 ```markdown
 ## Path Shadowing MC (arXiv:2308.01486)
@@ -608,11 +634,11 @@ Two variants: **Uniform** (flat 1/K) and **Gaussian** (η = η̃·‖h(x̃)‖, 
 Full analysis: [`results/Heston/<Method>/path_shadowing/README.md`](../../results/Heston/<Method>/path_shadowing/README.md)
 ```
 
-#### Section 8 — File layout
+#### Section 9 — File layout
 
 Show the exact folder tree of `methods/<Method>/` (fill in actual file names).
 
-#### Section 9 — Reproduce
+#### Section 10 — Reproduce
 
 ```markdown
 ## Reproduce
@@ -753,9 +779,9 @@ TRAINING
   [ ] losses/loss_convergence.png  — 5 seeds overlaid, file > 0 bytes
 
 METRICS
-  [ ] results/Heston/<Method>/seed_{0..4}_metrics.json  — 19 values each
-  [ ] A16-A24 present in every seed JSON — verify:
-       python -c "import json,glob; [print(f, json.load(open(f)).get('A24_rv_law_loss','MISSING')) for f in sorted(glob.glob('results/Heston/<Method>/seed_*_metrics.json'))]"
+  [ ] results/Heston/<Method>/seed_{0..4}_metrics.json  — 55 values each
+  [ ] A25-A34 and B_ keys present in every seed JSON — verify:
+       python -c "import json,glob; [print(f, json.load(open(f)).get('A34_hill_tail_error','MISSING'), json.load(open(f)).get('B_log_ret_hist_funct','MISSING')) for f in sorted(glob.glob('results/Heston/<Method>/seed_*_metrics.json'))]"
   [ ] results/Heston/<Method>/metrics_summary.json  — mean ± std present
   [ ] results/Heston/<Method>/plots/heston_diagnostics.png  — 8 panels visible
   [ ] results/Heston/<Method>/plots/disc_classifier_loss.png
@@ -857,18 +883,19 @@ Follow it exactly when adding a new method. Do NOT deviate from section titles o
 # <Method> on Heston
 ```
 
-#### Section 2 — Metrics A1–A24
+#### Section 2 — Metrics A1–A34 + B
 ```markdown
-## Metrics A1–A24 — mean ± std across 5 seeds
+## Metrics A1–A34 + B — mean ± std across 5 seeds
 
 > All metrics use log-returns r_t = log(S_{t+1}/S_t) unless noted. A9 uses price increments ΔS_t.
 
 | ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------------|
-| A1  | Path MMD²   | Distribution | ↓ | X.XXXX ± X.XXXX | ... | 0.0018 ± 0.0002 |
+| A1  | Path MMD²             | Distribution  | ↓ | X.XXXX ± X.XXXX | ... | 0.0018 |
 ...
-| A24 | RV Law Loss | Distribution | ↓ | ... | ≈0 |
+| A34 | Hill Tail Index Error | Fat-tail      | ↓ | ... | 0.0000 |
 
+> **Convention:** ↓ lower is better; ↑ higher is better; — no monotone direction. A19 perfect = 1.0.
 > **A11–A12**: ACF on log-returns at lags L = {1, 2, 5, 10}. ↓
 > **A13**: Discriminative classifier. Score = |accuracy − 0.5|; 0 = indistinguishable.
 > **A14**: TSTR MAE; cluster near 0.056–0.059 (irreducible noise floor for Heston).
@@ -877,32 +904,32 @@ Follow it exactly when adding a new method. Do NOT deviate from section titles o
 > **A20**: Sigma mean error (annualized per-path vol). **A21**: Learned/oracle sigma corr (Heston).
 > **A22–A23**: ACF lag-1 errors on |r| and r². Heston true values ≈ +0.052 / +0.050.
 > **A24**: W₁(RV_real, RV_gen), RV_i = Σ_t r²_{i,t} / dt. Ref: Barndorff-Nielsen & Shephard (2002).
+> **A25–A26**: Path-level RMSE between real and generated mean/vol trajectories.
+> **A27**: KS statistic on pooled log-returns. **A28**: |skew_real − skew_gen|.
+> **A29**: QQ RMSE over 300 uniform quantile levels. **A30**: Tail QQ error (top-5%).
+> **A31**: KS on rolling-5 vol histograms. **A32**: |vol-of-vol_real − vol-of-vol_gen|.
+> **A33**: KS on terminal prices S_T. **A34**: Hill tail index error (|log-returns| above 95th pct).
 ```
 
-#### Section 3 — Stylized Metrics B1–B12
+#### Section 3 — B Curve-Shape Metrics
 ```markdown
-## Stylized Metrics B1–B12 — mean ± std across 5 seeds
+## B — Curve-Shape Metrics — mean ± std across 5 seeds
 
-> One scalar per diagnostic plot panel. Extracted from the same data as the 8-panel PNG.
-> All ↓ lower is better.
+> MSE between real and generated **curve** (not a scalar). Three sub-metrics per plot:
+> - **funct**: MSE(L\_real, L\_gen) between curve values
+> - **der**: MSE of first finite difference — L\_der\[k\] = L\[k+1\] − L\[k\]
+> - **sec\_der**: MSE of second finite difference — L\_sec\[k\] = L\_der\[k+1\] − L\_der\[k\]
+>
+> All ↓ lower is better. Perfect floor = 0 for all.
 
-| ID  | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
-|-----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------------|
-| B1  | Mean Path RMSE        | Distribution | ↓ | ... |
-| B2  | Cross-Sect. Vol RMSE  | Distribution | ↓ | ... |
-| B3  | KS on Log-returns     | Distribution | ↓ | ... |
-| B4  | Skewness Error        | Distribution | ↓ | ... |
-| B5  | QQ RMSE (300-pt)      | Distribution | ↓ | ... |
-| B6  | Tail QQ Error         | Fat-tail     | ↓ | ... |
-| B7  | ACF lag-1 |r| Err     | Temporal     | ↓ | ... |
-| B8  | ACF lag-1 r² Err      | Temporal     | ↓ | ... |
-| B9  | Rolling Vol KS        | Volatility   | ↓ | ... |
-| B10 | Vol-of-Vol Error      | Volatility   | ↓ | ... |
-| B11 | Terminal Price KS     | Distribution | ↓ | ... |
-| B12 | Hill Tail Index Err   | Fat-tail     | ↓ | ... |
-
-> **B7–B8** (ACF lag-1 errors): note the expected values and what wrong scores mean.
-> **B12**: Hill estimator — use the mean; noisy per seed.
+| Plot | funct | der | sec\_der |
+|------|-------|-----|----------|
+| Log-return histogram | X.XXX ± X.XXX | X.XXX ± X.XXX | X.XXX ± X.XXX |
+| QQ plot              | X.XXe-X ± X.XXe-X | ~0 | ~0 |
+| ACF \|r\|            | X.XXXXX ± X.XXXXX | X.Xe-X | X.Xe-X |
+| ACF r²               | X.XXXXX ± X.XXXXX | X.Xe-X | X.Xe-X |
+| Rolling vol hist.    | XXX.X ± XXX.X | XX.X ± XX.X | X.X ± X.X |
+| Tail survival        | X.XXXXX ± X.XXXXX | X.Xe-X | ~0 |
 ```
 
 ---
@@ -916,9 +943,9 @@ Follow it exactly when adding a new method. Do NOT deviate from section titles o
 2. **What we generate** (if applicable) — SDE, scaling steps, pipeline
 
 3. **Results (mean ± std across 5 seeds)**
-   - Subsection **A1–A24 Core metrics**: full table with columns `ID | Metric | Mean ± Std | Seed 0..4 | Perfect floor`
-   - Subsection **B1–B12 Stylized metrics**: same format
-   - Footnotes for A13, A14, A15, A16–A24
+   - Subsection **A1–A34 Core metrics**: full table with columns `ID | Metric | Mean ± Std | Seed 0..4 | Perfect floor`
+   - Subsection **B Curve-Shape Metrics**: 6-row × 3-column table (funct / der / sec\_der)
+   - Footnotes for A13, A14, A15, A16–A34
 
 4. **Comparison with the paper**
    - ⚠️ Warning that direct comparison may not be meaningful (state why: different dataset, different T, different d)
@@ -930,9 +957,8 @@ Follow it exactly when adding a new method. Do NOT deviate from section titles o
      Quote the exact paper table, dataset used, and metric definition (same metric? different metric?).
    - Subsection C (if applicable): Scaling / implementation notes
 
-5. **Stylised Metrics B1–B12** ← *copied verbatim from Section 3 of the method README*
-   - Include the metric-to-plot mapping table
-   - Include all LaTeX formulas for B1–B12
+5. **B Curve-Shape Metrics** ← *copied verbatim from Section 3 of the method README*
+   - Include the B plot mapping table (6 plots × 3 sub-metrics: funct / der / sec\_der)
    - Include the 8-panel diagnostic PNG: `![Heston Diagnostics](plots/heston_diagnostics.png)`
 
 > **Note:** The Metric Definitions section (A1–A24 with LaTeX formulas) lives in `metrics/README.md`
@@ -970,3 +996,4 @@ When a new standard is established (new metric, new section format, new B metric
 - 2026-07-17: B8 (ARCH Persistence Error, lags 1-20) and B10 (GARCH Persistence Error, lags 1-20) removed from B metrics as redundant with A11 and A12. Renumbered: old B9→B8, old B11→B9, old B12→B10, old B13→B11, old B14→B12. Total B metrics: 14 → 12. Total grand total: 37 → 35 scalars per seed.
 - 2026-07-17: Replaced A16–A20 (tail survival, oracle AR, RV law) with A16–A24 (log-ret std, tail quantile errors, kurtosis ratio, sigma mean error, learned/oracle sigma corr, ACF lag-1 errors, RV law loss).
 - 2026-07-17: Added §15 (README Writing Protocol) with exact section order and format for method, results, and code READMEs.
+- 2026-07-18: B1–B12 scalar metrics removed; replaced by 18 B curve-shape keys (6 plots × 3 sub-metrics: funct/der/sec\_der). Old B1–B10 scalars promoted to A25–A34 (distributional shape / tail). Grand total: 39 → 55 scalars per seed. Updated §5.2, §5.3, §13, §15.1, §15.2. Added perfect recovery baseline: `results/Heston/perfect_recovery/` (5 seeds, row-shuffle, A1–A34 + B_ all computed).

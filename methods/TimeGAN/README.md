@@ -8,9 +8,9 @@ to the TF1 reference implementation.
 
 ---
 
-## Metrics A1–A24 — mean ± std across 5 seeds
+## Metrics A1–A34 + B — mean ± std across 5 seeds
 
-> All metrics on **log-returns** $r_t = \log(S_{t+1}/S_t)$. A9 uses price increments $\Delta S_t$; A11/A12/A16–A24 use log-returns.
+> All metrics on **log-returns** $r_t = \log(S_{t+1}/S_t)$ unless noted. A9 uses price increments $\Delta S_t$; A11/A12/A16–A34 use log-returns.
 
 | ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|--------|
@@ -32,53 +32,70 @@ to the TF1 reference implementation.
 | A14 | Pred Score MLP — TSTR           | Predictive    | ↓ | 0.057 ± 0.002   | 0.056  | 0.059  | 0.057  | 0.056  | 0.059  | 0.057  |
 | A15 | Sigma Corr (vol recovery)       | Heston-specif.| ↑ | 0.002 ± 0.009   | 0.001  | 0.007  | −0.008 | −0.006 | 0.017  | 0.614  |
 | A15 | Sigma RMSE                      | Heston-specif.| ↓ | 0.118 ± 0.018   | 0.102  | 0.111  | 0.148  | 0.100  | 0.131  | 0.065  |
-| A16 | Log-Return Std Error                       | Statistics     | ↓ | 0.0017 ± 0.0008      | 0.0020  | 0.0023  | 0.0006  | 0.0010  | 0.0025  | — |
-| A17 | |r| q95 Error                              | Fat-tail       | ↓ | 0.0032 ± 0.0018      | 0.0042  | 0.0056  | 0.0016  | 0.0005  | 0.0040  | — |
-| A18 | |r| q99 Error                              | Fat-tail       | ↓ | 0.0043 ± 0.0028      | 0.0074  | 0.0069  | 0.0052  | 0.0017  | 0.0004  | — |
-| A19 | Kurtosis Ratio (target/model)              | Statistics     | — | -1.0947 ± 3.5247     | 1.9788  | 0.1360  | 0.2451  | -8.0053 | 0.1718  | — |
-| A20 | Sigma Mean Error                           | Statistics     | ↓ | 0.0307 ± 0.0089      | 0.0301  | 0.0373  | 0.0273  | 0.0164  | 0.0422  | — |
-| A21 | Learned/Oracle Sigma Corr                  | Heston-specif. | ↑ | 0.0021 ± 0.0090      | 0.0010  | 0.0069  | -0.0082 | -0.0057 | 0.0166  | — |
-| A22 | ACF |r| Lag-1 Error                        | Temporal       | ↓ | 0.2264 ± 0.1034      | 0.1537  | 0.2120  | 0.3669  | 0.0840  | 0.3155  | — |
-| A23 | ACF r² Lag-1 Error                         | Temporal       | ↓ | 0.1719 ± 0.0626      | 0.1177  | 0.2000  | 0.2634  | 0.0874  | 0.1908  | — |
-| A24 | RV Law Loss (W₁ on ann. RV)                | Distribution   | ↓ | 1.5512 ± 0.3788      | 1.4914  | 1.7536  | 1.8266  | 0.8373  | 1.8470  | — |
+| A16 | Log-Return Std Error            | Statistics    | ↓ | 0.0017 ± 0.0008 | 0.0020 | 0.0023 | 0.0006 | 0.0010 | 0.0025 | 0.0000 |
+| A17 | \|r\| q95 Error                 | Fat-tail      | ↓ | 0.0032 ± 0.0018 | 0.0042 | 0.0056 | 0.0016 | 0.0005 | 0.0040 | 0.0000 |
+| A18 | \|r\| q99 Error                 | Fat-tail      | ↓ | 0.0043 ± 0.0028 | 0.0074 | 0.0069 | 0.0052 | 0.0017 | 0.0004 | 0.0000 |
+| A19 | Kurtosis Ratio (target/model)   | Statistics    | — | -1.095 ± 3.525  | 1.979  | 0.136  | 0.245  | -8.005 | 0.172  | 1.0000 |
+| A20 | Sigma Mean Error                | Statistics    | ↓ | 0.0307 ± 0.0089 | 0.0301 | 0.0373 | 0.0273 | 0.0164 | 0.0422 | 0.0000 |
+| A21 | Learned/Oracle Sigma Corr       | Heston-specif.| ↑ | 0.0021 ± 0.0090 | 0.0010 | 0.0069 | -0.0082| -0.0057| 0.0166 | 0.614  |
+| A22 | ACF \|r\| Lag-1 Error           | Temporal      | ↓ | 0.2264 ± 0.1034 | 0.1537 | 0.2120 | 0.3669 | 0.0840 | 0.3155 | 0.0000 |
+| A23 | ACF r² Lag-1 Error              | Temporal      | ↓ | 0.1719 ± 0.0626 | 0.1177 | 0.2000 | 0.2634 | 0.0874 | 0.1908 | 0.0000 |
+| A24 | RV Law Loss (W₁ on ann. RV)     | Distribution  | ↓ | 1.5512 ± 0.3788 | 1.4914 | 1.7536 | 1.8266 | 0.8373 | 1.8470 | 0.0000 |
+| A25 | Mean Path RMSE                  | Distribution  | ↓ | 0.5289 ± 0.2624 | 0.5327 | 0.2184 | 0.8536 | 0.7866 | 0.2533 | 0.0000 |
+| A26 | Cross-Sect. Vol Path RMSE       | Volatility    | ↓ | 0.3534 ± 0.1253 | 0.2220 | 0.4752 | 0.2585 | 0.5320 | 0.2790 | 0.0000 |
+| A27 | KS on Log-returns               | Distribution  | ↓ | 0.0848 ± 0.0374 | 0.0400 | 0.0627 | 0.1259 | 0.0628 | 0.1329 | 0.0000 |
+| A28 | Skewness Error                  | Statistics    | ↓ | 0.3404 ± 0.3344 | 0.0025 | 0.4473 | 0.0891 | 0.2252 | 0.9379 | 0.0000 |
+| A29 | QQ RMSE (300-pt)                | Distribution  | ↓ | 0.0025 ± 0.0006 | 0.0019 | 0.0026 | 0.0028 | 0.0017 | 0.0035 | 0.0000 |
+| A30 | Tail QQ Error                   | Fat-tail      | ↓ | 0.0034 ± 0.0015 | 0.0042 | 0.0054 | 0.0016 | 0.0017 | 0.0041 | 0.0000 |
+| A31 | Rolling Vol KS (window=5)       | Volatility    | ↓ | 0.2540 ± 0.1093 | 0.1877 | 0.2705 | 0.3619 | 0.0805 | 0.3695 | 0.0000 |
+| A32 | Vol-of-Vol Error                | Volatility    | ↓ | 0.0009 ± 0.0009 | 0.0004 | 0.0003 | 0.0025 | 0.0003 | 0.0011 | 0.0000 |
+| A33 | Terminal Price KS               | Distribution  | ↓ | 0.1121 ± 0.0556 | 0.1077 | 0.0573 | 0.2074 | 0.0574 | 0.1307 | 0.0000 |
+| A34 | Hill Tail Index Error           | Fat-tail      | ↓ | 36.88 ± 17.05   | 40.70  | 18.78  | 51.75  | 15.49  | 57.70  | 0.0000 |
 
+> **Convention:** ↓ lower is better; ↑ higher is better; — no monotone direction. A19 Kurtosis Ratio: perfect = 1.0.
 > **A11–A12**: ACF on log-returns r_t = log(S_{t+1}/S_t). ARCH signal: |r_t| has positive lag-1 ACF ~0.05 in Heston.
 > **A13**: Discriminative classifier trained on log-returns (not raw prices). Score = |accuracy − 0.5|; 0 = indistinguishable.
 > **A14**: TSTR MAE; all methods cluster near 0.056–0.059 (irreducible log-return noise floor). Differences are small.
-> **A16**: Log-return std error (A16 ↓). Uses $r_t = \log(S_{t+1}/S_t)$ (vs price increments in A9).
+> **A16**: Log-return std error. Uses $r_t = \log(S_{t+1}/S_t)$ (vs price increments in A9).
 > **A17–A18**: 95th/99th quantile error on |log-returns|. Measures tail reproduction accuracy.
-> **A19**: Kurtosis ratio real/gen. Perfect = 1.0. Negative kurtosis ratio means gen has negative excess kurtosis (lighter-than-Gaussian tails).
+> **A19**: Kurtosis ratio real/gen. Perfect = 1.0. Negative value means gen has negative excess kurtosis (lighter-than-Gaussian tails).
 > **A20**: Sigma mean error — annualized per-path vol, averaged over paths.
 > **A21**: Learned/oracle sigma corr — identical to A15 Corr; included to group all vol metrics.
 > **A22–A23**: ACF lag-1 error on |r| and r². Single-lag version of A11/A12. Heston true values ≈ +0.052 / +0.050.
 > **A24**: W₁(RV_real, RV_gen), RV_i = Σ_t r²_{i,t}/dt. Ref: Barndorff-Nielsen & Shephard (2002).
+> **A25–A26**: Path-level RMSE between real and generated mean/vol trajectories (matched by time).
+> **A27**: Kolmogorov-Smirnov statistic on pooled log-returns.
+> **A28**: |skew_real − skew_gen|. Heston true skew ≈ −0.45.
+> **A29**: QQ RMSE over 300 uniform quantile levels.
+> **A30**: QQ error restricted to top-5% tail quantiles.
+> **A31**: KS statistic on rolling-5 volatility histograms.
+> **A32**: |vol-of-vol_real − vol-of-vol_gen|.
+> **A33**: KS statistic on terminal prices S_T (= S_128).
+> **A34**: |Hill tail index_real − Hill tail index_gen|. Hill estimator on |log-returns| above 95th pct.
 
 ---
 
-## Stylized Metrics B1–B12 — mean ± std across 5 seeds
+## B — Curve-Shape Metrics — mean ± std across 5 seeds
 
-> One scalar per diagnostic plot panel. Extracted from the same data as the 8-panel PNG.
-> All ↓ lower is better.
+> MSE between real and generated **curve** (not a scalar). Three sub-metrics per plot:
+> - **funct**: MSE(L\_real, L\_gen) between curve values
+> - **der**: MSE of first finite difference — L\_der\[k\] = L\[k+1\] − L\[k\]
+> - **sec\_der**: MSE of second finite difference — L\_sec\[k\] = L\_der\[k+1\] − L\_der\[k\]
+>
+> All ↓ lower is better. Perfect floor = 0 for all (row-shuffled real data has identical distribution curves).
 
-| ID  | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
-|-----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------------|
-| B1  | Mean Path RMSE        | Distribution | ↓ | 0.5289 ± 0.2624 | 0.5327 | 0.2184 | 0.8536 | 0.7866 | 0.2533 | 0.1511 ± 0.0708 |
-| B2  | Cross-Sect. Vol RMSE  | Distribution | ↓ | 0.3534 ± 0.1253 | 0.2220 | 0.4752 | 0.2585 | 0.5320 | 0.2790 | 0.1355 ± 0.0735 |
-| B3  | KS on Log-returns     | Distribution | ↓ | 0.0848 ± 0.0374 | 0.0400 | 0.0627 | 0.1259 | 0.0628 | 0.1329 | 0.0018 ± 0.0009 |
-| B4  | Skewness Error        | Distribution | ↓ | 0.3404 ± 0.3344 | 0.0025 | 0.4473 | 0.0891 | 0.2252 | 0.9379 | 0.0060 ± 0.0048 |
-| B5  | QQ RMSE (300-pt)      | Distribution | ↓ | 0.0025 ± 0.0006 | 0.0019 | 0.0026 | 0.0028 | 0.0017 | 0.0035 | 0.0001 ± 0.0000 |
-| B6  | Tail QQ Error         | Fat-tail     | ↓ | 0.0034 ± 0.0015 | 0.0042 | 0.0054 | 0.0016 | 0.0017 | 0.0041 | 0.0001 ± 0.0001 |
-| B7  | ACF lag-1 |r| Err     | Temporal     | ↓ | 0.2282 ± 0.1042 | 0.1549 | 0.2137 | 0.3698 | 0.0847 | 0.3180 | 0.0018 ± 0.0016 |
-| B8  | ACF lag-1 r² Err      | Temporal     | ↓ | 0.1732 ± 0.0631 | 0.1186 | 0.2016 | 0.2655 | 0.0881 | 0.1923 | 0.0017 ± 0.0014 |
-| B9  | Rolling Vol KS        | Volatility   | ↓ | 0.2540 ± 0.1093 | 0.1877 | 0.2705 | 0.3619 | 0.0805 | 0.3695 | 0.0046 ± 0.0024 |
-| B10 | Vol-of-Vol Error      | Volatility   | ↓ | 0.0009 ± 0.0009 | 0.0004 | 0.0003 | 0.0025 | 0.0003 | 0.0011 | 0.0000 ± 0.0000 |
-| B11 | Terminal Price KS     | Distribution | ↓ | 0.1121 ± 0.0556 | 0.1077 | 0.0573 | 0.2074 | 0.0574 | 0.1307 | 0.0145 ± 0.0043 |
-| B12 | Hill Tail Index Err   | Fat-tail     | ↓ | 36.88 ± 17.05   | 40.70  | 18.78  | 51.75  | 15.49  | 57.70  | 0.499 ± 0.610   |
+| Plot | funct | der | sec\_der |
+|------|-------|-----|----------|
+| Log-return histogram | 27.38 ± 31.52 | 23.62 ± 33.12 | 46.04 ± 71.14 |
+| QQ plot              | 7.0e-6 ± 3.0e-6 | ~0 | ~0 |
+| ACF \|r\|            | 0.00913 ± 0.00845 | 7.1e-4 ± 4.6e-4 | 6.3e-4 ± 7.1e-4 |
+| ACF r²               | 0.00376 ± 0.00291 | 8.4e-4 ± 6.0e-4 | 1.2e-3 ± 1.5e-3 |
+| Rolling vol hist.    | 530.4 ± 541.7 | 70.1 ± 78.2 | 13.1 ± 13.0 |
+| Tail survival        | 0.01169 ± 0.00916 | 1.9e-5 ± 1.7e-5 | ~0 |
 
-> **B7–B8** (ACF lag-1 errors): Heston true ACF(|r|, lag=1) ≈ +0.052, ACF(r², lag=1) ≈ +0.050.
-> TimeGAN often collapses to near-zero ACF, missing the ARCH signature (seeds 2, 4 worst).
-> B8 (ARCH Persistence, lags 1–20) and B10 (GARCH Persistence) removed as redundant with A11/A12.
-> **B12**: Hill estimator on terminal prices S_T. Large variance across seeds — use the mean.
+> **Log-ret histogram**: Large variance (std > mean) driven by seeds 2/4 near-collapse.
+> **ACF \|r\|, ACF r²**: TimeGAN misses the ARCH signature — near-zero ACF vs Heston ≈ +0.05.
+> **Rolling vol histogram**: High MSE from vol-distribution mismatch across most seeds.
 
 ---
 

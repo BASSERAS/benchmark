@@ -64,32 +64,43 @@ matching the theoretical SDE diffusion coefficient and stabilising the kernel br
 | A14 | Pred Score MLP (TSTR) | 0.0582 ± 0.0002 | 0.0584 | 0.0579 | 0.0584 | 0.0581 | 0.0582 | 0.0565 ± 0.0022 |
 | A15 | Sigma Corr ↑          | 0.0046 ± 0.0019 | 0.0046 | 0.0045 | 0.0016 | 0.0048 | 0.0074 | 0.6135 ± 0.0019 |
 | A15 | Sigma RMSE            | 0.0955 ± 0.0001 | 0.0955 | 0.0955 | 0.0957 | 0.0954 | 0.0954 | 0.0653 ± 0.0002 |
-| A16 | Log-Return Std Error                       | 0.0030 ± 0.0000      | 0.0030  | 0.0030  | 0.0030  | 0.0030  | 0.0030  | — |
-| A17 | |r| q95 Error                              | 0.0063 ± 0.0000      | 0.0064  | 0.0063  | 0.0063  | 0.0063  | 0.0063  | — |
-| A18 | |r| q99 Error                              | 0.0098 ± 0.0000      | 0.0098  | 0.0098  | 0.0099  | 0.0098  | 0.0097  | — |
-| A19 | Kurtosis Ratio (target/model)              | 1.9890 ± 0.0182      | 1.9907  | 1.9978  | 1.9877  | 2.0121  | 1.9569  | — |
-| A20 | Sigma Mean Error                           | 0.0440 ± 0.0002      | 0.0442  | 0.0440  | 0.0441  | 0.0437  | 0.0437  | — |
-| A21 | Learned/Oracle Sigma Corr                  | 0.0046 ± 0.0019      | 0.0046  | 0.0045  | 0.0016  | 0.0048  | 0.0074  | — |
-| A22 | ACF |r| Lag-1 Error                        | 0.1437 ± 0.0012      | 0.1436  | 0.1419  | 0.1439  | 0.1436  | 0.1456  | — |
-| A23 | ACF r² Lag-1 Error                         | 0.1665 ± 0.0017      | 0.1674  | 0.1637  | 0.1659  | 0.1668  | 0.1688  | — |
-| A24 | RV Law Loss (W₁ on ann. RV)                | 2.1482 ± 0.0074      | 2.1559  | 2.1510  | 2.1552  | 2.1411  | 2.1380  | — |
+| A16 | Log-Return Std Error                       | 0.0030 ± 0.0000      | 0.0030  | 0.0030  | 0.0030  | 0.0030  | 0.0030  | 0.0000 |
+| A17 | \|r\| q95 Error                            | 0.0063 ± 0.0000      | 0.0064  | 0.0063  | 0.0063  | 0.0063  | 0.0063  | 0.0000 |
+| A18 | \|r\| q99 Error                            | 0.0098 ± 0.0000      | 0.0098  | 0.0098  | 0.0099  | 0.0098  | 0.0097  | 0.0000 |
+| A19 | Kurtosis Ratio (target/model)              | 1.9890 ± 0.0182      | 1.9907  | 1.9978  | 1.9877  | 2.0121  | 1.9569  | 1.0000 |
+| A20 | Sigma Mean Error                           | 0.0440 ± 0.0002      | 0.0442  | 0.0440  | 0.0441  | 0.0437  | 0.0437  | 0.0000 |
+| A21 | Learned/Oracle Sigma Corr ↑               | 0.0046 ± 0.0019      | 0.0046  | 0.0045  | 0.0016  | 0.0048  | 0.0074  | 0.6143 |
+| A22 | ACF \|r\| Lag-1 Error                      | 0.1437 ± 0.0012      | 0.1436  | 0.1419  | 0.1439  | 0.1436  | 0.1456  | 0.0000 |
+| A23 | ACF r² Lag-1 Error                         | 0.1665 ± 0.0017      | 0.1674  | 0.1637  | 0.1659  | 0.1668  | 0.1688  | 0.0000 |
+| A24 | RV Law Loss (W₁ on ann. RV)                | 2.1482 ± 0.0074      | 2.1559  | 2.1510  | 2.1552  | 2.1411  | 2.1380  | 0.0000 |
+| A25 | Mean Path RMSE                             | 0.7499 ± 0.1823      | 0.7951  | 0.5148  | 0.9253  | 0.5595  | 0.9545  | 0.0000 |
+| A26 | Cross-Sect. Vol Path RMSE                  | 3.2760 ± 0.0637      | 3.2044  | 3.2961  | 3.2960  | 3.2086  | 3.3751  | 0.0000 |
+| A27 | KS on Log-returns                          | 0.0534 ± 0.0004      | 0.0537  | 0.0530  | 0.0539  | 0.0530  | 0.0536  | 0.0000 |
+| A28 | Skewness Error                             | 0.0227 ± 0.0037      | 0.0196  | 0.0184  | 0.0217  | 0.0249  | 0.0287  | 0.0000 |
+| A29 | QQ RMSE (300-pt)                           | 0.0028 ± 0.0000      | 0.0028  | 0.0028  | 0.0028  | 0.0028  | 0.0028  | 0.0000 |
+| A30 | Tail QQ Error                              | 0.0062 ± 0.0000      | 0.0063  | 0.0062  | 0.0062  | 0.0062  | 0.0062  | 0.0000 |
+| A31 | Rolling Vol KS (window=5)                  | 0.3435 ± 0.0006      | 0.3444  | 0.3433  | 0.3440  | 0.3430  | 0.3426  | 0.0000 |
+| A32 | Vol-of-Vol Error                           | 0.0021 ± 0.0000      | 0.0021  | 0.0021  | 0.0021  | 0.0021  | 0.0021  | 0.0000 |
+| A33 | Terminal Price KS                          | 0.0921 ± 0.0051      | 0.0892  | 0.0938  | 0.0903  | 0.0863  | 0.1011  | 0.0000 |
+| A34 | Hill Tail Index Error                      | 9.499 ± 0.346        | 9.286   | 9.201   | 9.853   | 9.981   | 9.175   | 0.0000 |
 
-### B1–B12 — Stylized metrics
+### B — Curve-shape metrics (6 plots × 3 sub-metrics)
 
-| ID | Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
-|----|--------|-----------|--------|--------|--------|--------|--------|---------------|
-| B1  | Mean Path RMSE        | 0.7499 ± 0.1823 | 0.7951 | 0.5148 | 0.9253 | 0.5595 | 0.9545 | 0.1511 ± 0.0708 |
-| B2  | Cross-Sect. Vol RMSE  | 3.2760 ± 0.0637 | 3.2044 | 3.2961 | 3.2960 | 3.2086 | 3.3751 | 0.1355 ± 0.0735 |
-| B3  | KS on Log-returns     | 0.0534 ± 0.0004 | 0.0537 | 0.0530 | 0.0539 | 0.0530 | 0.0536 | 0.0018 ± 0.0009 |
-| B4  | Skewness Error        | 0.0227 ± 0.0037 | 0.0196 | 0.0184 | 0.0217 | 0.0249 | 0.0287 | 0.0060 ± 0.0048 |
-| B5  | QQ RMSE (300-pt)      | 0.0028 ± 0.0000 | 0.0028 | 0.0028 | 0.0028 | 0.0028 | 0.0028 | 0.0001 ± 0.0000 |
-| B6  | Tail QQ Error         | 0.0062 ± 0.0000 | 0.0063 | 0.0062 | 0.0062 | 0.0062 | 0.0062 | 0.0001 ± 0.0001 |
-| B7  | ACF lag-1 \|r\| Err   | 0.1449 ± 0.0012 | 0.1447 | 0.1431 | 0.1450 | 0.1448 | 0.1468 | 0.0018 ± 0.0016 |
-| B8  | ACF lag-1 r² Err      | 0.1678 ± 0.0017 | 0.1687 | 0.1650 | 0.1672 | 0.1681 | 0.1701 | 0.0017 ± 0.0014 |
-| B9  | Rolling Vol KS        | 0.3435 ± 0.0006 | 0.3444 | 0.3433 | 0.3440 | 0.3430 | 0.3426 | 0.0046 ± 0.0024 |
-| B10 | Vol-of-Vol Error      | 0.0021 ± 0.0000 | 0.0021 | 0.0021 | 0.0021 | 0.0021 | 0.0021 | 0.0000 ± 0.0000 |
-| B11 | Terminal Price KS     | 0.0921 ± 0.0051 | 0.0892 | 0.0938 | 0.0903 | 0.0863 | 0.1011 | 0.0145 ± 0.0043 |
-| B12 | Hill Tail Index Err   | 9.499 ± 0.346   | 9.286  | 9.201  | 9.853  | 9.981  | 9.175  | 0.499 ± 0.610   |
+Each cell = MSE between the real and generated **curve** (not a scalar).
+- **funct**: MSE(L\_real, L\_gen) between curve values
+- **der**: MSE of first finite difference — L\_der\[k\] = L\[k+1\] − L\[k\]
+- **sec\_der**: MSE of second finite difference — L\_sec\[k\] = L\_der\[k+1\] − L\_der\[k\]
+
+All values: mean ± std across 5 seeds. Perfect floor = 0 (row-shuffled real → identical curves). Full formulas: [`metrics/README.md`](../../../metrics/README.md).
+
+| Plot | funct | der | sec\_der |
+|------|-------|-----|----------|
+| Log-return histogram | 4.916 ± 0.065 | 0.337 ± 0.007 | 0.061 ± 0.009 |
+| QQ plot              | 9.0e-6 ± 0 | ~0 | ~0 |
+| ACF \|r\|            | 0.002424 ± 0.000033 | 1.3e-3 ± 1.3e-5 | 8.3e-4 ± 1.0e-5 |
+| ACF r²               | 0.002538 ± 0.000042 | 1.6e-3 ± 2.9e-5 | 1.0e-3 ± 2.4e-5 |
+| Rolling vol hist.    | 591.3 ± 2.6 | 22.91 ± 0.12 | 2.275 ± 0.069 |
+| Tail survival        | 0.005737 ± 0.000066 | 7.0e-6 ± 0 | ~0 |
 
 ---
 
@@ -169,27 +180,21 @@ variance of R̃ matches the theoretical SDE variance Δt, which stabilises the k
 
 ---
 
-## Stylised Metrics B1–B12 — mean ± std across 5 seeds
+## B — Curve-shape metrics: plot mapping
 
-Extracted directly from the 8 diagnostic plot panels (return distribution, QQ, ACF,
-volatility clustering, terminal distribution, tail survival).
-Each metric quantifies how well SBTS reproduces a known stylized fact (Cont 2001).
-B8 (ARCH Persistence) and B10 (GARCH Persistence) have been removed as redundant
-with A11 and A12 respectively.
+Each B metric measures the shape of a diagnostic curve, not a single scalar statistic.
+For each of the 6 plots, three sub-metrics are computed:
 
-> Metric-to-plot mapping (matches `metrics/plot_diagnostics.py` panel order):
+| Plot | Key prefix | What the curve represents |
+|------|-----------|--------------------------|
+| Log-return histogram | `B_log_ret_hist_*` | Density of log-returns r=log(S_{t+1}/S_t) over shared bins |
+| QQ plot              | `B_qq_plot_*`      | Quantile function at 100 uniform percentile levels |
+| ACF \|r\| (lags 1–20) | `B_acf_abs_r_*`  | Mean per-path ACF of \|r\| at each lag |
+| ACF r² (lags 1–20)  | `B_acf_sq_r_*`     | Mean per-path ACF of r² at each lag |
+| Rolling vol hist.   | `B_roll_vol_hist_*` | Density of rolling-5 vol over shared bins |
+| Tail survival       | `B_tail_surv_*`    | P(\|r\|>x) evaluated at thresholds of real \|r\| |
 
-| Plots | B metric | What you see |
-|-------|----------|-------------|
-| 1 + 2 (sample paths) | B1 Mean Path RMSE, B2 Cross-Sect. Vol RMSE | Systematic drift + spread of the fan |
-| 3 (log-return histogram) | B3 KS Stat, B4 Skewness Error | Shape, centre, asymmetry of density |
-| 4 (QQ plot) | B5 QQ RMSE (300-pt), B6 Tail QQ Error | Diagonal alignment; 5th/95th deviation |
-| 5 (ACF \|r\|) | B7 ACF lag-1 \|r\| error | Volatility clustering: lag-1 bar height |
-| 6 (ACF r²) | B8 ACF lag-1 r² error | GARCH effect: lag-1 bar height |
-| 7 (rolling vol hist.) | B9 Rolling Vol KS, B10 Vol-of-Vol Error | Width and spread of the vol histogram |
-| 8 (tail survival) | B11 Terminal Price KS, B12 Tail Index Error (Hill) | Log-log alignment + slope (tail heaviness) |
-
-> Formulas for all B metrics: [`metrics/README.md`](../../../metrics/README.md#b112--stylized-metrics--one-scalar-per-diagnostic-plot-panel)
+> Formulas: [`metrics/README.md`](../../../metrics/README.md)
 
 ---
 
