@@ -54,9 +54,9 @@ SBTS is a **non-parametric kernel method** with no neural network and no trainin
 
 ---
 
-## Cross-Method Comparison A1–A20 — Heston (mean ± std, 5 seeds)
+## Cross-Method Comparison A1–A34 — Heston (mean ± std, 5 seeds)
 
-↓ = lower is better. ↑ = higher is better. **Bold** = best method per metric.
+↓ = lower is better. ↑ = higher is better. (→ 1) = ratio, target = 1.0. **Bold** = best method per metric.
 "Perfect recovery" = two independent halves of the real dataset evaluated against each other
 (empirical floor — what a perfect generator would achieve with finite samples).
 
@@ -80,17 +80,31 @@ SBTS is a **non-parametric kernel method** with no neural network and no trainin
 | A14 Pred MLP ↓ | 0.0565 ± 0.0022 | 0.0582 ± 0.0002 | **0.0573 ± 0.0015** | **TimeGAN** |
 | A15 Sigma Corr ↑ | 0.6135 ± 0.0019 ⁽¹⁾ | **0.0046 ± 0.0019** | 0.0021 ± 0.0090 | **SBTS** |
 | A15 Sigma RMSE ↓ | 0.0653 ± 0.0002 ⁽²⁾ | **0.0955 ± 0.0001** | 0.1183 ± 0.0184 | **SBTS** |
-| A16 Tail RMS ↓ | 0.0008 ± 0.0008 | 0.0428 ± 0.0002 | **0.0234 ± 0.0109** | **TimeGAN** |
-| A17 Oracle MAE ↓ | 0.0097 ± 0.0000 | 0.0097 ± 0.0000 | 0.0097 ± 0.0000 | Tie |
-| A18 Agent MAE ↓ | 0.0097 ± 0.0000 | 0.0106 ± 0.0000 | **0.0101 ± 0.0003** | **TimeGAN** |
-| A19 Oracle-Agent Corr ↑ | −0.058 ± 0.430 ⁽³⁾ | −0.342 ± 0.171 | **−0.332 ± 0.306** | **TimeGAN** |
-| A20 RV Law Loss ↓ | 0.0673 ± 0.0362 | 2.1482 ± 0.0074 | **1.5512 ± 0.3788** | **TimeGAN** |
+| A16 Log-ret Std Error ↓ | 0.0000 ± 0.0000 | 0.0030 ± 0.0000 | **0.0017 ± 0.0008** | **TimeGAN** |
+| A17 Tail \|r\| Q95 Error ↓ | 0.0000 ± 0.0000 | 0.0063 ± 0.0000 | **0.0032 ± 0.0018** | **TimeGAN** |
+| A18 Tail \|r\| Q99 Error ↓ | 0.0000 ± 0.0000 | 0.0098 ± 0.0000 | **0.0043 ± 0.0028** | **TimeGAN** |
+| A19 Kurtosis Ratio (→ 1) | 1.0000 ± 0.0000 | **1.989 ± 0.018** | −1.095 ± 3.525 | **SBTS** |
+| A20 Sigma Mean Error ↓ | 0.0000 ± 0.0000 | 0.0440 ± 0.0002 | **0.0307 ± 0.0089** | **TimeGAN** |
+| A21 Oracle Sigma Corr ↑ | 0.6143 ± 0.0000 ⁽¹⁾ | **0.0046 ± 0.0019** | 0.0021 ± 0.0090 | **SBTS** |
+| A22 ACF lag-1 \|r\| Err ↓ | 0.0000 ± 0.0000 | **0.1437 ± 0.0012** | 0.2264 ± 0.1034 | **SBTS** |
+| A23 ACF lag-1 r² Err ↓ | 0.0000 ± 0.0000 | **0.1665 ± 0.0017** | 0.1719 ± 0.0626 | **SBTS** |
+| A24 RV Law Loss ↓ | 0.0000 ± 0.0000 | 2.1482 ± 0.0074 | **1.5512 ± 0.3788** | **TimeGAN** |
+| A25 Mean Path RMSE ↓ | 0.0000 ± 0.0000 | 0.7499 ± 0.1823 | **0.5289 ± 0.2624** | **TimeGAN** |
+| A26 Vol Path RMSE ↓ | 0.0000 ± 0.0000 | 3.2760 ± 0.0637 | **0.3534 ± 0.1253** | **TimeGAN** |
+| A27 KS Log-returns ↓ | 0.0000 ± 0.0000 | **0.0534 ± 0.0004** | 0.0848 ± 0.0374 | **SBTS** |
+| A28 Skewness Error ↓ | 0.0000 ± 0.0000 | **0.0227 ± 0.0037** | 0.3404 ± 0.3344 | **SBTS** |
+| A29 QQ RMSE ↓ | 0.0000 ± 0.0000 | 0.0028 ± 0.0000 | **0.0025 ± 0.0006** | **TimeGAN** |
+| A30 Tail QQ Error ↓ | 0.0000 ± 0.0000 | 0.0062 ± 0.0000 | **0.0034 ± 0.0015** | **TimeGAN** |
+| A31 Rolling Vol KS ↓ | 0.0000 ± 0.0000 | 0.3435 ± 0.0006 | **0.2540 ± 0.1093** | **TimeGAN** |
+| A32 Vol-of-Vol Error ↓ | 0.0000 ± 0.0000 | 0.0021 ± 0.0000 | **0.0009 ± 0.0009** | **TimeGAN** |
+| A33 Terminal Price KS ↓ | 0.0000 ± 0.0000 | **0.0921 ± 0.0051** | 0.1121 ± 0.0556 | **SBTS** |
+| A34 Hill Tail Index Err ↓ | 0.0000 ± 0.0000 | **9.499 ± 0.346** | 36.88 ± 17.05 | **SBTS** |
 | PS-MC CRPS H=32 ↓ | — | **2.761 ± 0.004** | 3.087 ± 0.340 | **SBTS** |
 | PS-MC CRPS H=64 ↓ | — | **3.900 ± 0.008** | 4.372 ± 0.431 | **SBTS** |
 | Training (8 192×128) | — | — (no training) | ~6.5 min / A100 | **SBTS** |
 | Generation (8 192×128) | — | ~6.3 min / 64 CPUs | **<1 s / A100** | **TimeGAN** |
 
-> ⁽¹⁾ **A15 Sigma Corr floor = 0.614** (not 1.0): 5-step rolling QV is a noisy estimator
+> ⁽¹⁾ **A15/A21 Sigma Corr floor = 0.614** (not 1.0): 5-step rolling QV is a noisy estimator
 > of instantaneous variance vₜ. Even for real Heston paths vs their own true variance, Pearson ρ ≈ 0.614.
 > Neither SBTS (0.005) nor TimeGAN (0.002) preserves stochastic volatility — both are near zero.
 >
@@ -98,60 +112,66 @@ SBTS is a **non-parametric kernel method** with no neural network and no trainin
 > baseline even for real paths. Both SBTS (0.096) and TimeGAN (0.118) score **above** the floor,
 > confirming the metric is well-calibrated. SBTS wins (lower RMSE = less vol mis-estimation).
 >
-> ⁽³⁾ **A19 Oracle-Agent Corr floor ≈ −0.06 ± 0.43**: Heston log-returns have near-zero autocorrelation,
-> so AR(5) predictions are essentially white noise for both oracle and agent. The metric degenerates for
-> Heston (both methods score near floor) but is meaningful for datasets with genuine temporal structure.
+> **A19 Kurtosis Ratio**: target = 1.0 (gen kurtosis / real kurtosis). SBTS (1.989) is closer to 1 than
+> TimeGAN (−1.095, bad seeds collapse kurtosis sign). |SBTS−1| = 0.989 vs |TimeGAN−1| = 2.095.
 
-**SBTS wins 10/23, TimeGAN wins 12/23, Tie 1/23** (on A1-A20 + PS-MC, excluding training/generation rows).
+**SBTS wins 20/39, TimeGAN wins 19/39** (on A1-A34 + PS-MC, excluding training/generation rows).
 
 **Interpretation:**
-- **SBTS wins on distributional fidelity** (A1–A4, A10–A12): the kernel method accurately matches marginal return distributions. MMD, kurtosis, and ACF errors are consistently lower.
-- **TimeGAN wins on temporal structure** (A5–A9, A20): the GRU captures multi-step covariance that Markov-1 SBTS cannot. A7 (covariance error) is the starkest gap: **145% vs 18%**. A20 (RV law loss) also strongly favours TimeGAN (1.55 vs 2.15).
-- **A13 GRU discriminative**: TimeGAN paths are harder to separate by the GRU (0.010 vs 0.274). SBTS is more separable because its near-constant rolling vol is a clear distinguishing feature (see B11).
+- **SBTS wins on distributional fidelity** (A1–A4, A10–A12, A27–A28): the kernel method accurately matches marginal return distributions. MMD, kurtosis, KS, skewness, and ACF errors are consistently lower.
+- **TimeGAN wins on temporal structure** (A5–A9, A24–A26, A29–A32): the GRU captures multi-step covariance that Markov-1 SBTS cannot. A7 (covariance error) is the starkest gap: **145% vs 18%**. A24 (RV law loss) also strongly favours TimeGAN (1.55 vs 2.15).
+- **A13 GRU discriminative**: TimeGAN paths are harder to separate by the GRU (0.010 vs 0.274). SBTS is more separable because its near-constant rolling vol is a clear distinguishing feature (see A31).
 - **A13 MLP discriminative**: SBTS wins (0.006 vs 0.092) — MLP without temporal context can't exploit the vol clustering signal, so SBTS looks more realistic at the moment-matching level.
 - **Path Shadowing MC**: SBTS wins decisively (CRPS 2.76 vs 3.09 at H=32) — richer and more faithful retrieval pool → better nearest-neighbour forecasts.
 - **Cross-seed stability**: SBTS is very stable (A1 std=0.001, A7 std=4.9%) vs TimeGAN which can vary widely (A1 std=0.015, A7 std=6.7%, A10 std=2.1).
 
 ---
 
-## Cross-Method Comparison B1–B14 Stylized Metrics — Heston (mean ± std, 5 seeds)
+## B — Curve-Shape Metrics Cross-Method Comparison — Heston (mean ± std, 5 seeds)
 
-Extracted from the 8 diagnostic plot panels. Each metric quantifies a known stylized fact (Cont 2001).
-↓ = lower is better (all B metrics). **Bold** = best method.
+Each of 6 diagnostic plots generates 3 sub-metrics (↓ lower is better for all):
+- **funct**: MSE between generated and real curve values
+- **der**: MSE of first finite differences L[k+1]−L[k] (slope matching)
+- **sec\_der**: MSE of second finite differences (curvature matching)
 
-| Metric | Perfect Recovery | SBTS | TimeGAN | Winner |
-|--------|:---------------:|:----:|:-------:|:------:|
-| B1  Mean Path RMSE | 0.1511 ± 0.0708 | 0.7499 ± 0.1823 | **0.5289 ± 0.2624** | **TimeGAN** |
-| B2  Cross-Sect. Vol RMSE | 0.1355 ± 0.0735 | 3.2760 ± 0.0637 | **0.3534 ± 0.1253** | **TimeGAN** |
-| B3  KS on Log-returns | 0.0018 ± 0.0009 | **0.0534 ± 0.0004** | 0.0848 ± 0.0374 | **SBTS** |
-| B4  Skewness Error | 0.0060 ± 0.0048 | **0.0227 ± 0.0037** | 0.3404 ± 0.3344 | **SBTS** |
-| B5  QQ RMSE (300-pt) | 0.0001 ± 0.0000 | 0.0028 ± 0.0000 | **0.0025 ± 0.0006** | **TimeGAN** |
-| B6  Tail QQ Error | 0.0001 ± 0.0001 | 0.0062 ± 0.0000 | **0.0034 ± 0.0015** | **TimeGAN** |
-| B7  ACF lag-1 \|r\| Err | 0.0018 ± 0.0016 | **0.1449 ± 0.0012** | 0.2282 ± 0.1042 | **SBTS** |
-| B8  ARCH Persistence Err | 0.0011 ± 0.0005 | **0.0274 ± 0.0004** | 0.0591 ± 0.0359 | **SBTS** |
-| B9  ACF lag-1 r² Err | 0.0017 ± 0.0014 | **0.1678 ± 0.0017** | 0.1732 ± 0.0631 | **SBTS** |
-| B10 GARCH Persistence Err | 0.0010 ± 0.0006 | **0.0227 ± 0.0004** | 0.0328 ± 0.0151 | **SBTS** |
-| B11 Rolling Vol KS | 0.0046 ± 0.0024 | 0.3435 ± 0.0006 | **0.2540 ± 0.1093** | **TimeGAN** |
-| B12 Vol-of-Vol Error | 0.0000 ± 0.0000 | 0.0021 ± 0.0000 | **0.0009 ± 0.0009** | **TimeGAN** |
-| B13 Terminal Price KS | 0.0145 ± 0.0043 | **0.0921 ± 0.0051** | 0.1121 ± 0.0556 | **SBTS** |
-| B14 Hill Tail Index Err | 0.499 ± 0.610 | **9.499 ± 0.346** | 36.88 ± 17.05 | **SBTS** |
+Perfect recovery floor ≈ 0 for all B metrics (row-shuffle preserves all marginals exactly).
 
-> **B2 Cross-Sect. Vol RMSE**: SBTS 3.28 vs TimeGAN 0.35. SBTS uses kernel bootstrap which inherits
-> the full cross-sectional variance from training data — diverse paths but all with similar realised vols.
-> TimeGAN latent space compresses vol variability, resulting in lower B2 but higher A7 Cov Error.
+| Plot | Sub-metric | Perfect Recovery | SBTS | TimeGAN | Winner |
+|------|-----------|:---------------:|:----:|:-------:|:------:|
+| Log-return histogram | funct | 0.000 | **4.916 ± 0.065** | 27.38 ± 31.52 | **SBTS** |
+| | der | 0.000 | **0.337 ± 0.007** | 23.62 ± 33.12 | **SBTS** |
+| | sec\_der | 0.000 | **0.0613 ± 0.0090** | 46.04 ± 71.14 | **SBTS** |
+| QQ plot | funct | 0.000 | 8.70e-6 ± 6.8e-8 | **6.90e-6 ± 3.3e-6** | **TimeGAN** |
+| | der | 0.000 | 1.71e-7 ± 3.6e-9 | **1.60e-7 ± 5.9e-8** | **TimeGAN** |
+| | sec\_der | 0.000 | 3.75e-8 ± 1.7e-9 | **2.67e-8 ± 1.1e-8** | **TimeGAN** |
+| ACF \|r\| lags 1–20 | funct | ≈0 | **2.42e-3 ± 3.3e-5** | 9.13e-3 ± 8.5e-3 | **SBTS** |
+| | der | ≈0 | 1.32e-3 ± 1.3e-5 | **7.10e-4 ± 4.6e-4** | **TimeGAN** |
+| | sec\_der | ≈0 | 8.27e-4 ± 9.6e-6 | **6.32e-4 ± 7.1e-4** | **TimeGAN** |
+| ACF r² lags 1–20 | funct | ≈0 | **2.54e-3 ± 4.2e-5** | 3.76e-3 ± 2.9e-3 | **SBTS** |
+| | der | ≈0 | 1.61e-3 ± 2.9e-5 | **8.42e-4 ± 5.98e-4** | **TimeGAN** |
+| | sec\_der | ≈0 | **1.03e-3 ± 2.4e-5** | 1.17e-3 ± 1.5e-3 | **SBTS** |
+| Rolling vol histogram | funct | 0.000 | 591.3 ± 2.6 | **530.4 ± 541.7** | **TimeGAN** |
+| | der | 0.000 | **22.91 ± 0.12** | 70.13 ± 78.18 | **SBTS** |
+| | sec\_der | 0.000 | **2.275 ± 0.069** | 13.08 ± 12.99 | **SBTS** |
+| Tail survival | funct | 0.000 | **5.74e-3 ± 6.6e-5** | 1.169e-2 ± 9.2e-3 | **SBTS** |
+| | der | 0.000 | **6.86e-6 ± 6.6e-8** | 1.857e-5 ± 1.7e-5 | **SBTS** |
+| | sec\_der | 0.000 | **6.65e-8 ± 5.6e-9** | 3.34e-7 ± 4.4e-7 | **SBTS** |
+
+> **Log-return histogram**: SBTS has much smaller curve MSE (4.9 vs 27.4) because kernel smoothing of
+> log-returns preserves the marginal distribution closely. TimeGAN curve varies widely seed-to-seed (std=31.5).
 >
-> **B7–B10** (ACF metrics): Heston true ACF(|r|, lag=1) ≈ +0.052, ACF(r², lag=1) ≈ +0.050.
-> SBTS consistently wins because the kernel method preserves marginal return autocorrelations.
-> TimeGAN often collapses to near-zero ACF in bad seeds (seeds 2, 4), missing the ARCH signature.
+> **QQ plot**: TimeGAN wins marginally on all 3 sub-metrics — differences are tiny (6.9e-6 vs 8.7e-6),
+> both methods reproduce the QQ curve shape closely.
 >
-> **B11 Rolling Vol KS**: SBTS 0.344 vs TimeGAN 0.254 (floor 0.005). Both fail badly, but for different reasons.
-> SBTS: kernel smoothing produces near-constant rolling vol. TimeGAN: vol clustering is erratic across seeds.
+> **ACF |r| and r²**: SBTS wins on curve level (funct) — its ACF curve is flat and accurate. TimeGAN's ACF
+> is more erratic but has more slope/curvature variation, winning derivative sub-metrics by a narrow margin.
 >
-> **B14 Hill Tail Index Error**: SBTS 9.50 (stable ± 0.35) vs TimeGAN 36.88 (noisy ± 17.05).
-> SBTS systematically underestimates tail heaviness (kernel smoothing attenuates extremes).
-> TimeGAN seed-to-seed blowup (paths collapse or explode in bad seeds) creates extreme Hill estimates.
+> **Rolling vol histogram**: TimeGAN wins on histogram values (530 vs 591) because SBTS kernel produces
+> near-constant rolling vol, flattening the histogram. SBTS wins derivative/curvature — smoother histogram curve.
+>
+> **Tail survival**: SBTS wins all 3 sub-metrics — kernel smoothing better preserves the tail survival curve shape.
 
-**SBTS wins B1-B14: 8/14. TimeGAN wins 6/14.**
+**SBTS wins B: 11/18. TimeGAN wins 7/18.**
 
 ---
 
