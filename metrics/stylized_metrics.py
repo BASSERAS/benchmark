@@ -267,8 +267,10 @@ def compute_curve_metrics(
     out: Dict[str, float] = {}
 
     # -- Plot 1: Log-return histogram --
-    combined = np.concatenate([r_r, r_g])
-    edges = np.linspace(combined.min(), combined.max(), n_bins + 1)
+    # Bins fixed from real data (0.5–99.5th percentile) so L_real is the same
+    # reference curve for every seed regardless of generated distribution width.
+    lo_r, hi_r = np.percentile(r_r, 0.5), np.percentile(r_r, 99.5)
+    edges = np.linspace(lo_r, hi_r, n_bins + 1)
     density_r, _ = np.histogram(r_r, bins=edges, density=True)
     density_g, _ = np.histogram(r_g, bins=edges, density=True)
     f, d, s = _curve_mse(density_r, density_g)
@@ -303,10 +305,11 @@ def compute_curve_metrics(
     out["B_acf_sq_r_sec_der"] = s
 
     # -- Plot 5: Rolling vol histogram --
+    # Bins fixed from real data so L_real is the same reference curve every seed.
     rv_r = _rolling_vol(S_real, window=5).ravel()
     rv_g = _rolling_vol(S_gen,  window=5).ravel()
-    combined_rv = np.concatenate([rv_r, rv_g])
-    edges_rv = np.linspace(combined_rv.min(), combined_rv.max(), n_bins + 1)
+    lo_rv, hi_rv = np.percentile(rv_r, 0.5), np.percentile(rv_r, 99.5)
+    edges_rv = np.linspace(lo_rv, hi_rv, n_bins + 1)
     dens_rv_r, _ = np.histogram(rv_r, bins=edges_rv, density=True)
     dens_rv_g, _ = np.histogram(rv_g, bins=edges_rv, density=True)
     f, d, s = _curve_mse(dens_rv_r, dens_rv_g)

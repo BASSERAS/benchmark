@@ -369,7 +369,14 @@ python metrics/perfect_recovery.py --dataset Heston
 # Output: results/Heston/perfect_recovery.json
 ```
 
-Add the resulting numbers as a "Perfect Recovery" column in `results/README.md` and the global comparison table. This makes the metric scale interpretable — any method should aim to approach these values.
+Perfect-recovery floors are **method-independent** — they come only from the real dataset, never from a
+generative model's output — so compute them once per dataset and document them once per method, not in
+`results/README.md`. Add a dedicated `## Perfect Recovery Floor` section to **each** `methods/<Method>/README.md`
+(see `methods/TimeGAN/README.md#perfect-recovery-floor` for the template: intro paragraph + a
+category-sorted `ID | Metric | Category | Perfect Floor` table). The numbers in that table must be identical
+across every method's README, since they depend only on the dataset. Do **not** add a "Perfect Recovery"
+column back into `results/README.md`'s cross-method tables — link to the methods/ sections instead. This
+makes the metric scale interpretable — any method should aim to approach these values.
 
 ---
 
@@ -516,33 +523,15 @@ See [`code/README.md`](code/README.md) for source, paper citation, and list of f
 
 #### Section 2 — Metrics A1–A34 + B
 
-```markdown
-## Metrics A1–A34 + B — mean ± std across 5 seeds
-
-| ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
-|----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------------|
-| A1 | Path MMD² | Distribution | ↓ | X.XXXX ± X.XXXX | ... | 0.0018 |
-...
-| A24 | RV Law Loss | Distribution | ↓ | ... | 0 |
-| A25 | Mean Path RMSE | Distribution | ↓ | ... | 0 |
-| A26 | Cross-Sect. Vol Path RMSE | Volatility | ↓ | ... | 0 |
-| A27 | KS on Log-returns | Distribution | ↓ | ... | 0 |
-| A28 | Skewness Error | Statistics | ↓ | ... | 0 |
-| A29 | QQ RMSE (300-pt) | Distribution | ↓ | ... | 0 |
-| A30 | Tail QQ Error | Fat-tail | ↓ | ... | 0 |
-| A31 | Rolling Vol KS (window=5) | Volatility | ↓ | ... | 0 |
-| A32 | Vol-of-Vol Error | Volatility | ↓ | ... | 0 |
-| A33 | Terminal Price KS | Distribution | ↓ | ... | 0 |
-| A34 | Hill Tail Index Error | Fat-tail | ↓ | ... | 0 |
-```
+Rows MUST be grouped by category in this exact order (a `| | **— <Category> —** | | ... |` separator
+row before each group, no exceptions): **Fat Tail → Distribution → Adversarial → Predictive → Temporal
+→ Vol → Heston Spec**. Do not sort by ID number. See §15.1 Section 2 for the full verbatim table
+skeleton with every category populated.
 
 Rules:
-- 4 decimal places everywhere
-- Bold the Perfect column for A13 (perfect = **0**), A15 Corr (perfect = **1**), A21 (perfect = **1**)
-- Use `1.0` (not bold) for A19 Perfect column
-- Use `baseline` (not bold) for A14 Perfect column
-
-Include footnotes for A13, A14, A15, A16–A34. See §15.1 for the exact verbatim block.
+- 4 decimal places for values < 1; fewer for larger magnitudes (match the style already used in
+  `methods/TimeGAN/README.md` — plain numbers in the Perfect floor column, no bold, no "baseline" text)
+- Include footnotes for A13, A14, A15, A16–A34. See §15.1 Section 2 for the exact verbatim footnote block.
 
 #### Section 3 — B Curve-Shape Metrics
 
@@ -563,7 +552,12 @@ Include footnotes for A13, A14, A15, A16–A34. See §15.1 for the exact verbati
 | Tail survival        | ... | ... | ~0  |
 ```
 
-#### Section 4 — Stylised Facts Diagnostic
+#### Section 4 — Perfect Recovery Floor
+
+Required. See §15.1 Section 4 for the exact verbatim block and the rule that these numbers must be
+copied verbatim from an existing method's README, never recomputed per method.
+
+#### Section 5 — Stylised Facts Diagnostic
 
 ```markdown
 ## Stylised Facts Diagnostic (Heston vs <Method>, seed 0)
@@ -574,7 +568,7 @@ ACF of squared returns, rolling vol histogram (window=5), tail survival (log-log
 ![Heston Diagnostics](../../results/Heston/<Method>/plots/heston_diagnostics.png)
 ```
 
-#### Section 5 — Training Loss
+#### Section 6 — Training Loss
 
 ```markdown
 ## <Method> Training Loss (5 seeds)
@@ -584,7 +578,7 @@ ACF of squared returns, rolling vol histogram (window=5), tail survival (log-log
 ![<Method> Training Loss](losses/loss_convergence.png)
 ```
 
-#### Section 6 — A13
+#### Section 7 — A13
 
 ```markdown
 ## A13 — Discriminative Classifier Training Loss
@@ -595,7 +589,7 @@ A value near ln(2) ≈ 0.693 means the classifier cannot distinguish real from f
 ![Discriminative Classifier Loss](../../results/Heston/<Method>/plots/disc_classifier_loss.png)
 ```
 
-#### Section 7 — A14
+#### Section 8 — A14
 
 ```markdown
 ## A14 — Predictive Score Training Loss (TSTR)
@@ -605,7 +599,7 @@ MAE loss during GRU and MLP predictor training on *synthetic* data (5 000 steps,
 ![Predictive Score Loss](../../results/Heston/<Method>/plots/pred_score_loss.png)
 ```
 
-#### Section 8 — Path Shadowing MC
+#### Section 9 — Path Shadowing MC
 
 ```markdown
 ## Path Shadowing MC (arXiv:2308.01486)
@@ -634,11 +628,11 @@ Two variants: **Uniform** (flat 1/K) and **Gaussian** (η = η̃·‖h(x̃)‖, 
 Full analysis: [`results/Heston/<Method>/path_shadowing/README.md`](../../results/Heston/<Method>/path_shadowing/README.md)
 ```
 
-#### Section 9 — File layout
+#### Section 10 — File layout
 
 Show the exact folder tree of `methods/<Method>/` (fill in actual file names).
 
-#### Section 10 — Reproduce
+#### Section 11 — Reproduce
 
 ```markdown
 ## Reproduce
@@ -795,14 +789,18 @@ PATH SHADOWING
   [ ] CRPS_h32 < 3.732 for at least 4/5 seeds (beats naive RW)
 
 DOCUMENTATION
-  [ ] methods/<Method>/README.md  — all 9 sections present, no placeholder text
+  [ ] methods/<Method>/README.md  — all 11 sections present (§8), including "## Perfect Recovery Floor"
+       (Section 4), no placeholder text
   [ ] methods/<Method>/code/README.md  — paper, variant, fixes, architecture, hyperparams
   [ ] results/Heston/<Method>/README.md  — metrics table, per-seed breakdown, observations
   [ ] results/Heston/<Method>/path_shadowing/README.md  — method detail, results, figures
 
 PERFECT RECOVERY BASELINE
   [ ] results/Heston/perfect_recovery.json — run: python metrics/perfect_recovery.py --dataset Heston
-  [ ] results/README.md — "Perfect Recovery" column filled (no *(pending)* remaining)
+  [ ] methods/<Method>/README.md — "## Perfect Recovery Floor" section present (category-sorted table,
+       identical numbers to every other method's README — floors are dataset-derived, not method-derived)
+  [ ] results/README.md — NOT modified for this: no "Perfect Recovery" column in the cross-method tables,
+       only a link to methods/<Method>/README.md#perfect-recovery-floor
 
 GITHUB
   [ ] All files committed with correct message format
@@ -889,11 +887,25 @@ Follow it exactly when adding a new method. Do NOT deviate from section titles o
 
 > All metrics use log-returns r_t = log(S_{t+1}/S_t) unless noted. A9 uses price increments ΔS_t.
 
+Rows MUST be grouped by category, in this exact order, with a `| | **— <Category> —** | | ... |`
+separator row before each group: **Fat Tail → Distribution → Adversarial → Predictive → Temporal → Vol
+→ Heston Spec**. This ordering is mandatory across every A1–A34 table in the repo (methods/, results/,
+and root README.md) — do not sort by ID number.
+
 | ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------------|
+| | **— Fat Tail —** | | | | | | | | | |
+| A10 | Kurtosis Error | Fat Tail | ↓ | X.XXXX ± X.XXXX | ... | 0.017 |
+| A17 | \|r\| q95 Error | Fat Tail | ↓ | ... | 0.0000 |
+| A18 | \|r\| q99 Error | Fat Tail | ↓ | ... | 0.0000 |
+| A30 | Tail QQ Error | Fat Tail | ↓ | ... | 0.0000 |
+| A34 | Hill Tail Index Error | Fat Tail | ↓ | ... | 0.0000 |
+| | **— Distribution —** | | | | | | | | | |
 | A1  | Path MMD²             | Distribution  | ↓ | X.XXXX ± X.XXXX | ... | 0.0018 |
 ...
-| A34 | Hill Tail Index Error | Fat-tail      | ↓ | ... | 0.0000 |
+| | **— Heston Spec —** | | | | | | | | | |
+| A15 | Sigma Corr | Heston Spec | ↑ | ... | 0.614 |
+...
 
 > **Convention:** ↓ lower is better; ↑ higher is better; — no monotone direction. A19 perfect = 1.0.
 > **A11–A12**: ACF on log-returns at lags L = {1, 2, 5, 10}. ↓
@@ -932,6 +944,33 @@ Follow it exactly when adding a new method. Do NOT deviate from section titles o
 | Tail survival        | X.XXXXX ± X.XXXXX | X.Xe-X | ~0 |
 ```
 
+#### Section 4 — Perfect Recovery Floor
+```markdown
+## Perfect Recovery Floor
+
+Row-shuffling the real dataset leaves all marginal distributions identical (each Heston path is i.i.d.),
+so B-metric floors are exactly 0 for all 6 plots. A-metric floors are non-zero where the metric depends
+on path-level structure (covariance, MMD path kernel, SWD path distance) or on finite-sample noise.
+
+These floors are computed **once, directly from the real Heston dataset** (two independent row-shuffled
+halves evaluated against each other) — they do not depend on this method in any way, which is why the
+numbers below must be identical to every other method's `## Perfect Recovery Floor` table.
+
+| ID | Metric | Category | Perfect Floor |
+|----|--------|----------|--------------|
+| | **— Fat Tail —** | | |
+| A10 | Kurtosis Error | Fat Tail | 0.017 |
+...
+| | **— Heston Spec —** | | |
+| A21 | Oracle Sigma Corr ↑ | Heston Spec | 0.614 |
+```
+
+This section is REQUIRED for every method README. Copy the numbers verbatim from an existing method's
+`## Perfect Recovery Floor` table (e.g. `methods/TimeGAN/README.md`) — never recompute per method, since
+the floor is dataset-derived, not method-derived. If it doesn't exist yet for the dataset, generate it
+once with `python metrics/compute_perfect_recovery.py --dataset Heston` (§5.4) and add the section to
+every existing method README at the same time.
+
 ---
 
 ### 15.2 Results README (`results/Heston/<Method>/README.md`) — Required Sections
@@ -943,7 +982,10 @@ Follow it exactly when adding a new method. Do NOT deviate from section titles o
 2. **What we generate** (if applicable) — SDE, scaling steps, pipeline
 
 3. **Results (mean ± std across 5 seeds)**
-   - Subsection **A1–A34 Core metrics**: full table with columns `ID | Metric | Mean ± Std | Seed 0..4 | Perfect floor`
+   - Subsection **A1–A34 Core metrics**: full table with columns `ID | Metric | Mean ± Std | Seed 0..4`
+     — no `Perfect floor` column here (perfect-recovery floors live only in `methods/<Method>/README.md`,
+     §15.1 Section 4 — this file just links to it). Rows grouped by category in the mandatory order:
+     **Fat Tail → Distribution → Adversarial → Predictive → Temporal → Vol → Heston Spec** (see §15.1).
    - Subsection **B Curve-Shape Metrics**: 6-row × 3-column table (funct / der / sec\_der)
    - Footnotes for A13, A14, A15, A16–A34
 

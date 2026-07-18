@@ -11,85 +11,159 @@ See [`code/README.md`](code/README.md) for source, original paper, and implement
 
 ---
 
-## Metrics A1–A20 — mean ± std across 5 seeds
+## Metrics A1–A34 + B — mean ± std across 5 seeds
+
+> All metrics on **log-returns** $r_t = \log(S_{t+1}/S_t)$ unless noted. A9 uses price increments $\Delta S_t$; A11/A12/A16–A34 use log-returns.
 
 | ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------------|
-| A1 | Path MMD² | Distribution | ↓ | 0.0112 ± 0.0011 | 0.0129 | 0.0120 | 0.0104 | 0.0100 | 0.0105 | 0.0018 ± 0.0002 |
-| A2 | Terminal MMD² | Distribution | ↓ | 0.0102 ± 0.0014 | 0.0113 | 0.0097 | 0.0085 | 0.0092 | 0.0124 | 0.0016 ± 0.0002 |
-| A3 | Increment MMD² | Distribution | ↓ | 0.0069 ± 0.0005 | 0.0067 | 0.0066 | 0.0069 | 0.0063 | 0.0077 | 0.0008 ± 0.0000 |
-| A4 | Volatility MMD | Distribution | ↓ | 0.2964 ± 0.0126 | 0.2970 | 0.2873 | 0.2968 | 0.2821 | 0.3188 | 0.0077 ± 0.0006 |
-| A5 | Terminal SWD | Distribution | ↓ | 3.7097 ± 0.3209 | 4.1147 | 3.6846 | 3.6757 | 3.1564 | 3.9169 | 0.7635 ± 0.1174 |
-| A6 | Path SWD | Distribution | ↓ | 2.5335 ± 0.2212 | 2.8445 | 2.6110 | 2.5826 | 2.1668 | 2.4625 | 0.5542 ± 0.0624 |
-| A7 | Cov Error | Statistics | ↓ | 145.35 ± 4.89 | 143.74 | 145.83 | 142.90 | 139.93 | 154.36 | 4.76 ± 2.50 |
-| A8 | Mean RMSE | Statistics | ↓ | 1.3013 ± 0.2776 | 1.2972 | 0.9199 | 1.4819 | 1.0986 | 1.7088 | 0.1400 ± 0.1303 |
-| A9 | Std Error | Statistics | ↓ | 0.2492 ± 0.0018 | 0.2503 | 0.2517 | 0.2485 | 0.2491 | 0.2462 | 0.0048 ± 0.0031 |
-| A10 | Kurtosis Error | Statistics | ↓ | 0.1187 ± 0.0060 | 0.1156 | 0.1116 | 0.1165 | 0.1293 | 0.1203 | 0.0172 ± 0.0155 |
-| A11 | ACF \|r\| Error | Temporal | ↓ | 0.0596 ± 0.0005 | 0.0601 | 0.0595 | 0.0596 | 0.0587 | 0.0599 | 0.0017 ± 0.0006 |
-| A12 | ACF r² Error | Temporal | ↓ | 0.0619 ± 0.0005 | 0.0625 | 0.0618 | 0.0614 | 0.0612 | 0.0624 | 0.0014 ± 0.0006 |
-| A13 | Disc Score GRU | Adversarial | ↓ | 0.2740 ± 0.2208 | 0.0005 | 0.4286 | 0.4643 | 0.4689 | 0.0078 | 0.0128 ± 0.0068 |
-| A13 | Disc Score MLP | Adversarial | ↓ | 0.0063 ± 0.0038 | 0.0029 | 0.0014 | 0.0084 | 0.0121 | 0.0066 | 0.0080 ± 0.0081 |
-| A14 | Pred GRU (TSTR) | Predictive | ↓ | 0.0586 ± 0.0000 | 0.0586 | 0.0586 | 0.0585 | 0.0586 | 0.0586 | 0.0564 ± 0.0022 |
-| A14 | Pred MLP (TSTR) | Predictive | ↓ | 0.0582 ± 0.0002 | 0.0584 | 0.0579 | 0.0584 | 0.0581 | 0.0582 | 0.0565 ± 0.0022 |
-| A15 | Sigma Corr | Heston-specific | ↑ | 0.0046 ± 0.0019 | 0.0046 | 0.0045 | 0.0016 | 0.0048 | 0.0074 | 0.6135 ± 0.0019 |
-| A15 | Sigma RMSE | Heston-specific | ↓ | 0.0955 ± 0.0001 | 0.0955 | 0.0955 | 0.0957 | 0.0954 | 0.0954 | 0.0653 ± 0.0002 |
-| A16 | Tail RMS | Fat-tail | ↓ | 0.0428 ± 0.0002 | 0.0431 | 0.0427 | 0.0428 | 0.0426 | 0.0425 | 0.0008 ± 0.0008 |
-| A16 | q90 Error | Fat-tail | ↓ | 0.0630 ± 0.0003 | 0.0636 | 0.0629 | 0.0631 | 0.0628 | 0.0627 | 0.0010 ± 0.0010 |
-| A16 | q95 Error | Fat-tail | ↓ | 0.0378 ± 0.0001 | 0.0379 | 0.0377 | 0.0379 | 0.0378 | 0.0376 | 0.0009 ± 0.0009 |
-| A16 | q99 Error | Fat-tail | ↓ | 0.0092 ± 0.0000 | 0.0092 | 0.0092 | 0.0092 | 0.0092 | 0.0091 | 0.0004 ± 0.0004 |
-| A17 | Oracle MAE | AR(5) TSTR | ↓ | 0.0097 ± 0.0000 | 0.0097 | 0.0097 | 0.0097 | 0.0097 | 0.0097 | 0.0097 ± 0.0000 |
-| A18 | Agent MAE | AR(5) TSTR | ↓ | 0.0106 ± 0.0000 | 0.0106 | 0.0107 | 0.0106 | 0.0106 | 0.0107 | 0.0097 ± 0.0000 |
-| A19 | Oracle-Agent Corr | AR(5) TSTR | ↑ | −0.342 ± 0.171 | −0.561 | −0.045 | −0.421 | −0.378 | −0.303 | −0.058 ± 0.430 |
-| A20 | RV Law Loss | Realized Vol | ↓ | 2.1482 ± 0.0074 | 2.1559 | 2.1510 | 2.1552 | 2.1411 | 2.1380 | 0.0673 ± 0.0362 |
+| | **— Fat Tail —** | | | | | | | | | |
+| A10 | Kurtosis Error                  | Fat Tail      | ↓ | 0.1187 ± 0.0060 | 0.1156 | 0.1116 | 0.1165 | 0.1293 | 0.1203 | 0.017  |
+| A17 | \|r\| q95 Error                 | Fat Tail      | ↓ | 0.0063 ± 0.0000 | 0.0064 | 0.0063 | 0.0063 | 0.0063 | 0.0063 | 0.0000 |
+| A18 | \|r\| q99 Error                 | Fat Tail      | ↓ | 0.0098 ± 0.0000 | 0.0098 | 0.0098 | 0.0099 | 0.0098 | 0.0097 | 0.0000 |
+| A30 | Tail QQ Error                   | Fat Tail      | ↓ | 0.0062 ± 0.0000 | 0.0063 | 0.0062 | 0.0062 | 0.0062 | 0.0062 | 0.0000 |
+| A34 | Hill Tail Index Error           | Fat Tail      | ↓ | 9.499 ± 0.346   | 9.286  | 9.201  | 9.853  | 9.981  | 9.175  | 0.0000 |
+| | **— Distribution —** | | | | | | | | | |
+| A1  | Path MMD²                       | Distribution  | ↓ | 0.0112 ± 0.0011 | 0.0129 | 0.0120 | 0.0104 | 0.0100 | 0.0105 | 0.0018 |
+| A2  | Terminal MMD²                   | Distribution  | ↓ | 0.0102 ± 0.0014 | 0.0113 | 0.0097 | 0.0085 | 0.0092 | 0.0124 | 0.0016 |
+| A3  | Increment MMD²                  | Distribution  | ↓ | 0.0069 ± 0.0005 | 0.0067 | 0.0066 | 0.0069 | 0.0063 | 0.0077 | 0.0008 |
+| A4  | Volatility MMD                  | Distribution  | ↓ | 0.2964 ± 0.0126 | 0.2970 | 0.2873 | 0.2968 | 0.2821 | 0.3188 | 0.0082 |
+| A5  | Terminal SWD                    | Distribution  | ↓ | 3.7097 ± 0.3209 | 4.1147 | 3.6846 | 3.6757 | 3.1564 | 3.9169 | 0.763  |
+| A6  | Path SWD                        | Distribution  | ↓ | 2.5335 ± 0.2212 | 2.8445 | 2.6110 | 2.5826 | 2.1668 | 2.4625 | 0.554  |
+| A24 | RV Law Loss (W₁ on ann. RV)     | Distribution  | ↓ | 2.1482 ± 0.0074 | 2.1559 | 2.1510 | 2.1552 | 2.1411 | 2.1380 | 0.0000 |
+| A25 | Mean Path RMSE                  | Distribution  | ↓ | 0.7499 ± 0.1823 | 0.7951 | 0.5148 | 0.9253 | 0.5595 | 0.9545 | 0.0000 |
+| A27 | KS on Log-returns               | Distribution  | ↓ | 0.0534 ± 0.0004 | 0.0537 | 0.0530 | 0.0539 | 0.0530 | 0.0536 | 0.0000 |
+| A28 | Skewness Error                  | Distribution  | ↓ | 0.0227 ± 0.0037 | 0.0196 | 0.0184 | 0.0217 | 0.0249 | 0.0287 | 0.0000 |
+| A29 | QQ RMSE (300-pt)                | Distribution  | ↓ | 0.0028 ± 0.0000 | 0.0028 | 0.0028 | 0.0028 | 0.0028 | 0.0028 | 0.0000 |
+| A33 | Terminal Price KS               | Distribution  | ↓ | 0.0921 ± 0.0051 | 0.0892 | 0.0938 | 0.0903 | 0.0863 | 0.1011 | 0.0000 |
+| | **— Adversarial —** | | | | | | | | | |
+| A13 | Disc Score GRU (log-ret.)       | Adversarial   | ↓ | 0.274 ± 0.221   | 0.001  | 0.429  | 0.464  | 0.469  | 0.008  | 0.012  |
+| A13 | Disc Score MLP (log-ret.)       | Adversarial   | ↓ | 0.006 ± 0.004   | 0.003  | 0.001  | 0.008  | 0.012  | 0.007  | 0.008  |
+| | **— Predictive —** | | | | | | | | | |
+| A14 | Pred Score GRU — TSTR           | Predictive    | ↓ | 0.0586 ± 0.0000 | 0.0586 | 0.0586 | 0.0585 | 0.0586 | 0.0586 | 0.056  |
+| A14 | Pred Score MLP — TSTR           | Predictive    | ↓ | 0.0582 ± 0.0002 | 0.0584 | 0.0579 | 0.0584 | 0.0581 | 0.0582 | 0.057  |
+| | **— Temporal —** | | | | | | | | | |
+| A7  | Cov Error (%)                   | Temporal      | ↓ | 145.35 ± 4.89   | 143.74 | 145.83 | 142.90 | 139.93 | 154.36 | 4.76   |
+| A11 | ACF Error \|log-returns\|       | Temporal      | ↓ | 0.0596 ± 0.0005 | 0.0601 | 0.0595 | 0.0596 | 0.0587 | 0.0599 | 0.0017 |
+| A12 | ACF Error log-returns²          | Temporal      | ↓ | 0.0619 ± 0.0005 | 0.0625 | 0.0618 | 0.0614 | 0.0612 | 0.0624 | 0.0014 |
+| A22 | ACF \|r\| Lag-1 Error           | Temporal      | ↓ | 0.1437 ± 0.0012 | 0.1436 | 0.1419 | 0.1439 | 0.1436 | 0.1456 | 0.0000 |
+| A23 | ACF r² Lag-1 Error              | Temporal      | ↓ | 0.1665 ± 0.0017 | 0.1674 | 0.1637 | 0.1659 | 0.1668 | 0.1688 | 0.0000 |
+| | **— Vol —** | | | | | | | | | |
+| A8  | Mean RMSE                       | Vol           | ↓ | 1.301 ± 0.278   | 1.297  | 0.920  | 1.482  | 1.099  | 1.709  | 0.140  |
+| A9  | Return Std Error                | Vol           | ↓ | 0.2492 ± 0.0018 | 0.2503 | 0.2517 | 0.2485 | 0.2491 | 0.2462 | 0.0048 |
+| A16 | Log-Return Std Error            | Vol           | ↓ | 0.0030 ± 0.0000 | 0.0030 | 0.0030 | 0.0030 | 0.0030 | 0.0030 | 0.0000 |
+| A19 | Kurtosis Ratio (target/model)   | Vol           | — | 1.989 ± 0.018   | 1.991  | 1.998  | 1.988  | 2.012  | 1.957  | 1.0000 |
+| A20 | Sigma Mean Error                | Vol           | ↓ | 0.0440 ± 0.0002 | 0.0442 | 0.0440 | 0.0441 | 0.0437 | 0.0437 | 0.0000 |
+| A26 | Cross-Sect. Vol Path RMSE       | Vol           | ↓ | 3.2760 ± 0.0637 | 3.2044 | 3.2961 | 3.2960 | 3.2086 | 3.3751 | 0.0000 |
+| A31 | Rolling Vol KS (window=5)       | Vol           | ↓ | 0.3435 ± 0.0006 | 0.3444 | 0.3433 | 0.3440 | 0.3430 | 0.3426 | 0.0000 |
+| A32 | Vol-of-Vol Error                | Vol           | ↓ | 0.0021 ± 0.0000 | 0.0021 | 0.0021 | 0.0021 | 0.0021 | 0.0021 | 0.0000 |
+| | **— Heston Spec —** | | | | | | | | | |
+| A15 | Sigma Corr (vol recovery)       | Heston Spec   | ↑ | 0.0046 ± 0.0019 | 0.0046 | 0.0045 | 0.0016 | 0.0048 | 0.0074 | 0.614  |
+| A15 | Sigma RMSE                      | Heston Spec   | ↓ | 0.0955 ± 0.0001 | 0.0955 | 0.0955 | 0.0957 | 0.0954 | 0.0954 | 0.065  |
+| A21 | Learned/Oracle Sigma Corr       | Heston Spec   | ↑ | 0.0046 ± 0.0019 | 0.0046 | 0.0045 | 0.0016 | 0.0048 | 0.0074 | 0.614  |
 
-> **A13 discriminative score**: `|accuracy − 0.5|` on held-out test set. 0 = indistinguishable. GRU results are high-variance (3 of 5 seeds score near 0.46 = easily separable): SBTS occasionally reproduces the distribution well, other seeds are caught by the GRU. MLP consistently scores near 0 — stylized facts (moments, ACF shape) are well matched.
->
-> **A14 predictive score (TSTR)**: MAE of a predictor trained on *synthetic* data evaluated on *real* data. All values cluster near 0.058–0.059, indicating SBTS-generated log-returns are as informative as real ones for next-step prediction.
->
-> **A15 Sigma Corr ≈ 0.005** (floor ≈ 0.61): SBTS generates S-paths that do not retain the latent Heston variance path — expected since it is a non-parametric marginal matching method.
->
-> **A15 Sigma RMSE ≈ 0.096 < floor 0.065**: SBTS variance estimates are below-floor, indicating variance compression (generated paths are smoother than Heston). Not a win.
->
-> **A16 Tail RMS ≈ 0.043** vs floor 0.0008: SBTS tail quantiles are systematically shifted — the kernel method captures the bulk distribution but oversmoothes the tails.
->
-> **A19 Oracle-Agent Corr ≈ −0.34**: Heston log-returns have near-zero autocorrelation, making AR(5) predictions essentially white noise. Oracle and agent estimates are uncorrelated by chance. This metric degenerates for Heston but is meaningful for datasets with temporal structure.
->
-> **A20 RV Law Loss ≈ 2.15**: Realized-variance distribution error (Wasserstein-1 between annualized RV of real vs synthetic paths). Floor ≈ 0.07. SBTS produces paths with compressed volatility (smoother paths → lower RV → distribution shift).
+> **Convention:** ↓ lower is better; ↑ higher is better; — no monotone direction. A19 Kurtosis Ratio: perfect = 1.0.
+> **A7 Cov Error ≈ 145%** (floor 4.76%): SBTS is a **Markov-1** method — each generated step only sees the previous state, so multi-step covariance structure is far weaker than real Heston paths. This is the single largest SBTS weakness vs TimeGAN (17.75%).
+> **A11–A12**: ACF on log-returns r_t = log(S_{t+1}/S_t). SBTS reproduces the population ACF shape closely (both floors ≈0.001–0.002) but with a small systematic offset from kernel smoothing.
+> **A13**: Discriminative classifier trained on log-returns (not raw prices). Score = |accuracy − 0.5|; 0 = indistinguishable. GRU is high-variance — 3 of 5 seeds score near 0.46 (easily separable via temporal structure the Markov-1 kernel can't reproduce), 2 seeds near-perfect. MLP (no temporal context) consistently scores near 0 — marginal moments are well matched.
+> **A14**: TSTR MAE; all methods cluster near 0.056–0.059 (irreducible log-return noise floor). Differences are small.
+> **A15/A21 Sigma Corr ≈ 0.005** (floor 0.614): SBTS generates S-paths that do not retain the latent Heston variance path — expected for a non-parametric marginal-matching method with no latent state.
+> **A16**: Log-return std error. Uses $r_t = \log(S_{t+1}/S_t)$ (vs price increments in A9).
+> **A17–A18**: 95th/99th quantile error on |log-returns| — near-floor (SBTS reproduces marginal tail quantiles well; the deficiency is in tail *shape*, see A34).
+> **A19**: Kurtosis ratio real/gen, perfect = 1.0. SBTS ≈ 1.99 means generated kurtosis is roughly half real kurtosis — smoothing attenuates extremes.
+> **A20**: Sigma mean error — annualized per-path vol, averaged over paths.
+> **A22–A23**: ACF lag-1 error on |r| and r². Single-lag version of A11/A12.
+> **A24**: W₁(RV_real, RV_gen), RV_i = Σ_t r²_{i,t}/dt — SBTS produces paths with compressed volatility (smoother → lower RV → distribution shift).
+> **A25–A26**: Path-level RMSE between real and generated mean/vol trajectories. A26 (3.28 vs floor 0.0) is large: SBTS's kernel bootstrap gives high cross-sectional spread in vol paths.
+> **A27**: Kolmogorov–Smirnov statistic on pooled log-returns — small (0.053) and stable across seeds, a systematic shift rather than seed noise.
+> **A28**: |skew_real − skew_gen| — small (0.023), SBTS reproduces skew well.
+> **A29–A30**: QQ RMSE (bulk, 300-pt) and Tail QQ (top-5%) — both near-floor; SBTS matches the return quantile function closely in the bulk and moderately in the tail.
+> **A31**: KS statistic on rolling-5 volatility histograms — large (0.344 vs floor 0.0): kernel bandwidth smooths out stochastic vol, producing near-constant rolling volatility.
+> **A32**: |vol-of-vol_real − vol-of-vol_gen| — small, near-floor.
+> **A33**: KS statistic on terminal prices S_T — moderate mismatch (0.092).
+> **A34**: |Hill tail index_real − Hill tail index_gen| — large (9.5 vs floor 0.0): kernel smoothing systematically attenuates tail heaviness, SBTS's main fat-tail weakness.
 
 ---
 
-## Stylised Metrics B1–B14 — mean ± std across 5 seeds
+## B — Curve-Shape Metrics — mean ± std across 5 seeds
 
-Extracted directly from the 8 diagnostic plot panels (return distribution, QQ, ACF, volatility clustering, terminal distribution, tail survival). Each metric quantifies how well SBTS reproduces a known stylized fact (Cont 2001).
+> MSE between real and generated **curve** (not a scalar). Three sub-metrics per plot:
+> - **funct**: MSE(L\_real, L\_gen) between curve values
+> - **der**: MSE of first finite difference — L\_der\[k\] = L\[k+1\] − L\[k\]
+> - **sec\_der**: MSE of second finite difference — L\_sec\[k\] = L\_der\[k+1\] − L\_der\[k\]
+>
+> All ↓ lower is better. Perfect floor = 0 for all (row-shuffled real data has identical distribution curves).
 
-| ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
-|----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------------|
-| B1 | Mean Path RMSE | Distribution | ↓ | 0.7499 ± 0.1823 | 0.7951 | 0.5148 | 0.9253 | 0.5595 | 0.9545 | 0.1511 ± 0.0708 |
-| B2 | Cross-Sect Vol RMSE | Distribution | ↓ | 3.2760 ± 0.0637 | 3.2044 | 3.2961 | 3.2960 | 3.2086 | 3.3751 | 0.1355 ± 0.0735 |
-| B3 | KS on Log-returns | Distribution | ↓ | 0.0534 ± 0.0004 | 0.0537 | 0.0530 | 0.0539 | 0.0530 | 0.0536 | 0.0018 ± 0.0009 |
-| B4 | Skewness Error | Distribution | ↓ | 0.0227 ± 0.0037 | 0.0196 | 0.0184 | 0.0217 | 0.0249 | 0.0287 | 0.0060 ± 0.0048 |
-| B5 | QQ RMSE (300-pt) | Distribution | ↓ | 0.0028 ± 0.0000 | 0.0028 | 0.0028 | 0.0028 | 0.0028 | 0.0028 | 0.0001 ± 0.0000 |
-| B6 | Tail QQ Error | Fat-tail | ↓ | 0.0062 ± 0.0000 | 0.0063 | 0.0062 | 0.0062 | 0.0062 | 0.0062 | 0.0001 ± 0.0001 |
-| B7 | ACF lag-1 \|r\| Err | Temporal | ↓ | 0.1449 ± 0.0012 | 0.1447 | 0.1431 | 0.1450 | 0.1448 | 0.1468 | 0.0018 ± 0.0016 |
-| B8 | ARCH Persistence Err | Temporal | ↓ | 0.0274 ± 0.0004 | 0.0276 | 0.0278 | 0.0272 | 0.0267 | 0.0275 | 0.0011 ± 0.0005 |
-| B9 | ACF lag-1 r² Err | Temporal | ↓ | 0.1678 ± 0.0017 | 0.1687 | 0.1650 | 0.1672 | 0.1681 | 0.1701 | 0.0017 ± 0.0014 |
-| B10 | GARCH Persistence Err | Temporal | ↓ | 0.0227 ± 0.0004 | 0.0229 | 0.0232 | 0.0225 | 0.0221 | 0.0229 | 0.0010 ± 0.0006 |
-| B11 | Rolling Vol KS | Volatility | ↓ | 0.3435 ± 0.0006 | 0.3444 | 0.3433 | 0.3440 | 0.3430 | 0.3426 | 0.0046 ± 0.0024 |
-| B12 | Vol-of-Vol Error | Volatility | ↓ | 0.0021 ± 0.0000 | 0.0021 | 0.0021 | 0.0021 | 0.0021 | 0.0021 | 0.0000 ± 0.0000 |
-| B13 | Terminal Price KS | Distribution | ↓ | 0.0921 ± 0.0051 | 0.0892 | 0.0938 | 0.0903 | 0.0863 | 0.1011 | 0.0145 ± 0.0043 |
-| B14 | Hill Tail Index Err | Fat-tail | ↓ | 9.499 ± 0.346 | 9.286 | 9.201 | 9.853 | 9.981 | 9.175 | 0.499 ± 0.610 |
+| Plot | funct | der | sec\_der |
+|------|-------|-----|----------|
+| Log-return histogram | 11.59 ± 0.156 | 0.225 ± 0.0091 | 0.320 ± 0.0373 |
+| QQ plot              | 8.70e-6 ± 6.8e-8 | 1.71e-7 ± 3.6e-9 | 3.75e-8 ± 1.7e-9 |
+| ACF \|r\|            | 2.42e-3 ± 3.3e-5 | 1.32e-3 ± 1.3e-5 | 8.27e-4 ± 9.6e-6 |
+| ACF r²               | 2.54e-3 ± 4.2e-5 | 1.61e-3 ± 2.9e-5 | 1.03e-3 ± 2.4e-5 |
+| Rolling vol hist.    | 1214 ± 5.1 | 11.81 ± 0.072 | 1.775 ± 0.399 |
+| Tail survival        | 5.74e-3 ± 6.6e-5 | 6.86e-6 ± 6.6e-8 | 6.65e-8 ± 5.6e-9 |
 
-> **B1–B2**: Mean and cross-sectional vol path RMSE — SBTS paths are internally smooth but have high cross-sectional spread from the kernel bootstrap, producing B2 ≈ 3.28 vs floor 0.14.
->
-> **B3–B6**: Log-return distributional tests. KS ≈ 0.053 is 29× above the perfect floor but stable across seeds — SBTS reproduces the return shape but with a small systematic shift. QQ RMSE (B5) ≈ 0.0028 is tight in the bulk; Tail QQ (B6) ≈ 0.0062 shows moderate tail mismatch.
->
-> **B7–B10**: ARCH/GARCH temporal structure. ACF lag-1 |r| error (B7) ≈ 0.145 and lag-1 r² (B9) ≈ 0.168 indicate SBTS correctly generates volatility clustering to first approximation, with the same systematic offset for all seeds (kernel method reproduces the population ACF).
->
-> **B11–B12**: Rolling vol KS ≈ 0.344 (floor 0.005) — SBTS produces paths with near-constant rolling volatility (kernel bandwidth smooths out stochastic vol), explaining the large deviation.
->
-> **B13**: Terminal price KS ≈ 0.092 — moderate mismatch in the terminal price distribution.
->
-> **B14**: Hill tail index error ≈ 9.5 vs floor 0.5 — SBTS systematically underestimates the tail heaviness of Heston returns (kernel smoothing attenuates extremes). Result is stable across seeds (low std ± 0.35).
+> **Log-ret histogram**: SBTS wins decisively on all 3 sub-metrics (11.6 vs TimeGAN 89.4) — kernel smoothing closely preserves marginal returns, and unlike TimeGAN has no seed-collapse events (std is tiny relative to mean, 0.156 vs mean 11.59).
+> **Rolling vol histogram**: SBTS's near-constant rolling vol (see A31) produces the highest funct/der MSE of any plot (1214, 11.81) — the clearest visual signature of the Markov-1 vol-smoothing weakness.
+> **Tail survival, ACF |r|/r²**: SBTS wins on curve level (funct) — kernel method reproduces the population shape; TimeGAN wins narrowly on some derivative sub-metrics.
+> **Cross-seed stability**: SBTS std is tiny relative to mean for every plot (deterministic kernel, no seed-collapse) — contrast with TimeGAN where std can exceed mean (e.g. log-return histogram 89.43 ± 101.01) driven by GAN seed-collapse events. A std larger than the mean is expected and not an error: each cell is a non-negative MSE (≥0 by construction), so "mean ± std" here is a compact summary statistic over 5 skewed samples, not a claim that values range into negative territory.
+
+---
+
+## Perfect Recovery Floor
+
+Row-shuffling the real dataset leaves all marginal distributions identical (each Heston path is i.i.d.), so B-metric floors are exactly 0 for all 6 plots. A-metric floors are non-zero where the metric depends on path-level structure (covariance, MMD path kernel, SWD path distance) or on finite-sample noise (A7 Cov Error ≈ 4.76%, A5/A6 SWD ≈ 0.76/0.55). A13/A14 floors are non-zero because a row-shuffled pool is indistinguishable from any good generative model — they represent the irreducible noise floor of the classifiers/predictors.
+
+These floors are computed **once, directly from the real Heston dataset** (two independent row-shuffled
+halves evaluated against each other) — they do not depend on SBTS or TimeGAN in any way, which is why the
+numbers below are identical to the table in [`methods/TimeGAN/README.md`](../TimeGAN/README.md#perfect-recovery-floor).
+
+| ID | Metric | Category | Perfect Floor |
+|----|--------|----------|--------------|
+| | **— Fat Tail —** | | |
+| A10 | Kurtosis Error | Fat Tail | 0.017 |
+| A17 | \|r\| q95 Error | Fat Tail | 0.0000 |
+| A18 | \|r\| q99 Error | Fat Tail | 0.0000 |
+| A30 | Tail QQ Error | Fat Tail | 0.0000 |
+| A34 | Hill Tail Index Error | Fat Tail | 0.0000 |
+| | **— Distribution —** | | |
+| A1  | Path MMD² | Distribution | 0.0018 |
+| A2  | Terminal MMD² | Distribution | 0.0016 |
+| A3  | Increment MMD² | Distribution | 0.0008 |
+| A4  | Volatility MMD | Distribution | 0.0082 |
+| A5  | Terminal SWD | Distribution | 0.763 |
+| A6  | Path SWD | Distribution | 0.554 |
+| A24 | RV Law Loss | Distribution | 0.0000 |
+| A25 | Mean Path RMSE | Distribution | 0.0000 |
+| A27 | KS on Log-returns | Distribution | 0.0000 |
+| A28 | Skewness Error | Distribution | 0.0000 |
+| A29 | QQ RMSE (300-pt) | Distribution | 0.0000 |
+| A33 | Terminal Price KS | Distribution | 0.0000 |
+| | **— Adversarial —** | | |
+| A13 | Disc Score GRU | Adversarial | 0.012 |
+| A13 | Disc Score MLP | Adversarial | 0.008 |
+| | **— Predictive —** | | |
+| A14 | Pred Score GRU | Predictive | 0.056 |
+| A14 | Pred Score MLP | Predictive | 0.057 |
+| | **— Temporal —** | | |
+| A7  | Cov Error (%) | Temporal | 4.76 |
+| A11 | ACF Error \|r\| | Temporal | 0.0017 |
+| A12 | ACF Error r² | Temporal | 0.0014 |
+| A22 | ACF \|r\| Lag-1 | Temporal | 0.0000 |
+| A23 | ACF r² Lag-1 | Temporal | 0.0000 |
+| | **— Vol —** | | |
+| A8  | Mean RMSE | Vol | 0.140 |
+| A9  | Return Std Error | Vol | 0.0048 |
+| A16 | Log-Return Std Error | Vol | 0.0000 |
+| A19 | Kurtosis Ratio (→ 1) | Vol | 1.0000 |
+| A20 | Sigma Mean Error | Vol | 0.0000 |
+| A26 | Cross-Sect. Vol Path RMSE | Vol | 0.0000 |
+| A31 | Rolling Vol KS | Vol | 0.0000 |
+| A32 | Vol-of-Vol Error | Vol | 0.0000 |
+| | **— Heston Spec —** | | |
+| A15 | Sigma Corr ↑ | Heston Spec | 0.614 |
+| A15 | Sigma RMSE | Heston Spec | 0.065 |
+| A21 | Oracle Sigma Corr ↑ | Heston Spec | 0.614 |
 
 ---
 
