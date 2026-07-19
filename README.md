@@ -3,7 +3,9 @@
 A public benchmark for evaluating **generative models of financial time series**.
 
 Each method is trained on the same target dataset and evaluated with **34 metrics (A1–A34)**
-plus **18 curve-shape metrics (B)** across 5 random seeds.
+plus **6 curve-shape diagnostics (B)** — each scored by both **MSE** and **% error** — across 5 random seeds.
+Every table carries a **Perfect floor** column: the reproducible best-case score from a row-shuffled copy
+of the real data (see [`methods/perfect_recovery/`](methods/perfect_recovery/)).
 
 ---
 
@@ -14,83 +16,84 @@ Cross-method comparison on 8 192 Heston price paths (seq\_len=128).
 
 ### A1–A34 — Metrics by category
 
-| Metric | SBTS | TimeGAN | Winner |
-|--------|:----:|:-------:|:------:|
-| **— Fat Tail —** | | | |
-| A10 Kurtosis Error ↓ | **0.1187 ± 0.0060** | 2.9545 ± 2.0988 | **SBTS** |
-| A17 \|r\| q95 Error ↓ | 0.0063 ± 0.0000 | **0.0032 ± 0.0018** | **TimeGAN** |
-| A18 \|r\| q99 Error ↓ | 0.0098 ± 0.0000 | **0.0043 ± 0.0028** | **TimeGAN** |
-| A30 Tail QQ Error ↓ | 0.0062 ± 0.0000 | **0.0034 ± 0.0015** | **TimeGAN** |
-| A34 Hill Tail Index Error ↓ | **9.499 ± 0.346** | 36.88 ± 17.05 | **SBTS** |
-| **— Distribution —** | | | |
-| A1  Path MMD² ↓ | **0.0112 ± 0.0011** | 0.0181 ± 0.0147 | **SBTS** |
-| A2  Terminal MMD² ↓ | **0.0102 ± 0.0014** | 0.0308 ± 0.0229 | **SBTS** |
-| A3  Increment MMD² ↓ | **0.0069 ± 0.0005** | 0.0077 ± 0.0039 | **SBTS** |
-| A4  Volatility MMD ↓ | **0.2964 ± 0.0126** | 0.3933 ± 0.2553 | **SBTS** |
-| A5  Terminal SWD ↓ | 3.7097 ± 0.3209 | **3.1284 ± 0.9227** | **TimeGAN** |
-| A6  Path SWD ↓ | 2.5335 ± 0.2212 | **1.6343 ± 0.5763** | **TimeGAN** |
-| A24 RV Law Loss ↓ | 2.1482 ± 0.0074 | **1.5512 ± 0.3788** | **TimeGAN** |
-| A25 Mean Path RMSE ↓ | 0.7499 ± 0.1823 | **0.5289 ± 0.2624** | **TimeGAN** |
-| A27 KS on Log-returns ↓ | **0.0534 ± 0.0004** | 0.0848 ± 0.0374 | **SBTS** |
-| A28 Skewness Error ↓ | **0.0227 ± 0.0037** | 0.3404 ± 0.3344 | **SBTS** |
-| A29 QQ RMSE (300-pt) ↓ | 0.0028 ± 0.0000 | **0.0025 ± 0.0006** | **TimeGAN** |
-| A33 Terminal Price KS ↓ | **0.0921 ± 0.0051** | 0.1121 ± 0.0556 | **SBTS** |
-| **— Adversarial —** | | | |
-| A13 Disc Score GRU ↓ | 0.2740 ± 0.2208 | **0.0099 ± 0.0084** | **TimeGAN** |
-| A13 Disc Score MLP ↓ | **0.0063 ± 0.0038** | 0.0921 ± 0.0463 | **SBTS** |
-| **— Predictive —** | | | |
-| A14 Pred Score GRU ↓ | 0.0586 ± 0.0000 | **0.0570 ± 0.0013** | **TimeGAN** |
-| A14 Pred Score MLP ↓ | 0.0582 ± 0.0002 | **0.0573 ± 0.0015** | **TimeGAN** |
-| **— Temporal —** | | | |
-| A7  Cov Error (%) ↓ | 145.35 ± 4.89 | **17.75 ± 6.71** | **TimeGAN** |
-| A11 ACF \|r\| Error ↓ | **0.0596 ± 0.0005** | 0.1252 ± 0.0674 | **SBTS** |
-| A12 ACF r² Error ↓ | **0.0619 ± 0.0005** | 0.0839 ± 0.0348 | **SBTS** |
-| A22 ACF \|r\| Lag-1 Error ↓ | **0.1437 ± 0.0012** | 0.2264 ± 0.1034 | **SBTS** |
-| A23 ACF r² Lag-1 Error ↓ | **0.1665 ± 0.0017** | 0.1719 ± 0.0626 | **SBTS** |
-| **— Vol —** | | | |
-| A8  Mean RMSE ↓ | 1.3013 ± 0.2776 | **0.7385 ± 0.4552** | **TimeGAN** |
-| A9  Return Std Error ↓ | 0.2492 ± 0.0018 | **0.1519 ± 0.0888** | **TimeGAN** |
-| A16 Log-Return Std Error ↓ | 0.0030 ± 0.0000 | **0.0017 ± 0.0008** | **TimeGAN** |
-| A19 Kurtosis Ratio (→ 1) | **1.9890 ± 0.0182** | −1.095 ± 3.525 | **SBTS** |
-| A20 Sigma Mean Error ↓ | 0.0440 ± 0.0002 | **0.0307 ± 0.0089** | **TimeGAN** |
-| A26 Cross-Sect. Vol Path RMSE ↓ | 3.2760 ± 0.0637 | **0.3534 ± 0.1253** | **TimeGAN** |
-| A31 Rolling Vol KS ↓ | 0.3435 ± 0.0006 | **0.2540 ± 0.1093** | **TimeGAN** |
-| A32 Vol-of-Vol Error ↓ | 0.0021 ± 0.0000 | **0.0009 ± 0.0009** | **TimeGAN** |
-| **— Heston Spec —** | | | |
-| A15 Sigma Corr ↑ | **0.0046 ± 0.0019** | 0.0021 ± 0.0090 | **SBTS** |
-| A15 Sigma RMSE ↓ | **0.0955 ± 0.0001** | 0.1183 ± 0.0184 | **SBTS** |
-| A21 Oracle Sigma Corr ↑ | **0.0046 ± 0.0019** | 0.0021 ± 0.0090 | **SBTS** |
-| PS-MC CRPS H=32 ↓ | **2.761 ± 0.004** | 3.087 ± 0.340 | **SBTS** |
-| PS-MC CRPS H=64 ↓ | **3.900 ± 0.008** | 4.372 ± 0.431 | **SBTS** |
+| Metric | SBTS | TimeGAN | Perfect | Winner |
+|--------|:----:|:-------:|:-------:|:------:|
+| **— Fat Tail —** | | | | |
+| A10 Kurtosis Error ↓ | **0.1187 ± 0.0060** | 2.9545 ± 2.0988 | 0.0000 | **SBTS** |
+| A17 \|r\| q95 Error ↓ | 0.0063 ± 0.0000 | **0.0032 ± 0.0018** | 0.0000 | **TimeGAN** |
+| A18 \|r\| q99 Error ↓ | 0.0098 ± 0.0000 | **0.0043 ± 0.0028** | 0.0000 | **TimeGAN** |
+| A30 Tail QQ Error ↓ | 0.0062 ± 0.0000 | **0.0034 ± 0.0015** | 0.0000 | **TimeGAN** |
+| A34 Hill Tail Index Error ↓ | **9.499 ± 0.346** | 36.88 ± 17.05 | 0.0000 | **SBTS** |
+| **— Distribution —** | | | | |
+| A1  Path MMD² ↓ | **0.0112 ± 0.0011** | 0.0181 ± 0.0147 | 0.0015 | **SBTS** |
+| A2  Terminal MMD² ↓ | **0.0102 ± 0.0014** | 0.0308 ± 0.0229 | 0.0016 | **SBTS** |
+| A3  Increment MMD² ↓ | **0.0069 ± 0.0005** | 0.0077 ± 0.0039 | 0.0007 | **SBTS** |
+| A4  Volatility MMD ↓ | **0.2964 ± 0.0126** | 0.3933 ± 0.2553 | 0.0071 | **SBTS** |
+| A5  Terminal SWD ↓ | 3.7097 ± 0.3209 | **3.1284 ± 0.9227** | 0.687 | **TimeGAN** |
+| A6  Path SWD ↓ | 2.5335 ± 0.2212 | **1.6343 ± 0.5763** | 0.438 | **TimeGAN** |
+| A24 RV Law Loss ↓ | 2.1482 ± 0.0074 | **1.5512 ± 0.3788** | 0.0000 | **TimeGAN** |
+| A25 Mean Path RMSE ↓ | 0.7499 ± 0.1823 | **0.5289 ± 0.2624** | 0.0000 | **TimeGAN** |
+| A27 KS on Log-returns ↓ | **0.0534 ± 0.0004** | 0.0848 ± 0.0374 | 0.0000 | **SBTS** |
+| A28 Skewness Error ↓ | **0.0227 ± 0.0037** | 0.3404 ± 0.3344 | 0.0000 | **SBTS** |
+| A29 QQ RMSE (300-pt) ↓ | 0.0028 ± 0.0000 | **0.0025 ± 0.0006** | 0.0000 | **TimeGAN** |
+| A33 Terminal Price KS ↓ | **0.0921 ± 0.0051** | 0.1121 ± 0.0556 | 0.0000 | **SBTS** |
+| **— Adversarial —** | | | | |
+| A13 Disc Score GRU ↓ | 0.2740 ± 0.2208 | **0.0099 ± 0.0084** | 0.008 | **TimeGAN** |
+| A13 Disc Score MLP ↓ | **0.0063 ± 0.0038** | 0.0921 ± 0.0463 | 0.010 | **SBTS** |
+| **— Predictive —** | | | | |
+| A14 Pred Score GRU ↓ | 0.0586 ± 0.0000 | **0.0570 ± 0.0013** | 0.054 | **TimeGAN** |
+| A14 Pred Score MLP ↓ | 0.0582 ± 0.0002 | **0.0573 ± 0.0015** | 0.054 | **TimeGAN** |
+| **— Temporal —** | | | | |
+| A7  Cov Error (%) ↓ | 145.35 ± 4.89 | **17.75 ± 6.71** | 0.00 | **TimeGAN** |
+| A11 ACF \|r\| Error ↓ | **0.0596 ± 0.0005** | 0.1252 ± 0.0674 | 0.0000 | **SBTS** |
+| A12 ACF r² Error ↓ | **0.0619 ± 0.0005** | 0.0839 ± 0.0348 | 0.0000 | **SBTS** |
+| A22 ACF \|r\| Lag-1 Error ↓ | **0.1437 ± 0.0012** | 0.2264 ± 0.1034 | 0.0000 | **SBTS** |
+| A23 ACF r² Lag-1 Error ↓ | **0.1665 ± 0.0017** | 0.1719 ± 0.0626 | 0.0000 | **SBTS** |
+| **— Vol —** | | | | |
+| A8  Mean RMSE ↓ | 1.3013 ± 0.2776 | **0.7385 ± 0.4552** | 0.000 | **TimeGAN** |
+| A9  Return Std Error ↓ | 0.2492 ± 0.0018 | **0.1519 ± 0.0888** | 0.0000 | **TimeGAN** |
+| A16 Log-Return Std Error ↓ | 0.0030 ± 0.0000 | **0.0017 ± 0.0008** | 0.0000 | **TimeGAN** |
+| A19 Kurtosis Ratio (→ 1) | **1.9890 ± 0.0182** | −1.095 ± 3.525 | 1.0000 | **SBTS** |
+| A20 Sigma Mean Error ↓ | 0.0440 ± 0.0002 | **0.0307 ± 0.0089** | 0.0000 | **TimeGAN** |
+| A26 Cross-Sect. Vol Path RMSE ↓ | 3.2760 ± 0.0637 | **0.3534 ± 0.1253** | 0.0000 | **TimeGAN** |
+| A31 Rolling Vol KS ↓ | 0.3435 ± 0.0006 | **0.2540 ± 0.1093** | 0.0000 | **TimeGAN** |
+| A32 Vol-of-Vol Error ↓ | 0.0021 ± 0.0000 | **0.0009 ± 0.0009** | 0.0000 | **TimeGAN** |
+| **— Heston Spec —** | | | | |
+| A15 Sigma Corr ↑ | **0.0046 ± 0.0019** | 0.0021 ± 0.0090 | 0.614 | **SBTS** |
+| A15 Sigma RMSE ↓ | **0.0955 ± 0.0001** | 0.1183 ± 0.0184 | 0.065 | **SBTS** |
+| A21 Oracle Sigma Corr ↑ | **0.0046 ± 0.0019** | 0.0021 ± 0.0090 | 0.614 | **SBTS** |
+| PS-MC CRPS H=32 ↓ | **2.761 ± 0.004** | 3.087 ± 0.340 | — | **SBTS** |
+| PS-MC CRPS H=64 ↓ | **3.900 ± 0.008** | 4.372 ± 0.431 | — | **SBTS** |
 
 **SBTS wins A: 20/39. TimeGAN wins 19/39.**
 
-### B — Curve-shape metrics (6 plots × 3 sub-metrics)
+### B — Curve-shape metrics (6 diagnostic plots)
 
-MSE between the real and generated **curve** (not a scalar). Three sub-metrics per plot: **funct** (curve MSE), **der** (first-difference MSE), **sec\_der** (second-difference MSE). Histogram bin edges use [0.5th, 99.5th]-percentile of **real data only** — perfect floor = 0 for all. All ↓ lower is better.
+Each of the 6 diagnostic plots yields a **curve** L (a list of values), not a scalar. For each plot we build three lists — the curve L, its first finite difference (der), and its second finite difference (sec\_der) — then combine the three sub-scores into **one number per plot** under two error measures:
 
-| Plot | Sub-metric | SBTS | TimeGAN | Winner |
-|------|-----------|:----:|:-------:|:------:|
-| Log-return histogram | funct | **11.59 ± 0.156** | 89.43 ± 101.01 | **SBTS** |
-| | der | **0.225 ± 0.0091** | 24.19 ± 38.76 | **SBTS** |
-| | sec\_der | **0.320 ± 0.0373** | 30.59 ± 53.31 | **SBTS** |
-| QQ plot | funct | 8.70e-6 ± 6.8e-8 | **6.90e-6 ± 3.3e-6** | **TimeGAN** |
-| | der | 1.71e-7 ± 3.6e-9 | **1.60e-7 ± 5.9e-8** | **TimeGAN** |
-| | sec\_der | 3.75e-8 ± 1.7e-9 | **2.67e-8 ± 1.1e-8** | **TimeGAN** |
-| ACF \|r\| | funct | **2.42e-3 ± 3.3e-5** | 9.13e-3 ± 8.5e-3 | **SBTS** |
-| | der | 1.32e-3 ± 1.3e-5 | **7.10e-4 ± 4.6e-4** | **TimeGAN** |
-| | sec\_der | 8.27e-4 ± 9.6e-6 | **6.32e-4 ± 7.1e-4** | **TimeGAN** |
-| ACF r² | funct | **2.54e-3 ± 4.2e-5** | 3.76e-3 ± 2.9e-3 | **SBTS** |
-| | der | 1.61e-3 ± 2.9e-5 | **8.42e-4 ± 5.98e-4** | **TimeGAN** |
-| | sec\_der | **1.03e-3 ± 2.4e-5** | 1.17e-3 ± 1.5e-3 | **SBTS** |
-| Rolling vol hist. | funct | 1214 ± 5.1 | **430.4 ± 216.7** | **TimeGAN** |
-| | der | 11.81 ± 0.072 | **5.756 ± 4.211** | **TimeGAN** |
-| | sec\_der | **1.775 ± 0.399** | 3.147 ± 1.498 | **SBTS** |
-| Tail survival | funct | **5.74e-3 ± 6.6e-5** | 1.169e-2 ± 9.2e-3 | **SBTS** |
-| | der | **6.86e-6 ± 6.6e-8** | 1.857e-5 ± 1.7e-5 | **SBTS** |
-| | sec\_der | **6.65e-8 ± 5.6e-9** | 3.34e-7 ± 4.4e-7 | **SBTS** |
+- **MSE row**: for each list, dᵢ = mean((L_real − L_gen)²). Combined mean = sum of the three seed-means; combined std = sqrt(std\_funct² + std\_der² + std\_sec\_der²) (quadrature).
+- **% err row**: for each list, dᵢ = mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100. Combined the same way.
 
-**SBTS wins B: 10/18. TimeGAN wins 8/18.** (10 and 8 are sub-metric win *counts* out of 18 B sub-metrics — every metric above is still computed over the same **5 seeds** per method.)
+↓ lower is better. Histogram bin edges use [0.5th, 99.5th]-percentile of **real data only**, so the reference curve is fixed. **Perfect floor = 0** for every plot (row-shuffle preserves all marginals exactly). Winner is by MSE.
+
+| Plot | Measure | SBTS | TimeGAN | Perfect | Winner |
+|------|---------|:----:|:-------:|:------:|:------:|
+| **Log-return histogram** | MSE   | **12.14 ± 0.16** | 144.2 ± 120.6 | 0 | **SBTS** |
+|                          | % err | **14264% ± 8212%** | 75440% ± 24681% | 0 | |
+| **QQ plot**              | MSE   | 8.90e-6 ± 6.8e-8 | **7.09e-6 ± 3.3e-6** | 0 | **TimeGAN** |
+|                          | % err | **113.1% ± 5.8%** | 157.9% ± 27.2% | 0 | |
+| **ACF \|r\| lags 1–20**  | MSE   | **4.57e-3 ± 3.7e-5** | 1.05e-2 ± 8.5e-3 | 0 | **SBTS** |
+|                          | % err | **1269.9% ± 40.0%** | 2342.1% ± 1351.8% | 0 | |
+| **ACF r² lags 1–20**     | MSE   | **5.17e-3 ± 5.7e-5** | 5.77e-3 ± 3.3e-3 | 0 | **SBTS** |
+|                          | % err | **1603.5% ± 142.8%** | 4578.1% ± 4266.4% | 0 | |
+| **Rolling vol histogram**| MSE   | 1227.3 ± 5.1 | **439.3 ± 216.7** | 0 | **TimeGAN** |
+|                          | % err | **715.9% ± 20.2%** | 882.8% ± 410.8% | 0 | |
+| **Tail survival**        | MSE   | **5.74e-3 ± 6.6e-5** | 1.17e-2 ± 9.2e-3 | 0 | **SBTS** |
+|                          | % err | **17151% ± 910%** | 24327% ± 11324% | 0 | |
+
+The **% err** row blows up when the real curve passes through near-zero values (empty histogram bins, tail-survival ≈ 0, near-zero ACF lags), so triple-digit-plus percentages are expected — a property of the curve, not a bug. TimeGAN's log-return-histogram MSE std (±120.6) is driven by a genuine seed-2 collapse (504.5 vs 11–170 for the other seeds).
+
+**SBTS wins B: 4/6 plots on MSE. TimeGAN wins 2/6** (QQ plot, rolling-vol histogram). Each value is computed over the same **5 seeds** per method.
 
 Detailed per-seed results and plots:
 → [`results/Heston/SBTS/`](results/Heston/SBTS/) — SBTS metrics, diagnostics, PS-MC
@@ -158,9 +161,9 @@ Detailed per-seed results and plots:
 | A15 | Sigma Corr / RMSE | Heston Spec | ↑/↓ | Pearson ρ / RMSE of QV-estimated vol vs true v_t |
 | A21 | Oracle Sigma Corr | Heston Spec | ↑ | Same as A15 Corr; grouped with Heston vol metrics |
 
-### B — Curve-shape metrics (6 plots × 3 sub-metrics)
+### B — Curve-shape metrics (6 diagnostic plots)
 
-For each of 6 diagnostic plots, three MSE sub-metrics compare the **shape** of the real vs generated curve: **funct** (curve values), **der** (first finite difference), **sec\_der** (second finite difference). Histogram bin edges use [0.5th, 99.5th]-percentile of **real data only**, making the reference curve fixed across seeds.
+For each of 6 diagnostic plots we build three lists — the curve L, its first finite difference (der), and its second finite difference (sec\_der) — and score each list under **two measures**: MSE (absolute squared error) and % err (relative error). The three sub-scores are combined into one number per plot per measure (mean = sum, std = quadrature). Histogram bin edges use [0.5th, 99.5th]-percentile of **real data only**, making the reference curve fixed across seeds.
 
 | Plot | Key | What the curve represents |
 |------|-----|--------------------------|

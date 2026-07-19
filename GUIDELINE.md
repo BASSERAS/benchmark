@@ -317,12 +317,19 @@ Reference: Barndorff-Nielsen & Shephard (2002).
 **A33**: KS statistic on terminal prices S_T (= S_128).
 **A34**: |Hill tail index_real − Hill tail index_gen|. Hill estimator on |log-returns| above 95th pct.
 
-**B — Curve-shape metrics (6 plots × 3 sub-metrics = 18 B keys):**
+**B — Curve-shape metrics (6 diagnostic plots):**
 
-Three sub-metrics per plot:
-- **funct**: MSE(L\_real, L\_gen) between curve values
-- **der**: MSE of first finite difference — L\_der\[k\] = L\[k+1\] − L\[k\]
-- **sec\_der**: MSE of second finite difference — L\_sec\[k\] = L\_der\[k+1\] − L\_der\[k\]
+Each plot yields a **curve** L (a list of values). We build three lists — the curve L, its first finite
+difference L′ (der), and its second finite difference L″ (sec\_der) — and score each list under **two
+measures**:
+- **MSE**: dᵢ = mean((L\_real − L\_gen)²) per list.
+- **% err**: dᵢ = mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100 per list.
+
+The three sub-scores are combined into **one number per plot per measure**: combined mean = sum of the
+three seed-means; combined std = sqrt(std\_funct² + std\_der² + std\_sec\_der²) (quadrature). The raw JSON
+therefore stores 6 keys per plot (funct/der/sec\_der × {mse, pct\_err}); the READMEs display the two
+**combined** measures as two sublines per plot (MSE row + % err row). Aggregation lives in
+`metrics/stylized_metrics.py`; recompute with `metrics/recompute_curve_b.py`.
 
 | Plot | JSON key prefix | Curve description |
 |------|----------------|-------------------|
@@ -333,9 +340,13 @@ Three sub-metrics per plot:
 | Rolling vol hist. | `B_roll_vol_hist_*` | Density of rolling-5 vol over shared bins |
 | Tail survival | `B_tail_surv_*` | P(\|r\|>x) at thresholds of real \|r\| |
 
-All B metrics ↓ lower is better. Perfect floor = 0 for all (row-shuffled real data has identical distribution curves).
+All B metrics ↓ lower is better. **Perfect floor = 0 for all** (row-shuffle preserves every marginal, so
+both the MSE and % err rows are exactly 0). The **% err** row blows up (triple-digit-plus %) wherever the
+real curve passes through near-zero values (empty histogram bins, tail-survival ≈ 0, near-zero ACF lags) —
+expected, a property of the curve, not a bug. Winner between methods is decided by the **MSE** row.
 
-Total A-metrics: 37 numbers (A1–A34 + A13×2 + A14×2 + A15×2). Total B-metrics: 18 numbers (6 plots × 3). **Grand total: 55 scalar metrics per seed.**
+Total A-metrics: 37 numbers (A1–A34 + A13×2 + A14×2 + A15×2). Total B: 6 plots × 3 sub-metrics × 2 measures.
+Winner is by MSE; the two combined measures (MSE, % err) are what the READMEs display per plot.
 
 ### 5.3 Output files
 
@@ -360,23 +371,35 @@ python metrics/plot_diagnostics.py --method <Method> --dataset Heston --seed 0
 |------|---------|
 | `results/Heston/<Method>/plots/heston_diagnostics.png` | 8-panel stylised facts (50 sample paths, see §7.1) |
 
-### 5.4 Perfect-Recovery Baseline
+### 5.4 Perfect-Recovery Floor (reproducible, full-shuffle)
 
-Run this once per dataset to establish what metrics look like when the generative model is perfect (i.e., comparing two independent halves of the real data):
+The perfect-recovery floor answers: *what would each metric read if the generator were perfect?* It is
+computed by **row-shuffling** the real dataset — `S_perfect = S_real[rng.permutation(N)]` — which preserves
+every column-wise marginal exactly, so the "generated" set is statistically identical to the real set.
+Under this construction all B-metrics and every marginal A-metric collapse to 0; the only non-zero floors
+are finite-sample noise on path-kernel metrics (A1–A6 MMD/SWD), the learned scores (A13/A14), and the
+Heston sigma-correlation metrics (A15/A21 ≈ 0.614, A15 RMSE ≈ 0.065).
+
+Run it once per dataset with the **reproducible** script (fixed seed, 5-seed average):
 
 ```bash
-python metrics/perfect_recovery.py --dataset Heston
-# Output: results/Heston/perfect_recovery.json
+python metrics/compute_perfect_recovery.py            # add --no-pytorch to skip A13/A14 (no GPU)
+# Outputs (source of truth for all floor columns):
+#   methods/perfect_recovery/results/metrics_summary.csv    ← A1–A34 floors (mean ± std, 5 shuffles)
+#   methods/perfect_recovery/results/curve_b_aggregate.json ← B floors (all 0)
+#   methods/perfect_recovery/results/seed_{0..4}_metrics.json
 ```
 
-Perfect-recovery floors are **method-independent** — they come only from the real dataset, never from a
-generative model's output — so compute them once per dataset and document them once per method, not in
-`results/README.md`. Add a dedicated `## Perfect Recovery Floor` section to **each** `methods/<Method>/README.md`
-(see `methods/TimeGAN/README.md#perfect-recovery-floor` for the template: intro paragraph + a
-category-sorted `ID | Metric | Category | Perfect Floor` table). The numbers in that table must be identical
-across every method's README, since they depend only on the dataset. Do **not** add a "Perfect Recovery"
-column back into `results/README.md`'s cross-method tables — link to the methods/ sections instead. This
-makes the metric scale interpretable — any method should aim to approach these values.
+**Display rule (current standard — reversed from the old standalone-section rule):**
+The floor is shown as the **last column** (`Perfect` / `Perfect floor`) of every metric table across the repo:
+`methods/<Method>/README.md`, `results/Heston/<Method>/README.md`, `results/README.md`, and root `README.md`.
+There is **no** standalone `## Perfect Recovery Floor` section any more — it was removed.
+
+Because floors are dataset-derived (never method-derived), the `Perfect` column values must be **identical**
+across every method's tables. Copy the A floors from `methods/perfect_recovery/results/metrics_summary.csv`
+and the B floors (all 0) from `curve_b_aggregate.json` — or from an existing method's README.
+`methods/perfect_recovery/` also holds its own README + 5 seed metric JSONs, so the floor is fully
+reproducible, not a hand-typed constant. PS-MC rows (which have no perfect analogue) show `—`.
 
 ---
 
@@ -466,6 +489,14 @@ Saved to `results/Heston/<Method>/plots/disc_classifier_loss.png`.
 - All 5 seeds overlaid
 - Horizontal dashed reference line at ln(2) ≈ 0.693 (random-chance level)
 
+> **Fresh-retrain guarantee (verified 2026-07-19):** the A13 classifier is **retrained from scratch for
+> every method and every seed**. `compute_discriminative_score` (in `metrics/discriminative_score.py`)
+> instantiates a new `GRUDiscriminator` / `MLPDiscriminator` and a new Adam optimiser on each call, and
+> `compute_all.py` calls it once inside the per-seed loop (never caches weights across seeds or methods).
+> The same holds for A14 (`compute_predictive_score`). This means the discriminative/predictive scores are
+> never contaminated by a previously-trained classifier — each score reflects a fresh 2000-step (A13) /
+> 5000-step (A14) fit on that seed's real-vs-fake data.
+
 ### 7.3 Predictive Score Loss (A14)
 
 Saved to `results/Heston/<Method>/plots/pred_score_loss.png`.
@@ -535,27 +566,33 @@ Rules:
 
 #### Section 3 — B Curve-Shape Metrics
 
+Two sublines per plot (MSE row + % err row), each combining funct/der/sec\_der into one number
+(mean = sum, std = quadrature). Last column = Perfect floor (0 for every B plot). Winner is by MSE.
+
 ```markdown
 ## B — Curve-Shape Metrics — mean ± std across 5 seeds
 
-> MSE between real and generated **curve** (not a scalar).
-> - **funct**: MSE(L\_real, L\_gen). **der**: MSE of first finite difference. **sec\_der**: second.
-> All ↓ lower is better. Perfect floor = 0 for all.
+> Each plot yields a **curve** L. For the curve, its 1st diff (der) and 2nd diff (sec\_der) we compute
+> two measures and combine the three sub-scores into one number per measure:
+> - **MSE**: mean((L\_real − L\_gen)²). **% err**: mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100.
+> All ↓ lower is better. Perfect floor = 0 for all. Winner is by MSE.
 
-| Plot | funct | der | sec\_der |
-|------|-------|-----|----------|
-| Log-return histogram | ... | ... | ... |
-| QQ plot              | ... | ~0  | ~0  |
-| ACF \|r\|            | ... | ... | ... |
-| ACF r²               | ... | ... | ... |
-| Rolling vol hist.    | ... | ... | ... |
-| Tail survival        | ... | ... | ~0  |
+| Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect |
+|------|---------|-----------|--------|--------|--------|--------|--------|:------:|
+| **Log-return histogram** | MSE   | ... | ... | ... | ... | ... | ... | 0 |
+|                          | % err | ... | ... | ... | ... | ... | ... | 0 |
+| **QQ plot**              | MSE   | ... | | | | | | 0 |
+|                          | % err | ... | | | | | | 0 |
+| ... (ACF \|r\|, ACF r², rolling vol hist., tail survival — same 2 rows each) |
 ```
 
-#### Section 4 — Perfect Recovery Floor
+#### Section 4 — (removed) Perfect Recovery Floor is now a column, not a section
 
-Required. See §15.1 Section 4 for the exact verbatim block and the rule that these numbers must be
-copied verbatim from an existing method's README, never recomputed per method.
+There is **no** standalone `## Perfect Recovery Floor` section. The floor is the **last column**
+(`Perfect` / `Perfect floor`) of the Section 2 (A1–A34) and Section 3 (B) tables above. Copy the A values
+from `methods/perfect_recovery/results/metrics_summary.csv` and the B values (all 0) from
+`curve_b_aggregate.json` (§5.4); they are identical across every method because they are dataset-derived,
+not method-derived. PS-MC rows show `—`.
 
 #### Section 5 — Stylised Facts Diagnostic
 
@@ -662,7 +699,7 @@ It is linked from the method README.
 Required sections:
 
 1. **Header**: method name, paper reference, one-line description
-2. **Metrics table**: same 19-number table as §8 Section 2 (keep in sync)
+2. **Metrics table**: same A1–A34 + B tables as §8 Sections 2–3 (keep in sync), each ending with a Perfect column
 3. **Per-seed breakdown**: for the 4 most diagnostic metrics (A1 Path MMD², A13 GRU, A15 Corr, A24 RV Law Loss), list each seed's value and note which seed is weakest and why
 4. **Observations**: 3–5 bullet points on what the metrics reveal — strengths, weaknesses, unexpected findings
 5. **File index table**
@@ -789,18 +826,19 @@ PATH SHADOWING
   [ ] CRPS_h32 < 3.732 for at least 4/5 seeds (beats naive RW)
 
 DOCUMENTATION
-  [ ] methods/<Method>/README.md  — all 11 sections present (§8), including "## Perfect Recovery Floor"
-       (Section 4), no placeholder text
+  [ ] methods/<Method>/README.md  — all sections present (§8), no placeholder text; A1–A34 table and
+       B table both end with a `Perfect` column (NO standalone "## Perfect Recovery Floor" section)
   [ ] methods/<Method>/code/README.md  — paper, variant, fixes, architecture, hyperparams
-  [ ] results/Heston/<Method>/README.md  — metrics table, per-seed breakdown, observations
+  [ ] results/Heston/<Method>/README.md  — metrics table (with Perfect column), per-seed breakdown, observations
   [ ] results/Heston/<Method>/path_shadowing/README.md  — method detail, results, figures
 
-PERFECT RECOVERY BASELINE
-  [ ] results/Heston/perfect_recovery.json — run: python metrics/perfect_recovery.py --dataset Heston
-  [ ] methods/<Method>/README.md — "## Perfect Recovery Floor" section present (category-sorted table,
-       identical numbers to every other method's README — floors are dataset-derived, not method-derived)
-  [ ] results/README.md — NOT modified for this: no "Perfect Recovery" column in the cross-method tables,
-       only a link to methods/<Method>/README.md#perfect-recovery-floor
+PERFECT RECOVERY FLOOR (reproducible, full-shuffle)
+  [ ] methods/perfect_recovery/results/{metrics_summary.csv, curve_b_aggregate.json, seed_*_metrics.json}
+       — run: python metrics/compute_perfect_recovery.py   (add --no-pytorch to skip A13/A14)
+  [ ] Perfect column added as the LAST column of every A1–A34 and B table in: methods/<Method>/README.md,
+       results/Heston/<Method>/README.md, results/README.md, root README.md
+  [ ] Floor values IDENTICAL across all methods (A from metrics_summary.csv, B all 0 from curve_b_aggregate.json);
+       PS-MC rows show "—"
 
 GITHUB
   [ ] All files committed with correct message format
@@ -927,49 +965,41 @@ and root README.md) — do not sort by ID number.
 ```markdown
 ## B — Curve-Shape Metrics — mean ± std across 5 seeds
 
-> MSE between real and generated **curve** (not a scalar). Three sub-metrics per plot:
-> - **funct**: MSE(L\_real, L\_gen) between curve values
-> - **der**: MSE of first finite difference — L\_der\[k\] = L\[k+1\] − L\[k\]
-> - **sec\_der**: MSE of second finite difference — L\_sec\[k\] = L\_der\[k+1\] − L\_der\[k\]
->
-> All ↓ lower is better. Perfect floor = 0 for all.
+> Each plot yields a **curve** L (not a scalar). For L, its 1st diff (der) and 2nd diff (sec\_der) we
+> compute two measures and combine the three sub-scores into one number per measure:
+> - **MSE**: mean((L\_real − L\_gen)²). **% err**: mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100.
+> Combined mean = sum of the three seed-means; combined std = sqrt(std\_funct² + std\_der² + std\_sec\_der²).
+> All ↓ lower is better. Perfect floor = 0 for all. Winner is by MSE.
 
-| Plot | funct | der | sec\_der |
-|------|-------|-----|----------|
-| Log-return histogram | X.XXX ± X.XXX | X.XXX ± X.XXX | X.XXX ± X.XXX |
-| QQ plot              | X.XXe-X ± X.XXe-X | ~0 | ~0 |
-| ACF \|r\|            | X.XXXXX ± X.XXXXX | X.Xe-X | X.Xe-X |
-| ACF r²               | X.XXXXX ± X.XXXXX | X.Xe-X | X.Xe-X |
-| Rolling vol hist.    | XXX.X ± XXX.X | XX.X ± XX.X | X.X ± X.X |
-| Tail survival        | X.XXXXX ± X.XXXXX | X.Xe-X | ~0 |
+| Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect |
+|------|---------|-----------|--------|--------|--------|--------|--------|:------:|
+| **Log-return histogram** | MSE   | X.XX ± X.XX | ... | 0 |
+|                          | % err | XXXXX% ± XXXX% | ... | 0 |
+| **QQ plot**              | MSE   | X.XXe-X ± X.XXe-X | ... | 0 |
+|                          | % err | XXX% ± XX% | ... | 0 |
+| **ACF \|r\| lags 1–20**  | MSE   | X.XXe-X ± X.XXe-X | ... | 0 |
+|                          | % err | XXXX% ± XX% | ... | 0 |
+| **ACF r² lags 1–20**     | MSE   | X.XXe-X ± X.XXe-X | ... | 0 |
+|                          | % err | XXXX% ± XXX% | ... | 0 |
+| **Rolling vol histogram**| MSE   | XXXX ± X.X | ... | 0 |
+|                          | % err | XXX% ± XX% | ... | 0 |
+| **Tail survival**        | MSE   | X.XXe-X ± X.Xe-X | ... | 0 |
+|                          | % err | XXXXX% ± XXX% | ... | 0 |
 ```
 
-#### Section 4 — Perfect Recovery Floor
-```markdown
-## Perfect Recovery Floor
+The % err row blows up (triple-digit-plus %) wherever the real curve passes through near-zero values —
+expected, a property of the curve, not a bug.
 
-Row-shuffling the real dataset leaves all marginal distributions identical (each Heston path is i.i.d.),
-so B-metric floors are exactly 0 for all 6 plots. A-metric floors are non-zero where the metric depends
-on path-level structure (covariance, MMD path kernel, SWD path distance) or on finite-sample noise.
+#### Section 4 — (removed) Perfect Recovery Floor is now a column
 
-These floors are computed **once, directly from the real Heston dataset** (two independent row-shuffled
-halves evaluated against each other) — they do not depend on this method in any way, which is why the
-numbers below must be identical to every other method's `## Perfect Recovery Floor` table.
-
-| ID | Metric | Category | Perfect Floor |
-|----|--------|----------|--------------|
-| | **— Fat Tail —** | | |
-| A10 | Kurtosis Error | Fat Tail | 0.017 |
-...
-| | **— Heston Spec —** | | |
-| A21 | Oracle Sigma Corr ↑ | Heston Spec | 0.614 |
-```
-
-This section is REQUIRED for every method README. Copy the numbers verbatim from an existing method's
-`## Perfect Recovery Floor` table (e.g. `methods/TimeGAN/README.md`) — never recompute per method, since
-the floor is dataset-derived, not method-derived. If it doesn't exist yet for the dataset, generate it
-once with `python metrics/compute_perfect_recovery.py --dataset Heston` (§5.4) and add the section to
-every existing method README at the same time.
+There is **no** standalone `## Perfect Recovery Floor` section. The floor is the **last column**
+(`Perfect` / `Perfect floor`) of the Section 2 (A1–A34) and Section 3 (B) tables. Copy the A floors from
+`methods/perfect_recovery/results/metrics_summary.csv` and the B floors (all 0) from `curve_b_aggregate.json`
+(§5.4) — they are dataset-derived, so they must be identical across every method's README. If the outputs
+don't exist yet, generate them once with `python metrics/compute_perfect_recovery.py`. Row-shuffling the
+real dataset leaves all marginals identical, so all B floors and all marginal A floors are exactly 0; only
+path-kernel (A1–A6), learned (A13/A14) and Heston-sigma (A15/A21) floors are non-zero finite-sample noise.
+PS-MC rows show `—`.
 
 ---
 
@@ -982,11 +1012,13 @@ every existing method README at the same time.
 2. **What we generate** (if applicable) — SDE, scaling steps, pipeline
 
 3. **Results (mean ± std across 5 seeds)**
-   - Subsection **A1–A34 Core metrics**: full table with columns `ID | Metric | Mean ± Std | Seed 0..4`
-     — no `Perfect floor` column here (perfect-recovery floors live only in `methods/<Method>/README.md`,
-     §15.1 Section 4 — this file just links to it). Rows grouped by category in the mandatory order:
-     **Fat Tail → Distribution → Adversarial → Predictive → Temporal → Vol → Heston Spec** (see §15.1).
-   - Subsection **B Curve-Shape Metrics**: 6-row × 3-column table (funct / der / sec\_der)
+   - Subsection **A1–A34 Core metrics**: full table with columns
+     `ID | Metric | Mean ± Std | Seed 0..4 | Perfect` — the **last column is the Perfect floor**
+     (A floors from `methods/perfect_recovery/results/metrics_summary.csv`, B floors all 0, §5.4). Rows grouped by category
+     in the mandatory order: **Fat Tail → Distribution → Adversarial → Predictive → Temporal → Vol →
+     Heston Spec** (see §15.1).
+   - Subsection **B Curve-Shape Metrics**: two-subline table (MSE row + % err row per plot) with a
+     trailing `Perfect` column (0 for every plot). Winner is by MSE.
    - Footnotes for A13, A14, A15, A16–A34
 
 4. **Comparison with the paper**
@@ -1000,7 +1032,7 @@ every existing method README at the same time.
    - Subsection C (if applicable): Scaling / implementation notes
 
 5. **B Curve-Shape Metrics** ← *copied verbatim from Section 3 of the method README*
-   - Include the B plot mapping table (6 plots × 3 sub-metrics: funct / der / sec\_der)
+   - Include the two-subline B table (MSE row + % err row per plot, trailing Perfect column, winner by MSE)
    - Include the 8-panel diagnostic PNG: `![Heston Diagnostics](plots/heston_diagnostics.png)`
 
 > **Note:** The Metric Definitions section (A1–A24 with LaTeX formulas) lives in `metrics/README.md`
@@ -1039,3 +1071,6 @@ When a new standard is established (new metric, new section format, new B metric
 - 2026-07-17: Replaced A16–A20 (tail survival, oracle AR, RV law) with A16–A24 (log-ret std, tail quantile errors, kurtosis ratio, sigma mean error, learned/oracle sigma corr, ACF lag-1 errors, RV law loss).
 - 2026-07-17: Added §15 (README Writing Protocol) with exact section order and format for method, results, and code READMEs.
 - 2026-07-18: B1–B12 scalar metrics removed; replaced by 18 B curve-shape keys (6 plots × 3 sub-metrics: funct/der/sec\_der). Old B1–B10 scalars promoted to A25–A34 (distributional shape / tail). Grand total: 39 → 55 scalars per seed. Updated §5.2, §5.3, §13, §15.1, §15.2. Added perfect recovery baseline: `results/Heston/perfect_recovery/` (5 seeds, row-shuffle, A1–A34 + B_ all computed).
+- 2026-07-19: **B display → two sublines.** Each B plot now shows two combined rows — **MSE** and **% err** — instead of a funct/der/sec\_der 3-column table. The 3 sub-metrics are combined per measure (mean = sum, std = quadrature) in `metrics/stylized_metrics.py`; recompute via `metrics/recompute_curve_b.py`. Winner between methods is decided by the MSE row. Updated §5.2, §8 Section 3, §15.1 Section 3, §15.2.
+- 2026-07-19: **Perfect Recovery Floor → column, not section.** The standalone `## Perfect Recovery Floor` section was removed from method READMEs; the floor is now the **last column** (`Perfect` / `Perfect floor`) of every A1–A34 and B table across `methods/<Method>/`, `results/Heston/<Method>/`, `results/README.md`, and root `README.md`. Source of truth: `methods/perfect_recovery/results/metrics_summary.csv` (A floors) + `curve_b_aggregate.json` (B floors, all 0), produced reproducibly by `metrics/compute_perfect_recovery.py` (full-shuffle `S_real[rng.permutation(N)]`, 5-seed average). Floors identical across all methods (dataset-derived). PS-MC rows show `—`. Updated §5.4, §8 Section 4, §13, §15.1 Section 4, §15.2.
+- 2026-07-19: **Verified A13/A14 fresh-retrain.** Confirmed `compute_discriminative_score` / `compute_predictive_score` instantiate a new classifier + optimiser on every call, invoked once per seed in `compute_all.py`'s seed loop — no weight caching across seeds or methods. Documented in §7.2.

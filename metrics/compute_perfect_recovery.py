@@ -17,8 +17,8 @@ Usage
 
 Output
 ──────
-    results/Heston/perfect_recovery/seed_{0..4}_metrics.json
-    results/Heston/perfect_recovery/metrics_summary.csv
+    methods/perfect_recovery/results/seed_{0..4}_metrics.json
+    methods/perfect_recovery/results/metrics_summary.csv
 """
 
 import argparse
@@ -190,7 +190,7 @@ def main():
         print("A13/A14 SKIPPED (--no-pytorch)")
 
     # ── output directory ───────────────────────────────────────────────────────
-    out_dir = os.path.join(REPO, "results", DATASET, "perfect_recovery")
+    out_dir = os.path.join(REPO, "methods", "perfect_recovery", "results")
     os.makedirs(out_dir, exist_ok=True)
 
     # ── run seeds ─────────────────────────────────────────────────────────────

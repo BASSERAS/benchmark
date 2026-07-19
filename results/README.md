@@ -6,60 +6,12 @@ All methods are evaluated on the same dataset:
 
 ---
 
-## Methods
-
-### TimeGAN — Time-series Generative Adversarial Network
-**Paper:** Yoon, Jarrett, van der Schaar — *Time-series GAN* — NeurIPS 2019, [arXiv:2010.00782](https://arxiv.org/abs/2010.00782)
-**Code:** [jsyoon0823/TimeGAN](https://github.com/jsyoon0823/TimeGAN) — PyTorch reimplementation in this repo
-
-TimeGAN is a **neural GAN** with five interacting GRU components:
-- **Embedder + Recovery** (3-layer GRU, hidden=24): maps price paths ↔ latent embedding space
-- **Generator** (3-layer GRU): generates latent sequences from Gaussian noise
-- **Supervisor** (2-layer GRU): enforces step-by-step temporal consistency in latent space
-- **Discriminator** (3-layer GRU): distinguishes real from generated latent sequences
-
-**Training**: 3-phase adversarial, 20 000 steps (5 k embed → 5 k supervisor → 10 k joint).
-**Hardware**: GPU required (A100 80 GB). ~6–8 min/seed.
-**Generation**: Milliseconds (GRU forward pass). Sequences start near S₀=100 via internal min-max denorm.
-
-### SBTS — Schrödinger Bridge Time Series
-**Paper:** Alouadi, Barreau, Carlier, Pham — *Robust Time Series Generation via Schrödinger Bridge* — ICAIF 2025, [arXiv:2503.02943](https://arxiv.org/abs/2503.02943)
-**Code:** [alexouadi/SBTS](https://github.com/alexouadi/SBTS) — Numba-accelerated reimplementation in this repo
-
-SBTS is a **non-parametric kernel method** with no neural network and no training:
-- Estimates the Schrödinger-bridge drift from training data using a compact quartic kernel K_h
-- Simulates paths via Euler-Maruyama with the estimated drift (N_pi=200 substeps per interval)
-- Markovian order K=1: weight of path m depends only on its most recent state X_i^m (valid for Heston)
-- Internally operates on **scaled log-returns** R̃ = R × √Δt / σ(R) — not on prices or log-prices — then reconstructs prices: S_gen[:,t+1] = S_gen[:,t] × exp(R_gen[:,t])
-
-**Generation**: No training phase. ~6.3 min/seed with 64 CPU workers.
-**Hardware**: CPU-only (Numba JIT). GPUs only used for A13/A14 metric evaluation.
-
----
-
-## Key differences
-
-| Aspect | TimeGAN | SBTS |
-|--------|:-------:|:----:|
-| **Type** | Neural GAN (5 GRU components) | Non-parametric kernel estimator |
-| **Learnable parameters** | ~120 k (GRU weights) | **0** (no parameters) |
-| **Training time / seed** | ~6–8 min (A100 GPU) | No training |
-| **Generation time / seed** | <1 s (GPU inference) | ~6.3 min (64 CPU workers) |
-| **Temporal memory** | Full (GRU sees all past steps) | **Markov-1 only** |
-| **Internal representation** | Latent embeddings (min-max) | Scaled log-returns R̃ |
-| **Final output** | Price paths (S_t) | Price paths (S_t) |
-| **Cross-seed stability** | Moderate (GAN variance) | **High** (deterministic kernel) |
-| **Scales to long T** | Well (RNN) | Degrades (K=1 insufficient) |
-| **Hyperparameter sensitivity** | Many (arch, lr, steps) | One critical: h (bandwidth) |
-
----
-
 ## Cross-Method Comparison A1–A34 — Heston (mean ± std, 5 seeds)
 
 ↓ = lower is better. ↑ = higher is better. (→ 1) = ratio, target = 1.0. **Bold** = best method per metric.
 Perfect-recovery floors (the empirical best-case score a perfect generator would achieve with finite
-samples, from two independent row-shuffled halves of the real dataset evaluated against each other) are
-method-independent and documented once per method: [`methods/TimeGAN/README.md`](../methods/TimeGAN/README.md#perfect-recovery-floor) · [`methods/SBTS/README.md`](../methods/SBTS/README.md#perfect-recovery-floor).
+samples) are method-independent and documented once, reproducibly, in
+[`methods/perfect_recovery/README.md`](../methods/perfect_recovery/README.md).
 
 | Metric | SBTS | TimeGAN | Winner |
 |--------|:----:|:-------:|:------:|
@@ -132,45 +84,49 @@ method-independent and documented once per method: [`methods/TimeGAN/README.md`]
 
 ## B — Curve-Shape Metrics Cross-Method Comparison — Heston (mean ± std, 5 seeds)
 
-Each of 6 diagnostic plots generates 3 sub-metrics (↓ lower is better for all):
-- **funct**: MSE between generated and real curve values
-- **der**: MSE of first finite differences L[k+1]−L[k] (slope matching)
-- **sec\_der**: MSE of second finite differences (curvature matching)
+Each of the 6 diagnostic plots yields a **curve** L (a list of values), not a scalar. For each plot we
+build three lists — the curve L, its first finite difference L' (der), and its second finite difference
+L'' (sec\_der) — then combine the three sub-scores into **one number per plot** under two error measures:
 
-Histogram bins use real-data [0.5th, 99.5th]-percentile edges — B perfect floor = 0 for all (row-shuffle preserves all marginals exactly).
+- **MSE row**: for each list, dᵢ = mean((L_real − L_gen)²). Combined mean = sum of the three seed-means;
+  combined std = sqrt(std\_funct² + std\_der² + std\_sec\_der²) (quadrature).
+- **% err row**: for each list, dᵢ = mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100. Combined the same way.
 
-| Plot | Sub-metric | SBTS | TimeGAN | Winner |
-|------|-----------|:----:|:-------:|:------:|
-| Log-return histogram | funct | **11.59 ± 0.156** | 89.43 ± 101.01 | **SBTS** |
-| | der | **0.225 ± 0.0091** | 24.19 ± 38.76 | **SBTS** |
-| | sec\_der | **0.320 ± 0.0373** | 30.59 ± 53.31 | **SBTS** |
-| QQ plot | funct | 8.70e-6 ± 6.8e-8 | **6.90e-6 ± 3.3e-6** | **TimeGAN** |
-| | der | 1.71e-7 ± 3.6e-9 | **1.60e-7 ± 5.9e-8** | **TimeGAN** |
-| | sec\_der | 3.75e-8 ± 1.7e-9 | **2.67e-8 ± 1.1e-8** | **TimeGAN** |
-| ACF \|r\| lags 1–20 | funct | **2.42e-3 ± 3.3e-5** | 9.13e-3 ± 8.5e-3 | **SBTS** |
-| | der | 1.32e-3 ± 1.3e-5 | **7.10e-4 ± 4.6e-4** | **TimeGAN** |
-| | sec\_der | 8.27e-4 ± 9.6e-6 | **6.32e-4 ± 7.1e-4** | **TimeGAN** |
-| ACF r² lags 1–20 | funct | **2.54e-3 ± 4.2e-5** | 3.76e-3 ± 2.9e-3 | **SBTS** |
-| | der | 1.61e-3 ± 2.9e-5 | **8.42e-4 ± 5.98e-4** | **TimeGAN** |
-| | sec\_der | **1.03e-3 ± 2.4e-5** | 1.17e-3 ± 1.5e-3 | **SBTS** |
-| Rolling vol histogram | funct | 1214 ± 5.1 | **430.4 ± 216.7** | **TimeGAN** |
-| | der | 11.81 ± 0.072 | **5.756 ± 4.211** | **TimeGAN** |
-| | sec\_der | **1.775 ± 0.399** | 3.147 ± 1.498 | **SBTS** |
-| Tail survival | funct | **5.74e-3 ± 6.6e-5** | 1.169e-2 ± 9.2e-3 | **SBTS** |
-| | der | **6.86e-6 ± 6.6e-8** | 1.857e-5 ± 1.7e-5 | **SBTS** |
-| | sec\_der | **6.65e-8 ± 5.6e-9** | 3.34e-7 ± 4.4e-7 | **SBTS** |
+↓ lower is better for both rows. Histogram bins use real-data [0.5th, 99.5th]-percentile edges.
+**Perfect floor = 0** for every plot (row-shuffle preserves all marginals exactly). Winner is by MSE.
 
-> **Log-return histogram**: SBTS (11.6) much smaller than TimeGAN (89.4) — kernel smoothing closely preserves marginal returns. TimeGAN std=101 driven by seed-collapse events (seeds 2 and 4).
->
-> **QQ plot**: TimeGAN wins marginally on all 3 sub-metrics (6.9e-6 vs 8.7e-6) — both reproduce QQ shape closely.
->
-> **ACF |r| and r²**: SBTS wins on curve level (funct). TimeGAN wins derivative sub-metrics by a narrow margin.
->
-> **Rolling vol histogram**: With real-data bins, SBTS near-constant vol produces high funct MSE (1214 vs 430) and der MSE (11.81 vs 5.756). TimeGAN wins funct and der. SBTS wins curvature (sec\_der).
->
-> **Tail survival**: SBTS wins all 3 sub-metrics.
+| Plot | Measure | SBTS | TimeGAN | Winner |
+|------|---------|:----:|:-------:|:------:|
+| **Log-return histogram** | MSE   | **12.14 ± 0.16** | 144.2 ± 120.6 | **SBTS** |
+|                          | % err | **14264% ± 8212%** | 75440% ± 24681% | |
+| **QQ plot**              | MSE   | 8.90e-6 ± 6.8e-8 | **7.09e-6 ± 3.3e-6** | **TimeGAN** |
+|                          | % err | **113.1% ± 5.8%** | 157.9% ± 27.2% | |
+| **ACF \|r\| lags 1–20**  | MSE   | **4.57e-3 ± 3.7e-5** | 1.05e-2 ± 8.5e-3 | **SBTS** |
+|                          | % err | **1269.9% ± 40.0%** | 2342.1% ± 1351.8% | |
+| **ACF r² lags 1–20**     | MSE   | **5.17e-3 ± 5.7e-5** | 5.77e-3 ± 3.3e-3 | **SBTS** |
+|                          | % err | **1603.5% ± 142.8%** | 4578.1% ± 4266.4% | |
+| **Rolling vol histogram**| MSE   | 1227.3 ± 5.1 | **439.3 ± 216.7** | **TimeGAN** |
+|                          | % err | **715.9% ± 20.2%** | 882.8% ± 410.8% | |
+| **Tail survival**        | MSE   | **5.74e-3 ± 6.6e-5** | 1.17e-2 ± 9.2e-3 | **SBTS** |
+|                          | % err | **17151% ± 910%** | 24327% ± 11324% | |
 
-**SBTS wins B: 10/18. TimeGAN wins 8/18.** (10 and 8 are sub-metric win *counts* out of 18 B sub-metrics — every metric above is still computed over the same **5 seeds** per method.)
+> **Reading the two rows**: the **MSE** row is an absolute squared-error on the curve (+ its slope +
+> its curvature); the **% err** row is a relative error and blows up when the real curve passes through
+> near-zero values (empty histogram bins, tail-survival ≈ 0, near-zero ACF lags), so triple-digit-plus
+> percentages are expected and are a property of the curve, not a bug.
+>
+> **Log-return histogram**: SBTS (MSE 12.1) much smaller than TimeGAN (144.2) — kernel smoothing closely
+> preserves marginal returns. TimeGAN std=120.6 is driven by a seed-2 collapse (504.5 vs 11–170).
+>
+> **QQ plot**: TimeGAN wins on MSE (7.1e-6 vs 8.9e-6); SBTS wins on % err (both reproduce QQ shape closely).
+>
+> **Rolling vol histogram**: with real-data bins, SBTS's near-constant vol produces high MSE (1227 vs 439);
+> TimeGAN wins here.
+>
+> **Tail survival**: SBTS wins decisively on both rows.
+
+**SBTS wins B: 4/6 plots on MSE. TimeGAN wins 2/6** (QQ plot, rolling-vol histogram). Each value is
+computed over the same **5 seeds** per method.
 
 ---
 
@@ -180,3 +136,59 @@ Histogram bins use real-data [0.5th, 99.5th]-percentile edges — B perfect floo
 |--------|---------------|---------------|
 | TimeGAN | [`Heston/TimeGAN/`](Heston/TimeGAN/) | [`../methods/TimeGAN/`](../methods/TimeGAN/) |
 | SBTS | [`Heston/SBTS/`](Heston/SBTS/) | [`../methods/SBTS/`](../methods/SBTS/) |
+| Perfect recovery (floor) | — | [`../methods/perfect_recovery/`](../methods/perfect_recovery/) |
+
+---
+
+## Methods
+
+### TimeGAN — Time-series Generative Adversarial Network
+**Paper:** Yoon, Jarrett, van der Schaar — *Time-series GAN* — NeurIPS 2019, [arXiv:2010.00782](https://arxiv.org/abs/2010.00782)
+**Code:** [jsyoon0823/TimeGAN](https://github.com/jsyoon0823/TimeGAN) — PyTorch reimplementation in this repo
+
+TimeGAN is a **neural GAN** with five interacting GRU components:
+- **Embedder + Recovery** (3-layer GRU, hidden=24): maps price paths ↔ latent embedding space
+- **Generator** (3-layer GRU): generates latent sequences from Gaussian noise
+- **Supervisor** (2-layer GRU): enforces step-by-step temporal consistency in latent space
+- **Discriminator** (3-layer GRU): distinguishes real from generated latent sequences
+
+**Training**: 3-phase adversarial, 20 000 steps (5 k embed → 5 k supervisor → 10 k joint).
+**Hardware**: GPU required (A100 80 GB). ~6–8 min/seed.
+**Generation**: Milliseconds (GRU forward pass). Sequences start near S₀=100 via internal min-max denorm.
+
+### SBTS — Schrödinger Bridge Time Series
+**Paper:** Alouadi, Barreau, Carlier, Pham — *Robust Time Series Generation via Schrödinger Bridge* — ICAIF 2025, [arXiv:2503.02943](https://arxiv.org/abs/2503.02943)
+**Code:** [alexouadi/SBTS](https://github.com/alexouadi/SBTS) — Numba-accelerated reimplementation in this repo
+
+SBTS is a **non-parametric kernel method** with no neural network and no training:
+- Estimates the Schrödinger-bridge drift from training data using a compact quartic kernel K_h
+- Simulates paths via Euler-Maruyama with the estimated drift (N_pi=200 substeps per interval)
+- Markovian order K=1: weight of path m depends only on its most recent state X_i^m (valid for Heston)
+- Internally operates on **scaled log-returns** R̃ = R × √Δt / σ(R) — not on prices or log-prices — then reconstructs prices: S_gen[:,t+1] = S_gen[:,t] × exp(R_gen[:,t])
+
+**Generation**: No training phase. ~6.3 min/seed with 64 CPU workers.
+**Hardware**: CPU-only (Numba JIT). GPUs only used for A13/A14 metric evaluation.
+
+### Perfect recovery — reproducible floor
+A row-shuffled copy of the real dataset (`S_real[rng.permutation(N)]`, one permutation per seed). Because a
+permutation preserves every column-wise marginal exactly, most A-metrics and all B-metrics hit **0**; the
+residual non-zero floors (A1–A6 MMD/SWD, A13/A14 learned scores, A15/A21 = 0.614) are pure finite-sample
+noise. This is the single source of truth for every "Perfect floor" column in the repo —
+see [`../methods/perfect_recovery/`](../methods/perfect_recovery/).
+
+---
+
+## Key differences
+
+| Aspect | TimeGAN | SBTS |
+|--------|:-------:|:----:|
+| **Type** | Neural GAN (5 GRU components) | Non-parametric kernel estimator |
+| **Learnable parameters** | ~120 k (GRU weights) | **0** (no parameters) |
+| **Training time / seed** | ~6–8 min (A100 GPU) | No training |
+| **Generation time / seed** | <1 s (GPU inference) | ~6.3 min (64 CPU workers) |
+| **Temporal memory** | Full (GRU sees all past steps) | **Markov-1 only** |
+| **Internal representation** | Latent embeddings (min-max) | Scaled log-returns R̃ |
+| **Final output** | Price paths (S_t) | Price paths (S_t) |
+| **Cross-seed stability** | Moderate (GAN variance) | **High** (deterministic kernel) |
+| **Scales to long T** | Well (RNN) | Degrades (K=1 insufficient) |
+| **Hyperparameter sensitivity** | Many (arch, lr, steps) | One critical: h (bandwidth) |
