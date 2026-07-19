@@ -1,17 +1,21 @@
 """
 compute_all.py — Run all 34 A-metrics + 18 B curve metrics for each of 5 seeds.
 
+Metrics are numbered in category-display order:
+  Fat Tail (A1–A5) · Distribution (A6–A17) · Adversarial (A18, PyTorch GRU+MLP)
+  · Predictive (A19, PyTorch GRU+MLP) · Temporal (A20–A24) · Vol (A25–A32)
+  · Heston Spec (A33–A34).
+
 For each seed:
   - Loads real paths from dataset/<dataset>/
   - Loads generated paths from methods/<method>/generated_paths/seed_i/
-  - Computes A1–A12 (numpy), A13 (PyTorch GRU+MLP), A14 (PyTorch GRU+MLP),
-    A15–A34 (numpy), B curve metrics (18 keys, numpy)
+  - Computes A1–A34 (numpy + PyTorch) and B curve metrics (36 keys, numpy)
   - Saves results/<dataset>/<method>/seed_i_metrics.json
   - Generates PCA + t-SNE plots
 
 After all seeds: writes results/<dataset>/<method>/metrics_summary.csv
 
-All metric functions live in metrics/metrics_np.py (A1–A34).
+All numpy metric functions live in metrics/metrics_np.py.
 B curve metrics are computed by metrics/stylized_metrics.py::compute_curve_metrics.
 """
 
@@ -64,7 +68,6 @@ from metrics_np import (
     abs_return_quantile_error,
     kurtosis_ratio,
     sigma_mean_error,
-    learned_oracle_sigma_corr,
     acf_lag1_abs_error,
     acf_lag1_sq_error,
     rv_law_loss,
@@ -116,164 +119,116 @@ def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray) -> dict:
     idx_f = np.random.choice(len(fake), N_sub, replace=False)
     R = real3[idx_r]; F = fake3[idx_f]
 
-    print("  A1  path MMD2  ...", end=" ", flush=True)
-    results["A1_path_mmd2"]        = float(mmd2(R, F));          print(f"{results['A1_path_mmd2']:.6f}")
-    print("  A2  terminal MMD2 ...", end=" ", flush=True)
-    results["A2_terminal_mmd2"]    = float(terminal_mmd2(R, F)); print(f"{results['A2_terminal_mmd2']:.6f}")
-    print("  A3  increment MMD2 ...", end=" ", flush=True)
-    results["A3_increment_mmd2"]   = float(increment_mmd2(R, F));print(f"{results['A3_increment_mmd2']:.6f}")
-    print("  A4  volatility MMD ...", end=" ", flush=True)
-    results["A4_volatility_mmd"]   = float(volatility_mmd(R, F));print(f"{results['A4_volatility_mmd']:.6f}")
-    print("  A5  terminal SWD ...", end=" ", flush=True)
-    results["A5_terminal_swd"]     = float(terminal_swd(R, F));  print(f"{results['A5_terminal_swd']:.6f}")
-    print("  A6  path SWD ...", end=" ", flush=True)
-    results["A6_path_swd"]         = float(path_swd(R, F));      print(f"{results['A6_path_swd']:.6f}")
-
-    # Statistical metrics use full dataset
-    print("  A7  cov error ...", end=" ", flush=True)
-    results["A7_cov_error"]        = float(terminal_cov_error(real3, fake3)); print(f"{results['A7_cov_error']:.6f}")
-    print("  A8  mean RMSE ...", end=" ", flush=True)
-    results["A8_mean_rmse"]        = float(terminal_mean_rmse(real3, fake3)); print(f"{results['A8_mean_rmse']:.6f}")
-    print("  A9  std error ...", end=" ", flush=True)
-    results["A9_std_error"]        = float(return_std_error(real3, fake3));   print(f"{results['A9_std_error']:.6f}")
-    print("  A10 kurtosis error ...", end=" ", flush=True)
-    results["A10_kurtosis_error"]  = float(return_kurtosis_error(real3, fake3));print(f"{results['A10_kurtosis_error']:.6f}")
-    print("  A11 ACF abs returns ...", end=" ", flush=True)
-    _lr_real = np.diff(np.log(real3), axis=1); _lr_fake = np.diff(np.log(fake3), axis=1)
-    results["A11_acf_abs"]         = float(acf_error(np.abs(_lr_fake), np.abs(_lr_real))); print(f"{results['A11_acf_abs']:.6f}")
-    print("  A12 ACF sq returns ...", end=" ", flush=True)
-    results["A12_acf_sq"]          = float(acf_error(_lr_fake**2, _lr_real**2));           print(f"{results['A12_acf_sq']:.6f}")
-
-    # A13 Discriminative Score — on log-returns (detects ARCH, fat tails, leverage)
-    print("  A13 discriminative (GRU + MLP) ...", flush=True)
-    _lr_S    = np.diff(np.log(S[:, :, None]),    axis=1).squeeze(-1)  # (N, T-1)
-    _lr_fake = np.diff(np.log(fake[:, :, None]), axis=1).squeeze(-1)  # (N, T-1)
-    d13 = compute_discriminative_score(_lr_S, _lr_fake, n_steps=2000, device=DEVICE)
-    results["A13_disc_score_gru"] = d13["disc_score_gru"]
-    results["A13_disc_score_mlp"] = d13["disc_score_mlp"]
-    print(f"       GRU={d13['disc_score_gru']:.4f}  MLP={d13['disc_score_mlp']:.4f}")
-    # Save classifier loss curves
+    # Log-return views reused by several categories
+    _lr_real_3d = np.diff(np.log(real3), axis=1)          # (N, T-1, 1) increments (ACF)
+    _lr_fake_3d = np.diff(np.log(fake3), axis=1)
+    _lr_S       = _lr_real_3d.squeeze(-1)                 # (N, T-1) for GRU/MLP
+    _lr_F       = _lr_fake_3d.squeeze(-1)
     import csv
+
+    # ── Fat Tail (A1–A5) ──────────────────────────────────────────────────────
+    print("  A1  kurtosis error ...", end=" ", flush=True)
+    results["A1_kurtosis_error"]      = float(return_kurtosis_error(real3, fake3)); print(f"{results['A1_kurtosis_error']:.6f}")
+    print("  A2  |r| q95 error ...", end=" ", flush=True)
+    results["A2_abs_r_q95_error"]     = float(abs_return_quantile_error(real3, fake3, q=0.95)); print(f"{results['A2_abs_r_q95_error']:.6f}")
+    print("  A3  |r| q99 error ...", end=" ", flush=True)
+    results["A3_abs_r_q99_error"]     = float(abs_return_quantile_error(real3, fake3, q=0.99)); print(f"{results['A3_abs_r_q99_error']:.6f}")
+    print("  A4  tail QQ error ...", end=" ", flush=True)
+    results["A4_tail_qq_error"]       = float(tail_qq_error(real3, fake3)); print(f"{results['A4_tail_qq_error']:.6f}")
+    print("  A5  Hill tail index error ...", end=" ", flush=True)
+    results["A5_hill_tail_index_error"] = float(hill_tail_index_error(real3, fake3)); print(f"{results['A5_hill_tail_index_error']:.6f}")
+
+    # ── Distribution (A6–A17) ─────────────────────────────────────────────────
+    print("  A6  path MMD2 ...", end=" ", flush=True)
+    results["A6_path_mmd2"]           = float(mmd2(R, F)); print(f"{results['A6_path_mmd2']:.6f}")
+    print("  A7  terminal MMD2 ...", end=" ", flush=True)
+    results["A7_terminal_mmd2"]       = float(terminal_mmd2(R, F)); print(f"{results['A7_terminal_mmd2']:.6f}")
+    print("  A8  increment MMD2 ...", end=" ", flush=True)
+    results["A8_increment_mmd2"]      = float(increment_mmd2(R, F)); print(f"{results['A8_increment_mmd2']:.6f}")
+    print("  A9  volatility MMD ...", end=" ", flush=True)
+    results["A9_volatility_mmd"]      = float(volatility_mmd(R, F)); print(f"{results['A9_volatility_mmd']:.6f}")
+    print("  A10 terminal SWD ...", end=" ", flush=True)
+    results["A10_terminal_swd"]       = float(terminal_swd(R, F)); print(f"{results['A10_terminal_swd']:.6f}")
+    print("  A11 path SWD ...", end=" ", flush=True)
+    results["A11_path_swd"]           = float(path_swd(R, F)); print(f"{results['A11_path_swd']:.6f}")
+    print("  A12 RV law loss ...", end=" ", flush=True)
+    results["A12_rv_law_loss"]        = float(rv_law_loss(real3, fake3)); print(f"{results['A12_rv_law_loss']:.6f}")
+    print("  A13 mean path RMSE ...", end=" ", flush=True)
+    results["A13_mean_path_rmse"]     = float(mean_path_rmse(real3, fake3)); print(f"{results['A13_mean_path_rmse']:.6f}")
+    print("  A14 KS log-returns ...", end=" ", flush=True)
+    results["A14_ks_logreturns"]      = float(ks_logreturns(real3, fake3)); print(f"{results['A14_ks_logreturns']:.6f}")
+    print("  A15 skewness error ...", end=" ", flush=True)
+    results["A15_skewness_error"]     = float(skewness_error(real3, fake3)); print(f"{results['A15_skewness_error']:.6f}")
+    print("  A16 QQ RMSE (300-pt) ...", end=" ", flush=True)
+    results["A16_qq_rmse"]            = float(qq_rmse(real3, fake3)); print(f"{results['A16_qq_rmse']:.6f}")
+    print("  A17 terminal KS ...", end=" ", flush=True)
+    results["A17_terminal_ks"]        = float(terminal_ks(real3, fake3)); print(f"{results['A17_terminal_ks']:.6f}")
+
+    # ── Adversarial (A18) — Discriminative Score on log-returns (GRU + MLP) ────
+    print("  A18 discriminative (GRU + MLP) ...", flush=True)
+    d18 = compute_discriminative_score(_lr_S, _lr_F, n_steps=2000, device=DEVICE)
+    results["A18_disc_score_gru"] = d18["disc_score_gru"]
+    results["A18_disc_score_mlp"] = d18["disc_score_mlp"]
+    print(f"       GRU={d18['disc_score_gru']:.4f}  MLP={d18['disc_score_mlp']:.4f}")
     for arch in ("gru", "mlp"):
         loss_path = os.path.join(RESULTS_DIR, f"seed_{seed}_disc_{arch}_loss.csv")
         with open(loss_path, "w", newline="") as lf:
             w = csv.DictWriter(lf, fieldnames=["step", "train_bce"])
-            w.writeheader(); w.writerows(d13[f"loss_history_{arch}"])
+            w.writeheader(); w.writerows(d18[f"loss_history_{arch}"])
 
-    # A14 Predictive Score (TSTR) — on log-returns
-    print("  A14 predictive TSTR (GRU + MLP) ...", flush=True)
-    d14 = compute_predictive_score(_lr_S, _lr_fake, n_steps=5000, device=DEVICE)
-    results.update({f"A14_{k}": v for k, v in d14.items()
+    # ── Predictive (A19) — TSTR Predictive Score on log-returns (GRU + MLP) ────
+    print("  A19 predictive TSTR (GRU + MLP) ...", flush=True)
+    d19 = compute_predictive_score(_lr_S, _lr_F, n_steps=5000, device=DEVICE)
+    results.update({f"A19_{k}": v for k, v in d19.items()
                     if not k.startswith("loss_history")})
-    print(f"       GRU={d14['pred_score_gru']:.4f}  MLP={d14['pred_score_mlp']:.4f}")
-    # Save predictive loss histories
+    print(f"       GRU={d19['pred_score_gru']:.4f}  MLP={d19['pred_score_mlp']:.4f}")
     for arch in ("gru", "mlp"):
         csv_path = os.path.join(RESULTS_DIR, f"seed_{seed}_pred_{arch}_loss.csv")
         with open(csv_path, "w", newline="") as lf:
             w = csv.DictWriter(lf, fieldnames=["step", "train_mae"])
-            w.writeheader(); w.writerows(d14[f"loss_history_{arch}"])
+            w.writeheader(); w.writerows(d19[f"loss_history_{arch}"])
 
-    # A15 Teacher-Sigma (Heston-specific)
-    print("  A15 teacher-sigma ...", end=" ", flush=True)
-    try:
-        corr15, rmse15 = teacher_sigma_metrics(fake3, v)
-        results["A15_sigma_corr"] = float(corr15)
-        results["A15_sigma_rmse"] = float(rmse15)
-        print(f"corr={results['A15_sigma_corr']:.4f}  rmse={results['A15_sigma_rmse']:.4f}")
-    except Exception as ex:
-        results["A15_sigma_corr"] = None
-        results["A15_sigma_rmse"] = None
-        print(f"SKIPPED ({ex})")
+    # ── Temporal (A20–A24) ────────────────────────────────────────────────────
+    print("  A20 cov error ...", end=" ", flush=True)
+    results["A20_cov_error"]          = float(terminal_cov_error(real3, fake3)); print(f"{results['A20_cov_error']:.6f}")
+    print("  A21 ACF abs returns ...", end=" ", flush=True)
+    results["A21_acf_abs"]            = float(acf_error(np.abs(_lr_fake_3d), np.abs(_lr_real_3d))); print(f"{results['A21_acf_abs']:.6f}")
+    print("  A22 ACF sq returns ...", end=" ", flush=True)
+    results["A22_acf_sq"]             = float(acf_error(_lr_fake_3d**2, _lr_real_3d**2)); print(f"{results['A22_acf_sq']:.6f}")
+    print("  A23 ACF |r| lag-1 error ...", end=" ", flush=True)
+    results["A23_acf_lag1_abs_error"] = float(acf_lag1_abs_error(real3, fake3)); print(f"{results['A23_acf_lag1_abs_error']:.6f}")
+    print("  A24 ACF r2 lag-1 error ...", end=" ", flush=True)
+    results["A24_acf_lag1_sq_error"]  = float(acf_lag1_sq_error(real3, fake3)); print(f"{results['A24_acf_lag1_sq_error']:.6f}")
 
-    # A16 Log-Return Std Error
-    print("  A16 logreturn std error ...", end=" ", flush=True)
-    results["A16_logreturn_std_error"] = float(logreturn_std_error(real3, fake3))
-    print(f"{results['A16_logreturn_std_error']:.6f}")
-
-    # A17 |r| q95 Error
-    print("  A17 |r| q95 error ...", end=" ", flush=True)
-    results["A17_abs_r_q95_error"] = float(abs_return_quantile_error(real3, fake3, q=0.95))
-    print(f"{results['A17_abs_r_q95_error']:.6f}")
-
-    # A18 |r| q99 Error
-    print("  A18 |r| q99 error ...", end=" ", flush=True)
-    results["A18_abs_r_q99_error"] = float(abs_return_quantile_error(real3, fake3, q=0.99))
-    print(f"{results['A18_abs_r_q99_error']:.6f}")
-
-    # A19 Kurtosis Ratio
-    print("  A19 kurtosis ratio ...", end=" ", flush=True)
-    results["A19_kurtosis_ratio"] = float(kurtosis_ratio(real3, fake3))
-    print(f"{results['A19_kurtosis_ratio']:.4f}")
-
-    # A20 Sigma Mean Error
-    print("  A20 sigma mean error ...", end=" ", flush=True)
-    results["A20_sigma_mean_error"] = float(sigma_mean_error(real3, fake3))
-    print(f"{results['A20_sigma_mean_error']:.6f}")
-
-    # A21 Learned/Oracle Sigma Corr (Heston-specific)
-    print("  A21 learned/oracle sigma corr ...", end=" ", flush=True)
-    try:
-        results["A21_learned_oracle_sigma_corr"] = float(learned_oracle_sigma_corr(fake3, v))
-        print(f"{results['A21_learned_oracle_sigma_corr']:.4f}")
-    except Exception as ex:
-        results["A21_learned_oracle_sigma_corr"] = None
-        print(f"SKIPPED ({ex})")
-
-    # A22 ACF |r| Lag-1 Error
-    print("  A22 ACF |r| lag-1 error ...", end=" ", flush=True)
-    results["A22_acf_lag1_abs_error"] = float(acf_lag1_abs_error(real3, fake3))
-    print(f"{results['A22_acf_lag1_abs_error']:.6f}")
-
-    # A23 ACF r2 Lag-1 Error
-    print("  A23 ACF r2 lag-1 error ...", end=" ", flush=True)
-    results["A23_acf_lag1_sq_error"] = float(acf_lag1_sq_error(real3, fake3))
-    print(f"{results['A23_acf_lag1_sq_error']:.6f}")
-
-    # A24 Realized Vol Law Loss
-    print("  A24 RV law loss ...", end=" ", flush=True)
-    results["A24_rv_law_loss"] = float(rv_law_loss(real3, fake3))
-    print(f"{results['A24_rv_law_loss']:.6f}")
-
-    # A25–A34: Distributional shape / tail / curve-derived
-    print("  A25 mean path RMSE ...", end=" ", flush=True)
-    results["A25_mean_path_rmse"] = float(mean_path_rmse(real3, fake3))
-    print(f"{results['A25_mean_path_rmse']:.6f}")
-
-    print("  A26 vol path RMSE ...", end=" ", flush=True)
-    results["A26_vol_path_rmse"] = float(vol_path_rmse(real3, fake3))
-    print(f"{results['A26_vol_path_rmse']:.6f}")
-
-    print("  A27 KS log-returns ...", end=" ", flush=True)
-    results["A27_ks_logreturns"] = float(ks_logreturns(real3, fake3))
-    print(f"{results['A27_ks_logreturns']:.6f}")
-
-    print("  A28 skewness error ...", end=" ", flush=True)
-    results["A28_skewness_error"] = float(skewness_error(real3, fake3))
-    print(f"{results['A28_skewness_error']:.6f}")
-
-    print("  A29 QQ RMSE (300-pt) ...", end=" ", flush=True)
-    results["A29_qq_rmse"] = float(qq_rmse(real3, fake3))
-    print(f"{results['A29_qq_rmse']:.6f}")
-
-    print("  A30 tail QQ error ...", end=" ", flush=True)
-    results["A30_tail_qq_error"] = float(tail_qq_error(real3, fake3))
-    print(f"{results['A30_tail_qq_error']:.6f}")
-
+    # ── Vol (A25–A32) ─────────────────────────────────────────────────────────
+    print("  A25 mean RMSE ...", end=" ", flush=True)
+    results["A25_mean_rmse"]          = float(terminal_mean_rmse(real3, fake3)); print(f"{results['A25_mean_rmse']:.6f}")
+    print("  A26 return std error ...", end=" ", flush=True)
+    results["A26_std_error"]          = float(return_std_error(real3, fake3)); print(f"{results['A26_std_error']:.6f}")
+    print("  A27 logreturn std error ...", end=" ", flush=True)
+    results["A27_logreturn_std_error"] = float(logreturn_std_error(real3, fake3)); print(f"{results['A27_logreturn_std_error']:.6f}")
+    print("  A28 kurtosis ratio ...", end=" ", flush=True)
+    results["A28_kurtosis_ratio"]     = float(kurtosis_ratio(real3, fake3)); print(f"{results['A28_kurtosis_ratio']:.4f}")
+    print("  A29 sigma mean error ...", end=" ", flush=True)
+    results["A29_sigma_mean_error"]   = float(sigma_mean_error(real3, fake3)); print(f"{results['A29_sigma_mean_error']:.6f}")
+    print("  A30 vol path RMSE ...", end=" ", flush=True)
+    results["A30_vol_path_rmse"]      = float(vol_path_rmse(real3, fake3)); print(f"{results['A30_vol_path_rmse']:.6f}")
     print("  A31 rolling vol KS ...", end=" ", flush=True)
-    results["A31_rolling_vol_ks"] = float(rolling_vol_ks(real3, fake3))
-    print(f"{results['A31_rolling_vol_ks']:.6f}")
-
+    results["A31_rolling_vol_ks"]     = float(rolling_vol_ks(real3, fake3)); print(f"{results['A31_rolling_vol_ks']:.6f}")
     print("  A32 vol-of-vol error ...", end=" ", flush=True)
-    results["A32_vol_of_vol_error"] = float(vol_of_vol_error(real3, fake3))
-    print(f"{results['A32_vol_of_vol_error']:.6f}")
+    results["A32_vol_of_vol_error"]   = float(vol_of_vol_error(real3, fake3)); print(f"{results['A32_vol_of_vol_error']:.6f}")
 
-    print("  A33 terminal KS ...", end=" ", flush=True)
-    results["A33_terminal_ks"] = float(terminal_ks(real3, fake3))
-    print(f"{results['A33_terminal_ks']:.6f}")
-
-    print("  A34 Hill tail index error ...", end=" ", flush=True)
-    results["A34_hill_tail_index_error"] = float(hill_tail_index_error(real3, fake3))
-    print(f"{results['A34_hill_tail_index_error']:.6f}")
+    # ── Heston Spec (A33–A34) — Teacher-Sigma ─────────────────────────────────
+    print("  A33/A34 teacher-sigma ...", end=" ", flush=True)
+    try:
+        corr_ts, rmse_ts = teacher_sigma_metrics(fake3, v)
+        results["A33_sigma_corr"] = float(corr_ts)
+        results["A34_sigma_rmse"] = float(rmse_ts)
+        print(f"corr={results['A33_sigma_corr']:.4f}  rmse={results['A34_sigma_rmse']:.4f}")
+    except Exception as ex:
+        results["A33_sigma_corr"] = None
+        results["A34_sigma_rmse"] = None
+        print(f"SKIPPED ({ex})")
 
     # B curve metrics: 6 plots × 3 sub-metrics (funct / der / sec_der)
     # Each metric = MSE between the real and generated curve (or its finite difference)

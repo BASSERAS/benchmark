@@ -49,7 +49,6 @@ from metrics_np import (
     # A16–A24: log-return / vol / predictability
     logreturn_std_error, abs_return_quantile_error,
     kurtosis_ratio, sigma_mean_error,
-    learned_oracle_sigma_corr,
     acf_lag1_abs_error, acf_lag1_sq_error,
     rv_law_loss,
     # A25–A34: shape / tail / curve-derived
@@ -68,7 +67,7 @@ DATASET = "Heston"
 def compute_one_seed(
     S_real: np.ndarray,    # (N, T)  full real dataset — "real" side
     S_shuf: np.ndarray,    # (N, T)  row-shuffled real — "generated" side
-    v_shuf: np.ndarray,    # (N, T)  true variance for S_shuf rows (A15 / A21)
+    v_shuf: np.ndarray,    # (N, T)  true variance for S_shuf rows (A33 sigma corr)
     seed:   int,
     run_pytorch: bool = True,
     device: str = "cuda",
@@ -80,82 +79,82 @@ def compute_one_seed(
 
     out: dict = {"seed": seed}
 
-    # ── A1–A6: subsample for tractability ─────────────────────────────────────
+    # ── subsample for O(N²) MMD/SWD ────────────────────────────────────────────
     rng   = np.random.default_rng(seed + 100)   # independent from shuffle rng
     idx_r = rng.choice(N, size=min(N_SUB, N), replace=False)
     idx_f = rng.choice(N, size=min(N_SUB, N), replace=False)
     R = real3[idx_r]
     F = fake3[idx_f]
 
-    out["A1_path_mmd2"]      = float(mmd2(R, F))
-    out["A2_terminal_mmd2"]  = float(terminal_mmd2(R, F))
-    out["A3_increment_mmd2"] = float(increment_mmd2(R, F))
-    out["A4_volatility_mmd"] = float(volatility_mmd(R, F))
-    out["A5_terminal_swd"]   = float(terminal_swd(R, F))
-    out["A6_path_swd"]       = float(path_swd(R, F))
-
-    # ── A7–A12: full dataset ───────────────────────────────────────────────────
-    out["A7_cov_error"]       = float(terminal_cov_error(real3, fake3))
-    out["A8_mean_rmse"]       = float(terminal_mean_rmse(real3, fake3))
-    out["A9_std_error"]       = float(return_std_error(real3, fake3))
-    out["A10_kurtosis_error"] = float(return_kurtosis_error(real3, fake3))
-
-    lr_real = np.diff(np.log(np.maximum(real3, 1e-10)), axis=1)
+    lr_real = np.diff(np.log(np.maximum(real3, 1e-10)), axis=1)   # (N, T-1, 1)
     lr_fake = np.diff(np.log(np.maximum(fake3, 1e-10)), axis=1)
-    out["A11_acf_abs"] = float(acf_error(np.abs(lr_fake), np.abs(lr_real)))
-    out["A12_acf_sq"]  = float(acf_error(lr_fake ** 2,    lr_real ** 2))
 
-    # ── A13: discriminative score (GRU + MLP) ─────────────────────────────────
+    # ── Fat Tail (A1–A5) ──────────────────────────────────────────────────────
+    out["A1_kurtosis_error"]      = float(return_kurtosis_error(real3, fake3))
+    out["A2_abs_r_q95_error"]     = float(abs_return_quantile_error(real3, fake3, q=0.95))
+    out["A3_abs_r_q99_error"]     = float(abs_return_quantile_error(real3, fake3, q=0.99))
+    out["A4_tail_qq_error"]       = float(tail_qq_error(real3, fake3))
+    out["A5_hill_tail_index_error"] = float(hill_tail_index_error(real3, fake3))
+
+    # ── Distribution (A6–A17) ─────────────────────────────────────────────────
+    out["A6_path_mmd2"]       = float(mmd2(R, F))
+    out["A7_terminal_mmd2"]   = float(terminal_mmd2(R, F))
+    out["A8_increment_mmd2"]  = float(increment_mmd2(R, F))
+    out["A9_volatility_mmd"]  = float(volatility_mmd(R, F))
+    out["A10_terminal_swd"]   = float(terminal_swd(R, F))
+    out["A11_path_swd"]       = float(path_swd(R, F))
+    out["A12_rv_law_loss"]    = float(rv_law_loss(real3, fake3))
+    out["A13_mean_path_rmse"] = float(mean_path_rmse(real3, fake3))
+    out["A14_ks_logreturns"]  = float(ks_logreturns(real3, fake3))
+    out["A15_skewness_error"] = float(skewness_error(real3, fake3))
+    out["A16_qq_rmse"]        = float(qq_rmse(real3, fake3))
+    out["A17_terminal_ks"]    = float(terminal_ks(real3, fake3))
+
+    # ── Adversarial (A18): discriminative score (GRU + MLP) ────────────────────
     if run_pytorch:
         from discriminative_score import compute_discriminative_score
-        lr_a = np.diff(np.log(np.maximum(real3, 1e-10)), axis=1).squeeze(-1)
-        lr_b = np.diff(np.log(np.maximum(fake3, 1e-10)), axis=1).squeeze(-1)
-        d13 = compute_discriminative_score(lr_a, lr_b, n_steps=2000, device=device)
-        out["A13_disc_score_gru"] = float(d13["disc_score_gru"])
-        out["A13_disc_score_mlp"] = float(d13["disc_score_mlp"])
+        lr_a = lr_real.squeeze(-1)
+        lr_b = lr_fake.squeeze(-1)
+        d18 = compute_discriminative_score(lr_a, lr_b, n_steps=2000, device=device)
+        out["A18_disc_score_gru"] = float(d18["disc_score_gru"])
+        out["A18_disc_score_mlp"] = float(d18["disc_score_mlp"])
     else:
-        out["A13_disc_score_gru"] = float("nan")
-        out["A13_disc_score_mlp"] = float("nan")
+        out["A18_disc_score_gru"] = float("nan")
+        out["A18_disc_score_mlp"] = float("nan")
 
-    # ── A14: predictive score TSTR (GRU + MLP) ────────────────────────────────
+    # ── Predictive (A19): TSTR predictive score (GRU + MLP) ────────────────────
     if run_pytorch:
         from predictive_score import compute_predictive_score
-        lr_a = np.diff(np.log(np.maximum(real3, 1e-10)), axis=1).squeeze(-1)
-        lr_b = np.diff(np.log(np.maximum(fake3, 1e-10)), axis=1).squeeze(-1)
-        d14 = compute_predictive_score(lr_a, lr_b, n_steps=5000, device=device)
-        out["A14_pred_score_gru"] = float(d14["pred_score_gru"])
-        out["A14_pred_score_mlp"] = float(d14["pred_score_mlp"])
+        lr_a = lr_real.squeeze(-1)
+        lr_b = lr_fake.squeeze(-1)
+        d19 = compute_predictive_score(lr_a, lr_b, n_steps=5000, device=device)
+        out["A19_pred_score_gru"] = float(d19["pred_score_gru"])
+        out["A19_pred_score_mlp"] = float(d19["pred_score_mlp"])
     else:
-        out["A14_pred_score_gru"] = float("nan")
-        out["A14_pred_score_mlp"] = float("nan")
+        out["A19_pred_score_gru"] = float("nan")
+        out["A19_pred_score_mlp"] = float("nan")
 
-    # ── A15: Heston teacher-sigma ──────────────────────────────────────────────
-    corr15, rmse15 = teacher_sigma_metrics(fake3, v_shuf)
-    out["A15_sigma_corr"] = float(corr15)
-    out["A15_sigma_rmse"] = float(rmse15)
+    # ── Temporal (A20–A24) ────────────────────────────────────────────────────
+    out["A20_cov_error"]          = float(terminal_cov_error(real3, fake3))
+    out["A21_acf_abs"]            = float(acf_error(np.abs(lr_fake), np.abs(lr_real)))
+    out["A22_acf_sq"]             = float(acf_error(lr_fake ** 2, lr_real ** 2))
+    out["A23_acf_lag1_abs_error"] = float(acf_lag1_abs_error(real3, fake3))
+    out["A24_acf_lag1_sq_error"]  = float(acf_lag1_sq_error(real3, fake3))
 
-    # ── A16–A24 ────────────────────────────────────────────────────────────────
-    out["A16_logreturn_std_error"]       = float(logreturn_std_error(real3, fake3))
-    out["A17_abs_r_q95_error"]           = float(abs_return_quantile_error(real3, fake3, q=0.95))
-    out["A18_abs_r_q99_error"]           = float(abs_return_quantile_error(real3, fake3, q=0.99))
-    out["A19_kurtosis_ratio"]            = float(kurtosis_ratio(real3, fake3))
-    out["A20_sigma_mean_error"]          = float(sigma_mean_error(real3, fake3))
-    out["A21_learned_oracle_sigma_corr"] = float(learned_oracle_sigma_corr(fake3, v_shuf))
-    out["A22_acf_lag1_abs_error"]        = float(acf_lag1_abs_error(real3, fake3))
-    out["A23_acf_lag1_sq_error"]         = float(acf_lag1_sq_error(real3, fake3))
-    out["A24_rv_law_loss"]               = float(rv_law_loss(real3, fake3))
+    # ── Vol (A25–A32) ─────────────────────────────────────────────────────────
+    out["A25_mean_rmse"]          = float(terminal_mean_rmse(real3, fake3))
+    out["A26_std_error"]          = float(return_std_error(real3, fake3))
+    out["A27_logreturn_std_error"] = float(logreturn_std_error(real3, fake3))
+    out["A28_kurtosis_ratio"]     = float(kurtosis_ratio(real3, fake3))
+    out["A29_sigma_mean_error"]   = float(sigma_mean_error(real3, fake3))
+    out["A30_vol_path_rmse"]      = float(vol_path_rmse(real3, fake3))
+    out["A31_rolling_vol_ks"]     = float(rolling_vol_ks(real3, fake3))
+    out["A32_vol_of_vol_error"]   = float(vol_of_vol_error(real3, fake3))
 
-    # ── A25–A34 ────────────────────────────────────────────────────────────────
-    out["A25_mean_path_rmse"]        = float(mean_path_rmse(real3, fake3))
-    out["A26_vol_path_rmse"]         = float(vol_path_rmse(real3, fake3))
-    out["A27_ks_logreturns"]         = float(ks_logreturns(real3, fake3))
-    out["A28_skewness_error"]        = float(skewness_error(real3, fake3))
-    out["A29_qq_rmse"]               = float(qq_rmse(real3, fake3))
-    out["A30_tail_qq_error"]         = float(tail_qq_error(real3, fake3))
-    out["A31_rolling_vol_ks"]        = float(rolling_vol_ks(real3, fake3))
-    out["A32_vol_of_vol_error"]      = float(vol_of_vol_error(real3, fake3))
-    out["A33_terminal_ks"]           = float(terminal_ks(real3, fake3))
-    out["A34_hill_tail_index_error"] = float(hill_tail_index_error(real3, fake3))
+    # ── Heston Spec (A33–A34): teacher-sigma ──────────────────────────────────
+    corr_ts, rmse_ts = teacher_sigma_metrics(fake3, v_shuf)
+    out["A33_sigma_corr"] = float(corr_ts)
+    out["A34_sigma_rmse"] = float(rmse_ts)
 
     # ── B curve metrics (6 plots × 3 sub-metrics) ─────────────────────────────
     print("  B curve metrics ...", end=" ", flush=True)
@@ -215,8 +214,8 @@ def main():
         )
         d["compute_time_sec"] = round(time.time() - t0, 1)
 
-        for k in ["A1_path_mmd2", "A7_cov_error", "A11_acf_abs",
-                  "A27_ks_logreturns", "A33_terminal_ks"]:
+        for k in ["A6_path_mmd2", "A20_cov_error", "A21_acf_abs",
+                  "A14_ks_logreturns", "A17_terminal_ks"]:
             if k in d and not (isinstance(d[k], float) and np.isnan(d[k])):
                 print(f"    {k}: {d[k]:.6f}")
         print(f"    elapsed: {d['compute_time_sec']}s")
@@ -257,9 +256,9 @@ def main():
 
     print(f"\nDone. Results saved to {out_dir}")
     print("\n--- Perfect-recovery floors ---")
-    for k in ["A1_path_mmd2", "A7_cov_error", "A11_acf_abs",
-              "A15_sigma_corr", "A15_sigma_rmse",
-              "A27_ks_logreturns", "A33_terminal_ks"]:
+    for k in ["A6_path_mmd2", "A20_cov_error", "A21_acf_abs",
+              "A33_sigma_corr", "A34_sigma_rmse",
+              "A14_ks_logreturns", "A17_terminal_ks"]:
         if k in all_results[0]:
             vals = [d[k] for d in all_results if isinstance(d.get(k), (int, float))]
             m, s = float(np.nanmean(vals)), float(np.nanstd(vals))

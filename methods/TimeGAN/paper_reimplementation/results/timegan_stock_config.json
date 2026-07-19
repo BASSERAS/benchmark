@@ -1,0 +1,10 @@
+{
+  "n_features": 6,
+  "hidden_dim": 24,
+  "num_layers": 3,
+  "batch_size": 128,
+  "embedding_steps": 50000,
+  "supervised_steps": 50000,
+  "joint_steps": 50000,
+  "seq_len": 24
+}

@@ -16,69 +16,68 @@ samples) are method-independent and documented once, reproducibly, in
 | Metric | SBTS | TimeGAN | Winner |
 |--------|:----:|:-------:|:------:|
 | **— Fat Tail —** | | | |
-| A10 Kurtosis Error ↓ | **0.1187 ± 0.0060** | 2.9545 ± 2.0988 | **SBTS** |
-| A17 Tail \|r\| Q95 Error ↓ | 0.0063 ± 0.0000 | **0.0032 ± 0.0018** | **TimeGAN** |
-| A18 Tail \|r\| Q99 Error ↓ | 0.0098 ± 0.0000 | **0.0043 ± 0.0028** | **TimeGAN** |
-| A30 Tail QQ Error ↓ | 0.0062 ± 0.0000 | **0.0034 ± 0.0015** | **TimeGAN** |
-| A34 Hill Tail Index Err ↓ | **9.499 ± 0.346** | 36.88 ± 17.05 | **SBTS** |
+| A1 Kurtosis Error ↓ | **0.1187 ± 0.0060** | 2.955 ± 2.099 | **SBTS** |
+| A2 \|r\| q95 Error ↓ | 0.0063 ± 3.00e-05 | **0.0032 ± 0.0018** | **TimeGAN** |
+| A3 \|r\| q99 Error ↓ | 0.0098 ± 4.80e-05 | **0.0043 ± 0.0028** | **TimeGAN** |
+| A4 Tail QQ Error ↓ | 0.0062 ± 2.60e-05 | **0.0034 ± 0.0015** | **TimeGAN** |
+| A5 Hill Tail Index Error ↓ | **9.499 ± 0.3457** | 36.885 ± 17.053 | **SBTS** |
 | **— Distribution —** | | | |
-| A1  Path MMD² ↓ | **0.0112 ± 0.0011** | 0.0181 ± 0.0147 | **SBTS** |
-| A2  Terminal MMD² ↓ | **0.0102 ± 0.0014** | 0.0308 ± 0.0229 | **SBTS** |
-| A3  Increment MMD² ↓ | **0.0069 ± 0.0005** | 0.0077 ± 0.0039 | **SBTS** |
-| A4  Volatility MMD ↓ | **0.2964 ± 0.0126** | 0.3933 ± 0.2553 | **SBTS** |
-| A5  Terminal SWD ↓ | 3.7097 ± 0.3209 | **3.1284 ± 0.9227** | **TimeGAN** |
-| A6  Path SWD ↓ | 2.5335 ± 0.2212 | **1.6343 ± 0.5763** | **TimeGAN** |
-| A24 RV Law Loss ↓ | 2.1482 ± 0.0074 | **1.5512 ± 0.3788** | **TimeGAN** |
-| A25 Mean Path RMSE ↓ | 0.7499 ± 0.1823 | **0.5289 ± 0.2624** | **TimeGAN** |
-| A27 KS Log-returns ↓ | **0.0534 ± 0.0004** | 0.0848 ± 0.0374 | **SBTS** |
-| A28 Skewness Error ↓ | **0.0227 ± 0.0037** | 0.3404 ± 0.3344 | **SBTS** |
-| A29 QQ RMSE ↓ | 0.0028 ± 0.0000 | **0.0025 ± 0.0006** | **TimeGAN** |
-| A33 Terminal Price KS ↓ | **0.0921 ± 0.0051** | 0.1121 ± 0.0556 | **SBTS** |
+| A6 Path MMD² ↓ | **0.0110 ± 0.0026** | 0.0165 ± 0.0127 | **SBTS** |
+| A7 Terminal MMD² ↓ | **0.0100 ± 0.0036** | 0.0267 ± 0.0192 | **SBTS** |
+| A8 Increment MMD² ↓ | **0.0071 ± 2.47e-04** | 0.0077 ± 0.0041 | **SBTS** |
+| A9 Volatility MMD ↓ | **0.3038 ± 0.0071** | 0.3789 ± 0.2430 | **SBTS** |
+| A10 Terminal SWD ↓ | 3.539 ± 0.7368 | **2.658 ± 0.8567** | **TimeGAN** |
+| A11 Path SWD ↓ | 2.415 ± 0.4104 | **1.417 ± 0.4914** | **TimeGAN** |
+| A12 RV Law Loss ↓ | 2.148 ± 0.0074 | **1.551 ± 0.3788** | **TimeGAN** |
+| A13 Mean Path RMSE ↓ | 0.7499 ± 0.1823 | **0.5289 ± 0.2624** | **TimeGAN** |
+| A14 KS Log-returns ↓ | **0.0534 ± 3.62e-04** | 0.0848 ± 0.0374 | **SBTS** |
+| A15 Skewness Error ↓ | **0.0227 ± 0.0037** | 0.3404 ± 0.3344 | **SBTS** |
+| A16 QQ RMSE (300-pt) ↓ | 0.0028 ± 1.20e-05 | **0.0025 ± 6.43e-04** | **TimeGAN** |
+| A17 Terminal Price KS ↓ | **0.0921 ± 0.0051** | 0.1121 ± 0.0556 | **SBTS** |
 | **— Adversarial —** | | | |
-| A13 Disc GRU ↓ | 0.2740 ± 0.2208 | **0.0099 ± 0.0084** | **TimeGAN** |
-| A13 Disc MLP ↓ | **0.0063 ± 0.0038** | 0.0921 ± 0.0463 | **SBTS** |
+| A18 Disc Score GRU ↓ | 0.2755 ± 0.2166 | **0.0077 ± 0.0050** | **TimeGAN** |
+| A18 Disc Score MLP ↓ | **0.0079 ± 0.0049** | 0.1031 ± 0.0395 | **SBTS** |
 | **— Predictive —** | | | |
-| A14 Pred GRU ↓ | 0.0586 ± 0.0000 | **0.0570 ± 0.0013** | **TimeGAN** |
-| A14 Pred MLP ↓ | 0.0582 ± 0.0002 | **0.0573 ± 0.0015** | **TimeGAN** |
+| A19 Pred Score GRU ↓ | 0.0586 ± 5.90e-05 | **0.0574 ± 0.0019** | **TimeGAN** |
+| A19 Pred Score MLP ↓ | 0.0583 ± 2.55e-04 | **0.0570 ± 0.0012** | **TimeGAN** |
 | **— Temporal —** | | | |
-| A7  Cov Error ↓ | 145.35 ± 4.89 | **17.75 ± 6.71** | **TimeGAN** |
-| A11 ACF \|r\| Error ↓ | **0.0596 ± 0.0005** | 0.1252 ± 0.0674 | **SBTS** |
-| A12 ACF r² Error ↓ | **0.0619 ± 0.0005** | 0.0839 ± 0.0348 | **SBTS** |
-| A22 ACF lag-1 \|r\| Err ↓ | **0.1437 ± 0.0012** | 0.2264 ± 0.1034 | **SBTS** |
-| A23 ACF lag-1 r² Err ↓ | **0.1665 ± 0.0017** | 0.1719 ± 0.0626 | **SBTS** |
+| A20 Covariance Error ↓ | 145.35 ± 4.886 | **17.751 ± 6.707** | **TimeGAN** |
+| A21 ACF \|r\| Error (lags) ↓ | **0.0596 ± 4.70e-04** | 0.1252 ± 0.0674 | **SBTS** |
+| A22 ACF r² Error (lags) ↓ | **0.0619 ± 5.08e-04** | 0.0839 ± 0.0348 | **SBTS** |
+| A23 ACF \|r\| Lag-1 Error ↓ | **0.1437 ± 0.0012** | 0.2264 ± 0.1034 | **SBTS** |
+| A24 ACF r² Lag-1 Error ↓ | **0.1665 ± 0.0017** | 0.1719 ± 0.0626 | **SBTS** |
 | **— Vol —** | | | |
-| A8  Mean RMSE ↓ | 1.3013 ± 0.2776 | **0.7385 ± 0.4552** | **TimeGAN** |
-| A9  Std Error ↓ | 0.2492 ± 0.0018 | **0.1519 ± 0.0888** | **TimeGAN** |
-| A16 Log-ret Std Error ↓ | 0.0030 ± 0.0000 | **0.0017 ± 0.0008** | **TimeGAN** |
-| A19 Kurtosis Ratio (→ 1) | **1.989 ± 0.018** | −1.095 ± 3.525 | **SBTS** |
-| A20 Sigma Mean Error ↓ | 0.0440 ± 0.0002 | **0.0307 ± 0.0089** | **TimeGAN** |
-| A26 Vol Path RMSE ↓ | 3.2760 ± 0.0637 | **0.3534 ± 0.1253** | **TimeGAN** |
-| A31 Rolling Vol KS ↓ | 0.3435 ± 0.0006 | **0.2540 ± 0.1093** | **TimeGAN** |
-| A32 Vol-of-Vol Error ↓ | 0.0021 ± 0.0000 | **0.0009 ± 0.0009** | **TimeGAN** |
+| A25 Mean RMSE ↓ | 1.301 ± 0.2776 | **0.7385 ± 0.4552** | **TimeGAN** |
+| A26 Return Std Error ↓ | 0.2492 ± 0.0018 | **0.1519 ± 0.0888** | **TimeGAN** |
+| A27 Log-Return Std Error ↓ | 0.0030 ± 1.20e-05 | **0.0017 ± 7.78e-04** | **TimeGAN** |
+| A28 Kurtosis Ratio (→ 1) | **1.989 ± 0.0182** | −1.095 ± 3.525 | **SBTS** |
+| A29 Sigma Mean Error ↓ | 0.0440 ± 1.84e-04 | **0.0307 ± 0.0089** | **TimeGAN** |
+| A30 Cross-Sect. Vol Path RMSE ↓ | 3.276 ± 0.0637 | **0.3534 ± 0.1253** | **TimeGAN** |
+| A31 Rolling Vol KS (w=5) ↓ | 0.3435 ± 6.43e-04 | **0.2540 ± 0.1093** | **TimeGAN** |
+| A32 Vol-of-Vol Error ↓ | 0.0021 ± 6.00e-06 | **8.97e-04 ± 8.69e-04** | **TimeGAN** |
 | **— Heston Spec —** | | | |
-| A15 Sigma Corr ↑ | **0.0046 ± 0.0019** | 0.0021 ± 0.0090 | **SBTS** |
-| A15 Sigma RMSE ↓ | **0.0955 ± 0.0001** | 0.1183 ± 0.0184 | **SBTS** |
-| A21 Oracle Sigma Corr ↑ | **0.0046 ± 0.0019** | 0.0021 ± 0.0090 | **SBTS** |
+| A33 Teacher-Sigma Corr ↑ | **0.0046 ± 0.0019** | 0.0021 ± 0.0090 | **SBTS** |
+| A34 Teacher-Sigma RMSE ↓ | **0.0955 ± 9.10e-05** | 0.1183 ± 0.0184 | **SBTS** |
 | PS-MC CRPS H=32 ↓ | **2.761 ± 0.004** | 3.087 ± 0.340 | **SBTS** |
 | PS-MC CRPS H=64 ↓ | **3.900 ± 0.008** | 4.372 ± 0.431 | **SBTS** |
 | Training (8 192×128) | — (no training) | ~6.5 min / A100 | **SBTS** |
 | Generation (8 192×128) | ~6.3 min / 64 CPUs | **<1 s / A100** | **TimeGAN** |
 
-> **A15/A21 Sigma Corr**: floor = 0.614 (not 1.0) — 5-step rolling QV is a noisy estimator of
+> **A33 Teacher-Sigma Corr**: floor = 0.614 (not 1.0) — 5-step rolling QV is a noisy estimator of
 > instantaneous variance vₜ. Neither SBTS (0.005) nor TimeGAN (0.002) preserves stochastic volatility.
 >
-> **A19 Kurtosis Ratio**: target = 1.0. SBTS (1.989) closer to 1 than TimeGAN (−1.095, bad seeds collapse
+> **A28 Kurtosis Ratio**: target = 1.0. SBTS (1.989) closer to 1 than TimeGAN (−1.095, bad seeds collapse
 > kurtosis sign). |SBTS−1| = 0.989 vs |TimeGAN−1| = 2.095.
 
-**SBTS wins 20/39, TimeGAN wins 19/39** (on A1-A34 + PS-MC, excluding training/generation rows).
+**SBTS wins 19/38, TimeGAN wins 19/38** (on A1-A34 + PS-MC, excluding training/generation rows).
 
 **Interpretation:**
-- **SBTS wins on distributional fidelity** (A1–A4, A10–A12, A27–A28): the kernel method accurately matches marginal return distributions. MMD, kurtosis, KS, skewness, and ACF errors are consistently lower.
-- **TimeGAN wins on temporal structure** (A5–A9, A24–A26, A29–A32): the GRU captures multi-step covariance that Markov-1 SBTS cannot. A7 (covariance error) is the starkest gap: **145% vs 18%**. A24 (RV law loss) also strongly favours TimeGAN (1.55 vs 2.15).
-- **A13 GRU discriminative**: TimeGAN paths are harder to separate by the GRU (0.010 vs 0.274). SBTS is more separable because its near-constant rolling vol is a clear distinguishing feature (see A31).
-- **A13 MLP discriminative**: SBTS wins (0.006 vs 0.092) — MLP without temporal context can't exploit the vol clustering signal, so SBTS looks more realistic at the moment-matching level.
+- **SBTS wins on distributional fidelity** (A1, A5–A9, A14–A15, A17): the kernel method accurately matches marginal return distributions. MMD, kurtosis, KS, skewness, and ACF errors are consistently lower.
+- **TimeGAN wins on temporal structure** (A10–A13, A20, A25–A27, A29–A32): the GRU captures multi-step covariance that Markov-1 SBTS cannot. A20 (covariance error) is the starkest gap: **145 vs 18**. A12 (RV law loss) also strongly favours TimeGAN (1.55 vs 2.15).
+- **A18 GRU discriminative**: TimeGAN paths are harder to separate by the GRU (0.008 vs 0.276). SBTS is more separable because its near-constant rolling vol is a clear distinguishing feature (see A31).
+- **A18 MLP discriminative**: SBTS wins (0.008 vs 0.103) — MLP without temporal context can't exploit the vol clustering signal, so SBTS looks more realistic at the moment-matching level.
 - **Path Shadowing MC**: SBTS wins decisively (CRPS 2.76 vs 3.09 at H=32) — richer and more faithful retrieval pool → better nearest-neighbour forecasts.
-- **Cross-seed stability**: SBTS is very stable (A1 std=0.001, A7 std=4.9%) vs TimeGAN which can vary widely (A1 std=0.015, A7 std=6.7%, A10 std=2.1).
+- **Cross-seed stability**: SBTS is very stable (A1 std=0.006, A20 std=4.9) vs TimeGAN which can vary widely (A1 std=2.1, A20 std=6.7, A10 std=0.86).
 
 ---
 
@@ -88,27 +87,28 @@ Each of the 6 diagnostic plots yields a **curve** L (a list of values), not a sc
 build three lists — the curve L, its first finite difference L' (der), and its second finite difference
 L'' (sec\_der) — then combine the three sub-scores into **one number per plot** under two error measures:
 
-- **MSE row**: for each list, dᵢ = mean((L_real − L_gen)²). Combined mean = sum of the three seed-means;
-  combined std = sqrt(std\_funct² + std\_der² + std\_sec\_der²) (quadrature).
-- **% err row**: for each list, dᵢ = mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100. Combined the same way.
+- **MSE row**: for each list, dᵢ = mean((L_real − L_gen)²). Combined mean = **sum** of the three
+  seed-means; combined std = sqrt(std\_funct² + std\_der² + std\_sec\_der²) (**quadrature**).
+- **% err row**: for each list, dᵢ = mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100, a proper MAPE — one division. Combined mean = **mean** of the three
+  sub-scores; combined std = **sample std across the 5 seeds** (not quadrature).
 
 ↓ lower is better for both rows. Histogram bins use real-data [0.5th, 99.5th]-percentile edges.
 **Perfect floor = 0** for every plot (row-shuffle preserves all marginals exactly). Winner is by MSE.
 
-| Plot | Measure | SBTS | TimeGAN | Winner |
-|------|---------|:----:|:-------:|:------:|
-| **Log-return histogram** | MSE   | **12.14 ± 0.16** | 144.2 ± 120.6 | **SBTS** |
-|                          | % err | **14264% ± 8212%** | 75440% ± 24681% | |
-| **QQ plot**              | MSE   | 8.90e-6 ± 6.8e-8 | **7.09e-6 ± 3.3e-6** | **TimeGAN** |
-|                          | % err | **113.1% ± 5.8%** | 157.9% ± 27.2% | |
-| **ACF \|r\| lags 1–20**  | MSE   | **4.57e-3 ± 3.7e-5** | 1.05e-2 ± 8.5e-3 | **SBTS** |
-|                          | % err | **1269.9% ± 40.0%** | 2342.1% ± 1351.8% | |
-| **ACF r² lags 1–20**     | MSE   | **5.17e-3 ± 5.7e-5** | 5.77e-3 ± 3.3e-3 | **SBTS** |
-|                          | % err | **1603.5% ± 142.8%** | 4578.1% ± 4266.4% | |
-| **Rolling vol histogram**| MSE   | 1227.3 ± 5.1 | **439.3 ± 216.7** | **TimeGAN** |
-|                          | % err | **715.9% ± 20.2%** | 882.8% ± 410.8% | |
-| **Tail survival**        | MSE   | **5.74e-3 ± 6.6e-5** | 1.17e-2 ± 9.2e-3 | **SBTS** |
-|                          | % err | **17151% ± 910%** | 24327% ± 11324% | |
+| Plot | Measure | SBTS | TimeGAN | Perfect | Winner |
+|------|---------|:----:|:-------:|:------:|:------:|
+| **Log-return histogram** | MSE   | **12.14 ± 0.16** | 144.2 ± 120.6 | 0 | **SBTS** |
+|                          | % err | **4755% ± 2735%** | 25147% ± 8785% | 0 | |
+| **QQ plot**              | MSE   | 8.90e-6 ± 6.8e-8 | **7.09e-6 ± 3.3e-6** | 0 | **TimeGAN** |
+|                          | % err | **37.69% ± 1.874%** | 52.65% ± 13.63% | 0 | |
+| **ACF \|r\| lags 1–20**  | MSE   | **4.57e-3 ± 3.7e-5** | 1.05e-2 ± 8.5e-3 | 0 | **SBTS** |
+|                          | % err | **423.3% ± 11.52%** | 780.7% ± 602.8% | 0 | |
+| **ACF r² lags 1–20**     | MSE   | **5.17e-3 ± 5.7e-5** | 5.77e-3 ± 3.3e-3 | 0 | **SBTS** |
+|                          | % err | **534.5% ± 49.86%** | 1526% ± 1625% | 0 | |
+| **Rolling vol histogram**| MSE   | 1227.3 ± 5.1 | **439.3 ± 216.7** | 0 | **TimeGAN** |
+|                          | % err | **238.6% ± 5.655%** | 294.3% ± 137.0% | 0 | |
+| **Tail survival**        | MSE   | **5.74e-3 ± 6.6e-5** | 1.17e-2 ± 9.2e-3 | 0 | **SBTS** |
+|                          | % err | **5717% ± 303.4%** | 8109% ± 3779% | 0 | |
 
 > **Reading the two rows**: the **MSE** row is an absolute squared-error on the curve (+ its slope +
 > its curvature); the **% err** row is a relative error and blows up when the real curve passes through

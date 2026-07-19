@@ -107,6 +107,41 @@ Generation script: `dataset/generate_heston.py` (do not modify).
 
 ## 3. Reference Code
 
+### 3.0 Reimplement the paper FIRST (before anything else)
+
+> **This is the first thing to do — before generating the 5 Heston seeds, before metrics, before any
+> README.** Reproduce the paper's *own* headline results on the paper's *own* dataset, so we prove our
+> re-implementation is faithful before we ever point it at Heston. Only once the paper numbers match
+> (within a stated tolerance) do we proceed to §4 (5-seed Heston training).
+
+Deliverable lives in `methods/<Method>/paper_reimplementation/`:
+
+```
+methods/<Method>/paper_reimplementation/
+├── README.md          # paper-vs-ours table + tolerance verdict; if repro FAILS, explain and STOP
+├── dataset/           # the paper's dataset (or its exact generator), not Heston
+├── metric/            # the metric code used to score on the paper's dataset
+└── (generated data + trained weights on the paper dataset)
+```
+
+**Procedure:**
+1. Obtain the paper's dataset (download or regenerate with the paper's exact parameters) → `dataset/`.
+2. Train / run the method on that dataset with the paper's hyperparameters.
+3. Score with the paper's own metric(s) → `metric/`.
+4. Fill `README.md` with a **paper vs our results** table (paper's reported number | our reproduced
+   number | absolute/relative gap | within tolerance? Y/N).
+5. **If reproduction fails** (numbers off beyond a reasonable tolerance and you cannot explain why):
+   write the failure analysis in `README.md` and **STOP** — do not proceed to the 5-seed Heston run.
+
+**Exact code cells to execute** (same scripts used for the Heston pipeline, retargeted at the paper
+dataset via `--dataset`):
+- **Metrics** — `python metrics/compute_all.py --method <Method> --dataset <PaperDataset>`
+  (writes `seed_*_metrics.json` + `metrics_summary.csv`; B curves via `python metrics/recompute_curve_b.py`).
+- **The 8 stylised-facts curve plots** — `python metrics/plot_diagnostics.py --method <Method>
+  --dataset <PaperDataset> --seed 0` → 4×2 panel PNG (sample paths ×2, return distribution, QQ,
+  ACF |r|, ACF r², rolling-vol histogram, tail survival). These 8 curves are the primary visual proof
+  the reimplementation reproduces the paper's stylised facts.
+
 ### 3.1 Copy the upstream repo
 
 ```bash
@@ -258,64 +293,72 @@ cd metrics
 
 ### 5.2 Full metric list
 
+Numbered in **category display order** (Fat Tail → Distribution → Adversarial → Predictive →
+Temporal → Vol → Heston Spec). Formulas are unchanged from the previous numbering — only the
+IDs were reordered to match the display order.
+
 | ID | Name | Category | Direction | Perfect |
 |----|------|----------|-----------|---------|
-| A1 | Path MMD² | Distribution | ↓ | 0 |
-| A2 | Terminal MMD² | Distribution | ↓ | 0 |
-| A3 | Increment MMD² | Distribution | ↓ | 0 |
-| A4 | Volatility MMD | Distribution | ↓ | 0 |
-| A5 | Terminal SWD | Distribution | ↓ | 0 |
-| A6 | Path SWD | Distribution | ↓ | 0 |
-| A7 | Covariance Error (%) | Statistics | ↓ | 0 |
-| A8 | Mean RMSE | Statistics | ↓ | 0 |
-| A9 | Return Std Error | Statistics | ↓ | 0 |
-| A10 | Kurtosis Error | Statistics | ↓ | 0 |
-| A11 | ACF Error (abs returns) | Temporal | ↓ | 0 |
-| A12 | ACF Error (sq returns) | Temporal | ↓ | 0 |
-| A13 GRU | Discriminative Score GRU | Adversarial | ↓ | 0 |
-| A13 MLP | Discriminative Score MLP | Adversarial | ↓ | 0 |
-| A14 GRU | Predictive Score GRU (TSTR) | Predictive | ↓ | baseline |
-| A14 MLP | Predictive Score MLP (TSTR) | Predictive | ↓ | baseline |
-| A15 Corr | Teacher-Sigma Correlation | Heston-specific | ↑ | 1 |
-| A15 RMSE | Teacher-Sigma RMSE | Heston-specific | ↓ | 0 |
-| A16 | Log-Return Std Error | Statistics | ↓ | 0 |
-| A17 | |r| q95 Error | Fat-tail | ↓ | 0 |
-| A18 | |r| q99 Error | Fat-tail | ↓ | 0 |
-| A19 | Kurtosis Ratio (target/model) | Statistics | — | 1.0 |
-| A20 | Sigma Mean Error | Statistics | ↓ | 0 |
-| A21 | Learned/Oracle Sigma Corr (Heston-specific) | Heston-specific | ↑ | 1 |
-| A22 | ACF |r| Lag-1 Error | Temporal | ↓ | 0 |
-| A23 | ACF r² Lag-1 Error | Temporal | ↓ | 0 |
-| A24 | RV Law Loss (W₁ on annualized realized variance) | Distribution | ↓ | 0 |
-| A25 | Mean Path RMSE | Distribution | ↓ | 0 |
-| A26 | Cross-Sect. Vol Path RMSE | Volatility | ↓ | 0 |
-| A27 | KS on Log-returns | Distribution | ↓ | 0 |
-| A28 | Skewness Error | Statistics | ↓ | 0 |
-| A29 | QQ RMSE (300-pt) | Distribution | ↓ | 0 |
-| A30 | Tail QQ Error | Fat-tail | ↓ | 0 |
-| A31 | Rolling Vol KS (window=5) | Volatility | ↓ | 0 |
-| A32 | Vol-of-Vol Error | Volatility | ↓ | 0 |
-| A33 | Terminal Price KS | Distribution | ↓ | 0 |
-| A34 | Hill Tail Index Error | Fat-tail | ↓ | 0 |
+| A1 | Kurtosis Error | Fat Tail | ↓ | 0 |
+| A2 | \|r\| q95 Error | Fat Tail | ↓ | 0 |
+| A3 | \|r\| q99 Error | Fat Tail | ↓ | 0 |
+| A4 | Tail QQ Error | Fat Tail | ↓ | 0 |
+| A5 | Hill Tail Index Error | Fat Tail | ↓ | 0 |
+| A6 | Path MMD² | Distribution | ↓ | 0 |
+| A7 | Terminal MMD² | Distribution | ↓ | 0 |
+| A8 | Increment MMD² | Distribution | ↓ | 0 |
+| A9 | Volatility MMD | Distribution | ↓ | 0 |
+| A10 | Terminal SWD | Distribution | ↓ | 0 |
+| A11 | Path SWD | Distribution | ↓ | 0 |
+| A12 | RV Law Loss (W₁ on annualized realized variance) | Distribution | ↓ | 0 |
+| A13 | Mean Path RMSE | Distribution | ↓ | 0 |
+| A14 | KS on Log-returns | Distribution | ↓ | 0 |
+| A15 | Skewness Error | Distribution | ↓ | 0 |
+| A16 | QQ RMSE (300-pt) | Distribution | ↓ | 0 |
+| A17 | Terminal Price KS | Distribution | ↓ | 0 |
+| A18 GRU | Discriminative Score GRU | Adversarial | ↓ | 0 |
+| A18 MLP | Discriminative Score MLP | Adversarial | ↓ | 0 |
+| A19 GRU | Predictive Score GRU (TSTR) | Predictive | ↓ | baseline |
+| A19 MLP | Predictive Score MLP (TSTR) | Predictive | ↓ | baseline |
+| A20 | Covariance Error | Temporal | ↓ | 0 |
+| A21 | ACF Error (abs returns) | Temporal | ↓ | 0 |
+| A22 | ACF Error (sq returns) | Temporal | ↓ | 0 |
+| A23 | ACF \|r\| Lag-1 Error | Temporal | ↓ | 0 |
+| A24 | ACF r² Lag-1 Error | Temporal | ↓ | 0 |
+| A25 | Mean RMSE | Vol | ↓ | 0 |
+| A26 | Return Std Error | Vol | ↓ | 0 |
+| A27 | Log-Return Std Error | Vol | ↓ | 0 |
+| A28 | Kurtosis Ratio (target/model) | Vol | — | 1.0 |
+| A29 | Sigma Mean Error | Vol | ↓ | 0 |
+| A30 | Cross-Sect. Vol Path RMSE | Vol | ↓ | 0 |
+| A31 | Rolling Vol KS (window=5) | Vol | ↓ | 0 |
+| A32 | Vol-of-Vol Error | Vol | ↓ | 0 |
+| A33 | Teacher-Sigma Correlation | Heston Spec | ↑ | 1 |
+| A34 | Teacher-Sigma RMSE | Heston Spec | ↓ | 0 |
 
-**A16**: |σ(log-ret real) − σ(log-ret gen)| — log-return std error (distinct from A9 which uses ΔS_t).
-**A17–A18**: |Q_0.95(|r_real|) − Q_0.95(|r_gen|)| and same at 0.99. Tail quantile reproduction.
-**A19**: κ_real / κ_gen — excess kurtosis ratio (Fisher, bias-corrected). Perfect = 1.0. Negative means gen has lighter-than-Gaussian tails.
-**A20**: |mean_paths(σ_i^real) − mean_paths(σ_i^gen)| — annualized per-path vol averaged across paths.
-**A21**: Pearson(σ̂_gen, √v_true) — identical to A15 Corr; grouped here for cohesion.
-**A22–A23**: Single-lag (lag=1) version of A11/A12. Heston true values ≈ +0.052 / +0.050.
-**A24 (RV Law Loss):** W₁(RV_real, RV_gen) where RV_i = Σ_t r²_{i,t} / dt (annualized realized
-variance per path). Measures whether the cross-path distribution of realized variances matches.
-Reference: Barndorff-Nielsen & Shephard (2002).
-**A25–A26**: Path-level RMSE between real and generated mean/vol trajectories (matched by time).
-**A27**: Kolmogorov-Smirnov statistic on pooled log-returns.
-**A28**: |skew_real − skew_gen|. Heston true skew ≈ −0.45.
-**A29**: QQ RMSE over 300 uniform quantile levels.
-**A30**: QQ error restricted to top-5% tail quantiles.
-**A31**: KS statistic on rolling-5 volatility histograms.
-**A32**: |vol-of-vol_real − vol-of-vol_gen|.
-**A33**: KS statistic on terminal prices S_T (= S_128).
-**A34**: |Hill tail index_real − Hill tail index_gen|. Hill estimator on |log-returns| above 95th pct.
+**A1**: κ_real vs κ_gen — excess kurtosis (Fisher, bias-corrected) of pooled log-returns.
+**A2–A3**: |Q_0.95(|r_real|) − Q_0.95(|r_gen|)| and same at 0.99. Tail quantile reproduction.
+**A4**: QQ error restricted to the extreme percentiles (top/bottom 5%).
+**A5**: |Hill tail index_real − Hill tail index_gen|. Hill estimator on top 10% of S_T.
+**A12 (RV Law Loss):** W₁(RV_real, RV_gen) where RV_i = Σ_t r²_{i,t} / dt (annualized realized
+variance per path). Ref: Barndorff-Nielsen & Shephard (2002).
+**A13**: RMSE between real and generated cross-sectional mean trajectories (matched by time).
+**A14**: Kolmogorov-Smirnov statistic on pooled log-returns.
+**A15**: |skew_real − skew_gen|. Heston true skew ≈ −0.45.
+**A16**: QQ RMSE over 300 uniform quantile levels. **A17**: KS on terminal prices S_T.
+**A18**: Discriminative classifier. Score = |accuracy − 0.5|; 0 = indistinguishable.
+**A19**: TSTR MAE; cluster near 0.056–0.059 (irreducible noise floor for Heston).
+**A20**: Frobenius norm of terminal covariance difference (|Var| for d=1).
+**A21–A22**: ACF on log-returns |r| / r² at lags L = {1, 2, 5, 10}.
+**A23–A24**: Single-lag (lag=1) version of A21/A22. Heston true values ≈ +0.052 / +0.050.
+**A25**: |E[X_T real] − E[X_T gen]| terminal mean bias. **A26**: return std error (uses ΔS_t).
+**A27**: |σ(log-ret real) − σ(log-ret gen)| — log-return std error (distinct from A26).
+**A28**: κ_real / κ_gen — excess kurtosis ratio. Perfect = 1.0. Negative = gen lighter-tailed.
+**A29**: |mean_paths(σ_i^real) − mean_paths(σ_i^gen)| — annualized per-path vol averaged.
+**A30**: RMSE between real and generated cross-sectional vol trajectories.
+**A31**: KS statistic on rolling-5 volatility histograms. **A32**: |vol-of-vol_real − vol-of-vol_gen|.
+**A33**: Pearson(σ̂_gen, √v_true) — Heston teacher-sigma correlation (higher is better).
+**A34**: RMSE(σ̂_gen, √v_true) — absolute scale accuracy of reproduced vol process.
 
 **B — Curve-shape metrics (6 diagnostic plots):**
 
@@ -377,8 +420,8 @@ The perfect-recovery floor answers: *what would each metric read if the generato
 computed by **row-shuffling** the real dataset — `S_perfect = S_real[rng.permutation(N)]` — which preserves
 every column-wise marginal exactly, so the "generated" set is statistically identical to the real set.
 Under this construction all B-metrics and every marginal A-metric collapse to 0; the only non-zero floors
-are finite-sample noise on path-kernel metrics (A1–A6 MMD/SWD), the learned scores (A13/A14), and the
-Heston sigma-correlation metrics (A15/A21 ≈ 0.614, A15 RMSE ≈ 0.065).
+are finite-sample noise on path-kernel metrics (A6–A11 MMD/SWD), the learned scores (A18/A19), and the
+Heston sigma-correlation metrics (A33 Corr ≈ 0.614, A34 RMSE ≈ 0.065).
 
 Run it once per dataset with the **reproducible** script (fixed seed, 5-seed average):
 
@@ -574,7 +617,11 @@ Two sublines per plot (MSE row + % err row), each combining funct/der/sec\_der i
 
 > Each plot yields a **curve** L. For the curve, its 1st diff (der) and 2nd diff (sec\_der) we compute
 > two measures and combine the three sub-scores into one number per measure:
-> - **MSE**: mean((L\_real − L\_gen)²). **% err**: mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100.
+> - **MSE**: mean((L\_real − L\_gen)²) per sub-metric; combined mean = **sum** of the three, combined
+>   std = **quadrature** of the three seed-stds.
+> - **% err**: mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100 per sub-metric — a proper MAPE
+>   (ONE division: the mean already averages over the curve's points); combined mean = **mean** of the
+>   three, combined std = **sample std across the 5 seeds**.
 > All ↓ lower is better. Perfect floor = 0 for all. Winner is by MSE.
 
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect |
@@ -586,15 +633,14 @@ Two sublines per plot (MSE row + % err row), each combining funct/der/sec\_der i
 | ... (ACF \|r\|, ACF r², rolling vol hist., tail survival — same 2 rows each) |
 ```
 
-#### Section 4 — (removed) Perfect Recovery Floor is now a column, not a section
+> **Note on the Perfect Recovery floor.** There is **no** standalone `## Perfect Recovery Floor`
+> section. The floor is the **last column** (`Perfect` / `Perfect floor`) of the Section 2 (A1–A34)
+> and Section 3 (B) tables above. Copy the A values from
+> `methods/perfect_recovery/results/metrics_summary.csv` and the B values (all 0) from
+> `curve_b_aggregate.json` (§5.4); they are identical across every method because they are
+> dataset-derived, not method-derived. PS-MC rows show `—`.
 
-There is **no** standalone `## Perfect Recovery Floor` section. The floor is the **last column**
-(`Perfect` / `Perfect floor`) of the Section 2 (A1–A34) and Section 3 (B) tables above. Copy the A values
-from `methods/perfect_recovery/results/metrics_summary.csv` and the B values (all 0) from
-`curve_b_aggregate.json` (§5.4); they are identical across every method because they are dataset-derived,
-not method-derived. PS-MC rows show `—`.
-
-#### Section 5 — Stylised Facts Diagnostic
+#### Section 4 — Stylised Facts Diagnostic
 
 ```markdown
 ## Stylised Facts Diagnostic (Heston vs <Method>, seed 0)
@@ -605,7 +651,7 @@ ACF of squared returns, rolling vol histogram (window=5), tail survival (log-log
 ![Heston Diagnostics](../../results/Heston/<Method>/plots/heston_diagnostics.png)
 ```
 
-#### Section 6 — Training Loss
+#### Section 5 — Training Loss
 
 ```markdown
 ## <Method> Training Loss (5 seeds)
@@ -615,7 +661,7 @@ ACF of squared returns, rolling vol histogram (window=5), tail survival (log-log
 ![<Method> Training Loss](losses/loss_convergence.png)
 ```
 
-#### Section 7 — A13
+#### Section 6 — A13
 
 ```markdown
 ## A13 — Discriminative Classifier Training Loss
@@ -626,7 +672,7 @@ A value near ln(2) ≈ 0.693 means the classifier cannot distinguish real from f
 ![Discriminative Classifier Loss](../../results/Heston/<Method>/plots/disc_classifier_loss.png)
 ```
 
-#### Section 8 — A14
+#### Section 7 — A14
 
 ```markdown
 ## A14 — Predictive Score Training Loss (TSTR)
@@ -636,7 +682,7 @@ MAE loss during GRU and MLP predictor training on *synthetic* data (5 000 steps,
 ![Predictive Score Loss](../../results/Heston/<Method>/plots/pred_score_loss.png)
 ```
 
-#### Section 9 — Path Shadowing MC
+#### Section 8 — Path Shadowing MC
 
 ```markdown
 ## Path Shadowing MC (arXiv:2308.01486)
@@ -665,11 +711,11 @@ Two variants: **Uniform** (flat 1/K) and **Gaussian** (η = η̃·‖h(x̃)‖, 
 Full analysis: [`results/Heston/<Method>/path_shadowing/README.md`](../../results/Heston/<Method>/path_shadowing/README.md)
 ```
 
-#### Section 10 — File layout
+#### Section 9 — File layout
 
 Show the exact folder tree of `methods/<Method>/` (fill in actual file names).
 
-#### Section 11 — Reproduce
+#### Section 10 — Reproduce
 
 ```markdown
 ## Reproduce
@@ -700,9 +746,15 @@ Required sections:
 
 1. **Header**: method name, paper reference, one-line description
 2. **Metrics table**: same A1–A34 + B tables as §8 Sections 2–3 (keep in sync), each ending with a Perfect column
-3. **Per-seed breakdown**: for the 4 most diagnostic metrics (A1 Path MMD², A13 GRU, A15 Corr, A24 RV Law Loss), list each seed's value and note which seed is weakest and why
+3. **Per-seed breakdown**: for the 4 most diagnostic metrics (A6 Path MMD², A18 Disc GRU, A33 Teacher-Sigma Corr, A12 RV Law Loss), list each seed's value and note which seed is weakest and why
 4. **Observations**: 3–5 bullet points on what the metrics reveal — strengths, weaknesses, unexpected findings
 5. **File index table**
+
+> **When introducing a new method**, the top-level comparison tables (`results/README.md` and root
+> `README.md`) are **column-oriented**: one column per method plus a `Winner` column and a `Perfect`
+> floor column. Adding a method means **adding one column** to every A1–A34 / B / PS-MC row — never
+> re-order or renumber existing rows, and recompute the `Winner` cell across all method columns. The
+> Perfect floor column is dataset-derived and stays identical regardless of how many methods are added.
 
 ---
 
@@ -772,7 +824,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 Examples:
 ```
 feat(sbts): train 5 seeds, save generated paths + weights
-feat(sbts): compute A1–A24 metrics, heston_diagnostics figure
+feat(sbts): compute A1–A34 metrics, heston_diagnostics figure
 feat(sbts): run PS-MC evaluation, add path_shadowing README
 feat(sbts): write all READMEs — method + results + path_shadowing
 ```
@@ -923,42 +975,48 @@ Follow it exactly when adding a new method. Do NOT deviate from section titles o
 ```markdown
 ## Metrics A1–A34 + B — mean ± std across 5 seeds
 
-> All metrics use log-returns r_t = log(S_{t+1}/S_t) unless noted. A9 uses price increments ΔS_t.
+> All metrics use log-returns r_t = log(S_{t+1}/S_t) unless noted. A26 uses price increments ΔS_t.
 
 Rows MUST be grouped by category, in this exact order, with a `| | **— <Category> —** | | ... |`
 separator row before each group: **Fat Tail → Distribution → Adversarial → Predictive → Temporal → Vol
 → Heston Spec**. This ordering is mandatory across every A1–A34 table in the repo (methods/, results/,
-and root README.md) — do not sort by ID number.
+and root README.md) — the ID numbers already follow this order (A1–A5 Fat Tail, A6–A17 Distribution,
+A18 Adversarial, A19 Predictive, A20–A24 Temporal, A25–A32 Vol, A33–A34 Heston Spec).
 
 | ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------------|
 | | **— Fat Tail —** | | | | | | | | | |
-| A10 | Kurtosis Error | Fat Tail | ↓ | X.XXXX ± X.XXXX | ... | 0.017 |
-| A17 | \|r\| q95 Error | Fat Tail | ↓ | ... | 0.0000 |
-| A18 | \|r\| q99 Error | Fat Tail | ↓ | ... | 0.0000 |
-| A30 | Tail QQ Error | Fat Tail | ↓ | ... | 0.0000 |
-| A34 | Hill Tail Index Error | Fat Tail | ↓ | ... | 0.0000 |
+| A1 | Kurtosis Error | Fat Tail | ↓ | X.XXXX ± X.XXXX | ... | 0.017 |
+| A2 | \|r\| q95 Error | Fat Tail | ↓ | ... | 0.0000 |
+| A3 | \|r\| q99 Error | Fat Tail | ↓ | ... | 0.0000 |
+| A4 | Tail QQ Error | Fat Tail | ↓ | ... | 0.0000 |
+| A5 | Hill Tail Index Error | Fat Tail | ↓ | ... | 0.0000 |
 | | **— Distribution —** | | | | | | | | | |
-| A1  | Path MMD²             | Distribution  | ↓ | X.XXXX ± X.XXXX | ... | 0.0018 |
+| A6  | Path MMD²             | Distribution  | ↓ | X.XXXX ± X.XXXX | ... | 0.0018 |
+...
+| | **— Adversarial —** | | | | | | | | | |
+| A18 GRU | Discriminative Score GRU | Adversarial | ↓ | ... | 0.0000 |
+| A18 MLP | Discriminative Score MLP | Adversarial | ↓ | ... | 0.0000 |
+| | **— Predictive —** | | | | | | | | | |
+| A19 GRU | Predictive Score GRU (TSTR) | Predictive | ↓ | ... | baseline |
+| A19 MLP | Predictive Score MLP (TSTR) | Predictive | ↓ | ... | baseline |
 ...
 | | **— Heston Spec —** | | | | | | | | | |
-| A15 | Sigma Corr | Heston Spec | ↑ | ... | 0.614 |
-...
+| A33 | Teacher-Sigma Correlation | Heston Spec | ↑ | ... | 1 |
+| A34 | Teacher-Sigma RMSE | Heston Spec | ↓ | ... | 0 |
 
-> **Convention:** ↓ lower is better; ↑ higher is better; — no monotone direction. A19 perfect = 1.0.
-> **A11–A12**: ACF on log-returns at lags L = {1, 2, 5, 10}. ↓
-> **A13**: Discriminative classifier. Score = |accuracy − 0.5|; 0 = indistinguishable.
-> **A14**: TSTR MAE; cluster near 0.056–0.059 (irreducible noise floor for Heston).
-> **A16–A18**: Log-ret std error; |r| q95 and q99 errors.
-> **A19**: Kurtosis ratio real/gen. Perfect = 1.0. Negative = gen lighter-tailed than Gaussian.
-> **A20**: Sigma mean error (annualized per-path vol). **A21**: Learned/oracle sigma corr (Heston).
-> **A22–A23**: ACF lag-1 errors on |r| and r². Heston true values ≈ +0.052 / +0.050.
-> **A24**: W₁(RV_real, RV_gen), RV_i = Σ_t r²_{i,t} / dt. Ref: Barndorff-Nielsen & Shephard (2002).
-> **A25–A26**: Path-level RMSE between real and generated mean/vol trajectories.
-> **A27**: KS statistic on pooled log-returns. **A28**: |skew_real − skew_gen|.
-> **A29**: QQ RMSE over 300 uniform quantile levels. **A30**: Tail QQ error (top-5%).
-> **A31**: KS on rolling-5 vol histograms. **A32**: |vol-of-vol_real − vol-of-vol_gen|.
-> **A33**: KS on terminal prices S_T. **A34**: Hill tail index error (|log-returns| above 95th pct).
+> **Convention:** ↓ lower is better; ↑ higher is better; — no monotone direction.
+> **A1**: excess kurtosis error of pooled log-returns. **A2–A3**: |r| q95 / q99 tail-quantile errors.
+> **A4**: Tail QQ error (extreme top/bottom 5%). **A5**: Hill tail index error (top 10% of S_T).
+> **A12**: RV Law Loss = W₁(RV_real, RV_gen), RV_i = Σ_t r²_{i,t} / dt. Ref: Barndorff-Nielsen & Shephard (2002).
+> **A18**: Discriminative classifier (GRU + MLP). Score = |accuracy − 0.5|; 0 = indistinguishable.
+> **A19**: TSTR MAE (GRU + MLP); cluster near 0.056–0.059 (irreducible noise floor for Heston).
+> **A20**: covariance error (Frobenius; |Var| for d=1). **A21–A22**: ACF error on |r| / r² at lags {1,2,5,10}.
+> **A23–A24**: single-lag (lag=1) ACF errors on |r| / r². Heston true values ≈ +0.052 / +0.050.
+> **A28**: Kurtosis ratio κ_real / κ_gen. Perfect = 1.0 (no monotone direction; closest to 1 wins).
+> **A29**: Sigma mean error (annualized per-path vol). **A32**: |vol-of-vol_real − vol-of-vol_gen|.
+> **A33**: Pearson(σ̂_gen, √v_true) — teacher-sigma correlation (↑ higher is better).
+> **A34**: RMSE(σ̂_gen, √v_true) — absolute scale accuracy of the reproduced vol process.
 ```
 
 #### Section 3 — B Curve-Shape Metrics
@@ -967,8 +1025,11 @@ and root README.md) — do not sort by ID number.
 
 > Each plot yields a **curve** L (not a scalar). For L, its 1st diff (der) and 2nd diff (sec\_der) we
 > compute two measures and combine the three sub-scores into one number per measure:
-> - **MSE**: mean((L\_real − L\_gen)²). **% err**: mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100.
-> Combined mean = sum of the three seed-means; combined std = sqrt(std\_funct² + std\_der² + std\_sec\_der²).
+> - **MSE**: mean((L\_real − L\_gen)²) per sub-metric; combined mean = **sum** of the three, combined
+>   std = **quadrature** sqrt(std\_funct² + std\_der² + std\_sec\_der²).
+> - **% err**: mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100 per sub-metric — a proper MAPE
+>   (ONE division: the mean already averages over the curve's points); combined mean = **mean** of the
+>   three, combined std = **sample std across the 5 seeds**.
 > All ↓ lower is better. Perfect floor = 0 for all. Winner is by MSE.
 
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect |
@@ -990,16 +1051,27 @@ and root README.md) — do not sort by ID number.
 The % err row blows up (triple-digit-plus %) wherever the real curve passes through near-zero values —
 expected, a property of the curve, not a bug.
 
-#### Section 4 — (removed) Perfect Recovery Floor is now a column
+> **Note on the Perfect Recovery floor.** There is **no** standalone `## Perfect Recovery Floor`
+> section. The floor is the **last column** (`Perfect` / `Perfect floor`) of the Section 2 (A1–A34) and
+> Section 3 (B) tables. Copy the A floors from `methods/perfect_recovery/results/metrics_summary.csv`
+> and the B floors (all 0) from `curve_b_aggregate.json` (§5.4) — they are dataset-derived, so they must
+> be identical across every method's README. If the outputs don't exist yet, generate them once with
+> `python metrics/compute_perfect_recovery.py`. Row-shuffling the real dataset leaves all marginals
+> identical, so all B floors and all marginal A floors are exactly 0; only path-kernel, learned
+> (A18/A19) and Heston-sigma (A33/A34) floors are non-zero finite-sample noise. PS-MC rows show `—`.
 
-There is **no** standalone `## Perfect Recovery Floor` section. The floor is the **last column**
-(`Perfect` / `Perfect floor`) of the Section 2 (A1–A34) and Section 3 (B) tables. Copy the A floors from
-`methods/perfect_recovery/results/metrics_summary.csv` and the B floors (all 0) from `curve_b_aggregate.json`
-(§5.4) — they are dataset-derived, so they must be identical across every method's README. If the outputs
-don't exist yet, generate them once with `python metrics/compute_perfect_recovery.py`. Row-shuffling the
-real dataset leaves all marginals identical, so all B floors and all marginal A floors are exactly 0; only
-path-kernel (A1–A6), learned (A13/A14) and Heston-sigma (A15/A21) floors are non-zero finite-sample noise.
-PS-MC rows show `—`.
+#### Sections 4–10 — Stylised Facts → Reproduce
+
+The method README continues with, in this exact order (full templates in §8 Sections 4–10):
+
+4. **Stylised Facts Diagnostic** — 8-panel PNG `plots/heston_diagnostics.png` (sample paths, return
+   distribution, QQ, ACF |r|, ACF r², rolling-vol histogram, tail survival).
+5. **Training Loss** — `losses/loss_convergence.png` (or bandwidth-CV plot for training-free methods).
+6. **A18 Discriminative Classifier Training Loss** — `plots/disc_classifier_loss.png` (GRU + MLP, BCE).
+7. **A19 Predictive Score Training Loss (TSTR)** — `plots/pred_score_loss.png` (GRU + MLP, MAE).
+8. **Path Shadowing MC** — ensemble fan-out + CRPS-per-step plots + H=32/64 Uniform/Gaussian table.
+9. **File layout** — exact folder tree of `methods/<Method>/`.
+10. **Reproduce** — bash commands: train all 5 seeds, `compute_all.py`, PS-MC `run_eval.py`.
 
 ---
 
@@ -1007,7 +1079,7 @@ PS-MC rows show `—`.
 
 **Section order (mandatory):**
 
-1. **Header** — method name, paper citation, one-line description, convention note (↓ lower is better except A15 Corr ↑)
+1. **Header** — method name, paper citation, one-line description, convention note (↓ lower is better except A33 Teacher-Sigma Corr ↑; A28 Kurtosis Ratio: perfect = 1.0)
 
 2. **What we generate** (if applicable) — SDE, scaling steps, pipeline
 
@@ -1035,7 +1107,7 @@ PS-MC rows show `—`.
    - Include the two-subline B table (MSE row + % err row per plot, trailing Perfect column, winner by MSE)
    - Include the 8-panel diagnostic PNG: `![Heston Diagnostics](plots/heston_diagnostics.png)`
 
-> **Note:** The Metric Definitions section (A1–A24 with LaTeX formulas) lives in `metrics/README.md`
+> **Note:** The Metric Definitions section (A1–A34 with LaTeX formulas) lives in `metrics/README.md`
 > and `methods/<Method>/code/README.md` — NOT in the results README. The results README contains
 > tables only; cross-link to the method README for formula details.
 
@@ -1058,7 +1130,40 @@ PS-MC rows show `—`.
 
 ---
 
-### 15.4 GUIDELINE.md Update Protocol
+### 15.4 Root & Comparison READMEs (`README.md`, `results/README.md`) — Required Sections
+
+Both top-level READMEs are **column-oriented comparisons** (one column per method), not per-method
+tables. They must stay in sync with each other and with every method README.
+
+**Section order (mandatory):**
+
+1. **Header** — project one-liner, dataset (Heston, 8192×128), list of methods benchmarked.
+2. **A1–A34 comparison table** — columns `ID | Metric | Category | Dir | <Method A> | <Method B> | … |
+   Winner | Perfect floor`. Rows grouped by category in the mandatory order (Fat Tail → Distribution →
+   Adversarial → Predictive → Temporal → Vol → Heston Spec) with a `**— <Category> —**` separator row
+   before each group. A18/A19 split into GRU + MLP sublines. **Winner** cell: ↓ smaller wins; ↑ larger
+   wins; A28 Kurtosis Ratio closest-to-1.0 wins. Report the overall win count (`<A> wins X/38,
+   <B> wins Y/38`, counting the A18/A19 GRU+MLP sublines).
+3. **B Curve-Shape comparison table** — side-by-side by **MSE** (winner by MSE), each plot with a
+   trailing `Perfect` column (0). Include the two-subline (MSE + % err) description; % err uses the
+   MAPE (mean × 100, one division), mean-of-3, sample-std formula (§8 Section 3). Report B win count (`X/6` MSE each).
+4. **Path Shadowing MC comparison** — H=32 / H=64 × {Uniform, Gaussian} CRPS/MAE/RMSE per method plus
+   Naive RW baseline.
+5. **Training / Generation timing** row(s).
+6. **Interpretation bullets** — 3–6 bullets referencing metrics by their **new** IDs (e.g. A20 cov
+   error, A18 GRU/MLP, A33 Teacher-Sigma Corr).
+
+**When a new method is added**, insert one column into every table (A, B, PS-MC), recompute all
+`Winner` cells and win counts, and leave the `Perfect` floor column unchanged (dataset-derived).
+The `results/README.md` and root `README.md` A-tables must use identical numbers and identical Winner
+cells; only prose framing may differ.
+
+- All A/B/PS-MC values must be **read back from disk** (`metrics_summary.csv`, `curve_b_aggregate.json`,
+  `path_shadowing/` results), never hand-transcribed.
+
+---
+
+### 15.5 GUIDELINE.md Update Protocol
 
 When a new standard is established (new metric, new section format, new B metric removed, new method added):
 1. Update section 5.2 metric list (add/remove/rename)
@@ -1074,3 +1179,9 @@ When a new standard is established (new metric, new section format, new B metric
 - 2026-07-19: **B display → two sublines.** Each B plot now shows two combined rows — **MSE** and **% err** — instead of a funct/der/sec\_der 3-column table. The 3 sub-metrics are combined per measure (mean = sum, std = quadrature) in `metrics/stylized_metrics.py`; recompute via `metrics/recompute_curve_b.py`. Winner between methods is decided by the MSE row. Updated §5.2, §8 Section 3, §15.1 Section 3, §15.2.
 - 2026-07-19: **Perfect Recovery Floor → column, not section.** The standalone `## Perfect Recovery Floor` section was removed from method READMEs; the floor is now the **last column** (`Perfect` / `Perfect floor`) of every A1–A34 and B table across `methods/<Method>/`, `results/Heston/<Method>/`, `results/README.md`, and root `README.md`. Source of truth: `methods/perfect_recovery/results/metrics_summary.csv` (A floors) + `curve_b_aggregate.json` (B floors, all 0), produced reproducibly by `metrics/compute_perfect_recovery.py` (full-shuffle `S_real[rng.permutation(N)]`, 5-seed average). Floors identical across all methods (dataset-derived). PS-MC rows show `—`. Updated §5.4, §8 Section 4, §13, §15.1 Section 4, §15.2.
 - 2026-07-19: **Verified A13/A14 fresh-retrain.** Confirmed `compute_discriminative_score` / `compute_predictive_score` instantiate a new classifier + optimiser on every call, invoked once per seed in `compute_all.py`'s seed loop — no weight caching across seeds or methods. Documented in §7.2.
+- 2026-07-19: **B % err formula → per-point magnitude.** The B % err now divides by curve length: `mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100 / len(L_real)` per sub-metric; combined mean = **mean** of the three sub-metrics, combined std = **sample std across the 5 seeds** (MSE unchanged: sum of three, quadrature std). Updated §5.2, §8 Section 3, §15.1 Section 3. Recompute via `metrics/recompute_curve_b.py`.
+- 2026-07-19: **B % err formula → proper MAPE (REVERSES the per-point-magnitude note above).** The extra `/ len(L_real)` was a **second** division on top of the mean (which already divides by the number of curve points), collapsing the percentage ~100× into a meaningless sub-1% artefact. Corrected to a proper MAPE: `mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100` per sub-metric — **ONE** division. Combined mean/std unchanged (mean-of-3 / sample-std across 5 seeds); MSE untouched. Fixed in `metrics/stylized_metrics.py` (`_pct`), recomputed via `metrics/recompute_curve_b.py` for TimeGAN / SBTS / perfect_recovery, and propagated to all 7 READMEs (values read back from `curve_b_aggregate.json`). Updated §8 Section 3, §15.1 Section 3, §15.4. Also added the trailing `Perfect` column to the `results/README.md` B table for parity with root `README.md`.
+- 2026-07-19: **Removed old A21 (Learned/Oracle Sigma Correlation).** Dropped from every A-table (6 method/results/root READMEs), from `metrics/metrics_np.py`, and from `metrics/README.md`. Not the same as the new-numbering A21 (ACF Error, abs returns).
+- 2026-07-19: **Full A-metric renumber to category order.** A1–A34 IDs reassigned so they read in display order (A1 Kurtosis Error … A34 Teacher-Sigma RMSE): Fat Tail A1–A5, Distribution A6–A17, Adversarial A18 (GRU+MLP), Predictive A19 (GRU+MLP), Temporal A20–A24, Vol A25–A32, Heston Spec A33–A34. **Formulas unchanged — only order/numbering.** Scope: JSON keys, `compute_all.py` identifiers, all README labels, `metrics/README.md` and `metrics_np.py` legends, and §5.2/§8/§15.1 in this file. A28 Kurtosis Ratio (perfect = 1.0, closest wins); A33 Teacher-Sigma Corr (↑).
+- 2026-07-19: **§8/§15.1 Section renumbering + column note.** Removed the "Section 4 — (removed) Perfect Recovery Floor" meta-blocks; the floor note is now inline and Sections renumber 5→4 … 11→10 (§8). Re-added the Stylised-Facts→Reproduce section list in §15.1. Added §9 note + §15.4 (Root & Comparison README protocol): tables are column-oriented, adding a method = adding one column + recomputing Winner cells; old §15.4 Update Protocol → §15.5.
+- 2026-07-19: **Paper-reimplementation-first (§3.0).** New standard: before generating the 5 Heston seeds, reproduce the paper's own results on the paper's own dataset in `methods/<Method>/paper_reimplementation/` (README paper-vs-ours table, `dataset/`, `metric/`, generated data + weights). If repro fails, explain and STOP. Exact code cells: `metrics/compute_all.py --dataset <PaperDataset>` for metrics and `metrics/plot_diagnostics.py --dataset <PaperDataset> --seed 0` for the 8 stylised-facts curve plots.

@@ -39,57 +39,56 @@ values are the sampling/estimator noise you cannot train away.
 | ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 |
 |----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|
 | | **— Fat Tail —** | | | | | | | | |
-| A10 | Kurtosis Error | Fat Tail | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A17 | \|r\| q95 Error | Fat Tail | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A18 | \|r\| q99 Error | Fat Tail | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A30 | Tail QQ Error | Fat Tail | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A34 | Hill Tail Index Error | Fat Tail | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A1 | Kurtosis Error | Fat Tail | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A2 | \|r\| q95 Error | Fat Tail | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A3 | \|r\| q99 Error | Fat Tail | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A4 | Tail QQ Error | Fat Tail | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A5 | Hill Tail Index Error | Fat Tail | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
 | | **— Distribution —** | | | | | | | | |
-| A1  | Path MMD²      | Distribution | ↓ | 0.001455 ± 0.000118 | 0.001322 | 0.001356 | 0.001648 | 0.001429 | 0.001521 |
-| A2  | Terminal MMD²  | Distribution | ↓ | 0.001619 ± 0.000407 | 0.001181 | 0.001584 | 0.001899 | 0.002234 | 0.001196 |
-| A3  | Increment MMD² | Distribution | ↓ | 0.000745 ± 0.000034 | 0.000794 | 0.000727 | 0.000708 | 0.000777 | 0.000719 |
-| A4  | Volatility MMD | Distribution | ↓ | 0.007074 ± 0.000512 | 0.006556 | 0.006688 | 0.007775 | 0.007612 | 0.006739 |
-| A5  | Terminal SWD   | Distribution | ↓ | 0.6873 ± 0.1495 | 0.4733 | 0.6583 | 0.9420 | 0.6914 | 0.6713 |
-| A6  | Path SWD       | Distribution | ↓ | 0.4381 ± 0.0533 | 0.3642 | 0.4510 | 0.5138 | 0.3937 | 0.4677 |
-| A24 | RV Law Loss    | Distribution | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A25 | Mean Path RMSE | Distribution | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A27 | KS on Log-returns | Distribution | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A28 | Skewness Error | Distribution | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A29 | QQ RMSE (300-pt) | Distribution | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A33 | Terminal Price KS | Distribution | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A6  | Path MMD²      | Distribution | ↓ | 0.001455 ± 0.000118 | 0.001322 | 0.001356 | 0.001648 | 0.001429 | 0.001521 |
+| A7  | Terminal MMD²  | Distribution | ↓ | 0.001619 ± 0.000407 | 0.001181 | 0.001584 | 0.001899 | 0.002234 | 0.001196 |
+| A8  | Increment MMD² | Distribution | ↓ | 0.000745 ± 0.000034 | 0.000794 | 0.000727 | 0.000708 | 0.000777 | 0.000719 |
+| A9  | Volatility MMD | Distribution | ↓ | 0.007074 ± 0.000512 | 0.006556 | 0.006688 | 0.007775 | 0.007612 | 0.006739 |
+| A10 | Terminal SWD   | Distribution | ↓ | 0.687260 ± 0.149519 | 0.473316 | 0.658255 | 0.942002 | 0.691434 | 0.671294 |
+| A11 | Path SWD       | Distribution | ↓ | 0.438076 ± 0.053291 | 0.364185 | 0.450953 | 0.513768 | 0.393745 | 0.467732 |
+| A12 | RV Law Loss    | Distribution | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A13 | Mean Path RMSE | Distribution | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A14 | KS on Log-returns | Distribution | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A15 | Skewness Error | Distribution | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A16 | QQ RMSE (300-pt) | Distribution | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A17 | Terminal Price KS | Distribution | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
 | | **— Adversarial —** | | | | | | | | |
-| A13 | Disc Score GRU (log-ret.) | Adversarial | ↓ | 0.00797 ± 0.00564 | 0.00076 | 0.00656 | 0.00351 | 0.01419 | 0.01480 |
-| A13 | Disc Score MLP (log-ret.) | Adversarial | ↓ | 0.01004 ± 0.00634 | 0.02029 | 0.00381 | 0.00412 | 0.01419 | 0.00778 |
+| A18 GRU | Disc Score GRU (log-ret.) | Adversarial | ↓ | 0.007110 ± 0.005782 | 0.001373 | 0.016631 | 0.008392 | 0.000763 | 0.008392 |
+| A18 MLP | Disc Score MLP (log-ret.) | Adversarial | ↓ | 0.003326 ± 0.002430 | 0.000458 | 0.003509 | 0.003814 | 0.001373 | 0.007476 |
 | | **— Predictive —** | | | | | | | | |
-| A14 | Pred Score GRU — TSTR | Predictive | ↓ | 0.05372 ± 0.00003 | 0.05371 | 0.05370 | 0.05377 | 0.05370 | 0.05371 |
-| A14 | Pred Score MLP — TSTR | Predictive | ↓ | 0.05374 ± 0.00010 | 0.05362 | 0.05382 | 0.05365 | 0.05371 | 0.05389 |
+| A19 GRU | Pred Score GRU — TSTR | Predictive | ↓ | 0.053733 ± 0.000026 | 0.053706 | 0.053760 | 0.053703 | 0.053733 | 0.053765 |
+| A19 MLP | Pred Score MLP — TSTR | Predictive | ↓ | 0.053707 ± 0.000121 | 0.053621 | 0.053918 | 0.053769 | 0.053613 | 0.053613 |
 | | **— Temporal —** | | | | | | | | |
-| A7  | Cov Error (%)  | Temporal | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A11 | ACF Error \|log-returns\| | Temporal | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A12 | ACF Error log-returns² | Temporal | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A22 | ACF \|r\| Lag-1 Error | Temporal | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A23 | ACF r² Lag-1 Error | Temporal | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A20 | Covariance Error | Temporal | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A21 | ACF Error (abs returns) | Temporal | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A22 | ACF Error (sq returns) | Temporal | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A23 | ACF \|r\| Lag-1 Error | Temporal | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A24 | ACF r² Lag-1 Error | Temporal | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
 | | **— Vol —** | | | | | | | | |
-| A8  | Mean RMSE      | Vol | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A9  | Return Std Error | Vol | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A16 | Log-Return Std Error | Vol | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A19 | Kurtosis Ratio (target/model) | Vol | — | 1.0000 ± 0.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
-| A20 | Sigma Mean Error | Vol | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
-| A26 | Cross-Sect. Vol Path RMSE | Vol | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A25 | Mean RMSE      | Vol | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A26 | Return Std Error | Vol | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A27 | Log-Return Std Error | Vol | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A28 | Kurtosis Ratio (target/model) | Vol | — | 1.0000 ± 0.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
+| A29 | Sigma Mean Error | Vol | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
+| A30 | Cross-Sect. Vol Path RMSE | Vol | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
 | A31 | Rolling Vol KS (window=5) | Vol | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
 | A32 | Vol-of-Vol Error | Vol | ↓ | 0.0000 ± 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 | 0.0000 |
 | | **— Heston Spec —** | | | | | | | | |
-| A15 | Sigma Corr (vol recovery) | Heston Spec | ↑ | 0.6143 ± 0.0000 | 0.6143 | 0.6143 | 0.6143 | 0.6143 | 0.6143 |
-| A15 | Sigma RMSE     | Heston Spec | ↓ | 0.0654 ± 0.0000 | 0.0654 | 0.0654 | 0.0654 | 0.0654 | 0.0654 |
-| A21 | Learned/Oracle Sigma Corr | Heston Spec | ↑ | 0.6143 ± 0.0000 | 0.6143 | 0.6143 | 0.6143 | 0.6143 | 0.6143 |
+| A33 | Teacher-Sigma Correlation | Heston Spec | ↑ | 0.614269 ± 0.0000 | 0.614269 | 0.614269 | 0.614269 | 0.614269 | 0.614269 |
+| A34 | Teacher-Sigma RMSE | Heston Spec | ↓ | 0.065445 ± 0.0000 | 0.065445 | 0.065445 | 0.065445 | 0.065445 | 0.065445 |
 
 > **Convention:** ↓ lower is better; ↑ higher is better; — no monotone direction.
-> **A1–A6** are the only distribution metrics with a non-zero floor: they are estimated on two
+> **A6–A11** are the only distribution metrics with a non-zero floor: they are estimated on two
 > disjoint 1024-path subsamples, so the value (~0.001–0.7) is Monte-Carlo sampling noise, not model error.
-> **A15/A21 = 0.614** is the *ceiling* of Heston teacher-σ recovery on this dataset: even the true
+> **A33 = 0.614** is the *ceiling* of Heston teacher-σ recovery on this dataset: even the true
 > variance path only correlates 0.61 with the σ estimated from prices — so no method can exceed this.
-> **A13/A14** are non-zero because a shuffled pool is statistically indistinguishable from the real
-> data, so the classifier/predictor operate at their intrinsic noise floor (score ≈ 0.008 / 0.054).
+> **A18/A19** are non-zero because a shuffled pool is statistically indistinguishable from the real
+> data, so the classifier/predictor operate at their intrinsic noise floor (score ≈ 0.005 / 0.054).
 
 ---
 

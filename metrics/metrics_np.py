@@ -1,31 +1,49 @@
 """
-Metrics A1–A24 for time-series generation benchmarking.
+Metrics A1–A34 for time-series generation benchmarking.
 
-A1   Full joint-path MMD²
-A2   Terminal MMD²
-A3   Increment MMD²
-A4   Volatility-discrepancy MMD
-A5   Terminal Sliced Wasserstein Distance
-A6   Path Sliced Wasserstein Distance
-A7   Terminal Covariance Error
-A8   Terminal Mean RMSE
-A9   Return Std Error  (price increments, legacy)
-A10  Return Kurtosis Error  (absolute difference)
-A11  ACF Error on |r| at lags {1,2,5,10}
-A12  ACF Error on r² at lags {1,2,5,10}
-A15  Teacher-Sigma Correlation + RMSE  (Heston-specific)
-A16  Log-Return Std Error
-A17  |r| q95 Error
-A18  |r| q99 Error
-A19  Kurtosis Ratio  (target / model, excess kurtosis)
-A20  Sigma Mean Error  (mean annualised per-path vol)
-A21  Learned / Oracle Sigma Correlation  (Heston-specific)
-A22  ACF |r| Lag-1 Error
-A23  ACF r² Lag-1 Error
-A24  Realized Volatility Law Loss  (W₁ on per-path RV)
+Numbered in category-display order (Fat Tail → Distribution → Adversarial →
+Predictive → Temporal → Vol → Heston Spec).
 
-A13 and A14 are implemented separately in discriminative_score.py
-and predictive_score.py using PyTorch.
+Fat Tail
+  A1   Kurtosis Error  (absolute difference on log-returns)
+  A2   |r| q95 Error
+  A3   |r| q99 Error
+  A4   Tail QQ Error
+  A5   Hill Tail Index Error
+Distribution
+  A6   Path MMD²  (full joint-path)
+  A7   Terminal MMD²
+  A8   Increment MMD²
+  A9   Volatility-discrepancy MMD
+  A10  Terminal Sliced Wasserstein Distance
+  A11  Path Sliced Wasserstein Distance
+  A12  Realized Volatility Law Loss  (W₁ on per-path RV)
+  A13  Mean Path RMSE
+  A14  KS on Log-returns
+  A15  Skewness Error
+  A16  QQ RMSE  (300-point)
+  A17  Terminal Price KS
+Adversarial / Predictive  (PyTorch, separate modules)
+  A18  Discriminative Score GRU + MLP  (discriminative_score.py)
+  A19  Predictive Score GRU + MLP  (predictive_score.py)
+Temporal
+  A20  Terminal Covariance Error
+  A21  ACF Error on |r| over lags 1–20
+  A22  ACF Error on r² over lags 1–20
+  A23  ACF |r| Lag-1 Error
+  A24  ACF r² Lag-1 Error
+Vol
+  A25  Mean RMSE  (per-step mean price)
+  A26  Return Std Error  (price increments)
+  A27  Log-Return Std Error
+  A28  Kurtosis Ratio  (target / model, excess kurtosis; perfect = 1.0)
+  A29  Sigma Mean Error  (mean annualised per-path vol)
+  A30  Cross-Sectional Vol Path RMSE
+  A31  Rolling Vol KS  (window = 5)
+  A32  Vol-of-Vol Error
+Heston Spec
+  A33  Teacher-Sigma Correlation  (Heston-specific)
+  A34  Teacher-Sigma RMSE  (Heston-specific)
 """
 
 import numpy as np
@@ -503,40 +521,7 @@ def sigma_mean_error(
 
 
 # ======================================================================
-# A21  Learned / Oracle sigma correlation  (Heston-specific)
-# ======================================================================
-
-def learned_oracle_sigma_corr(
-    X_gen: np.ndarray, v_true: np.ndarray,
-    dt: float = 1.0 / 250.0,
-) -> float:
-    r"""A21. Pearson correlation between learned vol and oracle vol (Heston-specific).
-
-    Estimates instantaneous vol from generated paths via rolling window-5 QV:
-
-        sigma_hat_t = sqrt( rolling_mean_5(r_t^2) / dt )
-
-    and compares against the oracle (true Heston) vol:
-
-        sigma*_t = sqrt(v_t)
-
-        A_21 = Pearson_corr( flatten(sigma_hat_gen), flatten(sigma*) )
-
-    Perfect: 1.0.  Direction: higher is better.
-    Requires the true latent variance process v_t (Heston-specific).
-
-    Parameters
-    ----------
-    X_gen  : (N, T, d)  generated price paths
-    v_true : (N, T)     true latent variance paths (annualised)
-    dt     : time step in years (default 1/250)
-    """
-    corr, _ = teacher_sigma_metrics(X_gen, v_true, dt=dt)
-    return float(corr)
-
-
-# ======================================================================
-# A22–A23  ACF lag-1 errors
+# ACF lag-1 errors  (Temporal category)
 # ======================================================================
 
 def acf_lag1_abs_error(X: np.ndarray, Y: np.ndarray) -> float:
@@ -790,26 +775,25 @@ def hill_tail_index_error(X: np.ndarray, Y: np.ndarray, k_frac: float = 0.10) ->
 
 __all__ = [
     "rbf_multiscale_kernel",
-    # A1–A6  Distribution (MMD, SWD)
+    # Distribution (MMD, SWD)
     "mmd2", "terminal_mmd2", "increment_mmd2", "volatility_mmd",
     "terminal_swd", "path_swd",
-    # A7–A10  Statistical moments
+    # Statistical moments / Vol
     "terminal_cov_error", "terminal_mean_rmse",
     "return_std_error", "return_kurtosis_error",
-    # A11–A12, A22–A23  ACF / Temporal
+    # ACF / Temporal
     "acf", "acf_error",
     "acf_lag1_abs_error", "acf_lag1_sq_error",
-    # A15, A21  Heston-specific
+    # A33–A34  Heston-specific teacher-sigma (corr + rmse)
     "teacher_sigma_metrics",
-    "learned_oracle_sigma_corr",
-    # A16–A20  Log-return vol / distribution
+    # Log-return vol / distribution / tail
     "logreturn_std_error",
     "abs_return_quantile_error",
     "kurtosis_ratio",
     "sigma_mean_error",
-    # A24  Realized vol
+    # Realized vol
     "rv_law_loss",
-    # A25–A34  Distributional shape (absorbed from B1–B12)
+    # Distributional shape / tail / curve-derived
     "mean_path_rmse",
     "vol_path_rmse",
     "ks_logreturns",

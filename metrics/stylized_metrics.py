@@ -261,14 +261,18 @@ def _curve_scores(L_r: np.ndarray, L_g: np.ndarray) -> Dict[str, float]:
         sec_der compares diff2(L)                  diff2[k] = diff[k+1] - diff[k]
 
     MSE(a, b)  = mean( (a - b)^2 )
-    PCT(a, b)  = mean( |b - a| / (|a| + 1e-6) ) * 100     (|·| in the denominator
-                 keeps it a magnitude percentage even where the real curve is
-                 negative, e.g. an ACF that dips below zero).
+    PCT(a, b)  = mean( |b - a| / (|a| + 1e-6) ) * 100    (mean absolute
+                 percentage error over the curve's points; the mean already
+                 divides by the number of points — ONE division, a proper MAPE.
+                 |·| in the denominator keeps it a magnitude percentage even
+                 where the real curve is negative, e.g. an ACF that dips below 0).
     """
     def _mse(a: np.ndarray, b: np.ndarray) -> float:
         return float(np.mean((a - b) ** 2))
 
     def _pct(a: np.ndarray, b: np.ndarray) -> float:
+        # mean absolute percentage error over the curve's points (ONE division:
+        # np.mean already sums and divides by the number of points)
         return float(np.mean(np.abs(b - a) / (np.abs(a) + 1e-6)) * 100.0)
 
     d_r,  d_g  = np.diff(L_r),  np.diff(L_g)
@@ -388,13 +392,20 @@ def aggregate_curve_metrics(per_seed: list) -> Dict[str, dict]:
     per_seed : list of dicts, one per seed, each holding the 36 flat keys produced
                by :func:`compute_curve_metrics`.
 
-    For every plot the three sub-metrics (funct, der, sec_der) are summed into a
-    single score, separately for the MSE and the percentage-error variant:
+    For every plot the three sub-metrics (funct, der, sec_der) are combined into a
+    single per-seed score, then averaged across seeds. The two variants differ:
 
+    MSE variant (sum of the three sub-metrics, quadrature std):
         combined_per_seed = funct_seed + der_seed + sec_der_seed
         mean = mean_over_seeds(combined_per_seed)           (= sum of the 3 means)
         std  = sqrt( var(funct) + var(der) + var(sec_der) ) (sub-metrics combined
                      in quadrature, per the benchmark spec)
+
+    PCT variant (mean of the three curve-length-normalised sub-metrics):
+        combined_per_seed = mean( funct_seed, der_seed, sec_der_seed )
+        mean = mean_over_seeds(combined_per_seed)
+        std  = std_over_seeds(combined_per_seed)            (direct sample std of the
+                     per-seed combined values — recomputed across seeds)
 
     Returns
     -------
@@ -413,8 +424,18 @@ def aggregate_curve_metrics(per_seed: list) -> Dict[str, dict]:
                 s: np.array([float(d[f"{prefix}_{s}{suffix}"]) for d in per_seed])
                 for s in _CURVE_SUBS
             }
-            combined = sub_arrays["funct"] + sub_arrays["der"] + sub_arrays["sec_der"]
-            std = float(np.sqrt(sum(sub_arrays[s].std() ** 2 for s in _CURVE_SUBS)))
+            if variant == "mse":
+                # sum of the three sub-metrics; sub-metric stds combined in quadrature
+                combined = (sub_arrays["funct"] + sub_arrays["der"]
+                            + sub_arrays["sec_der"])
+                std = float(np.sqrt(sum(sub_arrays[s].std() ** 2
+                                        for s in _CURVE_SUBS)))
+            else:
+                # mean of the three curve-length-normalised sub-metrics; std is the
+                # direct sample std of the per-seed combined values across seeds
+                combined = (sub_arrays["funct"] + sub_arrays["der"]
+                            + sub_arrays["sec_der"]) / 3.0
+                std = float(combined.std())
             row[variant] = {
                 "mean": float(combined.mean()),
                 "std":  std,
