@@ -388,7 +388,8 @@ both the MSE and % err rows are exactly 0). The **% err** row blows up (triple-d
 real curve passes through near-zero values (empty histogram bins, tail-survival ≈ 0, near-zero ACF lags) —
 expected, a property of the curve, not a bug. Winner between methods is decided by the **MSE** row.
 
-Total A-metrics: 37 numbers (A1–A34 + A13×2 + A14×2 + A15×2). Total B: 6 plots × 3 sub-metrics × 2 measures.
+Total A-metrics: 36 numbers (A1–A34, with **A18 Discriminative** and **A19 Predictive** each reported ×2
+for their GRU + MLP variants). Total B: 6 plots × 3 sub-metrics × 2 measures.
 Winner is by MSE; the two combined measures (MSE, % err) are what the READMEs display per plot.
 
 ### 5.3 Output files
@@ -400,8 +401,8 @@ Winner is by MSE; the two combined measures (MSE, % err) are what the READMEs di
 | `results/Heston/<Method>/seed_{i}_metrics.json` | All 55 metric values for seed i (A1-A34 + 18 B_ keys) |
 | `results/Heston/<Method>/metrics_summary.json` | Mean ± std across 5 seeds |
 | `results/Heston/<Method>/metrics_summary.csv` | Same, CSV format |
-| `results/Heston/<Method>/plots/disc_classifier_loss.png` | A13 BCE training loss, GRU + MLP, 5 seeds |
-| `results/Heston/<Method>/plots/pred_score_loss.png` | A14 MAE training loss, GRU + MLP, 5 seeds |
+| `results/Heston/<Method>/plots/disc_classifier_loss.png` | A18 BCE training loss, GRU + MLP, 5 seeds |
+| `results/Heston/<Method>/plots/pred_score_loss.png` | A19 MAE training loss, GRU + MLP, 5 seeds |
 | `results/Heston/<Method>/plots/seed_{i}_pca.png` | PCA of 500 real vs fake paths (per seed) |
 | `results/Heston/<Method>/plots/seed_{i}_tsne.png` | t-SNE of 200 real vs fake paths (per seed) |
 
@@ -426,7 +427,7 @@ Heston sigma-correlation metrics (A33 Corr ≈ 0.614, A34 RMSE ≈ 0.065).
 Run it once per dataset with the **reproducible** script (fixed seed, 5-seed average):
 
 ```bash
-python metrics/compute_perfect_recovery.py            # add --no-pytorch to skip A13/A14 (no GPU)
+python metrics/compute_perfect_recovery.py            # add --no-pytorch to skip A18/A19 (no GPU)
 # Outputs (source of truth for all floor columns):
 #   methods/perfect_recovery/results/metrics_summary.csv    ← A1–A34 floors (mean ± std, 5 shuffles)
 #   methods/perfect_recovery/results/curve_b_aggregate.json ← B floors (all 0)
@@ -523,7 +524,7 @@ These constants are **benchmark standards** — do NOT change per method:
 
 Always include a legend on each panel.
 
-### 7.2 Discriminative Classifier Loss (A13)
+### 7.2 Discriminative Classifier Loss (A18)
 
 Saved to `results/Heston/<Method>/plots/disc_classifier_loss.png`.
 - Two subplots side by side: GRU discriminator / MLP discriminator
@@ -532,15 +533,15 @@ Saved to `results/Heston/<Method>/plots/disc_classifier_loss.png`.
 - All 5 seeds overlaid
 - Horizontal dashed reference line at ln(2) ≈ 0.693 (random-chance level)
 
-> **Fresh-retrain guarantee (verified 2026-07-19):** the A13 classifier is **retrained from scratch for
+> **Fresh-retrain guarantee (verified 2026-07-19):** the A18 classifier is **retrained from scratch for
 > every method and every seed**. `compute_discriminative_score` (in `metrics/discriminative_score.py`)
 > instantiates a new `GRUDiscriminator` / `MLPDiscriminator` and a new Adam optimiser on each call, and
 > `compute_all.py` calls it once inside the per-seed loop (never caches weights across seeds or methods).
-> The same holds for A14 (`compute_predictive_score`). This means the discriminative/predictive scores are
-> never contaminated by a previously-trained classifier — each score reflects a fresh 2000-step (A13) /
-> 5000-step (A14) fit on that seed's real-vs-fake data.
+> The same holds for A19 (`compute_predictive_score`). This means the discriminative/predictive scores are
+> never contaminated by a previously-trained classifier — each score reflects a fresh 2000-step (A18) /
+> 5000-step (A19) fit on that seed's real-vs-fake data.
 
-### 7.3 Predictive Score Loss (A14)
+### 7.3 Predictive Score Loss (A19)
 
 Saved to `results/Heston/<Method>/plots/pred_score_loss.png`.
 - Two subplots: GRU predictor / MLP predictor
@@ -605,7 +606,7 @@ skeleton with every category populated.
 Rules:
 - 4 decimal places for values < 1; fewer for larger magnitudes (match the style already used in
   `methods/TimeGAN/README.md` — plain numbers in the Perfect floor column, no bold, no "baseline" text)
-- Include footnotes for A13, A14, A15, A16–A34. See §15.1 Section 2 for the exact verbatim footnote block.
+- Include footnotes for A18, A19, and A20–A34 (any non-obvious ID). See §15.1 Section 2 for the exact verbatim footnote block.
 
 #### Section 3 — B Curve-Shape Metrics
 
@@ -661,10 +662,10 @@ ACF of squared returns, rolling vol histogram (window=5), tail survival (log-log
 ![<Method> Training Loss](losses/loss_convergence.png)
 ```
 
-#### Section 6 — A13
+#### Section 6 — A18
 
 ```markdown
-## A13 — Discriminative Classifier Training Loss
+## A18 — Discriminative Classifier Training Loss
 
 BCE loss during GRU and MLP classifier training (2 000 steps, logged every 50 steps).
 A value near ln(2) ≈ 0.693 means the classifier cannot distinguish real from fake.
@@ -672,10 +673,10 @@ A value near ln(2) ≈ 0.693 means the classifier cannot distinguish real from f
 ![Discriminative Classifier Loss](../../results/Heston/<Method>/plots/disc_classifier_loss.png)
 ```
 
-#### Section 7 — A14
+#### Section 7 — A19
 
 ```markdown
-## A14 — Predictive Score Training Loss (TSTR)
+## A19 — Predictive Score Training Loss (TSTR)
 
 MAE loss during GRU and MLP predictor training on *synthetic* data (5 000 steps, logged every 100 steps).
 
@@ -886,7 +887,7 @@ DOCUMENTATION
 
 PERFECT RECOVERY FLOOR (reproducible, full-shuffle)
   [ ] methods/perfect_recovery/results/{metrics_summary.csv, curve_b_aggregate.json, seed_*_metrics.json}
-       — run: python metrics/compute_perfect_recovery.py   (add --no-pytorch to skip A13/A14)
+       — run: python metrics/compute_perfect_recovery.py   (add --no-pytorch to skip A18/A19)
   [ ] Perfect column added as the LAST column of every A1–A34 and B table in: methods/<Method>/README.md,
        results/Heston/<Method>/README.md, results/README.md, root README.md
   [ ] Floor values IDENTICAL across all methods (A from metrics_summary.csv, B all 0 from curve_b_aggregate.json);
@@ -939,7 +940,7 @@ SBTS states Python 3.11. Check compatibility with gpu-venv before starting.
 |---|----------|--------|
 | SB-Q1 | **`sbts_uni_markovian.py`, k=1** | Paper explicitly uses k=1 for Heston (Appendix C). Heston is truly Markovian: given (Sₜ, vₜ) the future is independent of the past. Full non-Markovian variant produces null kernel weights on long series. |
 | SB-Q2 | **1D price paths, same format as TimeGAN** | SBTS internally operates on scaled log-returns R̃ = R × √Δt / σ(R). After generation, invert: R_gen = R̃_gen × σ(R) / √Δt, then S_gen[:,t+1] = S_gen[:,t] × exp(R_gen[:,t]) with S_gen[:,0] = S_real[:,0] ≈ 100. Save price paths (8192×128, float64). All metrics and plots in price space. |
-| SB-Q3 | **CPU + Numba for generation; GPU for A13/A14 metrics only** | SBTS has no neural network. Paper used CPU+Numba (12 cores, 548 s for 1 000 samples at T=252). Our setup (8 192 paths, T=128): **64 workers → ~6.3 min/seed** (seeds 1-4: 370-384 s); 16 workers → ~23 min/seed. Rule: total time ≈ (8 192 / n_workers) × 2.9 s. GPUs 0+3 only for disc/pred scores. Check Numba compatibility with gpu-venv; if conflict, install numba==0.56.4 in gpu-venv or create sbts-venv. |
+| SB-Q3 | **CPU + Numba for generation; GPU for A18/A19 metrics only** | SBTS has no neural network. Paper used CPU+Numba (12 cores, 548 s for 1 000 samples at T=252). Our setup (8 192 paths, T=128): **64 workers → ~6.3 min/seed** (seeds 1-4: 370-384 s); 16 workers → ~23 min/seed. Rule: total time ≈ (8 192 / n_workers) × 2.9 s. GPUs 0+3 only for disc/pred scores. Check Numba compatibility with gpu-venv; if conflict, install numba==0.56.4 in gpu-venv or create sbts-venv. |
 | SB-Q4 | **h=0.4, k=1, N^π=200, Δt=1/250** | From Appendix C Table 4: h=0.4 for Heston T=100, Δt=1/252. We start with h=0.4 and run CV bandwidth selection (Section 3 of paper) for our T=128, M=8192. Grid H = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6} — pick h* minimising MSEₕ. |
 | SB-Q5 | **No loss CSV — log bandwidth CV curve instead** | SBTS is pure kernel density estimation — no parameters, no gradient, no training loop. Instead save: `losses/bandwidth_cv.csv` (h, MSEₕ per seed) and `losses/generation_time.csv` (seed, n_samples, elapsed_sec). Plot MSEₕ vs h in place of loss convergence plot. |
 
@@ -1062,7 +1063,109 @@ expected, a property of the curve, not a bug.
 
 #### Sections 4–10 — Stylised Facts → Reproduce
 
-The method README continues with, in this exact order (full templates in §8 Sections 4–10):
+The method README continues with, in this exact order. Full verbatim templates below (retaken from
+§8 Sections 4–10 — copy each block, replace `<Method>` everywhere, fill the `...`/`X.XXX` cells).
+
+##### Section 4 — Stylised Facts Diagnostic
+
+```markdown
+## Stylised Facts Diagnostic (Heston vs <Method>, seed 0)
+
+Eight-panel comparison: sample paths, return distribution, QQ plot, ACF of |returns|,
+ACF of squared returns, rolling vol histogram (window=5), tail survival (log-log).
+
+![Heston Diagnostics](../../results/Heston/<Method>/plots/heston_diagnostics.png)
+```
+
+##### Section 5 — Training Loss
+
+```markdown
+## <Method> Training Loss (5 seeds)
+
+<Describe training phases (if any), total steps, what each loss component measures.>
+
+![<Method> Training Loss](losses/loss_convergence.png)
+```
+
+For training-free methods (e.g. kernel/bandwidth-based), replace the loss curve with the relevant
+diagnostic (e.g. bandwidth-CV plot) and describe what is being selected instead of "trained".
+
+##### Section 6 — A18 Discriminative Classifier Training Loss
+
+```markdown
+## A18 — Discriminative Classifier Training Loss
+
+BCE loss during GRU and MLP classifier training (2 000 steps, logged every 50 steps).
+A value near ln(2) ≈ 0.693 means the classifier cannot distinguish real from fake.
+
+![Discriminative Classifier Loss](../../results/Heston/<Method>/plots/disc_classifier_loss.png)
+```
+
+##### Section 7 — A19 Predictive Score Training Loss (TSTR)
+
+```markdown
+## A19 — Predictive Score Training Loss (TSTR)
+
+MAE loss during GRU and MLP predictor training on *synthetic* data (5 000 steps, logged every 100 steps).
+
+![Predictive Score Loss](../../results/Heston/<Method>/plots/pred_score_loss.png)
+```
+
+##### Section 8 — Path Shadowing MC
+
+```markdown
+## Path Shadowing MC (arXiv:2308.01486)
+
+Given a real path prefix (steps 0–63), embed via multi-scale log-returns (eq. 13,
+α=1.15, β=0.9, dim=22), retrieve K=77 nearest <Method> paths by L2 distance,
+use their price-anchored futures as a forecast ensemble.
+Two variants: **Uniform** (flat 1/K) and **Gaussian** (η = η̃·‖h(x̃)‖, η̃ calibrated from data).
+
+### Example ensemble fan-out (seed 0)
+
+![PS-MC Example](../../results/Heston/<Method>/path_shadowing/plots/ps_mc_example.png)
+
+### CRPS per forecast step
+
+![CRPS per step](../../results/Heston/<Method>/path_shadowing/plots/crps_per_step.png)
+
+### Results (mean ± std, 5 seeds)
+
+| Metric | H=32 Uniform | H=32 Gaussian | H=64 Uniform | H=64 Gaussian | Naive RW |
+|--------|:------------:|:-------------:|:------------:|:-------------:|:--------:|
+| **CRPS** | X.XXX ± X.XXX | X.XXX ± X.XXX | X.XXX ± X.XXX | X.XXX ± X.XXX | 3.73 / 5.30 |
+| MAE    | ... | ... | ... | ... | 3.73 / 5.30 |
+| RMSE   | ... | ... | ... | ... | 5.07 / 7.18 |
+
+Full analysis: [`results/Heston/<Method>/path_shadowing/README.md`](../../results/Heston/<Method>/path_shadowing/README.md)
+```
+
+##### Section 9 — File layout
+
+Show the exact folder tree of `methods/<Method>/` (fill in actual file names): `code/`, `losses/`,
+`generated_paths/seed_{0..4}/`, `path_shadowing/`, and the method README itself.
+
+##### Section 10 — Reproduce
+
+```markdown
+## Reproduce
+
+\`\`\`bash
+# Train all 5 seeds (2 A100 GPUs in parallel)
+cd methods/<Method>/code
+python train.py --gpu0 0 --gpu1 3
+
+# Compute all metrics
+cd metrics
+python compute_all.py --method <Method> --dataset Heston
+
+# Run Path Shadowing MC
+cd methods/<Method>/path_shadowing
+python run_eval.py
+\`\`\`
+```
+
+Quick-reference ordering (same as the templates above):
 
 4. **Stylised Facts Diagnostic** — 8-panel PNG `plots/heston_diagnostics.png` (sample paths, return
    distribution, QQ, ACF |r|, ACF r², rolling-vol histogram, tail survival).
@@ -1077,35 +1180,69 @@ The method README continues with, in this exact order (full templates in §8 Sec
 
 ### 15.2 Results README (`results/Heston/<Method>/README.md`) — Required Sections
 
-**Section order (mandatory):**
+**Section order (mandatory).** This order is copied from the current `results/Heston/SBTS/README.md`
+(the ground-truth reference). Do NOT put "Comparison with paper" before "Curve-shape metrics".
 
-1. **Header** — method name, paper citation, one-line description, convention note (↓ lower is better except A33 Teacher-Sigma Corr ↑; A28 Kurtosis Ratio: perfect = 1.0)
+1. **Header** — method name, paper citation, one-line description, convention note (↓ lower is better
+   except A33 Teacher-Sigma Corr ↑; A28 Kurtosis Ratio: perfect = 1.0).
 
-2. **What we generate** (if applicable) — SDE, scaling steps, pipeline
+2. **What we generate — price paths from the Heston SDE** (if applicable) — SDE, scaling steps, pipeline.
 
 3. **Results (mean ± std across 5 seeds)**
    - Subsection **A1–A34 Core metrics**: full table with columns
      `ID | Metric | Mean ± Std | Seed 0..4 | Perfect` — the **last column is the Perfect floor**
-     (A floors from `methods/perfect_recovery/results/metrics_summary.csv`, B floors all 0, §5.4). Rows grouped by category
-     in the mandatory order: **Fat Tail → Distribution → Adversarial → Predictive → Temporal → Vol →
-     Heston Spec** (see §15.1).
-   - Subsection **B Curve-Shape Metrics**: two-subline table (MSE row + % err row per plot) with a
-     trailing `Perfect` column (0 for every plot). Winner is by MSE.
-   - Footnotes for A13, A14, A15, A16–A34
+     (A floors from `methods/perfect_recovery/results/metrics_summary.csv`, B floors all 0, §5.4). Rows
+     grouped by category in the mandatory order: **Fat Tail → Distribution → Adversarial → Predictive →
+     Temporal → Vol → Heston Spec** (see §15.1).
+   - Footnotes for A18, A19, A33, A34 (and any other non-obvious IDs).
 
-4. **Comparison with the paper**
-   - ⚠️ Warning that direct comparison may not be meaningful (state why: different dataset, different T, different d)
-   - Subsection A: Hyperparameter verification table (columns: `Setting | Our reimplementation | Paper (source)`)
-   - Subsection B: Score comparison table — **Fetch the paper's Table of results. Find metrics that are comparable to ours (discriminative score, predictive score, or equivalent). Create a table:**
+4. **Stylised Facts Diagnostic** — the 8-panel diagnostic PNG plus one-line description:
+   ```markdown
+   ## Stylised Facts Diagnostic
+
+   Eight-panel comparison (seed 0): sample paths, return distribution, QQ plot, ACF of |returns|,
+   ACF of squared returns, rolling vol histogram (window=5), tail survival (log-log).
+
+   ![Heston Diagnostics](plots/heston_diagnostics.png)
+   ```
+
+5. **Curve-shape metrics (B)** — the two-subline B table (MSE row + % err row per plot), each with a
+   trailing `Perfect` column (0 for every plot). Winner is by MSE. Reuse the header blockquote from
+   §15.1 Section 3 (MSE = sum-of-3 / quadrature std; % err = MAPE mean-of-3 / sample-std). The % err row
+   is expected to blow up (triple-digit %) wherever the real curve passes through near-zero values.
+
+6. **Comparison with the paper**
+   - ⚠️ Warning that direct comparison may not be meaningful (state why: different dataset, different T,
+     different d).
+   - Subsection A: Hyperparameter verification table (columns: `Setting | Our reimplementation | Paper (source)`).
+   - Subsection B: Score comparison table — **Fetch the paper's Table of results. Find metrics that are
+     comparable to ours (discriminative score, predictive score, or equivalent). Create a table:**
      ```
      | Metric | Paper — Dataset1 (d=X, T=Y) | Paper — Dataset2 | Ours — Heston GRU (d=1, T=128) | Ours — Heston MLP |
      ```
      Quote the exact paper table, dataset used, and metric definition (same metric? different metric?).
-   - Subsection C (if applicable): Scaling / implementation notes
+   - Subsection C (if applicable): Scaling / implementation notes.
+   - **Paper reproduction table (goes BELOW the paper-comparison table).** Immediately after the
+     Subsection B score table, add a `## Paper reproduction on <PaperDataset>` block that reports the
+     numbers from `methods/<Method>/paper_reimplementation/` — our port/official code run on the paper's
+     OWN dataset, vs the paper's Table 1. This is the honest "did we reproduce the paper?" check and MUST
+     sit under the paper-comparison table (the paper-comparison table is Heston-vs-paper; the reproduction
+     table is paper-dataset-vs-paper). Example (from `results/Heston/TimeGAN/README.md`):
+     ```markdown
+     ## Paper reproduction on Stocks (our port vs Yoon et al. Table 1)
 
-5. **B Curve-Shape Metrics** ← *copied verbatim from Section 3 of the method README*
-   - Include the two-subline B table (MSE row + % err row per plot, trailing Perfect column, winner by MSE)
-   - Include the 8-panel diagnostic PNG: `![Heston Diagnostics](plots/heston_diagnostics.png)`
+     | Dataset | Metric | Ours — 2-layer judge, 1 seed | Ours — 1-layer judge, 5 seeds | Paper (Table 1) | Verdict |
+     |---------|--------|------------------------------|-------------------------------|-----------------|---------|
+     | Stocks | Discriminative ↓ | 0.219 ± 0.066 | **0.119 ± 0.036** | 0.102 ± 0.031 | **matches** ✓ (within 0.5σ) |
+     | Stocks | Predictive ↓ | 0.039 ± 0.000 | **0.042 ± 0.002** | 0.038 ± 0.001 | **matches** ✓ |
+
+     Links to [`../../../methods/<Method>/paper_reimplementation/`](../../../methods/<Method>/paper_reimplementation/).
+     ```
+     For a method whose OWN official code is used (e.g. SBTS), collapse the two "Ours" columns into one
+     `Ours (official <Method> code)` column and keep the same `Paper (Table 1)` and `Verdict` columns.
+
+7. **Files** — a file index table (or tree) of `results/Heston/<Method>/`: the README, `plots/`,
+   per-seed metric JSONs, `curve_b_aggregate.json`, `path_shadowing/`.
 
 > **Note:** The Metric Definitions section (A1–A34 with LaTeX formulas) lives in `metrics/README.md`
 > and `methods/<Method>/code/README.md` — NOT in the results README. The results README contains
@@ -1127,6 +1264,42 @@ The method README continues with, in this exact order (full templates in §8 Sec
 8. **How to produce new seeds** — command to run single seed; command for all 5; where outputs land
 9. **Reproduce** — exact bash commands for: single seed, all seeds, compute metrics
 10. **Sanity check results** (optional but recommended) — show small-scale test output
+
+---
+
+### 15.3.1 Paper-Reimplementation README (`methods/<Method>/paper_reimplementation/README.md`)
+
+This README documents the §3.0 paper-reproduction step: running the method's own code (or a faithful
+port) on the **paper's own dataset** (e.g. Stocks) and comparing to the paper's Table 1 — the honest
+"did we reproduce the paper?" check, done BEFORE the 5 Heston seeds. Take the two existing files as
+the ground-truth templates: `methods/TimeGAN/paper_reimplementation/README.md` and
+`methods/SBTS/paper_reimplementation/README.md`.
+
+**Section order (mandatory):**
+
+1. **Header** — `# <Method> — Paper Reimplementation (<PaperDataset>)`; then a short bullet block:
+   **Paper** (title, authors, venue), **Official code** (GitHub URL + where mirrored, e.g.
+   `../code/reference/`), **This run** (which script, which GPU, wall-clock).
+2. **⚠️ Reproduction caveat** (only if a port was needed) — explain WHY the official code could not be
+   run as-is (e.g. TimeGAN's TF1 has no CUDA-13 build → CPU fallback → many hours), and state exactly
+   what was substituted: which generator (`../code/<port>.py`) and which metric implementation, and note
+   that the shared metric makes the "our-run" columns directly comparable across methods.
+3. **1. Paper metrics (as defined in the paper)** — a table `Metric | Definition | Direction` quoting
+   the paper's own metric definitions (discriminative = |acc − 0.5| via a GRU judge, predictive = TSTR
+   MAE, etc.), plus how the paper reports them (mean ± std over N test runs, `n_temp`, `itt`, batch).
+4. **2. Hyperparameters** — the exact command / settings from the official README or notebook, then a
+   `Parameter | Value` table (module, seq_len, hidden_dim, num_layers, iterations, batch_size) and the
+   training wall-clock.
+5. **3. Dataset** — the paper dataset (source, shape, dtype, scaling), where it lives under `dataset/`.
+6. **4. Results — ours vs paper** — the reproduction table. Columns depend on whether a port was used:
+   - Port (TimeGAN): `Dataset | Metric | Ours — 2-layer judge, 1 seed | Ours — 1-layer judge, 5 seeds |
+     Paper (Table 1) | Verdict`.
+   - Official code (SBTS): `Dataset | Metric | Ours (official <Method> code) | Paper (Table 1) | Verdict`.
+   Bold the primary "Ours" column; Verdict states `matches ✓` / `same regime ✓` with the σ-distance.
+   **This is the SAME table that gets copied BELOW the paper-comparison table in the results README (§15.2 Section 6).**
+7. **5. How to reproduce** — exact bash: the reproduce script, GPU pinning (`CUDA_VISIBLE_DEVICES`,
+   `taskset`, `OMP_NUM_THREADS`), seed split across the 2 allowed GPUs.
+8. **6. Files** — file index of `paper_reimplementation/`: `dataset/`, `metric/`, `results/`, README.
 
 ---
 
@@ -1153,10 +1326,28 @@ tables. They must stay in sync with each other and with every method README.
 6. **Interpretation bullets** — 3–6 bullets referencing metrics by their **new** IDs (e.g. A20 cov
    error, A18 GRU/MLP, A33 Teacher-Sigma Corr).
 
-**When a new method is added**, insert one column into every table (A, B, PS-MC), recompute all
-`Winner` cells and win counts, and leave the `Perfect` floor column unchanged (dataset-derived).
+**When a new method is added — exact edits to the root `README.md` and `results/README.md`:**
+
+1. **In the Results (comparison) tables — add ONE column for the new method and UPDATE the Winner, for
+   BOTH table A and table B:**
+   - **Table A (A1–A34):** insert a new `<NewMethod>` column (positioned before the `Winner` /
+     `Perfect floor` columns) and fill every row — including the A18/A19 GRU+MLP sublines — from the new
+     method's `metrics_summary.csv`. Then **recompute every `Winner` cell** across all method columns
+     (↓ smaller wins; ↑ larger wins; A28 Kurtosis Ratio closest-to-1.0 wins) and **update the overall
+     win-count line** (`<A> wins X/38, <B> wins Y/38, <NewMethod> wins Z/38`).
+   - **Table B (Curve-Shape):** insert the new `<NewMethod>` column into every plot's MSE and % err
+     sublines from `curve_b_aggregate.json`, then **recompute the by-MSE `Winner`** for each of the 6
+     plots and **update the B win-count line** (`X/6` MSE each).
+   - Leave the `Perfect` / `Perfect floor` column unchanged (dataset-derived, identical for all methods).
+   - Also add the new column to the **Path Shadowing MC** comparison table.
+
+2. **In the Methods list — add ONE line (row) for the new method.** The root `README.md` lists methods
+   in a table (one row per method). Adding a method means appending a new **row** there (name, paper,
+   one-line description, link to `methods/<NewMethod>/`) — and adding it to the "methods benchmarked"
+   enumeration in the header and the "Adding a new method" section if present.
+
 The `results/README.md` and root `README.md` A-tables must use identical numbers and identical Winner
-cells; only prose framing may differ.
+cells; only prose framing may differ. Never re-order or renumber existing rows.
 
 - All A/B/PS-MC values must be **read back from disk** (`metrics_summary.csv`, `curve_b_aggregate.json`,
   `path_shadowing/` results), never hand-transcribed.
@@ -1185,3 +1376,5 @@ When a new standard is established (new metric, new section format, new B metric
 - 2026-07-19: **Full A-metric renumber to category order.** A1–A34 IDs reassigned so they read in display order (A1 Kurtosis Error … A34 Teacher-Sigma RMSE): Fat Tail A1–A5, Distribution A6–A17, Adversarial A18 (GRU+MLP), Predictive A19 (GRU+MLP), Temporal A20–A24, Vol A25–A32, Heston Spec A33–A34. **Formulas unchanged — only order/numbering.** Scope: JSON keys, `compute_all.py` identifiers, all README labels, `metrics/README.md` and `metrics_np.py` legends, and §5.2/§8/§15.1 in this file. A28 Kurtosis Ratio (perfect = 1.0, closest wins); A33 Teacher-Sigma Corr (↑).
 - 2026-07-19: **§8/§15.1 Section renumbering + column note.** Removed the "Section 4 — (removed) Perfect Recovery Floor" meta-blocks; the floor note is now inline and Sections renumber 5→4 … 11→10 (§8). Re-added the Stylised-Facts→Reproduce section list in §15.1. Added §9 note + §15.4 (Root & Comparison README protocol): tables are column-oriented, adding a method = adding one column + recomputing Winner cells; old §15.4 Update Protocol → §15.5.
 - 2026-07-19: **Paper-reimplementation-first (§3.0).** New standard: before generating the 5 Heston seeds, reproduce the paper's own results on the paper's own dataset in `methods/<Method>/paper_reimplementation/` (README paper-vs-ours table, `dataset/`, `metric/`, generated data + weights). If repro fails, explain and STOP. Exact code cells: `metrics/compute_all.py --dataset <PaperDataset>` for metrics and `metrics/plot_diagnostics.py --dataset <PaperDataset> --seed 0` for the 8 stylised-facts curve plots.
+- 2026-07-19: **§15 detail expansion (additive).** (1) §15.1 Sections 4–10 expanded from a terse list into the full verbatim markdown templates retaken from §8 (Stylised Facts → Training Loss → A18 → A19 → Path Shadowing MC → File layout → Reproduce). (2) §15.2 Results-README section order corrected to match the ground-truth `results/Heston/SBTS/README.md`: Header → What we generate → Results (A1–A34) → **Stylised Facts Diagnostic** → **Curve-shape metrics (B)** → Comparison with the paper → **Files** (previously "Comparison with paper" wrongly preceded the B table and the Stylised-Facts/Files sections were missing). Added the rule that the **paper-reproduction table goes BELOW the paper-comparison table** in the results README, with a worked TimeGAN example. (3) New **§15.3.1 Paper-Reimplementation README** subsection (8-section order, grounded in the existing TimeGAN/SBTS `paper_reimplementation/README.md`). (4) §15.4 enhanced with the exact new-method edits: **add one column + recompute Winner for BOTH table A and table B**, add one **row** to the methods list. No content removed — all changes additive/reordering only.
+- 2026-07-19: **Documented the high-MSE / low-%err B anomaly (TimeGAN seed 2, log-return histogram).** MSE = 504.48 (SUM of funct 267.28 + der 100.55 + sec\_der 136.64) yet % err = 32.86%. Cause: seed 2 collapsed the log-return density into a too-tall central peak (gen peak 152.64 vs real 37.53, ≈4×); MSE is an **absolute squared** measure dominated by the few tallest bins (top-5 bins = 89.7% of the sum), while % err is a scale-free **MAPE** averaging bounded per-bin relative errors (median bin rel err 27.69%). High MSE + low % err ⟺ a large absolute mismatch concentrated at a few high-magnitude (peak-density) points. Not a bug — the two aggregations penalise a density-peak collapse differently.
