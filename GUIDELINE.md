@@ -1378,3 +1378,42 @@ When a new standard is established (new metric, new section format, new B metric
 - 2026-07-19: **Paper-reimplementation-first (§3.0).** New standard: before generating the 5 Heston seeds, reproduce the paper's own results on the paper's own dataset in `methods/<Method>/paper_reimplementation/` (README paper-vs-ours table, `dataset/`, `metric/`, generated data + weights). If repro fails, explain and STOP. Exact code cells: `metrics/compute_all.py --dataset <PaperDataset>` for metrics and `metrics/plot_diagnostics.py --dataset <PaperDataset> --seed 0` for the 8 stylised-facts curve plots.
 - 2026-07-19: **§15 detail expansion (additive).** (1) §15.1 Sections 4–10 expanded from a terse list into the full verbatim markdown templates retaken from §8 (Stylised Facts → Training Loss → A18 → A19 → Path Shadowing MC → File layout → Reproduce). (2) §15.2 Results-README section order corrected to match the ground-truth `results/Heston/SBTS/README.md`: Header → What we generate → Results (A1–A34) → **Stylised Facts Diagnostic** → **Curve-shape metrics (B)** → Comparison with the paper → **Files** (previously "Comparison with paper" wrongly preceded the B table and the Stylised-Facts/Files sections were missing). Added the rule that the **paper-reproduction table goes BELOW the paper-comparison table** in the results README, with a worked TimeGAN example. (3) New **§15.3.1 Paper-Reimplementation README** subsection (8-section order, grounded in the existing TimeGAN/SBTS `paper_reimplementation/README.md`). (4) §15.4 enhanced with the exact new-method edits: **add one column + recompute Winner for BOTH table A and table B**, add one **row** to the methods list. No content removed — all changes additive/reordering only.
 - 2026-07-19: **Documented the high-MSE / low-%err B anomaly (TimeGAN seed 2, log-return histogram).** MSE = 504.48 (SUM of funct 267.28 + der 100.55 + sec\_der 136.64) yet % err = 32.86%. Cause: seed 2 collapsed the log-return density into a too-tall central peak (gen peak 152.64 vs real 37.53, ≈4×); MSE is an **absolute squared** measure dominated by the few tallest bins (top-5 bins = 89.7% of the sum), while % err is a scale-free **MAPE** averaging bounded per-bin relative errors (median bin rel err 27.69%). High MSE + low % err ⟺ a large absolute mismatch concentrated at a few high-magnitude (peak-density) points. Not a bug — the two aggregations penalise a density-peak collapse differently.
+- 2026-07-19: **Added §16 (Pitfalls — Process Errors to Avoid When Adding a Method).** Captured 5 mechanical/workflow errors made while integrating Fourier Flow (P1–P5) plus a General subsection, so future method additions don't repeat them. None were wrong benchmark numbers — all were file-layout / tool-schema / workflow mistakes.
+
+---
+
+## 16. Pitfalls — Process Errors to Avoid When Adding a Method
+
+> These are **mechanical / workflow** errors observed while adding real methods (TimeGAN → SBTS → Fourier Flow). None produced a wrong benchmark number, but each cost a round-trip. Read this list **before** writing any README or running any Bash when onboarding a new method. The cure for every one of them is the same: **verify against the disk before you assert.**
+
+### P1 — Fabricated file names / CSV headers in a README before checking disk
+**What happened:** Wrote a method README referencing `fourier_flow_torch.py` when the actual entry point was `train_heston.py`, and described a loss CSV header `step, train NLL loss` when the real header was `epoch,loss`.
+**Why it's wrong:** READMEs are contracts. A reader who `cd`s in and runs the named script hits "file not found"; a reader who parses the CSV by the documented columns gets garbage.
+**Cure:** Before naming ANY file or column in prose, run `ls <dir>` and `head -1 <file>` (or Read) and copy the exact strings. Never infer a filename from the method name or from a sibling method's convention.
+
+### P2 — Assuming a subfolder layout that mirrors another method
+**What happened:** Assumed `losses/` lived under `methods/FourierFlow/code/` (because that felt parallel to the code); it was actually a **sibling** of `code/` at `methods/FourierFlow/losses/`.
+**Why it's wrong:** Each method's generator writes artifacts wherever its own `train_*.sh` points — the tree is NOT guaranteed identical across methods.
+**Cure:** `find methods/<Method> -maxdepth 2 -type d` once, up front, and pin the real paths. Do not extrapolate one method's tree onto another.
+
+### P3 — Chaining a hard `ls <missing-path>` inside a compound Bash command
+**What happened:** A `cmd1 && cmd2 && ls methods/FourierFlow/code/losses/` compound aborted with exit code 2 because the final `ls` hit a non-existent path — killing the whole command and its earlier useful output.
+**Why it's wrong:** In `&&` chains a single failure discards everything; a probe for a path you're unsure about should never gate real work.
+**Cure:** Probe uncertain paths in a **separate, non-gating** call, or use `ls <path> 2>/dev/null || true`, or use `find` (which returns 0 with empty output rather than failing). Keep verification probes out of `&&` chains that do real work.
+
+### P4 — Batch payload to a per-item tool (TaskUpdate schema)
+**What happened:** Called `TaskUpdate({tasks:[{task_id,status},…]})` → `InputValidationError` (schema wants a single `{taskId, status}` per call, and the tool was **deferred** so its schema wasn't even loaded yet).
+**Why it's wrong:** Deferred tools have no schema in context until fetched; guessing the shape (batch vs singular, `task_id` vs `taskId`) wastes a call.
+**Cure:** For any deferred tool, `ToolSearch(query="select:<ToolName>")` first to load the real schema, then call it exactly as specified — one item per call unless the schema explicitly accepts an array.
+
+### P5 — GateGuard fact-reset by an interposed Read
+**What happened:** Stated the required Fact-Forcing Gate facts, then ran a `Read` to double-check an anchor, then issued the first `Edit` — the intervening Read **reset** the gate and the Edit was denied as "stale".
+**Why it's wrong:** The gate requires the 5 facts and the guarded command in the **same turn with no intervening tool call**. Any tool call (even a Read) between the facts and the Edit invalidates them.
+**Cure:** Do all your Reads/inspection FIRST. Only once you have the exact `old_string` anchor in hand, state the 5 facts and issue the `Edit`/`Bash` **immediately**, with nothing in between. If you must Read again, you must restate the facts again afterward.
+
+### General — applies to every method addition
+- **Verify-before-claim:** every filename, path, CSV header, and metric value written into a README must be read back from the actual artifact (`grep`/`head`/Read), never recalled from memory or copied from a sibling method.
+- **Stage by name:** `git add <explicit files>` only — never `git add -A` / `git add .` (avoids committing `.omc/`, `__pycache__/`, stray large files).
+- **`.omc/` is gitignored** at repo root; nested `.omc/` dirs under a method folder are therefore auto-skipped — confirm with `git status --porcelain` before committing.
+- **Largest-file check:** `find . -type f -size +50M` before commit; GitHub hard-rejects >100 MB. The 8192×128 float64 arrays are ~8 MB each — fine — but weights/checkpoints can be large.
+- **Commit in the benchmark repo ONLY** (`/home/tbasseras/benchmark`), never the `/home/tbasseras` home repo (it holds `.ssh/` and credentials).
