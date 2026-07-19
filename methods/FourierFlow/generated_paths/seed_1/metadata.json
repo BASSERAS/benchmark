@@ -1,0 +1,21 @@
+{
+  "seed": 1,
+  "method": "FourierFlow",
+  "shape": [
+    8192,
+    128
+  ],
+  "seq_len": 128,
+  "n_gen": 8192,
+  "scale_min": 39.893609418078476,
+  "scale_max": 155.57898269218714,
+  "gen_min_val": 53.415462493896484,
+  "gen_max_val": 137.67355346679688,
+  "train_sec": 491.8,
+  "gen_sec": 1.5,
+  "hidden": 200,
+  "n_flows": 3,
+  "normalize": true,
+  "epochs": 1000,
+  "learning_rate": 0.001
+}

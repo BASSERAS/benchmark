@@ -1,0 +1,34 @@
+{
+  "dataset": "stock",
+  "T": 100,
+  "fft_size": 101,
+  "n_samples": 10000,
+  "data_seed": 42,
+  "model_params": {
+    "hidden": 200,
+    "n_flows": 3,
+    "normalize": true
+  },
+  "train_params": {
+    "epochs": 1000,
+    "batch_size": 500,
+    "learning_rate": 0.001,
+    "display_step": 100
+  },
+  "paper_target": {
+    "F_score": 0.984,
+    "MAE": 0.009
+  },
+  "per_experiment": [
+    {
+      "exp": 1,
+      "F1": 0.9905551835721609,
+      "MAE": 0.007777176394458977,
+      "loss_first": 171.8660430908203,
+      "loss_last": 22.814613342285156,
+      "sec": 257.7
+    }
+  ],
+  "done": false,
+  "elapsed_sec": 257.7
+}

@@ -1,0 +1,22 @@
+{
+  "seed": 4,
+  "framework": "pytorch",
+  "model": "FourierFlow",
+  "hidden": 200,
+  "n_flows": 3,
+  "normalize": true,
+  "n_clamped_bins": 1,
+  "fft_size": 129,
+  "prepend_anchor": true,
+  "epochs": 1000,
+  "batch_size": 500,
+  "learning_rate": 0.001,
+  "N_train": 8192,
+  "seq_len": 128,
+  "scale_min": 39.893609418078476,
+  "scale_max": 155.57898269218714,
+  "torch": "2.13.0+cu130",
+  "train_sec": 486.8,
+  "loss_first": 212.72373962402344,
+  "loss_last": 107.24238586425781
+}
