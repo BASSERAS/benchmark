@@ -1211,35 +1211,52 @@ Quick-reference ordering (same as the templates above):
    §15.1 Section 3 (MSE = sum-of-3 / quadrature std; % err = MAPE mean-of-3 / sample-std). The % err row
    is expected to blow up (triple-digit %) wherever the real curve passes through near-zero values.
 
-6. **Comparison with the paper**
+6. **Comparison with the paper** — CANONICAL 3-COLUMN STRUCTURE.
+   ⚠️ **This section uses the paper's OWN metrics ONLY** (whatever the paper reports in its results
+   table — e.g. F-score + MAE for Fourier Flow, discriminative + predictive score for TimeGAN). Do NOT
+   use the A1–A34 suite here; the A-suite comparison lives in the Results section above. The point of
+   this section is a like-for-like check against the published numbers.
+
    - ⚠️ Warning that direct comparison may not be meaningful (state why: different dataset, different T,
-     different d).
+     different d, and — if relevant — a scale note, since the paper's metric is applied to Heston prices
+     placed on the paper's own normalisation, e.g. [0,1] MinMax).
    - Subsection A: Hyperparameter verification table (columns: `Setting | Our reimplementation | Paper (source)`).
-   - Subsection B: Score comparison table — **Fetch the paper's Table of results. Find metrics that are
-     comparable to ours (discriminative score, predictive score, or equivalent). Create a table:**
-     ```
-     | Metric | Paper — Dataset1 (d=X, T=Y) | Paper — Dataset2 | Ours — Heston GRU (d=1, T=128) | Ours — Heston MLP |
-     ```
-     Quote the exact paper table, dataset used, and metric definition (same metric? different metric?).
-   - Subsection C (if applicable): Scaling / implementation notes.
-   - **Paper reproduction table (goes BELOW the paper-comparison table).** Immediately after the
-     Subsection B score table, add a `## Paper reproduction on <PaperDataset>` block that reports the
-     numbers from `methods/<Method>/paper_reimplementation/` — our port/official code run on the paper's
-     OWN dataset, vs the paper's Table 1. This is the honest "did we reproduce the paper?" check and MUST
-     sit under the paper-comparison table (the paper-comparison table is Heston-vs-paper; the reproduction
-     table is paper-dataset-vs-paper). Example (from `results/Heston/TimeGAN/README.md`):
+   - Subsection B: **The unified score table.** One row per **paper metric**, three value columns:
+
+     | Column | Meaning |
+     |--------|---------|
+     | **Paper (Table N, <PaperDataset>)** | the number the paper published (its figures, its dataset) |
+     | **Ours — <PaperDataset> (paper dataset)** | our port / the released code run on the paper's OWN dataset (the `paper_reimplementation/` reproduction) |
+     | **Ours — Heston** | the **same paper metric functions** applied to our 5-seed Heston paths |
+
      ```markdown
-     ## Paper reproduction on Stocks (our port vs Yoon et al. Table 1)
-
-     | Dataset | Metric | Ours — 2-layer judge, 1 seed | Ours — 1-layer judge, 5 seeds | Paper (Table 1) | Verdict |
-     |---------|--------|------------------------------|-------------------------------|-----------------|---------|
-     | Stocks | Discriminative ↓ | 0.219 ± 0.066 | **0.119 ± 0.036** | 0.102 ± 0.031 | **matches** ✓ (within 0.5σ) |
-     | Stocks | Predictive ↓ | 0.039 ± 0.000 | **0.042 ± 0.002** | 0.038 ± 0.001 | **matches** ✓ |
-
-     Links to [`../../../methods/<Method>/paper_reimplementation/`](../../../methods/<Method>/paper_reimplementation/).
+     | Metric (paper's own) | Paper (Table N, <PaperDataset>) | Ours — <PaperDataset> (paper dataset) | Ours — Heston |
+     |----------------------|:-------------------------------:|:-------------------------------------:|:-------------:|
+     | <metric1> ↑/↓ | <paper val> | **<ours paper-dataset val ± std>** | **<ours Heston val ± std>** |
+     | <metric2> ↑/↓ | <paper val> | **<ours paper-dataset val ± std>** | **<ours Heston val ± std>** |
      ```
-     For a method whose OWN official code is used (e.g. SBTS), collapse the two "Ours" columns into one
-     `Ours (official <Method> code)` column and keep the same `Paper (Table 1)` and `Verdict` columns.
+
+     Worked example (`results/Heston/FourierFlow/README.md`, paper metrics = Sajjadi F-score + TSTR MAE):
+     ```markdown
+     | Metric (paper's own) | Paper (Table 2, Stocks) | Ours — Stocks (paper dataset) | Ours — Heston |
+     |----------------------|:-----------------------:|:-----------------------------:|:-------------:|
+     | F-score ↑ | 0.984 | **0.9920 ± 0.0017** | **0.9918 ± 0.0009** |
+     | MAE ↓ | 0.009 | **0.0084 ± 0.0007** | **0.0210 ± 0.0132** |
+     ```
+     Quote the exact paper table number, the dataset, and the metric definition. State how the paper
+     metric was applied to Heston (normalisation + any length adaptation, e.g. the TSTR LSTM
+     `MAX_STEPS` set to the Heston sliced length). The **Ours — Heston** column MUST come from a
+     committed JSON produced by a reusable driver in `paper_reimplementation/metric/` (e.g.
+     `heston_paper_metrics.py` → `results/heston_paper_metrics.json`), scoring the already-generated
+     5-seed pool (no retraining). Never hand-type a Heston paper-metric value — compute it.
+   - Subsection C (if applicable): Scaling / implementation notes; the paper-vs-code caveat.
+
+   **Older two-table form (still valid for TimeGAN/SBTS, whose paper metrics = disc/pred score).**
+   Methods added before this canonical form kept a Heston-vs-paper table plus a separate
+   `## Paper reproduction on <PaperDataset>` block below it. That is equivalent — the reproduction
+   block is just the **Ours — <PaperDataset>** column split out — and does not need retrofitting.
+   For a method whose OWN official code is used (e.g. SBTS), the **Ours — <PaperDataset>** column is a
+   single `Ours (official <Method> code)` column.
 
 7. **Files** — a file index table (or tree) of `results/Heston/<Method>/`: the README, `plots/`,
    per-seed metric JSONs, `curve_b_aggregate.json`, `path_shadowing/`.
@@ -1379,6 +1396,7 @@ When a new standard is established (new metric, new section format, new B metric
 - 2026-07-19: **§15 detail expansion (additive).** (1) §15.1 Sections 4–10 expanded from a terse list into the full verbatim markdown templates retaken from §8 (Stylised Facts → Training Loss → A18 → A19 → Path Shadowing MC → File layout → Reproduce). (2) §15.2 Results-README section order corrected to match the ground-truth `results/Heston/SBTS/README.md`: Header → What we generate → Results (A1–A34) → **Stylised Facts Diagnostic** → **Curve-shape metrics (B)** → Comparison with the paper → **Files** (previously "Comparison with paper" wrongly preceded the B table and the Stylised-Facts/Files sections were missing). Added the rule that the **paper-reproduction table goes BELOW the paper-comparison table** in the results README, with a worked TimeGAN example. (3) New **§15.3.1 Paper-Reimplementation README** subsection (8-section order, grounded in the existing TimeGAN/SBTS `paper_reimplementation/README.md`). (4) §15.4 enhanced with the exact new-method edits: **add one column + recompute Winner for BOTH table A and table B**, add one **row** to the methods list. No content removed — all changes additive/reordering only.
 - 2026-07-19: **Documented the high-MSE / low-%err B anomaly (TimeGAN seed 2, log-return histogram).** MSE = 504.48 (SUM of funct 267.28 + der 100.55 + sec\_der 136.64) yet % err = 32.86%. Cause: seed 2 collapsed the log-return density into a too-tall central peak (gen peak 152.64 vs real 37.53, ≈4×); MSE is an **absolute squared** measure dominated by the few tallest bins (top-5 bins = 89.7% of the sum), while % err is a scale-free **MAPE** averaging bounded per-bin relative errors (median bin rel err 27.69%). High MSE + low % err ⟺ a large absolute mismatch concentrated at a few high-magnitude (peak-density) points. Not a bug — the two aggregations penalise a density-peak collapse differently.
 - 2026-07-19: **Added §16 (Pitfalls — Process Errors to Avoid When Adding a Method).** Captured 5 mechanical/workflow errors made while integrating Fourier Flow (P1–P5) plus a General subsection, so future method additions don't repeat them. None were wrong benchmark numbers — all were file-layout / tool-schema / workflow mistakes.
+- 2026-07-19: **§15.2 Section 6 → canonical 3-column paper-comparison table.** The "Comparison with the paper" section now uses **the paper's own metrics only** (not A1–A34) with one unified table: rows = paper metric, columns = **Paper (published, paper dataset)** | **Ours — <PaperDataset> (paper dataset reimpl)** | **Ours — Heston** (same paper metric applied to our 5-seed Heston pool). The Heston column must come from a committed JSON built by a reusable driver in `paper_reimplementation/metric/` (never hand-typed). Worked FF example (F-score 0.984/0.9920/0.9918; MAE 0.009/0.0084/0.0210). Old two-table form (TimeGAN/SBTS) noted as equivalent, no retrofit required. Added `methods/FourierFlow/paper_reimplementation/metric/heston_paper_metrics.py` + `results/heston_paper_metrics.json` (released `computeF1` + LSTM `computeMAE`, [0,1] MinMax, MAE `MAX_STEPS=127`).
 
 ---
 

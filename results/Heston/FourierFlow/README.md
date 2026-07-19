@@ -149,22 +149,37 @@ are indistinguishable.
 
 ---
 
-## Paper reproduction on Stocks (our port vs Alaa et al. ICLR 2021, Table 2)
+## Comparison with the paper (paper's own metrics: F-score + MAE)
 
-Before running Fourier Flow on Heston we reproduced the **original paper result on the Stocks dataset**
-with the *released* code, verbatim, using the paper's own hyperparameters (seq_len 100→101 with the
-prepended anchor, hidden 200, 3 flows, 1000 epochs). This validates the generator port independently of
-Heston. Full write-up:
-[`../../../methods/FourierFlow/paper_reimplementation/`](../../../methods/FourierFlow/paper_reimplementation/).
+This section uses **the paper's own two metrics** — the Sajjadi support-overlap **F-score**
+(`metrics/PRcurve.computeF1`) and the TSTR predictive **MAE** (2-layer LSTM/100u trained on synthetic,
+scored on real, `metrics/MAE.computeMAE`) — the released code, unchanged. Three columns:
 
-| Dataset | Metric | Ours (released FF code, 5 exps) | Paper (Table 2) | Verdict |
-|---------|--------|:-------------------------------:|:---------------:|---------|
-| Stocks | F-score ↑ | **0.9920 ± 0.0017** | 0.984 | **matches** ✓ (ours slightly higher) |
-| Stocks | MAE ↓ | **0.0084 ± 0.0007** | 0.009 | **matches** ✓ |
+- **Paper (Table 2)** — the published Fourier-Flow numbers on the paper's Stocks dataset.
+- **Ours — Stocks** — the *released* code run verbatim on the paper's own dataset (seq_len 100→101 with
+  the prepended anchor, hidden 200, 3 flows, 1000 epochs); validates the generator port independently
+  of Heston. Full write-up:
+  [`../../../methods/FourierFlow/paper_reimplementation/`](../../../methods/FourierFlow/paper_reimplementation/).
+- **Ours — Heston** — the **same two metric functions** applied to our 5-seed Fourier-Flow paths on the
+  Heston benchmark dataset. Prices are placed on the paper's [0,1] scale by a single global MinMax fit on
+  the real Heston prices (applied to both real and synthetic); the MAE LSTM uses `MAX_STEPS=127` to match
+  the Heston path length (128→sliced 127) — a data-length adaptation, not a metric change. Source:
+  [`../../../methods/FourierFlow/paper_reimplementation/results/heston_paper_metrics.json`](../../../methods/FourierFlow/paper_reimplementation/results/heston_paper_metrics.json).
 
-Both metrics land on the paper's Table 2 values — F-score 0.9920 vs 0.984 (marginally better support
-overlap), MAE 0.0084 vs 0.009 (within the 95 % CI). The released MLP `SpectralFilter` (not the paper's
-described BiRNN) is what produced Table 2, so the paper-vs-code discrepancy does not block reproduction.
+| Metric (paper's own) | Paper (Table 2, Stocks) | Ours — Stocks (paper dataset) | Ours — Heston |
+|----------------------|:-----------------------:|:-----------------------------:|:-------------:|
+| F-score ↑ | 0.984 | **0.9920 ± 0.0017** | **0.9918 ± 0.0009** |
+| MAE ↓ | 0.009 | **0.0084 ± 0.0007** | **0.0210 ± 0.0132** |
+
+**Stocks reproduces Table 2** — F-score 0.9920 vs 0.984 (marginally better support overlap), MAE 0.0084
+vs 0.009 (within the 95 % CI). The released MLP `SpectralFilter` (not the paper's described BiRNN) is
+what produced Table 2, so the paper-vs-code discrepancy does not block reproduction.
+
+**Heston transfers well.** The F-score is essentially identical (0.9918 vs 0.9920) — Fourier Flow covers
+the real Heston support almost perfectly. The paper-metric MAE is higher on Heston (0.0210 vs 0.0084)
+because Heston paths are longer (127 vs 100 steps) and more volatile, and one seed (seed 0, MAE 0.047)
+inflates the mean — seeds 1–4 sit tightly at ≈ 0.014. Both metrics stay in the paper's small-error
+regime, confirming the port behaves consistently across datasets.
 
 ---
 

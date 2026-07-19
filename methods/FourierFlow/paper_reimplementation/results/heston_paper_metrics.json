@@ -1,0 +1,57 @@
+{
+  "dataset": "Heston",
+  "seq_len": 128,
+  "max_steps_mae": 127,
+  "scaler": {
+    "min": 39.893609418078476,
+    "max": 155.57898269218714,
+    "note": "global MinMax fit on real Heston prices, applied to both"
+  },
+  "metric_source": "released FF code: metrics.PRcurve.computeF1, models.sequential.RNNmodel (LSTM/100u/2L)",
+  "paper_target_stocks": {
+    "F_score": 0.984,
+    "MAE": 0.009
+  },
+  "per_seed": [
+    {
+      "seed": 0,
+      "path": "../../generated_paths/seed_0/generated_paths_8192x128.npy",
+      "F_score": 0.9928940062064968,
+      "MAE": 0.04732132349205735,
+      "sec": 25.0
+    },
+    {
+      "seed": 1,
+      "path": "../../generated_paths/seed_1/generated_paths_8192x128.npy",
+      "F_score": 0.990060420252916,
+      "MAE": 0.014057747783979287,
+      "sec": 23.9
+    },
+    {
+      "seed": 2,
+      "path": "../../generated_paths/seed_2/generated_paths_8192x128.npy",
+      "F_score": 0.9920409017806794,
+      "MAE": 0.01454975502841995,
+      "sec": 24.2
+    },
+    {
+      "seed": 3,
+      "path": "../../generated_paths/seed_3/generated_paths_8192x128.npy",
+      "F_score": 0.992090603926111,
+      "MAE": 0.01487903576333878,
+      "sec": 24.0
+    },
+    {
+      "seed": 4,
+      "path": "../../generated_paths/seed_4/generated_paths_8192x128.npy",
+      "F_score": 0.9919310234054312,
+      "MAE": 0.014322134582803583,
+      "sec": 24.0
+    }
+  ],
+  "F_score_mean": 0.9918033911143269,
+  "F_score_std": 0.0009362244624675271,
+  "MAE_mean": 0.02102599933011979,
+  "MAE_std": 0.013150431979890307,
+  "elapsed_sec": 121.2
+}
