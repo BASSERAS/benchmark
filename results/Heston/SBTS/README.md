@@ -114,25 +114,25 @@ L'' (sec\_der) — then combine the three sub-scores into **one number per plot*
 
 - **MSE row**: for each list, dᵢ = mean((L_real − L_gen)²). Combined mean = sum of the three seed-means;
   combined std = sqrt(std\_funct² + std\_der² + std\_sec\_der²) (quadrature).
-- **% err row**: for each list, dᵢ = mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100, a proper MAPE — one division. Combined mean = mean
-  of the three sub-scores; combined std = sample std across the 5 seeds.
+- **% err row**: for each list, dᵢ = mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100, a proper MAPE — one division. the **function-level MAPE on the curve L itself** —
+  the derivative / 2nd-derivative MAPE is **excluded** (near-zero true diffs make it explode). Combined mean/std = mean and sample std across the 5 seeds.
 
 ↓ lower is better for both rows. **Perfect floor = 0** for every plot (row-shuffle preserves all marginals).
 
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
 | **Log-return histogram** | MSE | 12.138 ± 0.1605 | 12.213 | 12.187 | 12.374 | 11.917 | 11.998 | 0 |
-| | % err | 4755% ± 2735% | 8372% | 1121% | 5642% | 6549% | 2089% | 0 |
+| | % err | 38.98% ± 0.132% | 39.11% | 39.05% | 39.11% | 38.83% | 38.82% | 0 |
 | **QQ plot** | MSE | 8.90e-06 ± 6.77e-08 | 8.98e-06 | 8.91e-06 | 8.98e-06 | 8.84e-06 | 8.81e-06 | 0 |
-| | % err | 37.69% ± 1.874% | 40.72% | 38.65% | 35.80% | 37.56% | 35.73% | 0 |
+| | % err | 21.27% ± 0.364% | 21.31% | 20.87% | 21.64% | 20.84% | 21.69% | 0 |
 | **ACF \|r\| lags 1–20** | MSE | 0.0046 ± 3.70e-05 | 0.0046 | 0.0045 | 0.0045 | 0.0045 | 0.0046 | 0 |
-| | % err | 423.3% ± 11.52% | 410.1% | 429.8% | 408.6% | 432.5% | 435.4% | 0 |
+| | % err | 143% ± 1.580% | 144% | 144% | 143% | 140% | 144% | 0 |
 | **ACF r² lags 1–20** | MSE | 0.0052 ± 5.67e-05 | 0.0053 | 0.0051 | 0.0051 | 0.0052 | 0.0053 | 0 |
-| | % err | 534.5% ± 49.86% | 543.7% | 603.7% | 567.5% | 490.1% | 467.5% | 0 |
+| | % err | 160% ± 1.615% | 161% | 160% | 159% | 157% | 161% | 0 |
 | **Rolling vol histogram** | MSE | 1227.30 ± 5.109 | 1234.15 | 1226.44 | 1230.95 | 1223.20 | 1221.77 | 0 |
-| | % err | 238.6% ± 5.655% | 235.3% | 229.1% | 241.5% | 243.8% | 243.5% | 0 |
+| | % err | 84.04% ± 0.124% | 84.23% | 84.09% | 84.08% | 83.91% | 83.90% | 0 |
 | **Tail survival** | MSE | 0.0057 ± 6.60e-05 | 0.0058 | 0.0058 | 0.0058 | 0.0057 | 0.0057 | 0 |
-| | % err | 5717% ± 303.4% | 6171% | 5755% | 5740% | 5704% | 5215% | 0 |
+| | % err | 26.48% ± 0.114% | 26.62% | 26.50% | 26.58% | 26.35% | 26.34% | 0 |
 
 **Plot → curve mapping** (each curve is the shape whose funct/der/sec\_der are scored above):
 
@@ -206,6 +206,26 @@ empirical standard deviation of the training log-returns.
 **SBTS does NOT generate log-prices or prices directly.** It generates **scaled log-returns** R̃,
 then reconstructs price paths via the inverse transform. The √dt/σ scaling ensures the empirical
 variance of R̃ matches the theoretical SDE variance Δt, which stabilises the kernel estimation.
+
+---
+
+## Paper reproduction on Stocks (official SBTS code vs Table 1)
+
+Before running SBTS on Heston we reproduced the **original SBTS paper result on the Stocks
+dataset** using the *official* SBTS code verbatim (numba kernel generator, no neural training;
+N_pi=100, h=0.2, d=5, T=10, 1000 synthetic paths). This validates the method independently of
+Heston. Full write-up:
+[`../../../methods/SBTS/paper_reimplementation/`](../../../methods/SBTS/paper_reimplementation/).
+
+| Dataset | Metric | Ours (official SBTS code) | Paper (Table 1) | Verdict |
+|---------|--------|:-------------------------:|:---------------:|---------|
+| Stocks | Discriminative ↓ | **0.026 ± 0.012** | 0.010 ± 0.008 | same regime ✓ |
+| Stocks | Predictive ↓ | **0.018 ± 0.003** | 0.017 ± 0.000 | **matches** ✓ |
+
+The predictive score matches the paper almost exactly (0.018 vs 0.017). The discriminative score
+sits in the same low regime (both ≈ 0.01–0.03, i.e. the adversary is essentially at chance) — the
+small gap is the expected run-to-run variance of a stochastic post-hoc classifier scored over only
+10 runs with a different RNG seed, not a methodological difference. Generation time: **39 s**.
 
 ---
 

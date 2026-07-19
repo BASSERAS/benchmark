@@ -71,26 +71,26 @@ Cross-method comparison on 8 192 Heston price paths (seq\_len=128).
 Each of the 6 diagnostic plots yields a **curve** L (a list of values), not a scalar. For each plot we build three lists — the curve L, its first finite difference (der), and its second finite difference (sec\_der) — then combine the three sub-scores into **one number per plot** under two error measures:
 
 - **MSE row**: for each list, dᵢ = mean((L_real − L_gen)²). Combined mean = sum of the three seed-means; combined std = sqrt(std\_funct² + std\_der² + std\_sec\_der²) (quadrature).
-- **% err row**: for each list, dᵢ = mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100, a proper MAPE — one division. Combined mean = mean of the three sub-scores; combined std = sample std across the 5 seeds.
+- **% err row**: the **function-level MAPE on the curve L itself**, dᵢ = mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100 — one division. The derivative / 2nd-derivative MAPE is **excluded** (near-zero true differences make it explode); combined std = sample std across the 5 seeds. Bold marks the lower % error.
 
 ↓ lower is better. Histogram bin edges use [0.5th, 99.5th]-percentile of **real data only**, so the reference curve is fixed. **Perfect floor = 0** for every plot (row-shuffle preserves all marginals exactly). Winner is by MSE.
 
 | Plot | Measure | SBTS | TimeGAN | Perfect | Winner |
 |------|---------|:----:|:-------:|:------:|:------:|
 | **Log-return histogram** | MSE | **12.138 ± 0.1605** | 144.21 ± 120.61 | 0 | **SBTS** |
-| | % err | **4755% ± 2735%** | 25147% ± 8785% | 0 | |
+| | % err | 38.98% ± 0.132% | **33.42% ± 6.512%** | 0 | |
 | **QQ plot** | MSE | 8.90e-06 ± 6.77e-08 | **7.09e-06 ± 3.34e-06** | 0 | **TimeGAN** |
-| | % err | **37.69% ± 1.874%** | 52.65% ± 13.63% | 0 | |
+| | % err | **21.27% ± 0.364%** | 34.29% ± 11.19% | 0 | |
 | **ACF \|r\| lags 1–20** | MSE | **0.0046 ± 3.70e-05** | 0.0105 ± 0.0085 | 0 | **SBTS** |
-| | % err | **423.3% ± 11.52%** | 780.7% ± 602.8% | 0 | |
+| | % err | **143% ± 1.580%** | 164% ± 101% | 0 | |
 | **ACF r² lags 1–20** | MSE | **0.0052 ± 5.67e-05** | 0.0058 ± 0.0033 | 0 | **SBTS** |
-| | % err | **534.5% ± 49.86%** | 1526% ± 1625% | 0 | |
+| | % err | 160% ± 1.615% | **110% ± 60.72%** | 0 | |
 | **Rolling vol histogram** | MSE | 1227.30 ± 5.109 | **439.33 ± 216.74** | 0 | **TimeGAN** |
-| | % err | **238.6% ± 5.655%** | 294.3% ± 137.0% | 0 | |
+| | % err | 84.04% ± 0.124% | **56.06% ± 20.98%** | 0 | |
 | **Tail survival** | MSE | **0.0057 ± 6.60e-05** | 0.0117 ± 0.0092 | 0 | **SBTS** |
-| | % err | **5717% ± 303.4%** | 8109% ± 3779% | 0 | |
+| | % err | 26.48% ± 0.114% | **23.60% ± 6.040%** | 0 | |
 
-The % err is a proper MAPE, so it blows up where the real curve passes near zero (empty bins, tail ≈ 0, near-zero ACF lags). TimeGAN's log-return-histogram MSE std (±120.61) is driven by a genuine seed-2 collapse (504.48 vs 11–170 for the other seeds).
+The function-level % err stays in a sane range (≈ 21–164%): the largest values are the ACF plots, where the true ACF ≈ 0.05 sits near zero so any deviation is a big *relative* error. It no longer explodes to 10⁴-% now that the ill-posed derivative MAPE is excluded. TimeGAN's log-return-histogram MSE std (±120.61) is driven by a genuine seed-2 collapse (504.48 vs 11–170 for the other seeds).
 
 **SBTS wins B: 4/6 plots on MSE. TimeGAN wins 2/6** (QQ plot, rolling-vol histogram). Each value is computed over the same **5 seeds** per method.
 
@@ -162,7 +162,7 @@ Detailed per-seed results and plots:
 
 ### B — Curve-shape metrics (6 diagnostic plots)
 
-For each of 6 diagnostic plots we build three lists — the curve L, its first finite difference (der), and its second finite difference (sec\_der) — and score each list under **two measures**: MSE (absolute squared error) and % err (relative error). The three sub-scores are combined into one number per plot per measure (mean = sum, std = quadrature). Histogram bin edges use [0.5th, 99.5th]-percentile of **real data only**, making the reference curve fixed across seeds.
+For each of 6 diagnostic plots we build three lists — the curve L, its first finite difference (der), and its second finite difference (sec\_der) — and score each list under **two measures**: MSE (absolute squared error) and % err (relative error). For MSE the three sub-scores are summed (std in quadrature); the **% err reports the function-level MAPE of the curve L only** (the derivative MAPE is ill-posed near zero). Histogram bin edges use [0.5th, 99.5th]-percentile of **real data only**, making the reference curve fixed across seeds.
 
 | Plot | Key | What the curve represents |
 |------|-----|--------------------------|

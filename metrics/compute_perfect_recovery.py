@@ -192,6 +192,12 @@ def main():
     out_dir = os.path.join(REPO, "methods", "perfect_recovery", "results")
     os.makedirs(out_dir, exist_ok=True)
 
+    # materialised shuffled datasets (one .npy per seed) — the explicit
+    # "generated" side of the perfect-recovery floor, saved so the baseline is
+    # reproducible from files rather than an on-the-fly permutation.
+    seeds_dir = os.path.join(REPO, "methods", "perfect_recovery", "dataset", "seeds")
+    os.makedirs(seeds_dir, exist_ok=True)
+
     # ── run seeds ─────────────────────────────────────────────────────────────
     all_results = []
 
@@ -203,6 +209,10 @@ def main():
         idx    = rng.permutation(N)
         S_shuf = S_real[idx]   # same distribution, different row order
         v_shuf = v_real[idx]   # matching oracle variance (same permutation)
+
+        # persist the shuffled dataset for this seed (S and matching variance)
+        np.save(os.path.join(seeds_dir, f"heston_S_shuffled_seed{seed}.npy"), S_shuf)
+        np.save(os.path.join(seeds_dir, f"heston_v_shuffled_seed{seed}.npy"), v_shuf)
 
         d = compute_one_seed(
             S_real      = S_real,

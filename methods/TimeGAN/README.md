@@ -77,7 +77,7 @@ difference L' (der), and its second finite difference L'' (sec\_der) — then co
 sub-scores into **one number per plot**:
 
 - **MSE row**: for each list, dᵢ = mean((L_r − L_g)²). Reported mean = m_funct + m_der + m_sec\_der (**sum** of the three seed-means); std = sqrt(s_funct² + s_der² + s_sec\_der²) (**quadrature**).
-- **% err row**: for each list, dᵢ = mean(|L_g − L_r| / (|L_r| + 1e-6)) × 100, a proper MAPE — one division (the mean already averages over the curve's points). Reported mean = **mean** of the three sub-scores; std = **sample std across the 5 seeds** (not quadrature).
+- **% err row**: for each list, dᵢ = mean(|L_g − L_r| / (|L_r| + 1e-6)) × 100, a proper MAPE — one division (the mean already averages over the curve's points). Reported value = the **function-level MAPE on the curve L itself** — the derivative / 2nd-derivative MAPE is **excluded** because diff(L)/diff2(L) have near-zero true values, so their relative error explodes into meaningless 10⁴-% figures. mean/std = mean and **sample std across the 5 seeds** of that per-seed function MAPE.
 
 All ↓ lower is better. Perfect floor = 0 for all six plots (row-shuffled real data has identical curves).
 Two sublines per plot: **MSE** and **% error** (the per-seed columns hold that seed's combined score).
@@ -85,22 +85,22 @@ Two sublines per plot: **MSE** and **% error** (the per-seed columns hold that s
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect |
 |------|---------|-----------|--------|--------|--------|--------|--------|:------:|
 | **Log-return histogram** | MSE | 144.21 ± 120.61 | 11.054 | 20.679 | 504.48 | 14.578 | 170.28 | 0 |
-| | % err | 25147% ± 8785% | 27938% | 12081% | 37201% | 29756% | 18757% | 0 |
+| | % err | 33.42% ± 6.512% | 26.16% | 36.78% | 32.86% | 27.35% | 43.95% | 0 |
 | **QQ plot** | MSE | 7.09e-06 ± 3.34e-06 | 4.16e-06 | 7.22e-06 | 8.07e-06 | 3.19e-06 | 1.28e-05 | 0 |
-| | % err | 52.65% ± 13.63% | 41.38% | 40.64% | 75.77% | 44.86% | 60.57% | 0 |
+| | % err | 34.29% ± 11.19% | 20.18% | 23.68% | 47.70% | 33.99% | 45.88% | 0 |
 | **ACF \|r\| lags 1–20** | MSE | 0.0105 ± 0.0085 | 0.0029 | 0.0053 | 0.0182 | 0.0010 | 0.0250 | 0 |
-| | % err | 780.7% ± 602.8% | 949.7% | 324.3% | 537.1% | 215.8% | 1877% | 0 |
+| | % err | 164% ± 101% | 87.82% | 111% | 237% | 59.02% | 324% | 0 |
 | **ACF r² lags 1–20** | MSE | 0.0058 ± 0.0033 | 0.0020 | 0.0043 | 0.0072 | 0.0010 | 0.0143 | 0 |
-| | % err | 1526% ± 1625% | 1912% | 385.1% | 507.9% | 274.8% | 4550% | 0 |
+| | % err | 110% ± 60.72% | 72.18% | 70.40% | 105% | 72.05% | 228% | 0 |
 | **Rolling vol histogram** | MSE | 439.33 ± 216.74 | 280.40 | 633.95 | 604.18 | 82.528 | 595.57 | 0 |
-| | % err | 294.3% ± 137.0% | 211.2% | 206.2% | 321.6% | 181.6% | 550.7% | 0 |
+| | % err | 56.06% ± 20.98% | 52.54% | 71.71% | 84.04% | 22.66% | 49.36% | 0 |
 | **Tail survival** | MSE | 0.0117 ± 0.0092 | 0.0027 | 0.0061 | 0.0219 | 0.0041 | 0.0238 | 0 |
-| | % err | 8109% ± 3779% | 5891% | 5375% | 15274% | 5385% | 8622% | 0 |
+| | % err | 23.60% ± 6.040% | 18.29% | 24.46% | 26.00% | 16.10% | 33.16% | 0 |
 
 > **Log-ret histogram**: MSE std (120.6) approaches the mean (144.2), driven by seed 2 near-collapse (504.5 vs 11–170 for the other seeds). A std near the mean is expected for a non-negative combined score over 5 skewed samples — it is not a bug. SBTS is far more stable here (12.1 ± 0.16).
 > **ACF \|r\|, ACF r²**: TimeGAN misses the ARCH signature — near-zero ACF vs Heston ≈ +0.05 — so both MSE and % error are larger than SBTS.
 > **Rolling vol histogram**: High MSE (439) from vol-distribution mismatch across most seeds.
-> **% error reading**: a proper MAPE (mean |gen−real|/|real| × 100) averaged over the three sub-metrics (funct/der/sec_der). Log-ret hist (25147%) and tail survival (8109%) are the hardest — deep-tail and empty-bin points inflate the relative error. Read MSE for absolute agreement, % error for relative shape deviation.
+> **% error reading**: the **function-level MAPE** of the curve itself (mean |gen−real|/(|real|+1e-6) × 100); the derivative / 2nd-derivative MAPE is excluded as ill-posed (near-zero true differences blow up the denominator). ACF |r| (164%) and ACF r² (110%) are the largest — the true ACF ≈ 0.05 sits near zero, so any deviation is a big *relative* error; log-ret hist (33%), QQ (34%), rolling vol (56%) and tail survival (24%) are all modest. Read MSE for absolute agreement, % error for relative shape deviation.
 
 ---
 

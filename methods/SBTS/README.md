@@ -80,7 +80,7 @@ difference L' (der), and its second finite difference L'' (sec\_der) — then co
 sub-scores into **one number per plot**:
 
 - **MSE row**: for each list, dᵢ = mean((L_r − L_g)²). Reported mean = m_funct + m_der + m_sec\_der (**sum** of the three seed-means); std = sqrt(s_funct² + s_der² + s_sec\_der²) (**quadrature**).
-- **% err row**: for each list, dᵢ = mean(|L_g − L_r| / (|L_r| + 1e-6)) × 100, a proper MAPE — one division (the mean already averages over the curve's points). Reported mean = **mean** of the three sub-scores; std = **sample std across the 5 seeds** (not quadrature).
+- **% err row**: for each list, dᵢ = mean(|L_g − L_r| / (|L_r| + 1e-6)) × 100, a proper MAPE — one division (the mean already averages over the curve's points). Reported value = the **function-level MAPE on the curve L itself** — the derivative / 2nd-derivative MAPE is **excluded** because diff(L)/diff2(L) have near-zero true values, so their relative error explodes into meaningless 10⁴-% figures. mean/std = mean and **sample std across the 5 seeds** of that per-seed function MAPE.
 
 All ↓ lower is better. Perfect floor = 0 for all six plots (row-shuffled real data has identical curves).
 Two sublines per plot: **MSE** and **% error** (the per-seed columns hold that seed's combined score).
@@ -88,21 +88,21 @@ Two sublines per plot: **MSE** and **% error** (the per-seed columns hold that s
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect |
 |------|---------|-----------|--------|--------|--------|--------|--------|:------:|
 | **Log-return histogram** | MSE | 12.138 ± 0.1605 | 12.213 | 12.187 | 12.374 | 11.917 | 11.998 | 0 |
-| | % err | 4755% ± 2735% | 8372% | 1121% | 5642% | 6549% | 2089% | 0 |
+| | % err | 38.98% ± 0.132% | 39.11% | 39.05% | 39.11% | 38.83% | 38.82% | 0 |
 | **QQ plot** | MSE | 8.90e-06 ± 6.77e-08 | 8.98e-06 | 8.91e-06 | 8.98e-06 | 8.84e-06 | 8.81e-06 | 0 |
-| | % err | 37.69% ± 1.874% | 40.72% | 38.65% | 35.80% | 37.56% | 35.73% | 0 |
+| | % err | 21.27% ± 0.364% | 21.31% | 20.87% | 21.64% | 20.84% | 21.69% | 0 |
 | **ACF \|r\| lags 1–20** | MSE | 0.0046 ± 3.70e-05 | 0.0046 | 0.0045 | 0.0045 | 0.0045 | 0.0046 | 0 |
-| | % err | 423.3% ± 11.52% | 410.1% | 429.8% | 408.6% | 432.5% | 435.4% | 0 |
+| | % err | 143% ± 1.580% | 144% | 144% | 143% | 140% | 144% | 0 |
 | **ACF r² lags 1–20** | MSE | 0.0052 ± 5.67e-05 | 0.0053 | 0.0051 | 0.0051 | 0.0052 | 0.0053 | 0 |
-| | % err | 534.5% ± 49.86% | 543.7% | 603.7% | 567.5% | 490.1% | 467.5% | 0 |
+| | % err | 160% ± 1.615% | 161% | 160% | 159% | 157% | 161% | 0 |
 | **Rolling vol histogram** | MSE | 1227.30 ± 5.109 | 1234.15 | 1226.44 | 1230.95 | 1223.20 | 1221.77 | 0 |
-| | % err | 238.6% ± 5.655% | 235.3% | 229.1% | 241.5% | 243.8% | 243.5% | 0 |
+| | % err | 84.04% ± 0.124% | 84.23% | 84.09% | 84.08% | 83.91% | 83.90% | 0 |
 | **Tail survival** | MSE | 0.0057 ± 6.60e-05 | 0.0058 | 0.0058 | 0.0058 | 0.0057 | 0.0057 | 0 |
-| | % err | 5717% ± 303.4% | 6171% | 5755% | 5740% | 5704% | 5215% | 0 |
+| | % err | 26.48% ± 0.114% | 26.62% | 26.50% | 26.58% | 26.35% | 26.34% | 0 |
 
-> **Log-ret histogram**: SBTS wins decisively on MSE (12.1 vs TimeGAN 144.2) — kernel smoothing closely preserves marginal returns, and unlike TimeGAN has no seed-collapse events (MSE std 0.16 vs mean 12.1). Its % error (4755%) is also far below TimeGAN's (25147%).
-> **Rolling vol histogram**: SBTS's near-constant rolling vol (see A31) produces the highest MSE of any plot (1227) — the clearest visual signature of the Markov-1 vol-smoothing weakness — yet its % error (238.6%) stays below TimeGAN's (294.3%).
-> **Tail survival, ACF |r|/r²**: SBTS wins on MSE — the kernel method reproduces the population curve shape; % errors (423–5717%) are dominated by deep-tail and near-zero-ACF points, yet stay below TimeGAN's on every plot.
+> **Log-ret histogram**: SBTS wins decisively on MSE (12.1 vs TimeGAN 144.2) — kernel smoothing closely preserves marginal returns, and unlike TimeGAN has no seed-collapse events (MSE std 0.16 vs mean 12.1). On the function-level % error the two are close (SBTS 38.98% vs TimeGAN 33.42%).
+> **Rolling vol histogram**: SBTS's near-constant rolling vol (see A31) produces the highest MSE of any plot (1227) — the clearest visual signature of the Markov-1 vol-smoothing weakness — and the highest function-level % error too (84.04% vs TimeGAN 56.06%).
+> **Tail survival, ACF |r|/r²**: SBTS wins on MSE — the kernel method reproduces the population curve shape; its function-level % errors (tail 26.48%, ACF |r| 143%, ACF r² 160%) are dominated by deep-tail and near-zero-ACF points, where the true curve ≈ 0 makes any deviation a large relative error.
 > **Cross-seed stability**: SBTS MSE std is tiny relative to mean for every plot (deterministic kernel, no seed-collapse) — contrast with TimeGAN where MSE std can approach the mean (log-return histogram 144.2 ± 120.6) driven by GAN seed-collapse events.
 
 ---

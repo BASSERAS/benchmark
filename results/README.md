@@ -89,8 +89,8 @@ L'' (sec\_der) — then combine the three sub-scores into **one number per plot*
 
 - **MSE row**: for each list, dᵢ = mean((L_real − L_gen)²). Combined mean = **sum** of the three
   seed-means; combined std = sqrt(std\_funct² + std\_der² + std\_sec\_der²) (**quadrature**).
-- **% err row**: for each list, dᵢ = mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100, a proper MAPE — one division. Combined mean = **mean** of the three
-  sub-scores; combined std = **sample std across the 5 seeds** (not quadrature).
+- **% err row**: the **function-level MAPE on the curve L itself**, dᵢ = mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100 — one division. The
+  derivative / 2nd-derivative MAPE is **excluded** (near-zero true differences make it explode into meaningless 10⁴-% values); combined std = **sample std across the 5 seeds**. Bold marks the lower % error.
 
 ↓ lower is better for both rows. Histogram bins use real-data [0.5th, 99.5th]-percentile edges.
 **Perfect floor = 0** for every plot (row-shuffle preserves all marginals exactly). Winner is by MSE.
@@ -98,22 +98,23 @@ L'' (sec\_der) — then combine the three sub-scores into **one number per plot*
 | Plot | Measure | SBTS | TimeGAN | Perfect | Winner |
 |------|---------|:----:|:-------:|:------:|:------:|
 | **Log-return histogram** | MSE   | **12.14 ± 0.16** | 144.2 ± 120.6 | 0 | **SBTS** |
-|                          | % err | **4755% ± 2735%** | 25147% ± 8785% | 0 | |
+|                          | % err | 38.98% ± 0.132% | **33.42% ± 6.512%** | 0 | |
 | **QQ plot**              | MSE   | 8.90e-6 ± 6.8e-8 | **7.09e-6 ± 3.3e-6** | 0 | **TimeGAN** |
-|                          | % err | **37.69% ± 1.874%** | 52.65% ± 13.63% | 0 | |
+|                          | % err | **21.27% ± 0.364%** | 34.29% ± 11.19% | 0 | |
 | **ACF \|r\| lags 1–20**  | MSE   | **4.57e-3 ± 3.7e-5** | 1.05e-2 ± 8.5e-3 | 0 | **SBTS** |
-|                          | % err | **423.3% ± 11.52%** | 780.7% ± 602.8% | 0 | |
+|                          | % err | **143% ± 1.580%** | 164% ± 101% | 0 | |
 | **ACF r² lags 1–20**     | MSE   | **5.17e-3 ± 5.7e-5** | 5.77e-3 ± 3.3e-3 | 0 | **SBTS** |
-|                          | % err | **534.5% ± 49.86%** | 1526% ± 1625% | 0 | |
+|                          | % err | 160% ± 1.615% | **110% ± 60.72%** | 0 | |
 | **Rolling vol histogram**| MSE   | 1227.3 ± 5.1 | **439.3 ± 216.7** | 0 | **TimeGAN** |
-|                          | % err | **238.6% ± 5.655%** | 294.3% ± 137.0% | 0 | |
+|                          | % err | 84.04% ± 0.124% | **56.06% ± 20.98%** | 0 | |
 | **Tail survival**        | MSE   | **5.74e-3 ± 6.6e-5** | 1.17e-2 ± 9.2e-3 | 0 | **SBTS** |
-|                          | % err | **5717% ± 303.4%** | 8109% ± 3779% | 0 | |
+|                          | % err | 26.48% ± 0.114% | **23.60% ± 6.040%** | 0 | |
 
 > **Reading the two rows**: the **MSE** row is an absolute squared-error on the curve (+ its slope +
-> its curvature); the **% err** row is a relative error and blows up when the real curve passes through
-> near-zero values (empty histogram bins, tail-survival ≈ 0, near-zero ACF lags), so triple-digit-plus
-> percentages are expected and are a property of the curve, not a bug.
+> its curvature); the **% err** row is the function-level MAPE of the curve L only. It stays in a sane
+> range (≈ 21–164%): the ACF plots are largest because the true ACF ≈ 0.05 sits near zero, so any
+> deviation is a big *relative* error — a property of the curve, not a bug. The ill-posed derivative
+> MAPE is excluded, so the figures no longer explode to 10⁴-%.
 >
 > **Log-return histogram**: SBTS (MSE 12.1) much smaller than TimeGAN (144.2) — kernel smoothing closely
 > preserves marginal returns. TimeGAN std=120.6 is driven by a seed-2 collapse (504.5 vs 11–170).

@@ -401,11 +401,14 @@ def aggregate_curve_metrics(per_seed: list) -> Dict[str, dict]:
         std  = sqrt( var(funct) + var(der) + var(sec_der) ) (sub-metrics combined
                      in quadrature, per the benchmark spec)
 
-    PCT variant (mean of the three curve-length-normalised sub-metrics):
-        combined_per_seed = mean( funct_seed, der_seed, sec_der_seed )
+    PCT variant (function-level MAPE on the curve L itself, one division):
+        combined_per_seed = funct_pct_seed                 (= 100*mean(|L_g - L_r|
+                     / (|L_r| + 1e-6)); the derivative/second-derivative MAPE is
+                     NOT averaged in — their near-zero true differences make the
+                     relative error explode into meaningless 10^4-% values)
         mean = mean_over_seeds(combined_per_seed)
         std  = std_over_seeds(combined_per_seed)            (direct sample std of the
-                     per-seed combined values — recomputed across seeds)
+                     per-seed function MAPE across seeds)
 
     Returns
     -------
@@ -431,10 +434,14 @@ def aggregate_curve_metrics(per_seed: list) -> Dict[str, dict]:
                 std = float(np.sqrt(sum(sub_arrays[s].std() ** 2
                                         for s in _CURVE_SUBS)))
             else:
-                # mean of the three curve-length-normalised sub-metrics; std is the
-                # direct sample std of the per-seed combined values across seeds
-                combined = (sub_arrays["funct"] + sub_arrays["der"]
-                            + sub_arrays["sec_der"]) / 3.0
+                # curve-level MAPE on the FUNCTION L itself only:
+                #   100 * mean(|L_g - L_r| / (|L_r| + 1e-6))   (one division).
+                # The derivative / second-derivative MAPE is intentionally NOT
+                # averaged in: diff(L) and diff2(L) have near-zero true values,
+                # so their relative error explodes (denominator → 0) and produces
+                # meaningless 10^4-% figures. The reported % error is therefore the
+                # single meaningful percentage — the deviation of the curve itself.
+                combined = sub_arrays["funct"]
                 std = float(combined.std())
             row[variant] = {
                 "mean": float(combined.mean()),
