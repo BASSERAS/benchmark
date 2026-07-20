@@ -71,8 +71,8 @@ Three columns, all scored with the **paper's own four metric functions** (`Utils
 |----------------------|:---------------------------:|:---------------------------------:|:-----------------:|
 | Context-FID ↓ | 0.147 ± 0.025 | **0.2024 ± 0.0245** | **0.0307 ± 0.0077** |
 | Correlational ↓ | 0.004 ± 0.001 | **0.0106 ± 0.0000** [1] | **≈ 6×10⁻⁹** [2] |
-| Discriminative ↓ | 0.067 ± 0.015 | **0.0914 ± 0.0178** | **0.0000** [3] |
-| Predictive ↓ | 0.036 ± 0.000 | **0.0371 ± 0.00005** | **0.0653 ± 0.00002** [4] |
+| Discriminative ↓ | 0.067 ± 0.015 | **0.0914 ± 0.0178** | **0.0000** [3] (degenerate — real: A18 GRU 0.262 ± 0.158) |
+| Predictive ↓ | 0.036 ± 0.000 | **0.0371 ± 0.00005** | **0.0653** [4] (degenerate — real: A19 GRU 0.0549 ± 0.0002) |
 
 > **Why some cells are (near-)zero with (near-)zero std — these are real artifacts, not placeholders:**
 >
@@ -89,13 +89,25 @@ Three columns, all scored with the **paper's own four metric functions** (`Utils
 > Per-seed: 1.2×10⁻⁸, 6.0×10⁻⁹, 1.2×10⁻⁸, 0.0, 0.0. There are no cross-feature correlations to mismatch,
 > so the metric is near-trivially satisfied — verified by reading `code/reference/Utils/cross_correlation.py`.
 >
-> **[3] Heston Discriminative = exactly 0** because the GRU judge degenerates to a constant predictor on the
-> smooth, time-homogeneous univariate series → exactly 0.5 accuracy on the balanced test split → |0.5 − 0.5| = 0
-> on every seed.
+> **[3] Heston Discriminative = exactly 0 is a metric-code degeneracy on univariate data, NOT a quality signal.**
+> `Utils/discriminative_metric.py` line 74 sets `hidden_dim = int(dim/2)`. For univariate Heston (`dim = 1`)
+> this is `int(1/2) = 0` → `tf1.nn.rnn_cell.GRUCell(num_units=0)` → a **zero-capacity** judge with no hidden
+> state → constant output → **exactly 0.5 accuracy** on the balanced test split → `|0.5 − 0.5| = 0` on **all 5
+> seeds** (0-std is statistically impossible for a working judge; it is a broken 0-unit network). On Stocks
+> (6 features) `int(6/2) = 3` works fine — so this collapse is **univariate-specific**, verified by reading
+> `code/reference/Utils/discriminative_metric.py`. **Our comparable score:** the benchmark's own discriminative
+> judge (A18, hidden dim floored at `max(8, n_features·8)` so it never degenerates) rates the *same* Heston
+> paths at **GRU 0.262 ± 0.158**, MLP 0.055 ± 0.040 (per-seed GRU [0.370, 0.404, 0.028, 0.116, 0.392]) — i.e.
+> the paths are *moderately distinguishable*, which the paper metric's 0.0 masks entirely.
 >
-> **[4] Heston Predictive = 0.0653 ± 0.00002** is the irreducible one-step Heston log-return MAE floor;
-> the ~2×10⁻⁵ std (rounds to 0.0000 at 4 dp) reflects that the synthetic-trained GRU one-step predictor
-> converges to the same noise floor every seed. Per-seed: 0.06528, 0.06530, 0.06532, 0.06529, 0.06528.
+> **[4] Heston Predictive = 0.0653 is the SAME `hidden_dim = int(dim/2) = 0` degeneracy, not a genuine TSTR floor.**
+> `Utils/predictive_metric.py` line 52 has the identical `hidden_dim = int(dim/2)` → for `dim = 1` a
+> zero-capacity GRU predictor → it cannot learn dynamics and emits a constant → the 0.0653 MAE is a
+> **mean-absolute-deviation artifact** of that constant output, not a synthetic-trained one-step forecast.
+> The ~2×10⁻⁵ std (rounds to 0.0000 at 4 dp) is exactly what a degenerate constant predictor produces every
+> seed. Per-seed: 0.06528, 0.06530, 0.06532, 0.06529, 0.06528. **Our comparable score:** the benchmark's own
+> predictive judge (A19, floored hidden dim) gives a genuine TSTR MAE of **GRU 0.0549 ± 0.0002**,
+> MLP 0.0551 ± 0.0004 on the same paths.
 
 Per-run on **Stocks** (paper dataset, `results/stocks_comparison.json`):
 
@@ -118,9 +130,11 @@ Per-seed on **Heston** (same four metric functions, [0,1] MinMax scale, no retra
 | 3 | 0.0318 | 0.0 | 0.0 | 0.06529 |
 | 4 | 0.0372 | 0.0 | 0.0 | 0.06528 |
 
-Correlational and Predictive std round to 0.0000 at 4 dp but are **not** hardcoded — the columns show the
-real per-seed magnitudes (see notes [2] and [4] above). Correlational is float32 machine epsilon on a
-single feature; Discriminative is an exact structural 0 (degenerate judge); Predictive is a tight noise floor.
+The per-seed columns are **not** hardcoded — they show the real magnitudes. Correlational is float32 machine
+epsilon on a single feature (note [2]); Discriminative is an exact 0 from the paper judge's `hidden_dim =
+int(dim/2) = 0` zero-capacity collapse on univariate data (note [3]); Predictive 0.0653 is the same
+`int(dim/2) = 0` degeneracy in `predictive_metric.py` (note [4]). The **real** distinguishability of these
+paths is the benchmark's own floored-hidden-dim judges: A18 disc GRU 0.262 ± 0.158, A19 pred GRU 0.0549 ± 0.0002.
 
 **Reproduced (Stocks) — hyperparameters are verbatim-correct; the gap is checkpoint/draw variance.**
 We re-checked every hyperparameter against the authors' released `Config/stocks.yaml`
@@ -142,16 +156,21 @@ paper — they are artifacts of the univariate Heston setup, each traced to sour
 - **Correlational ≈ 6×10⁻⁹ (note [2])** because Heston here is **single-feature** (price only). The metric
   computes cross-FEATURE correlation error; with one feature there is nothing to cross-correlate, so it
   floors at float32 machine epsilon. Verified in `code/reference/Utils/cross_correlation.py`, not a bug.
-- **Discriminative = exactly 0 (note [3])** because the GRU judge degenerates to a constant predictor on
-  this smooth, time-homogeneous univariate series → exactly 0.5 accuracy → |0.5 − 0.5| = 0.
+- **Discriminative = exactly 0 (note [3])** is a **metric-code degeneracy**, not a quality signal: the judge's
+  `hidden_dim = int(dim/2) = 0` on univariate data → a zero-capacity GRU → exactly 0.5 accuracy → |0.5 − 0.5| = 0
+  on all 5 seeds. The benchmark's own judge (A18, floored hidden dim) rates the same paths at GRU 0.262 ± 0.158
+  — moderately distinguishable, the real number.
 - **Context-FID 0.031** is lower than Stocks (0.20) because a single smooth price feature is far easier
   to match in TS2Vec embedding space than 6-feature Stocks.
-- **Predictive 0.0653 (note [4])** is the irreducible Heston next-step log-return MAE floor (matches A19
-  ≈ 0.055–0.065 in the main metric suite); its ~2×10⁻⁵ std rounds to 0.0000 but is a real convergence floor.
+- **Predictive 0.0653 (note [4])** is the **same `int(dim/2) = 0` degeneracy** in `predictive_metric.py` → a
+  zero-capacity predictor emitting a constant → 0.0653 is a mean-absolute-deviation artifact, not a TSTR forecast.
+  The benchmark's own predictor (A19, floored hidden dim) gives the genuine TSTR MAE GRU 0.0549 ± 0.0002.
 
 So the Heston column confirms the pipeline runs end-to-end with the paper's own scorers, but the
-Discriminative/Correlational (near-)zeros reflect the low intrinsic difficulty of **univariate** Heston
-(single feature, smooth paths), not a super-paper result.
+Discriminative and Predictive **zeros/floors are artifacts of the paper metrics' `hidden_dim = int(dim/2) = 0`
+collapse on univariate data** (and Correlational ≈ 0 is the separate single-feature cross-correlation triviality).
+The real distinguishability of these paths is the benchmark's A18 (0.262 ± 0.158) / A19 (0.0549 ± 0.0002),
+not a super-paper result.
 
 ---
 

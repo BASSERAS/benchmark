@@ -169,8 +169,8 @@ Three columns:
 |----------------------|:-----------------------:|:-----------------------------:|:-------------:|
 | Context-FID ↓ | 0.147 ± 0.025 | **0.2024 ± 0.0245** | **0.0307 ± 0.0077** |
 | Correlational ↓ | 0.004 ± 0.001 | **0.0106 ± 0.0000** [1] | **≈ 6×10⁻⁹** [2] |
-| Discriminative ↓ | 0.067 ± 0.015 | **0.0914 ± 0.0178** | **0.0000** [3] |
-| Predictive ↓ | 0.036 ± 0.000 | **0.0371 ± 0.00005** | **0.0653 ± 0.00002** [4] |
+| Discriminative ↓ | 0.067 ± 0.015 | **0.0914 ± 0.0178** | **0.0000** [3] (degenerate — real: A18 GRU 0.262 ± 0.158) |
+| Predictive ↓ | 0.036 ± 0.000 | **0.0371 ± 0.00005** | **0.0653** [4] (degenerate — real: A19 GRU 0.0549 ± 0.0002) |
 
 > The four "≈ 0 / ± 0.0000" cells above are **genuinely computed values**, not placeholders or a stalled
 > metric. Their exact per-run/per-seed numbers are in
@@ -187,13 +187,20 @@ Three columns:
 >   `(N,T,1)`, so `cacf_torch` correlates the feature with itself (≡ 1.0 for both real and synthetic) and the
 >   difference is identically 0. Verified in `code/reference/Utils/cross_correlation.py`. Per-seed:
 >   1.2e-08, 6.0e-09, 1.2e-08, 0.0, 0.0.
-> - **[3] Discriminative = 0.0000 on Heston** — on the smooth, time-homogeneous univariate price series the
->   GRU judge cannot beat chance and degenerates to a constant predictor → exactly 0.5 accuracy on the
->   balanced test split → |0.5 − 0.5| = 0. Uninformative here (the metric targets harder/multivariate
->   series), not a computational zero.
-> - **[4] Predictive std ≈ 2×10⁻⁵ (rounds to 0.0000).** All 5 generated pools hit the same irreducible
->   one-step Heston log-return MAE floor (≈ 0.0653); tiny run-to-run variance is expected. Per-seed:
->   0.06528, 0.06530, 0.06532, 0.06529, 0.06528.
+> - **[3] Discriminative = 0.0000 on Heston is a metric-code degeneracy on univariate data, NOT a quality
+>   signal.** `Utils/discriminative_metric.py` line 74 sets `hidden_dim = int(dim/2)`; for univariate Heston
+>   (`dim = 1`) that is `int(1/2) = 0` → `GRUCell(num_units=0)` → a zero-capacity judge with no hidden state →
+>   constant output → exactly 0.5 accuracy on the balanced split → |0.5 − 0.5| = 0 on **all 5 seeds** (0-std is
+>   impossible for a working judge). On Stocks (6 features) `int(6/2) = 3` works — the collapse is
+>   univariate-specific, verified in `code/reference/Utils/discriminative_metric.py`. **Our comparable number:**
+>   the benchmark's own judge (A18, hidden dim floored at `max(8, n_features·8)`) rates the same paths at
+>   **GRU 0.262 ± 0.158**, MLP 0.055 ± 0.040 — moderately distinguishable, which the paper metric's 0.0 hides.
+> - **[4] Predictive = 0.0653 is the SAME `hidden_dim = int(dim/2) = 0` degeneracy**, in
+>   `Utils/predictive_metric.py` line 52. For `dim = 1` the zero-capacity GRU predictor emits a constant, so
+>   0.0653 is a mean-absolute-deviation artifact, not a synthetic-trained one-step forecast; the ~2×10⁻⁵ std
+>   (per-seed 0.06528, 0.06530, 0.06532, 0.06529, 0.06528) is just the constant-output floor. **Our comparable
+>   number:** the benchmark's own predictor (A19, floored hidden dim) gives a genuine TSTR MAE of
+>   **GRU 0.0549 ± 0.0002**, MLP 0.0551 ± 0.0004 on the same paths.
 
 **Stocks — same-code reproduction, honest gap.** The hyperparameters were run **verbatim** from the official
 `Config/stocks.yaml` (n_layer_enc/dec = 2, d_model = 64, timesteps = 500, l1 loss, cosine β, base_lr 1e-5,
@@ -204,9 +211,12 @@ is a bulls-eye, proving the pipeline is correct. Context-FID 0.2024 vs 0.147 and
 re-sampling. We did **not** re-sample to chase the number (see [1]).
 
 **Heston — read the caveat.** The Heston column (Context-FID 0.031, Correlational ≈ 0, Discriminative 0.000,
-Predictive 0.065) is **not** a super-paper result — three of the four are near-zero for the structural
-reasons [2]–[4] above (univariate ⇒ no cross-feature correlation; smooth ⇒ the GRU judge floors at chance;
-predictive ⇒ irreducible next-step MAE floor, consistent with A19 ≈ 0.055–0.065 above). Context-FID is lower
+Predictive 0.065) is **not** a super-paper result. Three of the four are near-zero/degenerate for reasons
+[2]–[4] above: **Correlational ≈ 0** is the single-feature cross-correlation triviality (univariate ⇒ nothing
+to cross-correlate), while **Discriminative 0.000 and Predictive 0.065 are both artifacts of the paper metrics'
+`hidden_dim = int(dim/2) = 0` collapse on univariate data** — zero-capacity judge/predictor, not a
+distinguishability signal. The **real** distinguishability of these paths is the benchmark's own floored-hidden-dim
+judges: **A18 disc GRU 0.262 ± 0.158** and **A19 pred GRU 0.0549 ± 0.0002** (tables above). Context-FID is lower
 than Stocks only because one smooth feature is easier to match in TS2Vec space than 6-feature Stocks. Full
 discussion: [`../../../methods/DiffusionTS/paper_reimplementation/README.md`](../../../methods/DiffusionTS/paper_reimplementation/README.md).
 

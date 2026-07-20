@@ -1415,6 +1415,7 @@ When a new standard is established (new metric, new section format, new B metric
 - 2026-07-19: **Added §16 (Pitfalls — Process Errors to Avoid When Adding a Method).** Captured 5 mechanical/workflow errors made while integrating Fourier Flow (P1–P5) plus a General subsection, so future method additions don't repeat them. None were wrong benchmark numbers — all were file-layout / tool-schema / workflow mistakes.
 - 2026-07-19: **§15.2 Section 6 → canonical 3-column paper-comparison table.** The "Comparison with the paper" section now uses **the paper's own metrics only** (not A1–A34) with one unified table: rows = paper metric, columns = **Paper (published, paper dataset)** | **Ours — <PaperDataset> (paper dataset reimpl)** | **Ours — Heston** (same paper metric applied to our 5-seed Heston pool). The Heston column must come from a committed JSON built by a reusable driver in `paper_reimplementation/metric/` (never hand-typed). Worked FF example (F-score 0.984/0.9920/0.9918; MAE 0.009/0.0084/0.0210). Old two-table form (TimeGAN/SBTS) noted as equivalent, no retrofit required. Added `methods/FourierFlow/paper_reimplementation/metric/heston_paper_metrics.py` + `results/heston_paper_metrics.json` (released `computeF1` + LSTM `computeMAE`, [0,1] MinMax, MAE `MAX_STEPS=127`).
 - 2026-07-20: **§15.3 + §15.3.1 → "EXACT run path" mandate; §16 → P6–P10 (Diffusion-TS lessons).** After integrating Diffusion-TS (4th method), the user flagged that (a) the reproduction table did not match the paper and (b) several Heston metrics printed `0.0000 ± 0.0000` — looking like bugs. Root-caused all as honest artifacts, not code errors: hyperparameters are verbatim-correct vs `Config/stocks.yaml` (gap = single-draw/milestone-10-checkpoint protocol, not config); Correlational ≈ 6×10⁻⁹ on Heston is structural (cross-feature metric on a single feature — `tril_indices(1,1)`); Discriminative = exact 0 (degenerate GRU judge on smooth univariate); Predictive std ≈ 2×10⁻⁵ is a noise floor; Stocks Correlational `±0.0000` is a deterministic single-saved-draw re-score (paper re-samples 5×). Fixes: rewrote both Diffusion-TS paper tables to show real magnitudes (sci-notation) + `[1]–[4]` footnotes explaining each near-zero, and to state the hyperparameters-verbatim / protocol-gap framing (user chose "document honestly", no rerun). Strengthened §15.3 §9 and §15.3.1 §7 to REQUIRE the exact interpreter path, env vars, precise script + flags, exact input/output files, and which checkpoint/output produced each reported cell. Added §16 pitfalls P6 (near-zero rounded to 0.0000 reads as bug — show magnitude), P7 (cross-feature metric structurally ~0 on univariate — flag N/A, don't score), P8 (zero variance from re-scoring one saved draw vs re-sampling), P9 (reproduction gap ≠ hyperparameter error — verify config first, attribute to protocol), P10 (Bash cwd not guaranteed repo root).
+- 2026-07-20: **CORRECTION to the Discriminative/Predictive Heston = 0 mechanism (root-caused to a metric-code bug, not "smooth data") + §16 P11.** The user challenged: paper Discriminative Heston = 0.0000 contradicts the benchmark's own **A18 GRU judge = 0.262 ± 0.158** on the *same* paths. Systematic debugging found the true root cause: `Utils/discriminative_metric.py` line 74 `hidden_dim = int(dim/2)` → for univariate Heston (`dim = 1`) `int(1/2) = 0` → `GRUCell(num_units=0)` → a **zero-capacity** judge → exactly 0.5 accuracy → `|0.5 − 0.5| = 0` on all 5 seeds (0-std is impossible for a working judge). The **identical** bug is in `Utils/predictive_metric.py` line 52, so Predictive 0.0653 is a constant-mean-output artifact, not a TSTR forecast. On Stocks (6 features) `int(6/2) = 3` works — univariate-specific. **This supersedes the earlier "degenerate GRU judge on smooth univariate" wording** in the 2026-07-20 entry above (that mechanism was wrong — it blamed data smoothness, not the `int(dim/2)=0` collapse). Fix (user chose "do both: document as degenerate AND state our comparable scores", no rerun): corrected notes [3]/[4] + the Heston caveat in **both** `methods/DiffusionTS/paper_reimplementation/README.md` and `results/Heston/DiffusionTS/README.md` to give the true `int(dim/2)=0` mechanism and cite **A18 disc GRU 0.262 ± 0.158 / A19 pred GRU 0.0549 ± 0.0002** (floored `hidden = max(8, n_features·8)`) as the real, comparable numbers; added §16 **P11** (post-hoc judge silently collapses to a zero-capacity network on univariate `dim=1` data — spot via exact-0/0-std + contradiction with another judge; document degeneracy + cite floored-dim judge, patch+rerun only if user asks).
 
 ---
 
@@ -1502,6 +1503,28 @@ working directory was not `/home/tbasseras/benchmark`. The relative path only re
 to the wrong place.
 **Cure:** Prefix repo-relative commands with `cd /home/tbasseras/benchmark && …`, or use absolute paths.
 Don't assume the shell starts at the repo root.
+
+### P11 — A post-hoc judge metric silently collapses to a zero-capacity network on univariate data
+**What happened:** Diffusion-TS Heston **Discriminative = 0.0000 across all 5 seeds** (0 std) looked like
+"real and fake are indistinguishable" but contradicted the benchmark's own A18 GRU judge (0.262 ± 0.158) on
+the *same* paths. Root cause: `Utils/discriminative_metric.py` line 74 `hidden_dim = int(dim/2)`. For
+univariate Heston (`dim = 1`), `int(1/2) = 0` → `GRUCell(num_units=0)` → a **zero-capacity** judge with no
+hidden state → constant output → **exactly 0.5** accuracy on the balanced split → `|0.5 − 0.5| = 0` every
+seed. The **identical** bug is in `Utils/predictive_metric.py` line 52 (`hidden_dim = int(dim/2)`), so
+Predictive = 0.0653 is a constant-mean-output artifact, not a TSTR forecast. On Stocks (6 features)
+`int(6/2) = 3` works — the collapse is **univariate-specific**.
+**Why it's wrong:** An exact 0 with exactly 0 std across independent seeds is statistically impossible for a
+working stochastic judge — it is a broken network, not a quality result. Reporting it as "Discriminative =
+0.0" claims the generator is perfect when the judge never ran.
+**How to spot it:** (1) exact 0.0000 with 0.0 std across all seeds; (2) it contradicts another judge on the
+same data (A18/A19 here); (3) the metric was designed/tested on multivariate data (`dim ≥ 2`). Any of these
+⇒ read the metric source for a `hidden_dim = int(dim/2)`, `int(dim*k)`, or similar dimension-derived size
+that can floor to 0 on `dim = 1`.
+**Cure:** Do **not** silently trust the degenerate 0. Document it as a **metric-code degeneracy on univariate
+data** (cite the exact line), and report the benchmark's own floored-hidden-dim judge (A18 disc / A19 pred,
+`hidden = max(8, n_features·8)`) as the real, comparable number. Only patch the reference metric's
+`hidden_dim` floor + re-run if the user explicitly asks (here the user chose: document degeneracy AND state
+the A18/A19 comparable scores — no rerun). Same trap for any `int(dim/·)`-sized post-hoc network on 1-D data.
 
 ### General — applies to every method addition
 - **Verify-before-claim:** every filename, path, CSV header, and metric value written into a README must be read back from the actual artifact (`grep`/`head`/Read), never recalled from memory or copied from a sibling method.
