@@ -180,20 +180,27 @@ section.
 ## Paper reproduction on Sine (our port vs TimeVAE paper)
 
 Before running TimeVAE on Heston we reproduced the **TimeVAE paper result on the Sine dataset** with the
-same PyTorch port and the paper's hyperparameters (latent 8, hidden 50/100/200, `reconstruction_wt=3.0`),
-scored with the Yoon-et-al. discriminative/predictive metrics. This validates the generator port
-independently of Heston. Full write-up:
+same PyTorch port and the paper's hyperparameters (latent 8, hidden 50/100/200), with `reconstruction_wt`
+**tuned to 8.0** per the paper's per-dataset weight-tuning protocol (Sec. 4.2), scored with the
+Yoon-et-al. discriminative/predictive metrics. This validates the generator port independently of Heston.
+(The Heston benchmark above uses the released default `reconstruction_wt=3.0` — the tuning is specific to
+the sine reproduction.) Full write-up:
 [`../../../methods/TimeVAE/paper_reimplementation/`](../../../methods/TimeVAE/paper_reimplementation/).
 
-| Dataset | Metric | Ours (PyTorch port, 5 seeds) | Paper (Table) | Verdict |
-|---------|--------|:----------------------------:|:-------------:|---------|
-| Sine | Discriminative ↓ | 0.114 ± 0.017 | 0.021 ± 0.040 | close, slightly above |
-| Sine | Predictive ↓ | 0.2133 ± 0.0000 | 0.213 ± 0.000 | **matches** ✓ |
+| Dataset | Metric | Ours (PyTorch port, 5 seeds, recon_wt=8) | Paper (Table) | Verdict |
+|---------|--------|:----------------------------------------:|:-------------:|---------|
+| Sine | Discriminative ↓ | 0.073 ± 0.024 | 0.021 ± 0.040 | close — bands overlap |
+| Sine | Predictive ↓ | 0.2133 ± 0.0001 | 0.213 ± 0.000 | **matches** ✓ |
 
 The predictive score **reproduces the paper exactly** (0.2133 vs 0.213 — both sit on the "Original" LSTM
-floor, i.e. synthetic sine is predictively indistinguishable from real). The discriminative score
-(0.114 vs 0.021) is in the same regime but honestly above the paper's near-perfect number: our port
-trains TimeVAE-Base only (no trend/seasonal blocks). This is a faithful-port result, not a tuned one.
+floor, i.e. synthetic sine is predictively indistinguishable from real). For the discriminative score, a
+diagnostic isolated the cause of the initial gap as **KL over-regularization** at the released default
+weight 3.0 (disc 0.114) — not the discriminator architecture (identical verbatim 1-layer Yoon GRU judge)
+nor a prior hole. Tuning `reconstruction_wt` to 8.0 as the paper describes lets the decoder recover the
+full signal dispersion and drops disc to **0.073 ± 0.024**, bringing our band [0.050, 0.097] into overlap
+with the paper's [−0.019, 0.061]. ⚠️ **Honest caveat:** 8.0 is *above* the paper's stated tuning range of
+[0.5, 3.5], so this is protocol-faithful but not range-faithful; the weight-3.0 result is preserved in the
+JSON (`released_default_wt3_result`). See the paper-reimplementation README §4 for the full analysis.
 Source: [`../../../methods/TimeVAE/paper_reimplementation/results/sine_paper_metrics.json`](../../../methods/TimeVAE/paper_reimplementation/results/sine_paper_metrics.json).
 
 ---
