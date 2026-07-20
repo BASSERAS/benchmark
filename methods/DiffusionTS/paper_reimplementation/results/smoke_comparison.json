@@ -1,0 +1,35 @@
+{
+  "real_minmax": [
+    39.893609418078476,
+    155.57898269218714
+  ],
+  "per_arch": {
+    "stocks": {
+      "context_fid": 36.05252375669335,
+      "marg_mean_err": 0.010928930872889153,
+      "marg_std_err": 0.3900266662311657,
+      "acf1_err": 0.049785690843966335,
+      "gen_has_nan": false
+    },
+    "mujoco": {
+      "context_fid": 0.7366589988637,
+      "marg_mean_err": 0.0041478501564170545,
+      "marg_std_err": 0.023469306486276792,
+      "acf1_err": 0.04149508165743221,
+      "gen_has_nan": false
+    },
+    "etth": {
+      "context_fid": 2.3191775631480063,
+      "marg_mean_err": 0.032213867396517326,
+      "marg_std_err": 0.03422782046960522,
+      "acf1_err": 0.0899081634902612,
+      "gen_has_nan": false
+    }
+  },
+  "ranking_by_context_fid": [
+    "mujoco",
+    "etth",
+    "stocks"
+  ],
+  "_winner_by_context_fid": "mujoco"
+}

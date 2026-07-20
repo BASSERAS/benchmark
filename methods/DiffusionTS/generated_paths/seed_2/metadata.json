@@ -1,0 +1,22 @@
+{
+  "method": "DiffusionTS",
+  "seed": 2,
+  "shape": [
+    8192,
+    128
+  ],
+  "min_val": 49.46472868584058,
+  "max_val": 142.46576591059733,
+  "gen_sec": null,
+  "train_time_sec": 880.2,
+  "gpu": "A100-SXM4-80GB",
+  "date": "2026-07-20",
+  "scale_min": 39.893609418078476,
+  "scale_max": 155.57898269218714,
+  "params": 544147,
+  "steps": 12000,
+  "min_loss": 0.0688827745616436,
+  "first_nan_step": null,
+  "gen_has_nan": false,
+  "arch": "mujoco"
+}
