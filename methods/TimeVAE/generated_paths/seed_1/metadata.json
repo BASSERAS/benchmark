@@ -1,0 +1,24 @@
+{
+  "method": "TimeVAE",
+  "seed": 1,
+  "shape": [
+    8192,
+    128
+  ],
+  "min_val": 47.582801818847656,
+  "max_val": 143.0327606201172,
+  "generated_mean": 101.37931823730469,
+  "generated_std": 8.884621620178223,
+  "real_mean": 101.32547381502401,
+  "real_std": 9.971659995159825,
+  "gen_sec": 0.0,
+  "train_time_sec": 753.0,
+  "gpu": "A100-SXM4-80GB",
+  "date": "2026-07-20",
+  "params": 247340,
+  "epochs_run": 230,
+  "epochs_max": 1000,
+  "min_total_loss": 83.1265821903944,
+  "first_nan_epoch": null,
+  "gen_has_nan": false
+}

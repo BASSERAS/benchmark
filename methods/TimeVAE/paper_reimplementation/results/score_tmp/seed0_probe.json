@@ -1,0 +1,38 @@
+{
+  "dataset": "sine",
+  "metric_source": "TimeGAN (Yoon et al. 2019) discriminative_metrics.py / predictive_metrics.py",
+  "metric_iter": 1,
+  "paper_target": {
+    "discriminative": "0.021 +/- 0.040",
+    "predictive": "0.213 +/- 0.000"
+  },
+  "discriminative": {
+    "mean": 0.5,
+    "std": 0.0,
+    "runs": [
+      0.5
+    ]
+  },
+  "predictive": {
+    "mean": 0.21322634936905074,
+    "std": 0.0,
+    "runs": [
+      0.21322634936905074
+    ]
+  },
+  "per_seed": [
+    {
+      "seed": 0,
+      "n": 10000,
+      "discriminative": 0.5,
+      "predictive": 0.21322634936905074,
+      "disc_runs": [
+        0.5
+      ],
+      "pred_runs": [
+        0.21322634936905074
+      ]
+    }
+  ],
+  "elapsed_sec": 35.1
+}

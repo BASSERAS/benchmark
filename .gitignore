@@ -10,4 +10,5 @@ nohup.out
 save/
 cache/
 methods/CSDI/code/reference/data/
+methods/TimeVAE/code/reference/data/
 *.pdf
