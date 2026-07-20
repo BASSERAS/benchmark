@@ -158,6 +158,15 @@ CUDA_VISIBLE_DEVICES="" OMP_NUM_THREADS=8 PYTHONPATH=../../code/reference \
     --out ../results/heston_paper_metrics.json
 ```
 
+**Exact run path — which file feeds which cell (so any number is traceable):**
+
+| Table cell | Interpreter + env | Script | Input file(s) scored | Output JSON |
+|------------|-------------------|--------|----------------------|-------------|
+| §4 Stocks F-score + MAE | `gpu-venv` (CPU), `PYTHONPATH=../../code/reference OMP_NUM_THREADS=3 taskset -c 0-2` | `metric/reproduce_stock.py --T 100 --n-exps 5 --epochs 1000 --data-seed 42` | released Stocks loader (trains + samples internally) | `results/exp_{0..4}.json` → aggregated in `results/stock_repro_summary.json` |
+| §4 Heston F-score + MAE (no retrain) | `gpu-venv` (CPU), `CUDA_VISIBLE_DEVICES="" PYTHONPATH=../../code/reference OMP_NUM_THREADS=8 taskset -c 0-7` | `metric/heston_paper_metrics.py` | real `--real dataset/Heston/heston_S_8192x128.npy` vs `--gen-glob generated_paths/seed_*/generated_paths_8192x128.npy` (the 5-seed FF pool) | `results/heston_paper_metrics.json` (mean±std + per-seed + scaler/config) |
+
+The Stocks column is the mean±95%CI in `stock_repro_summary.json`; the Heston column is `heston_paper_metrics.json`. Both come from committed JSON, never hand-typed.
+
 ---
 
 ## 6. Files

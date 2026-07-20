@@ -186,6 +186,15 @@ cd /home/tbasseras/benchmark
   --method FourierFlow --dataset Heston
 ```
 
+**Exact run path — which file produced which committed number:**
+
+| Committed number | Interpreter + env | Command | Input file(s) scored | Output file |
+|------------------|-------------------|---------|----------------------|-------------|
+| Heston A1–A34 + B, per seed `i` | `gpu-venv`, CPU-only | `metrics/compute_all.py --method FourierFlow --dataset Heston` | `methods/FourierFlow/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real Heston `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/FourierFlow/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
+| FF synthetic paths, per seed `i` | `gpu-venv`, CPU-only, 3 cores/seed | `bash ../train_all.sh` (→ `train_heston.py --seed i --normalize 1`) | real Heston `dataset/Heston/heston_S_8192x128.npy` | `generated_paths/seed_i/generated_paths_8192x128.npy` + `seed_i_config.json` (records `n_clamped_bins`) |
+
+Each `results/Heston/FourierFlow/seed_i_metrics.json` is the sole source for that seed's column in every README A-table; mean±std rows aggregate the 5 files.
+
 The paper reproduction (Stocks, F-score + MAE vs Table 2) lives separately in
 `../paper_reimplementation/` — see its README.
 

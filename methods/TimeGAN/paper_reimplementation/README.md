@@ -141,9 +141,14 @@ CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=8 \
   taskset -c 8-15 /home/tbasseras/gpu-venv/bin/python reproduce_stock.py
 ```
 
----
+**Exact run path — which file feeds which cell (so any number is traceable):**
 
-## 6. Files
+| Table cell | Interpreter + env | Script | Input file(s) scored | Output JSON |
+|------------|-------------------|--------|----------------------|-------------|
+| §4 "Ours — 2-layer judge, 1 seed" (disc + pred) | `gpu-venv`, `CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=8 taskset -c 8-15` | `metric/reproduce_stock.py` | real `dataset/stock_real.npy` (3661,24,6) vs TimeGAN synthetic `dataset/stock_timegan.npy` (3661,24,6); generator weights `results/timegan_stock_model.pt` | `results/timegan_stock_scores.json` (per-run arrays + paper reference) |
+| §4 "Ours — 1-layer judge, 5 seeds" (disc + pred) | `gpu-venv`, `CUDA_VISIBLE_DEVICES=1/3 OMP_NUM_THREADS=3 taskset` (seeds 0–2 on GPU1, 3–4 on GPU3) | `metric/rescore_1layer.py --seed i` | same real vs synthetic windows; each seed = one fresh TimeGAN train + score | `results/rescore_1layer_seed{i}.json` (10 runs each) → aggregated in `results/rescore_1layer_summary.json` |
+
+The bold "Ours" column in §4 is the pooled 50-run stat in `rescore_1layer_summary.json`; the 2-layer single-seed column is `timegan_stock_scores.json`. Neither is hand-typed.
 
 | Path | Content |
 |------|---------|

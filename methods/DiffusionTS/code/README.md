@@ -233,5 +233,14 @@ cd /home/tbasseras/benchmark
   --method DiffusionTS --dataset Heston
 ```
 
+**Exact run path — which file produced which committed number:**
+
+| Committed number | Interpreter + env | Command | Input file(s) scored | Output file |
+|------------------|-------------------|---------|----------------------|-------------|
+| Heston A1–A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method DiffusionTS --dataset Heston` | `methods/DiffusionTS/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real Heston `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/DiffusionTS/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
+| DiffusionTS synthetic paths, per seed `i` | `gpu-venv`, `PYTHONPATH=reference CUDA_VISIBLE_DEVICES=0/3` | `train_heston.py --arch mujoco --seed i` (EMA milestone-10 checkpoint used for sampling) | real Heston `dataset/Heston/heston_S_8192x128.npy`, [0,1] MinMax internally | `generated_paths/seed_i/generated_paths_8192x128.npy` + `metadata.json` |
+
+Each `results/Heston/DiffusionTS/seed_i_metrics.json` is the sole source for that seed's column in every README A-table; mean±std rows aggregate the 5 files.
+
 The paper reproduction (Stocks len-24, the paper's own 4 metrics vs Table 1)
 lives separately in `../paper_reimplementation/` — see its README.

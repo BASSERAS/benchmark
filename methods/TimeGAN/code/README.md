@@ -132,3 +132,24 @@ Outputs land in:
 - `weights/seed_{i}_model.pt`
 - `weights/seed_{i}_config.json`
 - `losses/seed_{i}_losses.csv`
+
+---
+
+## Reproduce the Heston metrics (exact run path)
+
+After the 5 seeds are trained, the committed A1–A34 + B numbers come from the shared scorer:
+
+```bash
+cd /home/tbasseras/benchmark
+CUDA_VISIBLE_DEVICES=0 \
+    /home/tbasseras/gpu-venv/bin/python metrics/compute_all.py --method TimeGAN --dataset Heston
+```
+
+**Which file produced which committed number:**
+
+| Committed number | Interpreter + env | Command | Input file(s) scored | Output file |
+|------------------|-------------------|---------|----------------------|-------------|
+| Heston A1–A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method TimeGAN --dataset Heston` | `methods/TimeGAN/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real Heston `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/TimeGAN/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
+| TimeGAN synthetic paths, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0/3` | `train_seed.py --seed i` (or `train.py --gpu0 0 --gpu1 3`) | real Heston `dataset/Heston/heston_S_8192x128.npy`, min-max→[0,1] internally | `generated_paths/seed_i/generated_paths_8192x128.npy` + `weights/seed_i_model.pt` |
+
+Each `results/Heston/TimeGAN/seed_i_metrics.json` is the sole source for that seed's column in every README A-table; mean±std rows aggregate the 5 files.

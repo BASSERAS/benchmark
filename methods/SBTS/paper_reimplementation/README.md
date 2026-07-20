@@ -86,6 +86,14 @@ CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=8 NUMBA_NUM_THREADS=8 \
 
 Requires `numba>=0.59` and `torch` in the same env (`gpu-venv`).
 
+**Exact run path — which file feeds which cell (so any number is traceable):**
+
+| Table cell | Interpreter + env | Script | Input file(s) scored | Output JSON |
+|------------|-------------------|--------|----------------------|-------------|
+| All §4 Stocks scores (predictive + distribution) | `gpu-venv`, `CUDA_VISIBLE_DEVICES=3 OMP_NUM_THREADS=8 NUMBA_NUM_THREADS=8 taskset -c 0-7` | `metric/reproduce_stock.py` | real `dataset/X_stock_real_logret.npy` (1002,10,5) vs SBTS synthetic `dataset/X_stock_sbts_logret.npy` (1000,10,5) | `results/sbts_stock_scores.json` (full per-run arrays + paper reference) + `results/stock_stats.csv` |
+
+Every reported §4 number is a field in `results/sbts_stock_scores.json`; the script regenerates it end-to-end (load → generate → score) in one call, no intermediate hand-editing.
+
 ---
 
 ## 6. Files
