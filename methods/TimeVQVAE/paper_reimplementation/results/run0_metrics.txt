@@ -1,0 +1,1 @@
+[METRICS] FID=0.7852 IS_mean=2.0056 IS_std=0.0522

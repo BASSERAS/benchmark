@@ -1,0 +1,25 @@
+{
+  "method": "TimeVQVAE",
+  "seed": 4,
+  "shape": [
+    8192,
+    128
+  ],
+  "scale": "price (original)",
+  "znorm_mean": 101.32547381502403,
+  "znorm_std": 9.971659995159824,
+  "n_train_paths": 8192,
+  "generated_mean": 101.6711276497117,
+  "generated_std": 8.97656263016653,
+  "real_mean": 101.32547381502403,
+  "real_std": 9.971659995159824,
+  "gen_sec": 5.857961893081665,
+  "train_time_sec": 3169.4636657238007,
+  "gpu": "0",
+  "date": "2026-07-20T21:50:38",
+  "stage1_epochs": 250,
+  "stage2_epochs": 1000,
+  "stage1_last_loss": 0.03178415371803567,
+  "stage2_last_loss": 0.7730348628829233,
+  "gen_has_nan": false
+}

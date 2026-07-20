@@ -11,4 +11,6 @@ save/
 cache/
 methods/CSDI/code/reference/data/
 methods/TimeVAE/code/reference/data/
+methods/TimeVQVAE/code/reference/datasets/
+methods/TimeVQVAE/code/reference/saved_models/
 *.pdf

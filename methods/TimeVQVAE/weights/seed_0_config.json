@@ -1,0 +1,46 @@
+{
+  "method": "TimeVQVAE",
+  "seed": 0,
+  "in_channels": 1,
+  "input_length": 128,
+  "n_fft": 8,
+  "encoder_dim": 64,
+  "n_resnet_blocks": 4,
+  "downsampled_width": {
+    "lf": 8,
+    "hf": 32
+  },
+  "codebook_sizes": {
+    "lf": 32,
+    "hf": 32
+  },
+  "codebook_dim": 64,
+  "ema_decay": 0.8,
+  "perceptual_loss_weight": 0,
+  "maskgit": {
+    "choice_temperatures": {
+      "lf": 4,
+      "hf": 4
+    },
+    "stochastic_sampling": 1,
+    "T": 10,
+    "prior_model": {
+      "hidden_dim": 256,
+      "n_layers": 4,
+      "heads": 2,
+      "ff_mult": 1,
+      "use_rmsnorm": true,
+      "p_unconditional": 0.2
+    }
+  },
+  "guidance_scale": 1.0,
+  "LR": 0.001,
+  "weight_decay": 1e-05,
+  "batch_sizes": {
+    "stage1": 128,
+    "stage2": 256
+  },
+  "stage1_epochs": 250,
+  "stage2_epochs": 1000,
+  "preprocessing": "global z-norm by train mean/std (paper data_scaling)"
+}

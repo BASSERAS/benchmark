@@ -1,0 +1,55 @@
+{
+  "dataset": "ECG5000 (UCR)",
+  "method": "TimeVQVAE (paper-era commit b9650e9d, AISTATS 2023)",
+  "hyperparameters": {
+    "stage1_epochs": 2000,
+    "stage2_epochs": 10000,
+    "LR": 0.001,
+    "batch_sizes": {
+      "stage1": 128,
+      "stage2": 256
+    },
+    "n_fft": 8,
+    "codebook_sizes": {
+      "lf": 32,
+      "hf": 32
+    },
+    "MaskGIT": {
+      "hidden_dim": 256,
+      "n_layers": 4,
+      "heads": 2,
+      "T": 10
+    }
+  },
+  "metric": "UCR-pretrained FCN (supervised-FCN); FID from GAP features, IS from softmax entropy",
+  "n_runs": 3,
+  "per_run": {
+    "run0": {
+      "FID": 0.7852,
+      "IS_mean": 2.0056,
+      "IS_std": 0.0522
+    },
+    "run1": {
+      "FID": 0.8103,
+      "IS_mean": 2.0162,
+      "IS_std": 0.0388
+    },
+    "run2": {
+      "FID": 0.6201,
+      "IS_mean": 2.0355,
+      "IS_std": 0.0222
+    }
+  },
+  "ours": {
+    "FID_mean": 0.7385333333333333,
+    "FID_std": 0.08436959694634609,
+    "IS_mean": 2.0191,
+    "IS_std": 0.012377668062549859
+  },
+  "paper": {
+    "FID_mean": 0.7,
+    "FID_std": 0.0,
+    "IS_mean": 2.0,
+    "IS_std": 0.0
+  }
+}
