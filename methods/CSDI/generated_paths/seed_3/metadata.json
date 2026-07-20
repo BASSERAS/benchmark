@@ -1,0 +1,23 @@
+{
+  "method": "CSDI",
+  "seed": 3,
+  "shape": [
+    8192,
+    128
+  ],
+  "min_val": 47.084529876708984,
+  "max_val": 143.76214599609375,
+  "gen_sec": 10.2,
+  "train_time_sec": 1793.4,
+  "gpu": "A100-SXM4-80GB",
+  "date": "2026-07-20",
+  "zscore_mean": 101.32547381502401,
+  "zscore_std": 9.971659995159825,
+  "params": 412945,
+  "epochs": 200,
+  "batch_size": 16,
+  "num_steps": 50,
+  "min_loss": 0.005410436540842056,
+  "first_nan_step": null,
+  "gen_has_nan": false
+}

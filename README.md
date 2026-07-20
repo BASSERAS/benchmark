@@ -16,64 +16,66 @@ Cross-method comparison on 8 192 Heston price paths (seq\_len=128).
 
 ### A1–A34 — Metrics by category
 
-| Metric | SBTS | TimeGAN | Fourier Flow | Diffusion-TS | Perfect | Winner |
-|--------|:----:|:-------:|:------------:|:------------:|:-------:|:------:|
-| **— Fat Tail —** | | | | | | |
-| A1 Kurtosis Error ↓ | **0.1187 ± 0.0060** | 2.955 ± 2.099 | 0.5757 ± 0.0083 | 0.4238 ± 0.0230 | 0 | **SBTS** |
-| A2 \|r\| q95 Error ↓ | 0.0063 ± 3.00e-05 | 0.0032 ± 0.0018 | **6.52e-04 ± 2.10e-04** | 0.0068 ± 1.57e-04 | 0 | **Fourier Flow** |
-| A3 \|r\| q99 Error ↓ | 0.0098 ± 4.80e-05 | 0.0043 ± 0.0028 | **0.0023 ± 5.06e-04** | 0.0103 ± 1.75e-04 | 0 | **Fourier Flow** |
-| A4 Tail QQ Error ↓ | 0.0062 ± 2.60e-05 | 0.0034 ± 0.0015 | **7.15e-04 ± 1.23e-04** | 0.0067 ± 1.50e-04 | 0 | **Fourier Flow** |
-| A5 Hill Tail Index Error ↓ | 9.499 ± 0.3457 | 36.885 ± 17.053 | 6.368 ± 2.000 | **3.613 ± 0.2789** | 0 | **Diffusion-TS** |
-| **— Distribution —** | | | | | | |
-| A6 Path MMD² ↓ | 0.0110 ± 0.0026 | 0.0165 ± 0.0127 | 0.0052 ± 0.0019 | **0.0033 ± 6.56e-04** | 0.0015 | **Diffusion-TS** |
-| A7 Terminal MMD² ↓ | 0.0100 ± 0.0036 | 0.0267 ± 0.0192 | 0.0106 ± 0.0051 | **0.0021 ± 3.92e-04** | 0.0016 | **Diffusion-TS** |
-| A8 Increment MMD² ↓ | 0.0071 ± 2.47e-04 | 0.0077 ± 0.0041 | **0.0011 ± 7.70e-05** | 0.0112 ± 9.37e-04 | 7.45e-04 | **Fourier Flow** |
-| A9 Volatility MMD ↓ | 0.3038 ± 0.0071 | 0.3789 ± 0.2430 | **0.0596 ± 0.0086** | 0.3840 ± 0.0314 | 0.0071 | **Fourier Flow** |
-| A10 Terminal SWD ↓ | 3.539 ± 0.7368 | 2.658 ± 0.8567 | 2.815 ± 0.9433 | **1.358 ± 0.2152** | 0.6873 | **Diffusion-TS** |
-| A11 Path SWD ↓ | 2.415 ± 0.4104 | 1.417 ± 0.4914 | 1.289 ± 0.4198 | **0.9838 ± 0.1107** | 0.4381 | **Diffusion-TS** |
-| A12 RV Law Loss ↓ | 2.148 ± 0.0074 | 1.551 ± 0.3788 | **0.5291 ± 0.1299** | 2.250 ± 0.0491 | 0 | **Fourier Flow** |
-| A13 Mean Path RMSE ↓ | 0.7499 ± 0.1823 | 0.5289 ± 0.2624 | 0.4910 ± 0.4022 | **0.3615 ± 0.2364** | 0 | **Diffusion-TS** |
-| A14 KS Log-returns ↓ | 0.0534 ± 3.62e-04 | 0.0848 ± 0.0374 | **0.0191 ± 0.0024** | 0.0600 ± 0.0019 | 0 | **Fourier Flow** |
-| A15 Skewness Error ↓ | **0.0227 ± 0.0037** | 0.3404 ± 0.3344 | 0.0282 ± 0.0152 | 0.0698 ± 0.0358 | 0 | **SBTS** |
-| A16 QQ RMSE (300-pt) ↓ | 0.0028 ± 1.20e-05 | 0.0025 ± 6.43e-04 | **5.86e-04 ± 4.20e-05** | 0.0030 ± 8.30e-05 | 0 | **Fourier Flow** |
-| A17 Terminal Price KS ↓ | 0.0921 ± 0.0051 | 0.1121 ± 0.0556 | 0.0848 ± 0.0166 | **0.0400 ± 0.0073** | 0 | **Diffusion-TS** |
-| **— Adversarial —** | | | | | | |
-| A18 Disc Score GRU ↓ | 0.2755 ± 0.2166 | **0.0077 ± 0.0050** | 0.0094 ± 0.0097 | 0.2621 ± 0.1578 | 0.0071 | **TimeGAN** |
-| A18 Disc Score MLP ↓ | 0.0079 ± 0.0049 | 0.1031 ± 0.0395 | **0.0053 ± 0.0041** | 0.0554 ± 0.0396 | 0.0033 | **Fourier Flow** |
-| **— Predictive —** | | | | | | |
-| A19 Pred Score GRU ↓ | 0.0586 ± 5.90e-05 | 0.0574 ± 0.0019 | **0.0537 ± 7.60e-06** | 0.0549 ± 1.59e-04 | 0.0537 | **Fourier Flow** |
-| A19 Pred Score MLP ↓ | 0.0583 ± 2.55e-04 | 0.0570 ± 0.0012 | **0.0540 ± 4.90e-04** | 0.0551 ± 3.72e-04 | 0.0537 | **Fourier Flow** |
-| **— Temporal —** | | | | | | |
-| A20 Covariance Error ↓ | 145.35 ± 4.886 | **17.751 ± 6.707** | 64.406 ± 38.255 | 38.172 ± 10.637 | 0 | **TimeGAN** |
-| A21 ACF \|r\| Error (lags) ↓ | 0.0596 ± 4.70e-04 | 0.1252 ± 0.0674 | 0.0435 ± 5.50e-04 | **0.0201 ± 0.0030** | 0 | **Diffusion-TS** |
-| A22 ACF r² Error (lags) ↓ | 0.0619 ± 5.08e-04 | 0.0839 ± 0.0348 | 0.0379 ± 5.56e-04 | **0.0168 ± 0.0027** | 0 | **Diffusion-TS** |
-| A23 ACF \|r\| Lag-1 Error ↓ | 0.1437 ± 0.0012 | 0.2264 ± 0.1034 | 0.0526 ± 7.04e-04 | **0.0039 ± 0.0022** | 0 | **Diffusion-TS** |
-| A24 ACF r² Lag-1 Error ↓ | 0.1665 ± 0.0017 | 0.1719 ± 0.0626 | 0.0461 ± 7.01e-04 | **0.0038 ± 0.0026** | 0 | **Diffusion-TS** |
-| **— Vol —** | | | | | | |
-| A25 Mean RMSE ↓ | 1.301 ± 0.2776 | 0.7385 ± 0.4552 | 0.9000 ± 0.8807 | **0.5767 ± 0.4444** | 0 | **Diffusion-TS** |
-| A26 Return Std Error ↓ | 0.2492 ± 0.0018 | 0.1519 ± 0.0888 | **0.0058 ± 0.0028** | 0.3098 ± 0.0093 | 0 | **Fourier Flow** |
-| A27 Log-Return Std Error ↓ | 0.0030 ± 1.20e-05 | 0.0017 ± 7.78e-04 | **6.70e-05 ± 6.60e-05** | 0.0032 ± 8.20e-05 | 0 | **Fourier Flow** |
-| A28 Kurtosis Ratio (→ 1) | 1.989 ± 0.0182 | −1.095 ± 3.525 | 3.039 ± 0.7605 | **1.866 ± 0.2509** | 1.000 | **Diffusion-TS** |
-| A29 Sigma Mean Error ↓ | 0.0440 ± 1.84e-04 | 0.0307 ± 0.0089 | **0.0026 ± 8.77e-04** | 0.0485 ± 0.0013 | 0 | **Fourier Flow** |
-| A30 Cross-Sect. Vol Path RMSE ↓ | 3.276 ± 0.0637 | **0.3534 ± 0.1253** | 1.367 ± 0.4499 | 1.154 ± 0.2019 | 0 | **TimeGAN** |
-| A31 Rolling Vol KS (w=5) ↓ | 0.3435 ± 6.43e-04 | 0.2540 ± 0.1093 | **0.0740 ± 0.0014** | 0.2558 ± 0.0078 | 0 | **Fourier Flow** |
-| A32 Vol-of-Vol Error ↓ | 0.0021 ± 6.00e-06 | 8.97e-04 ± 8.69e-04 | **6.88e-04 ± 9.20e-05** | 0.0016 ± 3.80e-05 | 0 | **Fourier Flow** |
-| **— Heston Spec —** | | | | | | |
-| A33 Teacher-Sigma Corr ↑ | **0.0046 ± 0.0019** | 0.0021 ± 0.0090 | 7.85e-04 ± 0.0038 | −0.0036 ± 0.0032 | 0.6143 | **SBTS** |
-| A34 Teacher-Sigma RMSE ↓ | 0.0955 ± 9.10e-05 | 0.1183 ± 0.0184 | **0.0894 ± 0.0013** | 0.0960 ± 7.41e-04 | 0.0654 | **Fourier Flow** |
-| PS-MC CRPS H=32 ↓ | 2.761 ± 0.004 | 3.087 ± 0.340 | 2.742 ± 0.027 | **2.717 ± 0.003** | — | **Diffusion-TS** |
-| PS-MC CRPS H=64 ↓ | 3.900 ± 0.008 | 4.372 ± 0.431 | 3.992 ± 0.106 | **3.845 ± 0.005** | — | **Diffusion-TS** |
+| Metric | SBTS | TimeGAN | Fourier Flow | Diffusion-TS | CSDI | Perfect | Winner |
+|--------|:----:|:-------:|:------------:|:------------:|:----:|:-------:|:------:|
+| **— Fat Tail —** | | | | | | | |
+| A1 Kurtosis Error ↓ | 0.1187 ± 0.0060 | 2.955 ± 2.099 | 0.5757 ± 0.0083 | 0.4238 ± 0.0230 | **0.0958 ± 0.0262** | 0 | **CSDI** |
+| A2 \|r\| q95 Error ↓ | 0.0063 ± 3.00e-05 | 0.0032 ± 0.0018 | **6.52e-04 ± 2.10e-04** | 0.0068 ± 1.57e-04 | 0.0053 ± 1.50e-04 | 0 | **Fourier Flow** |
+| A3 \|r\| q99 Error ↓ | 0.0098 ± 4.80e-05 | 0.0043 ± 0.0028 | **0.0023 ± 5.06e-04** | 0.0103 ± 1.75e-04 | 0.0073 ± 2.29e-04 | 0 | **Fourier Flow** |
+| A4 Tail QQ Error ↓ | 0.0062 ± 2.60e-05 | 0.0034 ± 0.0015 | **7.15e-04 ± 1.23e-04** | 0.0067 ± 1.50e-04 | 0.0052 ± 1.50e-04 | 0 | **Fourier Flow** |
+| A5 Hill Tail Index Error ↓ | 9.499 ± 0.3457 | 36.885 ± 17.053 | 6.368 ± 2.000 | 3.613 ± 0.2789 | **1.992 ± 0.5856** | 0 | **CSDI** |
+| **— Distribution —** | | | | | | | |
+| A6 Path MMD² ↓ | 0.0110 ± 0.0026 | 0.0165 ± 0.0127 | 0.0052 ± 0.0019 | 0.0033 ± 6.56e-04 | **0.0027 ± 6.16e-04** | 0.0015 | **CSDI** |
+| A7 Terminal MMD² ↓ | 0.0100 ± 0.0036 | 0.0267 ± 0.0192 | 0.0106 ± 0.0051 | **0.0021 ± 3.92e-04** | 0.0028 ± 0.0011 | 0.0016 | **Diffusion-TS** |
+| A8 Increment MMD² ↓ | 0.0071 ± 2.47e-04 | 0.0077 ± 0.0041 | **0.0011 ± 7.70e-05** | 0.0112 ± 9.37e-04 | 0.0079 ± 8.54e-04 | 7.45e-04 | **Fourier Flow** |
+| A9 Volatility MMD ↓ | 0.3038 ± 0.0071 | 0.3789 ± 0.2430 | **0.0596 ± 0.0086** | 0.3840 ± 0.0314 | 0.2448 ± 0.0206 | 0.0071 | **Fourier Flow** |
+| A10 Terminal SWD ↓ | 3.539 ± 0.7368 | 2.658 ± 0.8567 | 2.815 ± 0.9433 | 1.358 ± 0.2152 | **1.303 ± 0.2465** | 0.6873 | **CSDI** |
+| A11 Path SWD ↓ | 2.415 ± 0.4104 | 1.417 ± 0.4914 | 1.289 ± 0.4198 | 0.9838 ± 0.1107 | **0.7712 ± 0.1581** | 0.4381 | **CSDI** |
+| A12 RV Law Loss ↓ | 2.148 ± 0.0074 | 1.551 ± 0.3788 | **0.5291 ± 0.1299** | 2.250 ± 0.0491 | 1.897 ± 0.0563 | 0 | **Fourier Flow** |
+| A13 Mean Path RMSE ↓ | 0.7499 ± 0.1823 | 0.5289 ± 0.2624 | 0.4910 ± 0.4022 | 0.3615 ± 0.2364 | **0.3101 ± 0.3036** | 0 | **CSDI** |
+| A14 KS Log-returns ↓ | 0.0534 ± 3.62e-04 | 0.0848 ± 0.0374 | **0.0191 ± 0.0024** | 0.0600 ± 0.0019 | 0.0539 ± 0.0021 | 0 | **Fourier Flow** |
+| A15 Skewness Error ↓ | **0.0227 ± 0.0037** | 0.3404 ± 0.3344 | 0.0282 ± 0.0152 | 0.0698 ± 0.0358 | 0.0457 ± 0.0021 | 0 | **SBTS** |
+| A16 QQ RMSE (300-pt) ↓ | 0.0028 ± 1.20e-05 | 0.0025 ± 6.43e-04 | **5.86e-04 ± 4.20e-05** | 0.0030 ± 8.30e-05 | 0.0026 ± 8.60e-05 | 0 | **Fourier Flow** |
+| A17 Terminal Price KS ↓ | 0.0921 ± 0.0051 | 0.1121 ± 0.0556 | 0.0848 ± 0.0166 | 0.0400 ± 0.0073 | **0.0321 ± 0.0053** | 0 | **CSDI** |
+| **— Adversarial —** | | | | | | | |
+| A18 Disc Score GRU ↓ | 0.2755 ± 0.2166 | **0.0077 ± 0.0050** | 0.0094 ± 0.0097 | 0.2621 ± 0.1578 | 0.0470 ± 0.0901 | 0.0071 | **TimeGAN** |
+| A18 Disc Score MLP ↓ | 0.0079 ± 0.0049 | 0.1031 ± 0.0395 | 0.0053 ± 0.0041 | 0.0554 ± 0.0396 | **0.0046 ± 0.0058** | 0.0033 | **CSDI** |
+| **— Predictive —** | | | | | | | |
+| A19 Pred Score GRU ↓ | 0.0586 ± 5.90e-05 | 0.0574 ± 0.0019 | **0.0537 ± 7.60e-06** | 0.0549 ± 1.59e-04 | 0.0539 ± 3.20e-05 | 0.0537 | **Fourier Flow** |
+| A19 Pred Score MLP ↓ | 0.0583 ± 2.55e-04 | 0.0570 ± 0.0012 | **0.0540 ± 4.90e-04** | 0.0551 ± 3.72e-04 | 0.0541 ± 2.47e-04 | 0.0537 | **Fourier Flow** |
+| **— Temporal —** | | | | | | | |
+| A20 Covariance Error ↓ | 145.35 ± 4.886 | **17.751 ± 6.707** | 64.406 ± 38.255 | 38.172 ± 10.637 | 35.538 ± 5.776 | 0 | **TimeGAN** |
+| A21 ACF \|r\| Error (lags) ↓ | 0.0596 ± 4.70e-04 | 0.1252 ± 0.0674 | 0.0435 ± 5.50e-04 | 0.0201 ± 0.0030 | **0.0091 ± 0.0026** | 0 | **CSDI** |
+| A22 ACF r² Error (lags) ↓ | 0.0619 ± 5.08e-04 | 0.0839 ± 0.0348 | 0.0379 ± 5.56e-04 | 0.0168 ± 0.0027 | **0.0086 ± 0.0021** | 0 | **CSDI** |
+| A23 ACF \|r\| Lag-1 Error ↓ | 0.1437 ± 0.0012 | 0.2264 ± 0.1034 | 0.0526 ± 7.04e-04 | **0.0039 ± 0.0022** | 0.0188 ± 0.0048 | 0 | **Diffusion-TS** |
+| A24 ACF r² Lag-1 Error ↓ | 0.1665 ± 0.0017 | 0.1719 ± 0.0626 | 0.0461 ± 7.01e-04 | **0.0038 ± 0.0026** | 0.0176 ± 0.0036 | 0 | **Diffusion-TS** |
+| **— Vol —** | | | | | | | |
+| A25 Mean RMSE ↓ | 1.301 ± 0.2776 | 0.7385 ± 0.4552 | 0.9000 ± 0.8807 | 0.5767 ± 0.4444 | **0.3729 ± 0.4145** | 0 | **CSDI** |
+| A26 Return Std Error ↓ | 0.2492 ± 0.0018 | 0.1519 ± 0.0888 | **0.0058 ± 0.0028** | 0.3098 ± 0.0093 | 0.2570 ± 0.0098 | 0 | **Fourier Flow** |
+| A27 Log-Return Std Error ↓ | 0.0030 ± 1.20e-05 | 0.0017 ± 7.78e-04 | **6.70e-05 ± 6.60e-05** | 0.0032 ± 8.20e-05 | 0.0026 ± 8.90e-05 | 0 | **Fourier Flow** |
+| A28 Kurtosis Ratio (→ 1) | 1.989 ± 0.0182 | −1.095 ± 3.525 | 3.039 ± 0.7605 | 1.866 ± 0.2509 | **0.8539 ± 0.0298** | 1.000 | **CSDI** |
+| A29 Sigma Mean Error ↓ | 0.0440 ± 1.84e-04 | 0.0307 ± 0.0089 | **0.0026 ± 8.77e-04** | 0.0485 ± 0.0013 | 0.0404 ± 0.0015 | 0 | **Fourier Flow** |
+| A30 Cross-Sect. Vol Path RMSE ↓ | 3.276 ± 0.0637 | **0.3534 ± 0.1253** | 1.367 ± 0.4499 | 1.154 ± 0.2019 | 0.9262 ± 0.1315 | 0 | **TimeGAN** |
+| A31 Rolling Vol KS (w=5) ↓ | 0.3435 ± 6.43e-04 | 0.2540 ± 0.1093 | **0.0740 ± 0.0014** | 0.2558 ± 0.0078 | 0.2180 ± 0.0082 | 0 | **Fourier Flow** |
+| A32 Vol-of-Vol Error ↓ | 0.0021 ± 6.00e-06 | 8.97e-04 ± 8.69e-04 | **6.88e-04 ± 9.20e-05** | 0.0016 ± 3.80e-05 | 0.0010 ± 2.10e-05 | 0 | **Fourier Flow** |
+| **— Heston Spec —** | | | | | | | |
+| A33 Teacher-Sigma Corr ↑ | 0.0046 ± 0.0019 | 0.0021 ± 0.0090 | 7.85e-04 ± 0.0038 | −0.0036 ± 0.0032 | **0.0084 ± 0.0040** | 0.6143 | **CSDI** |
+| A34 Teacher-Sigma RMSE ↓ | 0.0955 ± 9.10e-05 | 0.1183 ± 0.0184 | **0.0894 ± 0.0013** | 0.0960 ± 7.41e-04 | 0.0985 ± 6.61e-04 | 0.0654 | **Fourier Flow** |
+| PS-MC CRPS H=32 ↓ | 2.761 ± 0.004 | 3.087 ± 0.340 | 2.742 ± 0.027 | 2.717 ± 0.003 | **2.713 ± 0.005** | — | **CSDI** |
+| PS-MC CRPS H=64 ↓ | 3.900 ± 0.008 | 4.372 ± 0.431 | 3.992 ± 0.106 | 3.845 ± 0.005 | **3.814 ± 0.007** | — | **CSDI** |
 
-**Fourier Flow wins A: 17/38. Diffusion-TS wins 15/38. SBTS wins 3/38. TimeGAN wins 3/38.** Adding
-Diffusion-TS reshapes the leaderboard: its seasonal-trend diffusion decoder captures Heston's
-autocorrelation and vol-clustering structure far better than the baselines, sweeping the entire ACF family
-(A21–A24), the distributional MMD/SWD metrics (A6, A7, A10, A11, A13), the terminal-price KS (A17), the
-kurtosis ratio (A28), the Hill tail index (A5), and both Path-Shadowing horizons. Fourier Flow keeps the
-marginal/spectral-fidelity crown — log-return tails (A2–A4), MMD/increment (A8, A9), vol moments
-(A26, A27, A29, A32), ACF-lag magnitude errors and the teacher RMSE (A34) — 17 metrics where its
-explicit-likelihood spectral training is tightest. SBTS retains the fat-tail skew/kurtosis moments
-(A1, A15) and the teacher-sigma correlation (A33); TimeGAN keeps the GRU discriminator (A18-GRU) and two
-structural metrics (A20 covariance, A30 cross-sectional vol).
+**Fourier Flow wins A: 16/38. CSDI wins 15/38. Diffusion-TS wins 3/38. TimeGAN wins 3/38. SBTS wins 1/38.**
+Adding **CSDI** reshapes the leaderboard again: its unconditional score-based diffusion produces the
+best-calibrated marginals of any method, taking the fat-tail kurtosis (A1) and Hill index (A5), the
+distributional MMD/SWD family (A6, A10, A11, A13), the terminal-price KS (A17), the MLP discriminative
+score (A18-MLP), the ACF-lag-average errors (A21, A22), the mean-price RMSE (A25), the kurtosis ratio
+(A28, the only method within 0.15 of the ideal 1.0), the teacher-sigma correlation (A33), and **both**
+Path-Shadowing horizons. Fourier Flow keeps the marginal/spectral-fidelity crown on the log-return tails
+(A2–A4), MMD/increment (A8, A9), the RV-law (A12), KS (A14), QQ (A16), vol moments (A26, A27, A29, A32),
+rolling-vol KS (A31) and the teacher RMSE (A34) — 16 metrics where its explicit-likelihood spectral
+training is tightest. Diffusion-TS retains the terminal MMD (A7) and the two lag-1 ACF metrics (A23, A24)
+where its seasonal-trend decoder is sharpest; TimeGAN keeps the GRU discriminator (A18-GRU) and two
+structural metrics (A20 covariance, A30 cross-sectional vol); SBTS retains the skewness moment (A15).
 
 ### B — Curve-shape metrics (6 diagnostic plots)
 
@@ -84,30 +86,36 @@ Each of the 6 diagnostic plots yields a **curve** L (a list of values), not a sc
 
 ↓ lower is better. Histogram bin edges use [0.5th, 99.5th]-percentile of **real data only**, so the reference curve is fixed. **Perfect floor = 0** for every plot (row-shuffle preserves all marginals exactly). Winner is by MSE.
 
-| Plot | Measure | SBTS | TimeGAN | Fourier Flow | Diffusion-TS | Perfect | Winner |
-|------|---------|:----:|:-------:|:------------:|:------------:|:------:|:------:|
-| **Log-return histogram** | MSE | 12.138 ± 0.1605 | 144.21 ± 120.61 | **2.847 ± 0.1405** | 14.505 ± 1.469 | 0 | **Fourier Flow** |
-| | % err | 38.98% ± 0.132% | 33.42% ± 6.512% | **9.072% ± 0.571%** | 41.94% ± 0.996% | 0 | |
-| **QQ plot** | MSE | 8.90e-06 ± 6.77e-08 | 7.09e-06 ± 3.34e-06 | **4.43e-07 ± 6.56e-08** | 1.03e-05 ± 5.24e-07 | 0 | **Fourier Flow** |
-| | % err | 21.27% ± 0.364% | 34.29% ± 11.19% | **9.363% ± 2.272%** | 25.39% ± 1.704% | 0 | |
-| **ACF \|r\| lags 1–20** | MSE | 0.0046 ± 3.70e-05 | 0.0105 ± 0.0085 | 0.0013 ± 3.81e-05 | **5.76e-04 ± 1.26e-04** | 0 | **Diffusion-TS** |
-| | % err | 143% ± 1.580% | 164% ± 101% | 115.19% ± 1.926% | **74.76% ± 12.02%** | 0 | |
-| **ACF r² lags 1–20** | MSE | 0.0052 ± 5.67e-05 | 0.0058 ± 0.0033 | 9.43e-04 ± 3.51e-05 | **4.34e-04 ± 1.07e-04** | 0 | **Diffusion-TS** |
-| | % err | 160% ± 1.615% | 110% ± 60.72% | 117.36% ± 2.638% | **73.90% ± 14.29%** | 0 | |
-| **Rolling vol histogram** | MSE | 1227.30 ± 5.109 | 439.33 ± 216.74 | **92.44 ± 8.157** | 652.35 ± 44.95 | 0 | **Fourier Flow** |
-| | % err | 84.04% ± 0.124% | 56.06% ± 20.98% | **25.29% ± 3.210%** | 68.61% ± 1.420% | 0 | |
-| **Tail survival** | MSE | 0.0057 ± 6.60e-05 | 0.0117 ± 0.0092 | **5.30e-04 ± 4.58e-05** | 0.0067 ± 5.97e-04 | 0 | **Fourier Flow** |
-| | % err | 26.48% ± 0.114% | 23.60% ± 6.040% | **5.759% ± 0.237%** | 28.25% ± 0.842% | 0 | |
+| Plot | Measure | SBTS | TimeGAN | Fourier Flow | Diffusion-TS | CSDI | Perfect | Winner |
+|------|---------|:----:|:-------:|:------------:|:------------:|:----:|:------:|:------:|
+| **Log-return histogram** | MSE | 12.138 ± 0.1605 | 144.21 ± 120.61 | **2.847 ± 0.1405** | 14.505 ± 1.469 | 13.854 ± 1.500 | 0 | **Fourier Flow** |
+| | % err | 38.98% ± 0.132% | 33.42% ± 6.512% | **9.072% ± 0.571%** | 41.94% ± 0.996% | 35.03% ± 1.059% | 0 | |
+| **QQ plot** | MSE | 8.90e-06 ± 6.77e-08 | 7.09e-06 ± 3.34e-06 | **4.43e-07 ± 6.56e-08** | 1.03e-05 ± 5.24e-07 | 6.94e-06 ± 4.63e-07 | 0 | **Fourier Flow** |
+| | % err | 21.27% ± 0.364% | 34.29% ± 11.19% | **9.363% ± 2.272%** | 25.39% ± 1.704% | 23.93% ± 1.070% | 0 | |
+| **ACF \|r\| lags 1–20** | MSE | 0.0046 ± 3.70e-05 | 0.0105 ± 0.0085 | 0.0013 ± 3.81e-05 | 5.76e-04 ± 1.26e-04 | **6.27e-05 ± 2.10e-05** | 0 | **CSDI** |
+| | % err | 143% ± 1.580% | 164% ± 101% | 115.19% ± 1.926% | 74.76% ± 12.02% | **15.15% ± 5.425%** | 0 | |
+| **ACF r² lags 1–20** | MSE | 0.0052 ± 5.67e-05 | 0.0058 ± 0.0033 | 9.43e-04 ± 3.51e-05 | 4.34e-04 ± 1.07e-04 | **5.59e-05 ± 1.61e-05** | 0 | **CSDI** |
+| | % err | 160% ± 1.615% | 110% ± 60.72% | 117.36% ± 2.638% | 73.90% ± 14.29% | **16.27% ± 4.883%** | 0 | |
+| **Rolling vol histogram** | MSE | 1227.30 ± 5.109 | 439.33 ± 216.74 | **92.44 ± 8.157** | 652.35 ± 44.95 | 463.79 ± 36.61 | 0 | **Fourier Flow** |
+| | % err | 84.04% ± 0.124% | 56.06% ± 20.98% | **25.29% ± 3.210%** | 68.61% ± 1.420% | 61.28% ± 2.323% | 0 | |
+| **Tail survival** | MSE | 0.0057 ± 6.60e-05 | 0.0117 ± 0.0092 | **5.30e-04 ± 4.58e-05** | 0.0067 ± 5.97e-04 | 0.0058 ± 5.52e-04 | 0 | **Fourier Flow** |
+| | % err | 26.48% ± 0.114% | 23.60% ± 6.040% | **5.759% ± 0.237%** | 28.25% ± 0.842% | 24.63% ± 0.880% | 0 | |
 
 The function-level % err stays in a sane range (≈ 5–164%): the largest values are the ACF plots, where the true ACF ≈ 0.05 sits near zero so any deviation is a big *relative* error. It no longer explodes to 10⁴-% now that the ill-posed derivative MAPE is excluded. TimeGAN's log-return-histogram MSE std (±120.61) is driven by a genuine seed-2 collapse (504.48 vs 11–170 for the other seeds).
 
-**Fourier Flow wins B: 4/6 plots on MSE; Diffusion-TS wins the two ACF plots.** Fourier Flow's spectral objective fits the marginal-shape diagnostics (log-return histogram, QQ, rolling-vol, tail survival) tighter than any method, while Diffusion-TS wins both autocorrelation curves (ACF \|r\| and ACF r²) on both MSE and % err — its seasonal-trend decoder reproduces Heston's weak vol-clustering ACF that the spectral flow slightly over-smooths. Each value is computed over the same **5 seeds** per method.
+**Fourier Flow wins B: 4/6 plots on MSE; CSDI wins the two ACF plots.** Fourier Flow's spectral objective
+fits the marginal-shape diagnostics (log-return histogram, QQ, rolling-vol, tail survival) tighter than any
+method, while **CSDI** wins both autocorrelation curves (ACF \|r\| and ACF r²) on both MSE and % err by a
+full order of magnitude (6.27e-05 vs Diffusion-TS's 5.76e-04 on ACF \|r\|) — its score-based diffusion
+reproduces Heston's weak vol-clustering autocorrelation that the spectral flow over-smooths. Each value is
+computed over the same **5 seeds** per method.
 
 Detailed per-seed results and plots:
 → [`results/Heston/SBTS/`](results/Heston/SBTS/) — SBTS metrics, diagnostics, PS-MC
 → [`results/Heston/TimeGAN/`](results/Heston/TimeGAN/) — TimeGAN metrics, diagnostics, PS-MC
 → [`results/Heston/FourierFlow/`](results/Heston/FourierFlow/) — Fourier Flow metrics, diagnostics, PS-MC
 → [`results/Heston/DiffusionTS/`](results/Heston/DiffusionTS/) — Diffusion-TS metrics, diagnostics, PS-MC
+→ [`results/Heston/CSDI/`](results/Heston/CSDI/) — CSDI metrics, diagnostics, PS-MC
 
 ---
 
@@ -129,6 +137,7 @@ Detailed per-seed results and plots:
 | [SBTS](methods/SBTS/) | Schrödinger Bridge Time Series | [arXiv:2503.02943](https://arxiv.org/abs/2503.02943) | Alouadi, Barreau, Carlier, Pham | 2025 | ICAIF | [alexouadi/SBTS](https://github.com/alexouadi/SBTS) |
 | [FourierFlow](methods/FourierFlow/) | Fourier Flows | [OpenReview](https://openreview.net/forum?id=PpshD0AXfA) | Alaa, Chan, van der Schaar | 2021 | ICLR | [ahmedmalaa/Fourier-flows](https://github.com/ahmedmalaa/Fourier-flows) |
 | [DiffusionTS](methods/DiffusionTS/) | Diffusion-TS | [arXiv:2403.01742](https://arxiv.org/abs/2403.01742) | Yuan, Qiao | 2024 | ICLR | [Y-debug-sys/Diffusion-TS](https://github.com/Y-debug-sys/Diffusion-TS) |
+| [CSDI](methods/CSDI/) | Conditional Score-based Diffusion (Imputation) | [arXiv:2107.03502](https://arxiv.org/abs/2107.03502) | Tashiro, Song, Song, Ermon | 2021 | NeurIPS | [ermongroup/CSDI](https://github.com/ermongroup/CSDI) |
 
 ---
 
@@ -191,6 +200,7 @@ Full formulas and per-seed results:
 → [`results/Heston/TimeGAN/README.md`](results/Heston/TimeGAN/README.md)
 → [`results/Heston/FourierFlow/README.md`](results/Heston/FourierFlow/README.md)
 → [`results/Heston/DiffusionTS/README.md`](results/Heston/DiffusionTS/README.md)
+→ [`results/Heston/CSDI/README.md`](results/Heston/CSDI/README.md)
 
 ---
 
@@ -216,11 +226,18 @@ for s in 0 1 2 3 4; do g=$((s%2+1)); c=$((g*8)); \
   CUDA_VISIBLE_DEVICES=$g OMP_NUM_THREADS=8 taskset -c $c-$((c+7)) \
   PYTHONPATH=reference /home/tbasseras/gpu-venv/bin/python train_heston.py --arch mujoco --seed $s & done; wait
 
+# 2e. Train CSDI (5 seeds, 2 A100 GPUs, unconditional DDPM, ~30 min/seed)
+cd methods/CSDI/code
+for s in 0 1 2 3 4; do gpu=$([ $((s % 2)) -eq 0 ] && echo 0 || echo 3); c=$(( (s%2)*8 )); \
+  CUDA_VISIBLE_DEVICES=$gpu OMP_NUM_THREADS=8 taskset -c $c-$((c+7)) \
+  /home/tbasseras/gpu-venv/bin/python train_heston.py --seed $s & done; wait
+
 # 3. Compute all metrics (GPU for A13/A14)
 CUDA_VISIBLE_DEVICES=0 python metrics/compute_all.py --method TimeGAN     --dataset Heston
 CUDA_VISIBLE_DEVICES=0 python metrics/compute_all.py --method SBTS        --dataset Heston
 CUDA_VISIBLE_DEVICES=0 python metrics/compute_all.py --method FourierFlow --dataset Heston
 CUDA_VISIBLE_DEVICES=0 python metrics/compute_all.py --method DiffusionTS --dataset Heston
+CUDA_VISIBLE_DEVICES=0 python metrics/compute_all.py --method CSDI        --dataset Heston
 
 # 4. Compute perfect-recovery floor
 CUDA_VISIBLE_DEVICES=0 python metrics/perfect_recovery.py --dataset Heston
@@ -236,3 +253,4 @@ See [`GUIDELINE.md`](GUIDELINE.md) for the full reproducibility protocol.
 2. Implement generation code — save paths as `generated_paths/seed_{i}/generated_paths_NxT.npy` (price space, S₀≈100)
 3. Run `python metrics/compute_all.py --method NewMethod --dataset Heston`
 4. Results appear in `results/Heston/NewMethod/` with full A1–A34 + B tables
+</content>

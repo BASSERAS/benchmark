@@ -1,0 +1,11 @@
+{
+  "task": "heston_imputation",
+  "missing_ratio": 0.9,
+  "seed": 1,
+  "nsample": 100,
+  "epochs": 200,
+  "rmse": 0.23557858258566766,
+  "mae": 0.16792924069621643,
+  "CRPS": 0.16560349966350355,
+  "model_folder": "../heston_imputation/save/heston_r0.9_seed1_20260720_083703"
+}
