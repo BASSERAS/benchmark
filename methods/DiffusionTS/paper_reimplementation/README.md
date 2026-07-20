@@ -70,7 +70,7 @@ Three columns, all scored with the **paper's own four metric functions** (`Utils
 | Metric (paper's own) | **Paper (Table 1, Stocks)** | **Ours — Stocks (paper dataset)** | **Ours — Heston** |
 |----------------------|:---------------------------:|:---------------------------------:|:-----------------:|
 | Context-FID ↓ | 0.147 ± 0.025 | **0.2024 ± 0.0245** | **0.0307 ± 0.0077** |
-| Correlational ↓ | 0.004 ± 0.001 | **0.0106 ± 0.0000** [1] | **≈ 6×10⁻⁹** [2] |
+| Correlational ↓ | 0.004 ± 0.001 | **0.0106 ± 0.0000** [1] | **≈ 6×10⁻⁹** [2] (degenerate — real: A21 ACF-abs 0.0201 ± 0.0030) |
 | Discriminative ↓ | 0.067 ± 0.015 | **0.0914 ± 0.0178** | **0.0000** [3] (degenerate — real: A18 GRU 0.262 ± 0.158) |
 | Predictive ↓ | 0.036 ± 0.000 | **0.0371 ± 0.00005** | **0.0653** [4] (degenerate — real: A19 GRU 0.0549 ± 0.0002) |
 
@@ -82,12 +82,18 @@ Three columns, all scored with the **paper's own four metric functions** (`Utils
 > (0.01058272086083889, ci95 = 0.0). The paper's ±0.001 comes from **re-sampling** the generator 5× (5 fresh
 > draws), which we did not do for the correlational column. Same-code, different resampling protocol.
 >
-> **[2] Heston Correlational ≈ 6×10⁻⁹ is structural (univariate), not computational.** `CrossCorrelLoss`
-> measures **cross-FEATURE** correlation error via `cacf_torch`; our Heston tensor is `(N, T, 1)` — a single
-> feature — so `torch.tril_indices(1, 1) = [[0],[0]]` selects only the feature-with-itself autocorrelation,
-> which is ≡ 1.0 for real and fake alike → their difference is ≡ 0 up to float32 machine epsilon.
-> Per-seed: 1.2×10⁻⁸, 6.0×10⁻⁹, 1.2×10⁻⁸, 0.0, 0.0. There are no cross-feature correlations to mismatch,
-> so the metric is near-trivially satisfied — verified by reading `code/reference/Utils/cross_correlation.py`.
+> **[2] Heston Correlational ≈ 6×10⁻⁹ is the SAME class of univariate degeneracy as [3]/[4] — a different code
+> path, same "metric is undefined on 1 feature" outcome.** `CrossCorrelLoss` measures **cross-FEATURE**
+> correlation error via `cacf_torch`; our Heston tensor is `(N, T, 1)` — a single feature — so
+> `torch.tril_indices(1, 1) = [[0],[0]]` selects only the feature-with-**itself** term, and `cacf_torch`
+> first **standardizes** each series → the lag-0 self-correlation is **identically 1.0** for *any* real and
+> *any* fake. Empirically (seed 0): `cross_correl_real = 0.99999905`, `cross_correl_fake = 0.99999917` →
+> `|Δ|/10 = 1.19×10⁻⁸` = pure float32 epsilon. The metric is **mathematically incapable of being nonzero** on
+> one feature — it measures nothing here. Per-seed: 1.2×10⁻⁸, 6.0×10⁻⁹, 1.2×10⁻⁸, 0.0, 0.0. Verified by
+> reading + running `code/reference/Utils/cross_correlation.py`. **Our comparable score:** the benchmark's own
+> **temporal** correlation metrics (which *are* defined on univariate — they measure lag-autocorrelation, not
+> cross-feature) rate the same paths at **A21 ACF-abs 0.0201 ± 0.0030**, A22 ACF-sq 0.0168 ± 0.0027,
+> A23 lag-1 ACF-abs 0.0039 ± 0.0022 — genuine, non-degenerate correlation-structure errors.
 >
 > **[3] Heston Discriminative = exactly 0 is a metric-code degeneracy on univariate data, NOT a quality signal.**
 > `Utils/discriminative_metric.py` line 74 sets `hidden_dim = int(dim/2)`. For univariate Heston (`dim = 1`)
@@ -153,9 +159,11 @@ univariate Heston paths the same four functions give Context-FID 0.0307, Correla
 Discriminative 0.0000, Predictive 0.0653. These are **not** evidence that Diffusion-TS beats its own
 paper — they are artifacts of the univariate Heston setup, each traced to source:
 
-- **Correlational ≈ 6×10⁻⁹ (note [2])** because Heston here is **single-feature** (price only). The metric
-  computes cross-FEATURE correlation error; with one feature there is nothing to cross-correlate, so it
-  floors at float32 machine epsilon. Verified in `code/reference/Utils/cross_correlation.py`, not a bug.
+- **Correlational ≈ 6×10⁻⁹ (note [2])** is **degenerate** on this single-feature data: the metric computes
+  cross-FEATURE correlation error, but with one feature `tril_indices(1,1)` leaves only the standardized
+  lag-0 self-correlation ≡ 1.0 (real and fake alike), so it floors at float32 epsilon and measures nothing.
+  The real correlation-structure error is the benchmark's temporal ACF metric A21 (0.0201 ± 0.0030), which is
+  defined on univariate. Verified in `code/reference/Utils/cross_correlation.py`, not a bug.
 - **Discriminative = exactly 0 (note [3])** is a **metric-code degeneracy**, not a quality signal: the judge's
   `hidden_dim = int(dim/2) = 0` on univariate data → a zero-capacity GRU → exactly 0.5 accuracy → |0.5 − 0.5| = 0
   on all 5 seeds. The benchmark's own judge (A18, floored hidden dim) rates the same paths at GRU 0.262 ± 0.158

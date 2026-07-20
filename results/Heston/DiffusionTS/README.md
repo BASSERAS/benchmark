@@ -168,7 +168,7 @@ Three columns:
 | Metric (paper's own) | Paper (Table 1, Stocks) | Ours — Stocks (paper dataset) | Ours — Heston |
 |----------------------|:-----------------------:|:-----------------------------:|:-------------:|
 | Context-FID ↓ | 0.147 ± 0.025 | **0.2024 ± 0.0245** | **0.0307 ± 0.0077** |
-| Correlational ↓ | 0.004 ± 0.001 | **0.0106 ± 0.0000** [1] | **≈ 6×10⁻⁹** [2] |
+| Correlational ↓ | 0.004 ± 0.001 | **0.0106 ± 0.0000** [1] | **≈ 6×10⁻⁹** [2] (degenerate — real: A21 ACF-abs 0.0201 ± 0.0030) |
 | Discriminative ↓ | 0.067 ± 0.015 | **0.0914 ± 0.0178** | **0.0000** [3] (degenerate — real: A18 GRU 0.262 ± 0.158) |
 | Predictive ↓ | 0.036 ± 0.000 | **0.0371 ± 0.00005** | **0.0653** [4] (degenerate — real: A19 GRU 0.0549 ± 0.0002) |
 
@@ -182,11 +182,16 @@ Three columns:
 >   given a fixed (real, generated) pair, and we score **one** saved generated sample
 >   (`OUTPUT/stock/ddpm_fake_stock.npy`) 5×, so all 5 runs are byte-identical (`0.01058272086083889`,
 >   `ci95 = 0.0`). The paper's ±0.001 comes from **re-sampling the model** each run; we sampled once.
-> - **[2] Correlational ≈ 6×10⁻⁹ on Heston is machine-epsilon zero — a structural property of univariate
->   data.** The metric scores cross-**feature** correlation error; Heston here is a **single** feature
->   `(N,T,1)`, so `cacf_torch` correlates the feature with itself (≡ 1.0 for both real and synthetic) and the
->   difference is identically 0. Verified in `code/reference/Utils/cross_correlation.py`. Per-seed:
->   1.2e-08, 6.0e-09, 1.2e-08, 0.0, 0.0.
+> - **[2] Correlational ≈ 6×10⁻⁹ on Heston is the SAME class of univariate degeneracy as [3]/[4]** (different
+>   code path, same "undefined on 1 feature" outcome). The metric scores cross-**feature** correlation error;
+>   Heston here is a **single** feature `(N,T,1)`, so `tril_indices(1,1)` leaves only the feature-with-itself
+>   term, and `cacf_torch` **standardizes** first → the lag-0 self-correlation is **identically 1.0** for any
+>   real and any fake. Empirically (seed 0): real 0.99999905 vs fake 0.99999917 → `|Δ|/10 = 1.19e-08` = float32
+>   epsilon. Mathematically incapable of being nonzero on one feature — verified by reading + running
+>   `code/reference/Utils/cross_correlation.py`. Per-seed: 1.2e-08, 6.0e-09, 1.2e-08, 0.0, 0.0. **Our comparable
+>   number:** the benchmark's own **temporal** correlation metrics (defined on univariate — lag-autocorrelation,
+>   not cross-feature) rate the same paths at **A21 ACF-abs 0.0201 ± 0.0030**, A22 ACF-sq 0.0168 ± 0.0027,
+>   A23 lag-1 ACF-abs 0.0039 ± 0.0022 (tables above).
 > - **[3] Discriminative = 0.0000 on Heston is a metric-code degeneracy on univariate data, NOT a quality
 >   signal.** `Utils/discriminative_metric.py` line 74 sets `hidden_dim = int(dim/2)`; for univariate Heston
 >   (`dim = 1`) that is `int(1/2) = 0` → `GRUCell(num_units=0)` → a zero-capacity judge with no hidden state →
@@ -211,12 +216,13 @@ is a bulls-eye, proving the pipeline is correct. Context-FID 0.2024 vs 0.147 and
 re-sampling. We did **not** re-sample to chase the number (see [1]).
 
 **Heston — read the caveat.** The Heston column (Context-FID 0.031, Correlational ≈ 0, Discriminative 0.000,
-Predictive 0.065) is **not** a super-paper result. Three of the four are near-zero/degenerate for reasons
-[2]–[4] above: **Correlational ≈ 0** is the single-feature cross-correlation triviality (univariate ⇒ nothing
-to cross-correlate), while **Discriminative 0.000 and Predictive 0.065 are both artifacts of the paper metrics'
-`hidden_dim = int(dim/2) = 0` collapse on univariate data** — zero-capacity judge/predictor, not a
-distinguishability signal. The **real** distinguishability of these paths is the benchmark's own floored-hidden-dim
-judges: **A18 disc GRU 0.262 ± 0.158** and **A19 pred GRU 0.0549 ± 0.0002** (tables above). Context-FID is lower
+Predictive 0.065) is **not** a super-paper result. **Three of the four are degenerate on univariate data** (only Context-FID is genuine — TS2Vec embeds to 320-dim
+regardless of feature count) for reasons [2]–[4] above: **Correlational ≈ 0** because `tril_indices(1,1)` leaves
+only the standardized lag-0 self-correlation ≡ 1.0 (nothing to cross-correlate on one feature), while
+**Discriminative 0.000 and Predictive 0.065 are both the paper metrics' `hidden_dim = int(dim/2) = 0` collapse**
+— zero-capacity judge/predictor, not a distinguishability signal. The **real** numbers come from the benchmark's
+own metrics that stay defined on univariate data: correlation structure **A21 ACF-abs 0.0201 ± 0.0030**,
+distinguishability **A18 disc GRU 0.262 ± 0.158**, one-step forecast **A19 pred GRU 0.0549 ± 0.0002** (tables above). Context-FID is lower
 than Stocks only because one smooth feature is easier to match in TS2Vec space than 6-feature Stocks. Full
 discussion: [`../../../methods/DiffusionTS/paper_reimplementation/README.md`](../../../methods/DiffusionTS/paper_reimplementation/README.md).
 
