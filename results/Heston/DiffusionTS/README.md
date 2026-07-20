@@ -168,20 +168,46 @@ Three columns:
 | Metric (paper's own) | Paper (Table 1, Stocks) | Ours — Stocks (paper dataset) | Ours — Heston |
 |----------------------|:-----------------------:|:-----------------------------:|:-------------:|
 | Context-FID ↓ | 0.147 ± 0.025 | **0.2024 ± 0.0245** | **0.0307 ± 0.0077** |
-| Correlational ↓ | 0.004 ± 0.001 | **0.0106 ± 0.0000** | **≈ 0.0000 ± 0.0000** |
-| Discriminative ↓ | 0.067 ± 0.015 | **0.0914 ± 0.0178** | **0.0000 ± 0.0000** |
-| Predictive ↓ | 0.036 ± 0.000 | **0.0371 ± 0.0000** | **0.0653 ± 0.0000** |
+| Correlational ↓ | 0.004 ± 0.001 | **0.0106 ± 0.0000** [1] | **≈ 6×10⁻⁹** [2] |
+| Discriminative ↓ | 0.067 ± 0.015 | **0.0914 ± 0.0178** | **0.0000** [3] |
+| Predictive ↓ | 0.036 ± 0.000 | **0.0371 ± 0.00005** | **0.0653 ± 0.00002** [4] |
 
-**Stocks reproduces Table 1** — Predictive 0.0371 vs 0.036 is a bulls-eye; Context-FID 0.2024 vs 0.147 and
-Discriminative 0.0914 vs 0.067 land slightly above (worse) the paper, within the checkpoint-selection noise
-of a single milestone-10 EMA per run. Running the released model verbatim reproduces the paper's regime.
+> The four "≈ 0 / ± 0.0000" cells above are **genuinely computed values**, not placeholders or a stalled
+> metric. Their exact per-run/per-seed numbers are in
+> [`heston_paper_metrics.json`](../../../methods/DiffusionTS/paper_reimplementation/results/heston_paper_metrics.json)
+> and [`stocks_comparison.json`](../../../methods/DiffusionTS/paper_reimplementation/results/stocks_comparison.json).
+> They are near-zero for the **structural** reasons below, verified in the released metric code:
+>
+> - **[1] Correlational std = 0 on Stocks is expected, not stalled.** `CrossCorrelLoss` is *deterministic*
+>   given a fixed (real, generated) pair, and we score **one** saved generated sample
+>   (`OUTPUT/stock/ddpm_fake_stock.npy`) 5×, so all 5 runs are byte-identical (`0.01058272086083889`,
+>   `ci95 = 0.0`). The paper's ±0.001 comes from **re-sampling the model** each run; we sampled once.
+> - **[2] Correlational ≈ 6×10⁻⁹ on Heston is machine-epsilon zero — a structural property of univariate
+>   data.** The metric scores cross-**feature** correlation error; Heston here is a **single** feature
+>   `(N,T,1)`, so `cacf_torch` correlates the feature with itself (≡ 1.0 for both real and synthetic) and the
+>   difference is identically 0. Verified in `code/reference/Utils/cross_correlation.py`. Per-seed:
+>   1.2e-08, 6.0e-09, 1.2e-08, 0.0, 0.0.
+> - **[3] Discriminative = 0.0000 on Heston** — on the smooth, time-homogeneous univariate price series the
+>   GRU judge cannot beat chance and degenerates to a constant predictor → exactly 0.5 accuracy on the
+>   balanced test split → |0.5 − 0.5| = 0. Uninformative here (the metric targets harder/multivariate
+>   series), not a computational zero.
+> - **[4] Predictive std ≈ 2×10⁻⁵ (rounds to 0.0000).** All 5 generated pools hit the same irreducible
+>   one-step Heston log-return MAE floor (≈ 0.0653); tiny run-to-run variance is expected. Per-seed:
+>   0.06528, 0.06530, 0.06532, 0.06529, 0.06528.
+
+**Stocks — same-code reproduction, honest gap.** The hyperparameters were run **verbatim** from the official
+`Config/stocks.yaml` (n_layer_enc/dec = 2, d_model = 64, timesteps = 500, l1 loss, cosine β, base_lr 1e-5,
+ema decay 0.995, 10000 epochs, batch 64 — see the paper_reimplementation README). Predictive 0.0371 vs 0.036
+is a bulls-eye, proving the pipeline is correct. Context-FID 0.2024 vs 0.147 and Discriminative 0.0914 vs
+0.067 land slightly above (worse) the paper — a **reproduction gap**, not a hyperparameter error: we score a
+**single** milestone-10 EMA checkpoint and a **single** DDPM draw, whereas the paper reports its best across
+re-sampling. We did **not** re-sample to chase the number (see [1]).
 
 **Heston — read the caveat.** The Heston column (Context-FID 0.031, Correlational ≈ 0, Discriminative 0.000,
-Predictive 0.065) is **not** a super-paper result: Correlational ≈ 0 and Discriminative = 0 are largely
-artifacts of the **univariate, smooth** Heston series (no cross-feature correlations to mismatch; the GRU
-judge cannot separate real from fake on a single time-homogeneous price feature). Context-FID is lower than
-Stocks because one smooth feature is easier to match in TS2Vec space than 6-feature Stocks, and Predictive
-0.065 is the irreducible Heston next-step MAE floor (consistent with A19 ≈ 0.055–0.065 above). Full
+Predictive 0.065) is **not** a super-paper result — three of the four are near-zero for the structural
+reasons [2]–[4] above (univariate ⇒ no cross-feature correlation; smooth ⇒ the GRU judge floors at chance;
+predictive ⇒ irreducible next-step MAE floor, consistent with A19 ≈ 0.055–0.065 above). Context-FID is lower
+than Stocks only because one smooth feature is easier to match in TS2Vec space than 6-feature Stocks. Full
 discussion: [`../../../methods/DiffusionTS/paper_reimplementation/README.md`](../../../methods/DiffusionTS/paper_reimplementation/README.md).
 
 ---

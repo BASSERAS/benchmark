@@ -1279,7 +1279,17 @@ Quick-reference ordering (same as the templates above):
 6. **How to change hyperparameters** — explicit instructions per parameter; how to pass CLI args or edit config
 7. **How to use a different dataset** — required file format (.npy, shape, dtype, scale); which lines to change in the code
 8. **How to produce new seeds** — command to run single seed; command for all 5; where outputs land
-9. **Reproduce** — exact bash commands for: single seed, all seeds, compute metrics
+9. **Reproduce (EXACT run path — mandatory)** — this is not a generic recipe, it is **what we actually
+   ran to produce the committed numbers**. It MUST contain, copy-pasteable and verbatim:
+   - the **exact interpreter path** (e.g. `/home/tbasseras/gpu-venv/bin/python`, not `python`),
+   - any **env vars** actually set (`PYTHONPATH=reference`, `CUDA_VISIBLE_DEVICES=0`, `taskset -c 0-7`,
+     `OMP_NUM_THREADS=8`, `TF_USE_LEGACY_KERAS=1`),
+   - the **precise script file name(s)** invoked, with the exact CLI flags used (`train_heston.py --arch mujoco --seed 0`),
+   - the **exact input file(s) consumed** and **exact output file(s) produced** (path + shape), and
+   - **which output/checkpoint produced which reported number** — e.g. "metrics row X came from
+     `results/generated_paths/seed_0/…npy` scored by `metrics/compute_all.py`; the EMA milestone-10
+     checkpoint `…/checkpoint-10.pt` was used for sampling". A reader must be able to regenerate any single
+     cell of any table without guessing which file or flag was involved.
 10. **Sanity check results** (optional but recommended) — show small-scale test output
 
 ---
@@ -1314,8 +1324,15 @@ the ground-truth templates: `methods/TimeGAN/paper_reimplementation/README.md` a
    - Official code (SBTS): `Dataset | Metric | Ours (official <Method> code) | Paper (Table 1) | Verdict`.
    Bold the primary "Ours" column; Verdict states `matches ✓` / `same regime ✓` with the σ-distance.
    **This is the SAME table that gets copied BELOW the paper-comparison table in the results README (§15.2 Section 6).**
-7. **5. How to reproduce** — exact bash: the reproduce script, GPU pinning (`CUDA_VISIBLE_DEVICES`,
-   `taskset`, `OMP_NUM_THREADS`), seed split across the 2 allowed GPUs.
+7. **5. How to reproduce (EXACT run path — mandatory)** — not a generic recipe but **the exact commands
+   we ran to produce every cell of the §4 table**. Same requirement as §15.3 section 9: verbatim
+   interpreter path, all env vars actually set (incl. `TF_USE_LEGACY_KERAS=1` for the legacy-keras metric
+   env, and the fact that torch metrics run in `gpu-venv` while TF metrics run in `dts-tf-venv`), the
+   precise metric-script file name(s) invoked, GPU pinning (`CUDA_VISIBLE_DEVICES`, `taskset`,
+   `OMP_NUM_THREADS`), seed split across the 2 allowed GPUs, **and which input file each metric scored**
+   (e.g. "Correlational scored `OUTPUT/stock/ddpm_fake_stock.npy` — a single saved draw, hence zero
+   run-to-run variance; the paper re-samples 5× so its ±std is not reproducible from one file"). State
+   which script writes which result JSON, so any reported number is traceable to one file + one command.
 8. **6. Files** — file index of `paper_reimplementation/`: `dataset/`, `metric/`, `results/`, README.
 
 ---
@@ -1397,6 +1414,7 @@ When a new standard is established (new metric, new section format, new B metric
 - 2026-07-19: **Documented the high-MSE / low-%err B anomaly (TimeGAN seed 2, log-return histogram).** MSE = 504.48 (SUM of funct 267.28 + der 100.55 + sec\_der 136.64) yet % err = 32.86%. Cause: seed 2 collapsed the log-return density into a too-tall central peak (gen peak 152.64 vs real 37.53, ≈4×); MSE is an **absolute squared** measure dominated by the few tallest bins (top-5 bins = 89.7% of the sum), while % err is a scale-free **MAPE** averaging bounded per-bin relative errors (median bin rel err 27.69%). High MSE + low % err ⟺ a large absolute mismatch concentrated at a few high-magnitude (peak-density) points. Not a bug — the two aggregations penalise a density-peak collapse differently.
 - 2026-07-19: **Added §16 (Pitfalls — Process Errors to Avoid When Adding a Method).** Captured 5 mechanical/workflow errors made while integrating Fourier Flow (P1–P5) plus a General subsection, so future method additions don't repeat them. None were wrong benchmark numbers — all were file-layout / tool-schema / workflow mistakes.
 - 2026-07-19: **§15.2 Section 6 → canonical 3-column paper-comparison table.** The "Comparison with the paper" section now uses **the paper's own metrics only** (not A1–A34) with one unified table: rows = paper metric, columns = **Paper (published, paper dataset)** | **Ours — <PaperDataset> (paper dataset reimpl)** | **Ours — Heston** (same paper metric applied to our 5-seed Heston pool). The Heston column must come from a committed JSON built by a reusable driver in `paper_reimplementation/metric/` (never hand-typed). Worked FF example (F-score 0.984/0.9920/0.9918; MAE 0.009/0.0084/0.0210). Old two-table form (TimeGAN/SBTS) noted as equivalent, no retrofit required. Added `methods/FourierFlow/paper_reimplementation/metric/heston_paper_metrics.py` + `results/heston_paper_metrics.json` (released `computeF1` + LSTM `computeMAE`, [0,1] MinMax, MAE `MAX_STEPS=127`).
+- 2026-07-20: **§15.3 + §15.3.1 → "EXACT run path" mandate; §16 → P6–P10 (Diffusion-TS lessons).** After integrating Diffusion-TS (4th method), the user flagged that (a) the reproduction table did not match the paper and (b) several Heston metrics printed `0.0000 ± 0.0000` — looking like bugs. Root-caused all as honest artifacts, not code errors: hyperparameters are verbatim-correct vs `Config/stocks.yaml` (gap = single-draw/milestone-10-checkpoint protocol, not config); Correlational ≈ 6×10⁻⁹ on Heston is structural (cross-feature metric on a single feature — `tril_indices(1,1)`); Discriminative = exact 0 (degenerate GRU judge on smooth univariate); Predictive std ≈ 2×10⁻⁵ is a noise floor; Stocks Correlational `±0.0000` is a deterministic single-saved-draw re-score (paper re-samples 5×). Fixes: rewrote both Diffusion-TS paper tables to show real magnitudes (sci-notation) + `[1]–[4]` footnotes explaining each near-zero, and to state the hyperparameters-verbatim / protocol-gap framing (user chose "document honestly", no rerun). Strengthened §15.3 §9 and §15.3.1 §7 to REQUIRE the exact interpreter path, env vars, precise script + flags, exact input/output files, and which checkpoint/output produced each reported cell. Added §16 pitfalls P6 (near-zero rounded to 0.0000 reads as bug — show magnitude), P7 (cross-feature metric structurally ~0 on univariate — flag N/A, don't score), P8 (zero variance from re-scoring one saved draw vs re-sampling), P9 (reproduction gap ≠ hyperparameter error — verify config first, attribute to protocol), P10 (Bash cwd not guaranteed repo root).
 
 ---
 
@@ -1428,6 +1446,62 @@ When a new standard is established (new metric, new section format, new B metric
 **What happened:** Stated the required Fact-Forcing Gate facts, then ran a `Read` to double-check an anchor, then issued the first `Edit` — the intervening Read **reset** the gate and the Edit was denied as "stale".
 **Why it's wrong:** The gate requires the 5 facts and the guarded command in the **same turn with no intervening tool call**. Any tool call (even a Read) between the facts and the Edit invalidates them.
 **Cure:** Do all your Reads/inspection FIRST. Only once you have the exact `old_string` anchor in hand, state the 5 facts and issue the `Edit`/`Bash` **immediately**, with nothing in between. If you must Read again, you must restate the facts again afterward.
+
+### P6 — Rounding a genuine near-zero artifact to `0.0000 ± 0.0000` (reads as a hardcoded bug)
+**What happened:** The Diffusion-TS Heston paper-metric table reported Correlational and Discriminative as
+`0.0000 ± 0.0000` and Predictive std as `0.0000`. The user flagged this as "the metric predicts 0 and has
+0 std — there's an issue", because a flat `0.0000 ± 0.0000` is indistinguishable from a placeholder / a
+broken metric that always returns a constant.
+**Why it's wrong:** Rounding hides the magnitude AND the mechanism. The real values were float32 machine
+epsilon (Correlational ≈ 6×10⁻⁹), an exact structural 0 (Discriminative, degenerate judge), and a tight
+noise floor (Predictive std ≈ 2×10⁻⁵) — all legitimate, but the reader can't tell a real ~0 from a bug ~0.
+**Cure:** When a metric is genuinely ~0, **show the real magnitude in scientific notation** (`≈ 6×10⁻⁹`,
+per-seed `1.2×10⁻⁸, 6.0×10⁻⁹, …`) and attach a one-line footnote saying *why* it's ~0 and that it is
+**not** hardcoded. Never let a real near-zero and a placeholder look identical on the page.
+
+### P7 — A cross-feature metric is structurally ~0 on univariate data — flag it, don't score it
+**What happened:** Correlational (`Utils/cross_correlation.CrossCorrelLoss`) returned ~machine-epsilon on
+Heston. Root cause: it measures **cross-FEATURE** correlation; Heston here is `(N, T, 1)` — one feature —
+so `torch.tril_indices(1,1) = [[0],[0]]` selects only feature-with-itself autocorr (≡1.0 for real and
+fake), difference ≡0. It is mathematically incapable of being nonzero on a single feature.
+**Why it's wrong:** Presenting it as a "score Diffusion-TS achieved" implies the method did something well;
+in fact the metric is inapplicable. Same trap for any multivariate-only metric on univariate data.
+**Cure:** Before reporting a metric on Heston, check whether it is *defined* for a single feature. If it
+degenerates by construction (cross-feature corr, cross-asset copula, etc.), mark it **N/A (structural)**
+with the code reason, don't present the epsilon as a competitive result. Verify by reading the metric's
+source (here `code/reference/Utils/cross_correlation.py`), not by trusting the number.
+
+### P8 — Zero run-to-run variance because a "5-run" metric re-scores ONE saved draw
+**What happened:** The Stocks Correlational column showed `± 0.0000` across 5 runs. Cause:
+`compute_torch_metrics.py` loads **one** saved sample file (`OUTPUT/stock/ddpm_fake_stock.npy`) and scores
+it 5×; a deterministic metric on a fixed array yields 5 byte-identical values (ci95 = 0.0). The paper's
+±0.001 comes from **re-sampling** the generator 5 times (5 fresh draws) — a different protocol.
+**Why it's wrong:** A `± 0.0000` next to a paper's `± 0.001` looks like our error bars are fake, when in
+fact we simply didn't resample. It also means the paper's std is *not reproducible* from our one file.
+**Cure:** State explicitly in the reproduce section whether each column comes from **one saved draw**
+(→ zero variance, deterministic) or from **N fresh generator draws** (→ real variance). If you want the
+paper's CI you must re-sample; otherwise document that the zero std is a single-file artifact, not a claim.
+
+### P9 — Reproduction gap is NOT automatically a hyperparameter error
+**What happened:** Diffusion-TS Stocks Context-FID (0.202 vs paper 0.147) and Discriminative (0.091 vs
+0.067) landed worse than the paper; the instinct was "check the hyperparameters". They were already
+verbatim-correct vs the released `Config/stocks.yaml` (verified line by line). The gap was protocol: one
+DDPM draw from one milestone-10 EMA checkpoint vs the paper's best-over-resampling/checkpoint-selection.
+Predictive was a bulls-eye (0.0371 vs 0.036), proving the pipeline was faithful.
+**Why it's wrong:** Chasing a hyperparameter "fix" when the config is already correct wastes time and can
+introduce a real divergence from the paper.
+**Cure:** When a reproduction is close-but-above, (1) diff every hyperparameter against the released config
+first and record that they match, (2) check whether one metric is already exact (evidence the pipeline is
+right), then (3) attribute the residual to draw/checkpoint-selection **protocol**, and say so honestly.
+Document the gap; do not silently tune to close it (the user chose "document honestly" here).
+
+### P10 — Bash tool cwd is not guaranteed to be the repo root
+**What happened:** `cat results/…json` failed with "No such file or directory" because the Bash tool's
+working directory was not `/home/tbasseras/benchmark`. The relative path only resolves from the repo root.
+**Why it's wrong:** Silent cwd assumptions make read/verify commands fail spuriously and can, worse, write
+to the wrong place.
+**Cure:** Prefix repo-relative commands with `cd /home/tbasseras/benchmark && …`, or use absolute paths.
+Don't assume the shell starts at the repo root.
 
 ### General — applies to every method addition
 - **Verify-before-claim:** every filename, path, CSV header, and metric value written into a README must be read back from the actual artifact (`grep`/`head`/Read), never recalled from memory or copied from a sibling method.
