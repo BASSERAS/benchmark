@@ -15,8 +15,8 @@ For each seed:
 
 After all seeds: writes results/<dataset>/<method>/metrics_summary.csv
 
-All numpy metric functions live in metrics/metrics_np.py.
-B curve metrics are computed by metrics/stylized_metrics.py::compute_curve_metrics.
+All numpy metric functions live in metrics/metrics.py.
+B curve metrics are computed by metrics/metrics.py::compute_curve_metrics.
 """
 
 import json, os, sys, time, warnings
@@ -53,7 +53,7 @@ import torch
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Device: {DEVICE}")
 
-from metrics_np import (
+from metrics import (
     # A1–A6: Distribution (MMD / SWD)
     mmd2, terminal_mmd2, increment_mmd2, volatility_mmd,
     terminal_swd, path_swd,
@@ -78,7 +78,7 @@ from metrics_np import (
 )
 from discriminative_score import compute_discriminative_score
 from predictive_score import compute_predictive_score
-from stylized_metrics import compute_curve_metrics
+from metrics import compute_curve_metrics
 
 import matplotlib
 matplotlib.use("Agg")

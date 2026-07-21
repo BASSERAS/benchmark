@@ -11,10 +11,9 @@ Heston-specific (A33–A34).
 
 | File | Purpose |
 |------|---------|
-| `metrics_np.py` | All NumPy/SciPy metric functions (A1–A17, A20–A34) |
+| `metrics.py` | All NumPy/SciPy metric functions (A1–A17, A20–A34) **and** the B stylized-fact curve metrics — `compute_curve_metrics()` / `aggregate_curve_metrics()` (A18/A19 live in the two PyTorch scorer files below) |
 | `discriminative_score.py` | A18 — post-hoc GRU + MLP classifiers (PyTorch) |
 | `predictive_score.py` | A19 — GRU + MLP predictors, TSTR protocol (PyTorch) |
-| `stylized_metrics.py` | B curve metrics — `compute_curve_metrics()` (18 keys, 6×3) |
 | `compute_all.py` | Orchestrator: A1–A34 + B metrics × N seeds → JSON + CSV + plots |
 | `compute_perfect_recovery.py` | Row-shuffle baseline: all metrics on permuted real data (floor) |
 | `recompute_curve_b.py` | Recomputes `curve_b_aggregate.json` (per-plot combined B scores) |
@@ -627,7 +626,7 @@ For each plot the three sub-metrics are combined into a single number:
 | Rolling vol hist. | `B_roll_vol_hist_*` | Density of rolling-5 vol over shared bins |
 | Tail survival | `B_tail_surv_*` | $P(\|r\| > x)$ at thresholds of real $\|r\|$ |
 
-All 18 keys (× 2 measures) are computed by `stylized_metrics.compute_curve_metrics(S_real, S_gen)`.
+All 36 keys (18 MSE + 18 %, i.e. 6 plots × 3 sub-metrics × 2 measures) are computed by `metrics.compute_curve_metrics(S_real, S_gen)`.
 `recompute_curve_b.py` aggregates them into the per-plot combined scores read by the READMEs.
 The perfect recovery floor for all B metrics is **0** (row-shuffled real data has identical curves).
 

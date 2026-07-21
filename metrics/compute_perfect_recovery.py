@@ -36,7 +36,7 @@ REPO       = os.path.dirname(SCRIPT_DIR)
 sys.path.insert(0, SCRIPT_DIR)
 
 # ── imports ───────────────────────────────────────────────────────────────────
-from metrics_np import (
+from metrics import (
     # A1–A6: distribution (MMD / SWD)
     mmd2, terminal_mmd2, increment_mmd2, volatility_mmd,
     terminal_swd, path_swd,
@@ -56,7 +56,7 @@ from metrics_np import (
     qq_rmse, tail_qq_error, rolling_vol_ks, vol_of_vol_error,
     terminal_ks, hill_tail_index_error,
 )
-from stylized_metrics import compute_curve_metrics
+from metrics import compute_curve_metrics
 
 # ── constants ─────────────────────────────────────────────────────────────────
 N_SEEDS = 5

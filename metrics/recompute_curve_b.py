@@ -8,7 +8,7 @@ into the two-subline (MSE / % error) summary shown in the READMEs.
 
 It:
   1. loads the real Heston S matrix and each seed's generated paths,
-  2. calls stylized_metrics.compute_curve_metrics (36 keys: MSE + % per plot),
+  2. calls metrics.compute_curve_metrics (36 keys: MSE + % per plot),
   3. overwrites the B_* keys in each results/<dataset>/<method>/seed_i_metrics.json,
   4. rebuilds metrics_summary.csv from the (updated) seed JSONs, and
   5. prints the per-plot aggregate table (aggregate_curve_metrics) for the README.
@@ -29,7 +29,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO       = os.path.dirname(SCRIPT_DIR)
 sys.path.insert(0, SCRIPT_DIR)
 
-from stylized_metrics import compute_curve_metrics, aggregate_curve_metrics, CURVE_PLOTS
+from metrics import compute_curve_metrics, aggregate_curve_metrics, CURVE_PLOTS
 
 DATASET = "Heston"
 

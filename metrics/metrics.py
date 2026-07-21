@@ -44,11 +44,27 @@ Vol
 Heston Spec
   A33  Teacher-Sigma Correlation  (Heston-specific)
   A34  Teacher-Sigma RMSE  (Heston-specific)
+
+B curve-shape metrics  (this same file, bottom section)
+  6 diagnostic plots × 3 sub-metrics (funct / der / sec_der) × 2 error variants
+  (MSE / %), computed by compute_curve_metrics and aggregated by
+  aggregate_curve_metrics. "B" refers exclusively to these stylized-fact CURVES —
+  there are no legacy scalar B metrics; the old scalar shape metrics were absorbed
+  into A25–A34 above.
+
+  Stylized-facts framework: Cont R. (2001) "Empirical properties of asset
+    returns: stylized facts and statistical issues." Quantitative Finance
+    1(2), 223–236.
+  ACF sub-metrics: Ding Z., Granger C.W.J., Engle R.F. (1993) "A long memory
+    property of stock market returns and a new model." Journal of Empirical
+    Finance 1(1), 83–106 (|r| autocorrelation); Bollerslev T. (1986)
+    "Generalized Autoregressive Conditional Heteroskedasticity." Journal of
+    Econometrics 31(3), 307–327 (r² autocorrelation).
 """
 
 import numpy as np
 from scipy.stats import wasserstein_distance, kurtosis, ks_2samp, skew as scipy_skew
-from typing import Callable, Tuple
+from typing import Callable, Dict, Tuple
 
 
 # ======================================================================
@@ -804,4 +820,276 @@ __all__ = [
     "vol_of_vol_error",
     "terminal_ks",
     "hill_tail_index_error",
+    # B curve-shape metrics (6 plots × 3 sub-metrics × 2 variants)
+    "compute_curve_metrics",
+    "aggregate_curve_metrics",
+    "CURVE_PLOTS",
 ]
+
+
+# ======================================================================
+# B curve-shape metrics
+# 6 diagnostic plots × 3 sub-metrics (funct / der / sec_der) × 2 error
+# variants (MSE / %), computed by compute_curve_metrics and aggregated by
+# aggregate_curve_metrics.  Each plot's real vs. generated curve is built on
+# shared evaluation points so every number can be visually verified against
+# the PNG diagnostic figure.  See the module docstring for paper references
+# (Cont 2001; Ding/Granger/Engle 1993; Bollerslev 1986).
+# ======================================================================
+
+# ── curve helpers ─────────────────────────────────────────────────────
+
+def _log_returns(S: np.ndarray) -> np.ndarray:
+    """(N, T) price paths → (N, T-1) log-returns  r_{i,t} = log(S_{i,t+1}/S_{i,t})."""
+    return np.log(np.maximum(S[:, 1:], 1e-10) / np.maximum(S[:, :-1], 1e-10))
+
+
+def _rolling_vol(S: np.ndarray, window: int = 5) -> np.ndarray:
+    """(N, T) → (N, T-window) rolling std of log-returns over a sliding window."""
+    R = _log_returns(S)                # (N, T-1)
+    T1 = R.shape[1]
+    cols = [R[:, t - window + 1: t + 1].std(axis=1)
+            for t in range(window - 1, T1)]
+    return np.stack(cols, axis=1)     # (N, T-1-(window-1))
+
+
+def _acf_mean(X: np.ndarray, lag: int) -> float:
+    """Mean cross-path ACF at a given lag.  X : (N, T)."""
+    X_c = X - X.mean(axis=1, keepdims=True)
+    var = (X_c ** 2).mean(axis=1)
+    cov = (X_c[:, lag:] * X_c[:, :-lag]).mean(axis=1)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        r = np.where(var > 0, cov / var, 0.0)
+    return float(r.mean())
+
+
+# ── Curve-shape B metrics  (6 plots × 3 sub-metrics × 2 variants) ──────
+#
+# For each of the 6 diagnostic plots we build a 1-D curve L from the real data and
+# a matching curve L_gen from the generated data on the SAME evaluation points, so
+# the two are directly comparable point-by-point. From each pair we derive three
+# sub-metrics — on the curve itself, its 1st finite difference, and its 2nd finite
+# difference — under two error measures:
+#
+#   MSE      : mean( (L_real - L_gen)^2 )                        (absolute, units²)
+#   % error  : mean( |L_gen - L_real| / (|L_real| + 1e-6) ) * 100   (relative, %)
+#
+# The two families are computed identically; only the point-wise discrepancy
+# differs (squared difference vs. relative absolute difference).
+
+# Registry of the 6 plots: (key prefix, human-readable name). Used by the
+# aggregator and by every downstream README so future methods stay consistent.
+CURVE_PLOTS = [
+    ("B_log_ret_hist",  "Log-return histogram"),
+    ("B_qq_plot",       "QQ plot"),
+    ("B_acf_abs_r",     "ACF |r|"),
+    ("B_acf_sq_r",      "ACF r²"),
+    ("B_roll_vol_hist", "Rolling vol histogram"),
+    ("B_tail_surv",     "Tail survival"),
+]
+
+_CURVE_SUBS = ("funct", "der", "sec_der")
+
+
+def _curve_scores(L_r: np.ndarray, L_g: np.ndarray) -> Dict[str, float]:
+    """Six sub-scores for one (real, generated) curve pair.
+
+    Returns a dict with keys
+        funct_mse, der_mse, sec_der_mse         (MSE variant)
+        funct_pct, der_pct, sec_der_pct         (percentage-error variant, %)
+
+    where
+        funct   compares L                         (the curve itself)
+        der     compares diff(L)                   diff[k]  = L[k+1] - L[k]
+        sec_der compares diff2(L)                  diff2[k] = diff[k+1] - diff[k]
+
+    MSE(a, b)  = mean( (a - b)^2 )
+    PCT(a, b)  = mean( |b - a| / (|a| + 1e-6) ) * 100    (mean absolute
+                 percentage error over the curve's points; the mean already
+                 divides by the number of points — ONE division, a proper MAPE.
+                 |·| in the denominator keeps it a magnitude percentage even
+                 where the real curve is negative, e.g. an ACF that dips below 0).
+    """
+    def _mse(a: np.ndarray, b: np.ndarray) -> float:
+        return float(np.mean((a - b) ** 2))
+
+    def _pct(a: np.ndarray, b: np.ndarray) -> float:
+        # mean absolute percentage error over the curve's points (ONE division:
+        # np.mean already sums and divides by the number of points)
+        return float(np.mean(np.abs(b - a) / (np.abs(a) + 1e-6)) * 100.0)
+
+    d_r,  d_g  = np.diff(L_r),  np.diff(L_g)
+    dd_r, dd_g = np.diff(d_r),  np.diff(d_g)
+    return {
+        "funct_mse":   _mse(L_r,  L_g),
+        "der_mse":     _mse(d_r,  d_g),
+        "sec_der_mse": _mse(dd_r, dd_g),
+        "funct_pct":   _pct(L_r,  L_g),
+        "der_pct":     _pct(d_r,  d_g),
+        "sec_der_pct": _pct(dd_r, dd_g),
+    }
+
+
+def _emit(out: Dict[str, float], prefix: str, scores: Dict[str, float]) -> None:
+    """Write the 6 sub-scores of one plot into the flat output dict.
+
+    MSE keys keep their historical names (B_<plot>_funct / _der / _sec_der) for
+    backward compatibility; the percentage variant appends _pct.
+    """
+    out[f"{prefix}_funct"]       = scores["funct_mse"]
+    out[f"{prefix}_der"]         = scores["der_mse"]
+    out[f"{prefix}_sec_der"]     = scores["sec_der_mse"]
+    out[f"{prefix}_funct_pct"]   = scores["funct_pct"]
+    out[f"{prefix}_der_pct"]     = scores["der_pct"]
+    out[f"{prefix}_sec_der_pct"] = scores["sec_der_pct"]
+
+
+def compute_curve_metrics(
+    S_real: np.ndarray,
+    S_gen:  np.ndarray,
+    n_bins: int = 100,
+    n_lags: int = 20,
+) -> Dict[str, float]:
+    """Compute the B curve metrics: 6 plots × 3 sub-metrics × 2 variants (36 keys).
+
+    For each diagnostic plot a 1-D curve L is constructed from real and generated
+    data on shared evaluation points, then scored with :func:`_curve_scores`
+    (MSE + percentage error on the curve, its 1st diff and its 2nd diff).
+
+    Output keys per plot ``<prefix>``:
+        <prefix>_funct       <prefix>_der       <prefix>_sec_der        (MSE)
+        <prefix>_funct_pct   <prefix>_der_pct   <prefix>_sec_der_pct    (% error)
+
+    6 plots
+    -------
+    B_log_ret_hist   Empirical histogram density of log-returns at n_bins shared bins
+    B_qq_plot        Quantile function Q(p) at n_bins uniform percentile levels
+    B_acf_abs_r      Mean per-path ACF(|r|, lag) for lag = 1 .. n_lags
+    B_acf_sq_r       Mean per-path ACF(r^2, lag) for lag = 1 .. n_lags
+    B_roll_vol_hist  Histogram density of rolling-5 log-return vol at n_bins shared bins
+    B_tail_surv      Empirical survival P(|r| > x) at n_bins quantile thresholds of real
+
+    This routine is method-agnostic: it only needs the real and generated price
+    matrices, so any future generator can be scored by the same call.
+    """
+    R_real = _log_returns(S_real)   # (N, T-1)
+    R_gen  = _log_returns(S_gen)
+
+    r_r = R_real.ravel()
+    r_g = R_gen.ravel()
+
+    out: Dict[str, float] = {}
+
+    # -- Plot 1: Log-return histogram --
+    # Bins fixed from real data (0.5–99.5th percentile) so L_real is the same
+    # reference curve for every seed regardless of generated distribution width.
+    lo_r, hi_r = np.percentile(r_r, 0.5), np.percentile(r_r, 99.5)
+    edges = np.linspace(lo_r, hi_r, n_bins + 1)
+    density_r, _ = np.histogram(r_r, bins=edges, density=True)
+    density_g, _ = np.histogram(r_g, bins=edges, density=True)
+    _emit(out, "B_log_ret_hist", _curve_scores(density_r, density_g))
+
+    # -- Plot 2: QQ plot --
+    pp = np.linspace(0.005, 0.995, n_bins)
+    q_r = np.quantile(r_r, pp)
+    q_g = np.quantile(r_g, pp)
+    _emit(out, "B_qq_plot", _curve_scores(q_r, q_g))
+
+    # -- Plot 3: ACF of |r| --
+    lags = np.arange(1, n_lags + 1)
+    acf_abs_r = np.array([_acf_mean(np.abs(R_real), lag=int(l)) for l in lags])
+    acf_abs_g = np.array([_acf_mean(np.abs(R_gen),  lag=int(l)) for l in lags])
+    _emit(out, "B_acf_abs_r", _curve_scores(acf_abs_r, acf_abs_g))
+
+    # -- Plot 4: ACF of r^2 --
+    acf_sq_r = np.array([_acf_mean(R_real ** 2, lag=int(l)) for l in lags])
+    acf_sq_g = np.array([_acf_mean(R_gen  ** 2, lag=int(l)) for l in lags])
+    _emit(out, "B_acf_sq_r", _curve_scores(acf_sq_r, acf_sq_g))
+
+    # -- Plot 5: Rolling vol histogram --
+    # Bins fixed from real data so L_real is the same reference curve every seed.
+    rv_r = _rolling_vol(S_real, window=5).ravel()
+    rv_g = _rolling_vol(S_gen,  window=5).ravel()
+    lo_rv, hi_rv = np.percentile(rv_r, 0.5), np.percentile(rv_r, 99.5)
+    edges_rv = np.linspace(lo_rv, hi_rv, n_bins + 1)
+    dens_rv_r, _ = np.histogram(rv_r, bins=edges_rv, density=True)
+    dens_rv_g, _ = np.histogram(rv_g, bins=edges_rv, density=True)
+    _emit(out, "B_roll_vol_hist", _curve_scores(dens_rv_r, dens_rv_g))
+
+    # -- Plot 6: Tail survival --
+    abs_r = np.abs(r_r)
+    abs_g = np.abs(r_g)
+    thresholds = np.quantile(abs_r, np.linspace(0.005, 0.995, n_bins))
+    surv_r = np.array([np.mean(abs_r > t) for t in thresholds])
+    surv_g = np.array([np.mean(abs_g > t) for t in thresholds])
+    _emit(out, "B_tail_surv", _curve_scores(surv_r, surv_g))
+
+    return out
+
+
+def aggregate_curve_metrics(per_seed: list) -> Dict[str, dict]:
+    """Combine per-seed B curve metrics into the per-plot summary shown in READMEs.
+
+    Parameters
+    ----------
+    per_seed : list of dicts, one per seed, each holding the 36 flat keys produced
+               by :func:`compute_curve_metrics`.
+
+    For every plot the three sub-metrics (funct, der, sec_der) are combined into a
+    single per-seed score, then averaged across seeds. The two variants differ:
+
+    MSE variant (sum of the three sub-metrics, quadrature std):
+        combined_per_seed = funct_seed + der_seed + sec_der_seed
+        mean = mean_over_seeds(combined_per_seed)           (= sum of the 3 means)
+        std  = sqrt( var(funct) + var(der) + var(sec_der) ) (sub-metrics combined
+                     in quadrature, per the benchmark spec)
+
+    PCT variant (function-level MAPE on the curve L itself, one division):
+        combined_per_seed = funct_pct_seed                 (= 100*mean(|L_g - L_r|
+                     / (|L_r| + 1e-6)); the derivative/second-derivative MAPE is
+                     NOT averaged in — their near-zero true differences make the
+                     relative error explode into meaningless 10^4-% values)
+        mean = mean_over_seeds(combined_per_seed)
+        std  = std_over_seeds(combined_per_seed)            (direct sample std of the
+                     per-seed function MAPE across seeds)
+
+    Returns
+    -------
+    dict keyed by plot prefix ->
+        {"name": str,
+         "mse": {"mean", "std", "per_seed": [..5..]},
+         "pct": {"mean", "std", "per_seed": [..5..]}}
+
+    Method-agnostic: pass the seed dicts of any generator to render its B table.
+    """
+    agg: Dict[str, dict] = {}
+    for prefix, name in CURVE_PLOTS:
+        row = {"name": name}
+        for variant, suffix in (("mse", ""), ("pct", "_pct")):
+            sub_arrays = {
+                s: np.array([float(d[f"{prefix}_{s}{suffix}"]) for d in per_seed])
+                for s in _CURVE_SUBS
+            }
+            if variant == "mse":
+                # sum of the three sub-metrics; sub-metric stds combined in quadrature
+                combined = (sub_arrays["funct"] + sub_arrays["der"]
+                            + sub_arrays["sec_der"])
+                std = float(np.sqrt(sum(sub_arrays[s].std() ** 2
+                                        for s in _CURVE_SUBS)))
+            else:
+                # curve-level MAPE on the FUNCTION L itself only:
+                #   100 * mean(|L_g - L_r| / (|L_r| + 1e-6))   (one division).
+                # The derivative / second-derivative MAPE is intentionally NOT
+                # averaged in: diff(L) and diff2(L) have near-zero true values,
+                # so their relative error explodes (denominator → 0) and produces
+                # meaningless 10^4-% figures. The reported % error is therefore the
+                # single meaningful percentage — the deviation of the curve itself.
+                combined = sub_arrays["funct"]
+                std = float(combined.std())
+            row[variant] = {
+                "mean": float(combined.mean()),
+                "std":  std,
+                "per_seed": [float(x) for x in combined],
+            }
+        agg[prefix] = row
+    return agg
