@@ -1,0 +1,26 @@
+{
+  "method": "COSCI-GAN",
+  "variant": "C=1 (univariate Heston)",
+  "seed": 2,
+  "n_groups": 1,
+  "n_samples": 128,
+  "noise_len": 32,
+  "num_epochs": 120,
+  "batch_size": 32,
+  "gamma": 5.0,
+  "glr": 0.001,
+  "dlr": 0.001,
+  "cdlr": 0.0001,
+  "criterion": "BCE",
+  "LSTM_G": true,
+  "LSTM_D": true,
+  "CD_type": "MLP",
+  "betas": [
+    0.5,
+    0.9
+  ],
+  "hidden_dim": 256,
+  "num_layers": 1,
+  "params": 799618,
+  "epochs_run": 120
+}

@@ -1,0 +1,23 @@
+{
+  "method": "COSCI-GAN",
+  "seed": 3,
+  "shape": [
+    8192,
+    128
+  ],
+  "min_val": 30.565401077270508,
+  "max_val": 162.4270477294922,
+  "generated_mean": 101.2375560507553,
+  "generated_std": 10.1206317636523,
+  "real_mean": 101.32547381502401,
+  "real_std": 9.971659995159825,
+  "gen_sec": 0.0,
+  "train_time_sec": 272.9,
+  "gpu": "A100-SXM4-80GB",
+  "date": "2026-07-21",
+  "params": 799618,
+  "epochs_run": 120,
+  "epochs_max": 120,
+  "first_nan_epoch": null,
+  "gen_has_nan": false
+}
