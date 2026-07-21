@@ -1,0 +1,24 @@
+{
+  "method": "LS4",
+  "seed": 2,
+  "shape": [
+    8192,
+    128
+  ],
+  "min_val": 50.7114372253418,
+  "max_val": 148.60260009765625,
+  "generated_mean": 101.31703186035156,
+  "generated_std": 9.713186264038086,
+  "real_mean": 101.32547381502401,
+  "real_std": 9.971659995159825,
+  "gen_sec": 9.0,
+  "train_time_sec": 948.6,
+  "gpu": "A100-SXM4-80GB",
+  "date": "2026-07-21",
+  "params": 2146857,
+  "epochs_run": 100,
+  "epochs_max": 100,
+  "min_total_loss": -1.0697690807282925,
+  "first_nan_epoch": null,
+  "gen_has_nan": false
+}

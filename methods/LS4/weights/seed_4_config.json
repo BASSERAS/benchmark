@@ -1,0 +1,23 @@
+{
+  "method": "LS4",
+  "variant": "LS4 (released solar_weekly preset)",
+  "seed": 4,
+  "feat_dim": 1,
+  "seq_len": 128,
+  "epochs": 100,
+  "z_dim": 5,
+  "d_state": 64,
+  "d_model": 64,
+  "n_layers": 4,
+  "s4_type": "s4",
+  "latent_type": "split",
+  "batch_size": 128,
+  "lr": 0.001,
+  "weight_decay": 0.0,
+  "ema_lamb": 0.99,
+  "ema_start_step": 200,
+  "scaler": "global_standardize",
+  "scaler_mu": 101.32547381502401,
+  "scaler_sigma": 9.971659995159825,
+  "params": 2146857
+}
