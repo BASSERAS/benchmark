@@ -30,6 +30,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
+import heston_theory as ht  # third reference curve (theory / semi-theory / empirical)
+
 # ── Constants (benchmark standard — do not change per method) ────────────────
 BENCH    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 N_SHOW   = 50      # paths drawn in panels 0 & 1
@@ -39,14 +41,19 @@ VOL_WIN  = 5       # rolling vol window (days)
 RNG_SEED = 42      # fixed for reproducibility across methods
 REAL_COL = "#2196F3"
 GEN_COL  = "#FF5722"
+THEORY_COL = ht.THEORY_COL   # black — third curve on the 6 statistical panels
 DPI      = 120
 
 
 # ── Data loaders ─────────────────────────────────────────────────────────────
 
 def _load_real(dataset: str) -> np.ndarray:
-    """Return real price paths shape (N, T)."""
-    p = os.path.join(BENCH, "dataset", dataset, "heston_S_8192x128.npy")
+    """Return real price paths shape (N, T).
+
+    The 'real' reference is the held-out TEST set (seed 1) — the same reference
+    used by every A/B metric — NOT the seed-0 set the generators trained on.
+    """
+    p = os.path.join(BENCH, "dataset", dataset, "heston_S_test_8192x128.npy")
     return np.load(p)
 
 
@@ -110,6 +117,14 @@ def plot_diagnostics(
     rng    = np.random.default_rng(RNG_SEED)
     N_stat = min(N_STAT, len(S_real), len(S_gen))
 
+    # Fixed third reference curve for the 6 stat panels (theory / semi / empirical).
+    # Method-independent → computed once and cached; missing file → build it now.
+    try:
+        TB = ht.compute_theory_bundle()
+    except Exception as _ex:
+        print(f"  [warn] theory bundle unavailable ({_ex}); plotting without 3rd curve")
+        TB = None
+
     idx_show_r = rng.choice(len(S_real), N_SHOW,  replace=False)
     idx_show_g = rng.choice(len(S_gen),  N_SHOW,  replace=False)
     idx_stat_r = rng.choice(len(S_real), N_stat,  replace=False)
@@ -152,6 +167,10 @@ def plot_diagnostics(
     bins = np.linspace(lo, hi, 80)
     ax.hist(r_flat_r, bins=bins, alpha=0.5, color=REAL_COL, density=True, label="Real")
     ax.hist(r_flat_g, bins=bins, alpha=0.5, color=GEN_COL,  density=True, label=method)
+    if TB is not None:
+        r_line = np.linspace(lo, hi, 400)
+        ax.plot(r_line, ht.logreturn_marginal_pdf(r_line), color=THEORY_COL,
+                lw=1.6, ls="--", label=ht.LABELS["log_ret_hist"])
     ax.set_title("Log-return distribution")
     ax.set_xlabel("log-return"); ax.set_ylabel("density")
     ax.legend(fontsize=8)
@@ -161,11 +180,15 @@ def plot_diagnostics(
     qq_grid = np.linspace(0.005, 0.995, 300)
     q_r = np.quantile(r_flat_r, qq_grid)
     q_g = np.quantile(r_flat_g, qq_grid)
-    ax.scatter(q_r, q_g, s=5, color=GEN_COL, alpha=0.6)
+    ax.scatter(q_r, q_g, s=5, color=GEN_COL, alpha=0.6, label=method)
     lo_ = min(q_r.min(), q_g.min()); hi_ = max(q_r.max(), q_g.max())
-    ax.plot([lo_, hi_], [lo_, hi_], "k--", lw=1, label="y = x (perfect)")
+    ax.plot([lo_, hi_], [lo_, hi_], color="gray", ls=":", lw=1, label="y = x (perfect)")
+    if TB is not None:
+        # theoretical log-return quantiles vs the real (test) quantiles
+        ax.plot(q_r, TB["qq_theory"], color=THEORY_COL, lw=1.6, ls="--",
+                label=ht.LABELS["qq"])
     ax.set_title("QQ plot — generated vs real log-returns")
-    ax.set_xlabel("Real quantiles"); ax.set_ylabel("Gen quantiles")
+    ax.set_xlabel("Real quantiles"); ax.set_ylabel("Gen / theory quantiles")
     ax.legend(fontsize=8)
 
     # ── [2, 0]  ACF of |log-returns| ─────────────────────────────────────────
@@ -174,6 +197,9 @@ def plot_diagnostics(
             color=REAL_COL, marker="o", ms=3, label="Real")
     ax.plot(lags, _acf_mean(np.abs(R_gen),  ACF_LAGS),
             color=GEN_COL,  marker="o", ms=3, label=method)
+    if TB is not None:
+        ax.plot(TB["lags"], TB["acf_abs"], color=THEORY_COL, lw=1.6, ls="--",
+                marker="s", ms=2.5, label=ht.LABELS["acf_abs"])
     ax.axhline(0, color="gray", lw=0.5, ls="--")
     ax.set_title("ACF of |log-returns|  (volatility clustering)")
     ax.set_xlabel("Lag (days)"); ax.set_ylabel("ACF")
@@ -185,6 +211,9 @@ def plot_diagnostics(
             color=REAL_COL, marker="o", ms=3, label="Real")
     ax.plot(lags, _acf_mean(R_gen  ** 2, ACF_LAGS),
             color=GEN_COL,  marker="o", ms=3, label=method)
+    if TB is not None:
+        ax.plot(TB["lags"], TB["acf_sq"], color=THEORY_COL, lw=1.6, ls="--",
+                marker="s", ms=2.5, label=ht.LABELS["acf_sq"])
     ax.axhline(0, color="gray", lw=0.5, ls="--")
     ax.set_title("ACF of squared log-returns  (GARCH effect)")
     ax.set_xlabel("Lag (days)"); ax.set_ylabel("ACF")
@@ -198,6 +227,10 @@ def plot_diagnostics(
     bins_v = np.linspace(0, hi_v, 60)
     ax.hist(vol_r, bins=bins_v, alpha=0.5, color=REAL_COL, density=True, label="Real")
     ax.hist(vol_g, bins=bins_v, alpha=0.5, color=GEN_COL,  density=True, label=method)
+    if TB is not None:
+        m = TB["rvol_grid"] <= hi_v
+        ax.plot(TB["rvol_grid"][m], TB["rvol_dens"][m], color=THEORY_COL,
+                lw=1.6, ls="--", label=ht.LABELS["rolling_vol"])
     ax.set_title(f"Rolling volatility  (window={VOL_WIN} days)")
     ax.set_xlabel("rolling std of log-returns"); ax.set_ylabel("density")
     ax.legend(fontsize=8)
@@ -213,6 +246,10 @@ def plot_diagnostics(
     mask    = (surv_r > 0) & (surv_g > 0)
     ax.plot(1 - qq_tail[mask], surv_r[mask], color=REAL_COL, label="Real")
     ax.plot(1 - qq_tail[mask], surv_g[mask], color=GEN_COL,  label=method)
+    if TB is not None:
+        mt = TB["tail_surv"] > 0
+        ax.plot(TB["tail_oneminusq"][mt], TB["tail_surv"][mt], color=THEORY_COL,
+                lw=1.6, ls="--", label=ht.LABELS["tail_surv"])
     ax.set_xscale("log"); ax.set_yscale("log")
     ax.set_title("Tail survival — terminal price S_T  (log-log)")
     ax.set_xlabel("1 − quantile"); ax.set_ylabel("P(S_T > threshold)")

@@ -863,19 +863,27 @@ def _acf_mean(X: np.ndarray, lag: int) -> float:
     return float(r.mean())
 
 
-# ── Curve-shape B metrics  (6 plots × 3 sub-metrics × 2 variants) ──────
+# ── Curve-shape B metrics  (6 plots × 3 sub-metrics × 3 measures) ──────
 #
 # For each of the 6 diagnostic plots we build a 1-D curve L from the real data and
 # a matching curve L_gen from the generated data on the SAME evaluation points, so
 # the two are directly comparable point-by-point. From each pair we derive three
-# sub-metrics — on the curve itself, its 1st finite difference, and its 2nd finite
-# difference — under two error measures:
+# sub-metrics — on the curve itself (funct), its 1st finite difference (der), and
+# its 2nd finite difference (sec_der) — under THREE error measures:
 #
-#   MSE      : mean( (L_real - L_gen)^2 )                        (absolute, units²)
-#   % error  : mean( |L_gen - L_real| / (|L_real| + 1e-6) ) * 100   (relative, %)
+#   MSE   : mean( (L_gen - L_real)^2 )                              (absolute, units²)
+#   %err  : mean( |L_gen - L_real| / (|L_real| + eps) ) * 100       (relative, %)
+#           scale-aware epsilon floor  eps = 1e-3 * (|L_real|.max() + 1e-12).
+#           The floor is a fixed fraction of the curve's largest magnitude, so the
+#           denominator can never collapse to ~0 (as a bare |L_real| would where the
+#           curve crosses zero, e.g. on der/sec_der). This makes the percentage
+#           meaningful on ALL three sub-metrics, not just the curve itself.
+#   NRMSE : sqrt(mean((L_gen - L_real)^2)) / (|L_real|.max() - |L_real|.min()) * 100
+#           range-normalised RMSE (%), scale-free and comparable across plots.
 #
-# The two families are computed identically; only the point-wise discrepancy
-# differs (squared difference vs. relative absolute difference).
+# All three measures are computed identically point-by-point; only the discrepancy
+# functional differs. For every plot the three sub-metrics (funct, der, sec_der)
+# are combined into ONE number PER MEASURE by taking their MEAN (mean-of-3).
 
 # Registry of the 6 plots: (key prefix, human-readable name). Used by the
 # aggregator and by every downstream README so future methods stay consistent.
@@ -892,56 +900,72 @@ _CURVE_SUBS = ("funct", "der", "sec_der")
 
 
 def _curve_scores(L_r: np.ndarray, L_g: np.ndarray) -> Dict[str, float]:
-    """Six sub-scores for one (real, generated) curve pair.
+    """Nine sub-scores for one (real, generated) curve pair.
 
     Returns a dict with keys
-        funct_mse, der_mse, sec_der_mse         (MSE variant)
-        funct_pct, der_pct, sec_der_pct         (percentage-error variant, %)
+        funct_mse,   der_mse,   sec_der_mse     (MSE measure)
+        funct_pct,   der_pct,   sec_der_pct     (scale-aware %-error measure, %)
+        funct_nrmse, der_nrmse, sec_der_nrmse   (range-normalised RMSE, %)
 
     where
         funct   compares L                         (the curve itself)
         der     compares diff(L)                   diff[k]  = L[k+1] - L[k]
         sec_der compares diff2(L)                  diff2[k] = diff[k+1] - diff[k]
 
-    MSE(a, b)  = mean( (a - b)^2 )
-    PCT(a, b)  = mean( |b - a| / (|a| + 1e-6) ) * 100    (mean absolute
-                 percentage error over the curve's points; the mean already
-                 divides by the number of points — ONE division, a proper MAPE.
-                 |·| in the denominator keeps it a magnitude percentage even
-                 where the real curve is negative, e.g. an ACF that dips below 0).
+    MSE(a, b)   = mean( (b - a)^2 )
+    PCT(a, b)   = mean( |b - a| / (|a| + eps) ) * 100,   eps = 1e-3*(|a|.max()+1e-12)
+                  Scale-aware epsilon floor (Prop 1): the denominator is floored at a
+                  fixed fraction of the curve's largest magnitude, so it can never
+                  collapse to ~0 where the real curve crosses zero (der/sec_der).
+    NRMSE(a, b) = sqrt(mean((b - a)^2)) / (|a|.max() - |a|.min() + 1e-12) * 100
+                  Range-normalised RMSE in % (Prop 2): scale-free, comparable across
+                  plots and across the curve / its derivatives.
     """
     def _mse(a: np.ndarray, b: np.ndarray) -> float:
-        return float(np.mean((a - b) ** 2))
+        return float(np.mean((b - a) ** 2))
 
     def _pct(a: np.ndarray, b: np.ndarray) -> float:
-        # mean absolute percentage error over the curve's points (ONE division:
-        # np.mean already sums and divides by the number of points)
-        return float(np.mean(np.abs(b - a) / (np.abs(a) + 1e-6)) * 100.0)
+        # scale-aware epsilon floor: eps is a fixed fraction of the curve's peak
+        # magnitude, so the relative error never explodes where a ~ 0.
+        eps = 1e-3 * (np.abs(a).max() + 1e-12)
+        return float(np.mean(np.abs(b - a) / (np.abs(a) + eps)) * 100.0)
+
+    def _nrmse(a: np.ndarray, b: np.ndarray) -> float:
+        rng = np.abs(a).max() - np.abs(a).min() + 1e-12
+        rmse = np.sqrt(np.mean((b - a) ** 2))
+        return float(rmse / rng * 100.0)
 
     d_r,  d_g  = np.diff(L_r),  np.diff(L_g)
     dd_r, dd_g = np.diff(d_r),  np.diff(d_g)
     return {
-        "funct_mse":   _mse(L_r,  L_g),
-        "der_mse":     _mse(d_r,  d_g),
-        "sec_der_mse": _mse(dd_r, dd_g),
-        "funct_pct":   _pct(L_r,  L_g),
-        "der_pct":     _pct(d_r,  d_g),
-        "sec_der_pct": _pct(dd_r, dd_g),
+        "funct_mse":     _mse(L_r,  L_g),
+        "der_mse":       _mse(d_r,  d_g),
+        "sec_der_mse":   _mse(dd_r, dd_g),
+        "funct_pct":     _pct(L_r,  L_g),
+        "der_pct":       _pct(d_r,  d_g),
+        "sec_der_pct":   _pct(dd_r, dd_g),
+        "funct_nrmse":   _nrmse(L_r,  L_g),
+        "der_nrmse":     _nrmse(d_r,  d_g),
+        "sec_der_nrmse": _nrmse(dd_r, dd_g),
     }
 
 
 def _emit(out: Dict[str, float], prefix: str, scores: Dict[str, float]) -> None:
-    """Write the 6 sub-scores of one plot into the flat output dict.
+    """Write the 9 sub-scores of one plot into the flat output dict.
 
     MSE keys keep their historical names (B_<plot>_funct / _der / _sec_der) for
-    backward compatibility; the percentage variant appends _pct.
+    backward compatibility; the %-error measure appends _pct and the NRMSE
+    measure appends _nrmse.
     """
-    out[f"{prefix}_funct"]       = scores["funct_mse"]
-    out[f"{prefix}_der"]         = scores["der_mse"]
-    out[f"{prefix}_sec_der"]     = scores["sec_der_mse"]
-    out[f"{prefix}_funct_pct"]   = scores["funct_pct"]
-    out[f"{prefix}_der_pct"]     = scores["der_pct"]
-    out[f"{prefix}_sec_der_pct"] = scores["sec_der_pct"]
+    out[f"{prefix}_funct"]         = scores["funct_mse"]
+    out[f"{prefix}_der"]           = scores["der_mse"]
+    out[f"{prefix}_sec_der"]       = scores["sec_der_mse"]
+    out[f"{prefix}_funct_pct"]     = scores["funct_pct"]
+    out[f"{prefix}_der_pct"]       = scores["der_pct"]
+    out[f"{prefix}_sec_der_pct"]   = scores["sec_der_pct"]
+    out[f"{prefix}_funct_nrmse"]   = scores["funct_nrmse"]
+    out[f"{prefix}_der_nrmse"]     = scores["der_nrmse"]
+    out[f"{prefix}_sec_der_nrmse"] = scores["sec_der_nrmse"]
 
 
 def compute_curve_metrics(
@@ -950,15 +974,17 @@ def compute_curve_metrics(
     n_bins: int = 100,
     n_lags: int = 20,
 ) -> Dict[str, float]:
-    """Compute the B curve metrics: 6 plots × 3 sub-metrics × 2 variants (36 keys).
+    """Compute the B curve metrics: 6 plots × 3 sub-metrics × 3 measures (54 keys).
 
     For each diagnostic plot a 1-D curve L is constructed from real and generated
     data on shared evaluation points, then scored with :func:`_curve_scores`
-    (MSE + percentage error on the curve, its 1st diff and its 2nd diff).
+    (MSE + scale-aware %-error + range-normalised RMSE on the curve, its 1st diff
+    and its 2nd diff).
 
     Output keys per plot ``<prefix>``:
-        <prefix>_funct       <prefix>_der       <prefix>_sec_der        (MSE)
-        <prefix>_funct_pct   <prefix>_der_pct   <prefix>_sec_der_pct    (% error)
+        <prefix>_funct         <prefix>_der         <prefix>_sec_der         (MSE)
+        <prefix>_funct_pct     <prefix>_der_pct     <prefix>_sec_der_pct     (%err)
+        <prefix>_funct_nrmse   <prefix>_der_nrmse   <prefix>_sec_der_nrmse   (NRMSE)
 
     6 plots
     -------
@@ -1032,61 +1058,60 @@ def aggregate_curve_metrics(per_seed: list) -> Dict[str, dict]:
 
     Parameters
     ----------
-    per_seed : list of dicts, one per seed, each holding the 36 flat keys produced
+    per_seed : list of dicts, one per seed, each holding the 54 flat keys produced
                by :func:`compute_curve_metrics`.
 
-    For every plot the three sub-metrics (funct, der, sec_der) are combined into a
-    single per-seed score, then averaged across seeds. The two variants differ:
+    For every plot and every measure (MSE, %err, NRMSE) the three sub-metrics
+    (funct, der, sec_der) are combined into a single per-seed score by taking their
+    MEAN (mean-of-3), then averaged across seeds:
 
-    MSE variant (sum of the three sub-metrics, quadrature std):
-        combined_per_seed = funct_seed + der_seed + sec_der_seed
-        mean = mean_over_seeds(combined_per_seed)           (= sum of the 3 means)
-        std  = sqrt( var(funct) + var(der) + var(sec_der) ) (sub-metrics combined
-                     in quadrature, per the benchmark spec)
-
-    PCT variant (function-level MAPE on the curve L itself, one division):
-        combined_per_seed = funct_pct_seed                 (= 100*mean(|L_g - L_r|
-                     / (|L_r| + 1e-6)); the derivative/second-derivative MAPE is
-                     NOT averaged in — their near-zero true differences make the
-                     relative error explode into meaningless 10^4-% values)
+        combined_per_seed = mean( funct_seed, der_seed, sec_der_seed )
         mean = mean_over_seeds(combined_per_seed)
-        std  = std_over_seeds(combined_per_seed)            (direct sample std of the
-                     per-seed function MAPE across seeds)
+        std  = std_over_seeds(combined_per_seed)   (direct sample std across seeds)
+
+    The scale-aware %-error floor (eps = 1e-3*|L_real|.max()) keeps the der /
+    sec_der relative errors finite, so — unlike the old function-only MAPE — all
+    three sub-metrics can now be averaged for the %err measure too.
+
+    EXCEPTION — Tail survival: the B_tail_surv curve is evaluated at the real
+    data's own quantile levels, so surv_r is a straight line by construction; its
+    1st derivative is a constant and its 2nd derivative is pure numerical noise
+    (~1e-6). Those degenerate der / sec_der carry no information and their relative
+    errors (%err, NRMSE) explode. For B_tail_surv ONLY, the %err and NRMSE measures
+    are therefore reported from the FUNCTION curve alone (funct-only); its MSE
+    measure still uses the mean-of-3 (MSE does not explode there).
 
     Returns
     -------
     dict keyed by plot prefix ->
         {"name": str,
-         "mse": {"mean", "std", "per_seed": [..5..]},
-         "pct": {"mean", "std", "per_seed": [..5..]}}
+         "mse":   {"mean", "std", "per_seed": [..5..]},
+         "pct":   {"mean", "std", "per_seed": [..5..]},
+         "nrmse": {"mean", "std", "per_seed": [..5..]}}
 
     Method-agnostic: pass the seed dicts of any generator to render its B table.
     """
     agg: Dict[str, dict] = {}
     for prefix, name in CURVE_PLOTS:
         row = {"name": name}
-        for variant, suffix in (("mse", ""), ("pct", "_pct")):
+        for measure, suffix in (("mse", ""), ("pct", "_pct"), ("nrmse", "_nrmse")):
             sub_arrays = {
                 s: np.array([float(d[f"{prefix}_{s}{suffix}"]) for d in per_seed])
                 for s in _CURVE_SUBS
             }
-            if variant == "mse":
-                # sum of the three sub-metrics; sub-metric stds combined in quadrature
-                combined = (sub_arrays["funct"] + sub_arrays["der"]
-                            + sub_arrays["sec_der"])
-                std = float(np.sqrt(sum(sub_arrays[s].std() ** 2
-                                        for s in _CURVE_SUBS)))
-            else:
-                # curve-level MAPE on the FUNCTION L itself only:
-                #   100 * mean(|L_g - L_r| / (|L_r| + 1e-6))   (one division).
-                # The derivative / second-derivative MAPE is intentionally NOT
-                # averaged in: diff(L) and diff2(L) have near-zero true values,
-                # so their relative error explodes (denominator → 0) and produces
-                # meaningless 10^4-% figures. The reported % error is therefore the
-                # single meaningful percentage — the deviation of the curve itself.
+            if prefix == "B_tail_surv" and measure in ("pct", "nrmse"):
+                # tail_surv's survival curve is linear-by-construction (evaluated at
+                # the real data's own quantile levels), so its der/sec_der are
+                # degenerate and their relative errors explode. Report the FUNCTION
+                # curve only for the %err and NRMSE measures (MSE keeps mean-of-3).
                 combined = sub_arrays["funct"]
-                std = float(combined.std())
-            row[variant] = {
+            else:
+                # mean-of-3: combine the three sub-metrics by their arithmetic mean,
+                # per seed; std is the direct sample std of that per-seed mean.
+                combined = (sub_arrays["funct"] + sub_arrays["der"]
+                            + sub_arrays["sec_der"]) / 3.0
+            std = float(combined.std())
+            row[measure] = {
                 "mean": float(combined.mean()),
                 "std":  std,
                 "per_seed": [float(x) for x in combined],

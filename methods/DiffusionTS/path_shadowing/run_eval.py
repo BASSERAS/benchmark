@@ -44,7 +44,7 @@ def eval_seed(seed):
 
     t0 = time.time()
 
-    X_real = np.load(os.path.join(BENCH, "dataset/Heston/heston_S_8192x128.npy"))
+    X_real = np.load(os.path.join(BENCH, "dataset/Heston/heston_S_test_8192x128.npy"))
     X_fake = np.load(os.path.join(
         BENCH, f"methods/DiffusionTS/generated_paths/seed_{seed}"
                f"/generated_paths_8192x128.npy"
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     sys.path.insert(0, PS_DIR)
     from path_shadowing import naive_baseline
 
-    X_real = np.load(os.path.join(BENCH, "dataset/Heston/heston_S_8192x128.npy"))
+    X_real = np.load(os.path.join(BENCH, "dataset/Heston/heston_S_test_8192x128.npy"))
     print(f"Real data: {X_real.shape}  prefix={PREFIX_LEN}  K={K}")
 
     baseline = naive_baseline(X_real, prefix_len=PREFIX_LEN)

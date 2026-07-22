@@ -2,12 +2,22 @@
 """
 compute_perfect_recovery.py
 ───────────────────────────
-Row-shuffle baseline: treats a row-permuted copy of the real dataset as
-"generated" and evaluates the full metric suite (A1–A34 + B curve metrics).
+Independent-draw FLOOR: treats a fresh, INDEPENDENT true-Heston draw as the
+"generated" side and scores it against the held-out TEST set (the same "real"
+reference every method is scored against), across the full metric suite
+(A1–A34 + B curve metrics).
 
-This gives the empirical FLOOR for every metric — the best a generative
-model could score given finite-sample estimation noise.  The time dimension
-is never touched; only the path-index order is permuted.
+Because both sides are genuine Heston samples from the identical SDE — but drawn
+with *independent* RNG seeds — the resulting scores are the genuine finite-sample
+noise floor: the best any generative model could achieve given 8192 paths. This
+replaces the earlier row-shuffle baseline (which reused the *same* samples in a
+permuted order and therefore understated cross-sample sampling noise).
+
+Split (identical to metrics/compute_all.py):
+  • "real" reference for A1–A17 / A20–A34 / B  = TEST set (seed 1)
+  • A18 / A19 judge "real" class               = DISC set (seed 2)
+  • "generated" side                           = independent Heston draw
+                                                 (seed 1000+i for seed i)
 
 Usage
 ─────
@@ -58,29 +68,37 @@ from metrics import (
 )
 from metrics import compute_curve_metrics
 
+# independent Heston draws for the "generated" side of the floor
+sys.path.insert(0, os.path.join(REPO, "dataset", "Heston"))
+from generate_heston import generate_heston   # noqa: E402
+
 # ── constants ─────────────────────────────────────────────────────────────────
 N_SEEDS = 5
 N_SUB   = 1024   # subsample for O(N²) MMD/SWD (A1–A6)
 DATASET = "Heston"
+IND_SEED_BASE = 1000   # independent-draw seed = IND_SEED_BASE + i (distinct from 0/1/2)
 
 
 def compute_one_seed(
-    S_real: np.ndarray,    # (N, T)  full real dataset — "real" side
-    S_shuf: np.ndarray,    # (N, T)  row-shuffled real — "generated" side
-    v_shuf: np.ndarray,    # (N, T)  true variance for S_shuf rows (A33 sigma corr)
+    S_real: np.ndarray,    # (N, T)  TEST set — "real" reference (A1-A17/A20-A34/B)
+    S_gen:  np.ndarray,    # (N, T)  independent Heston draw — "generated" side
+    v_gen:  np.ndarray,    # (N, T)  true variance of S_gen (A33/A34 sigma corr)
+    S_disc: np.ndarray,    # (N, T)  DISC set (seed 2) — A18/A19 judge "real" class
     seed:   int,
     run_pytorch: bool = True,
     device: str = "cuda",
 ) -> dict:
-    """Compute A1–A34 + B curve metrics between S_real ("real") and S_shuf ("generated")."""
+    """Compute A1–A34 + B curve metrics between the TEST set ("real") and an
+    independent Heston draw ("generated"). A18/A19 judge the independent draw
+    against the DISC set, exactly as metrics/compute_all.py does for methods."""
     N = len(S_real)
     real3 = S_real[:, :, None]   # (N, T, 1)
-    fake3 = S_shuf[:, :, None]   # (N, T, 1)
+    fake3 = S_gen[:, :, None]    # (N, T, 1)
 
     out: dict = {"seed": seed}
 
     # ── subsample for O(N²) MMD/SWD ────────────────────────────────────────────
-    rng   = np.random.default_rng(seed + 100)   # independent from shuffle rng
+    rng   = np.random.default_rng(seed + 100)   # independent from draw rng
     idx_r = rng.choice(N, size=min(N_SUB, N), replace=False)
     idx_f = rng.choice(N, size=min(N_SUB, N), replace=False)
     R = real3[idx_r]
@@ -88,6 +106,7 @@ def compute_one_seed(
 
     lr_real = np.diff(np.log(np.maximum(real3, 1e-10)), axis=1)   # (N, T-1, 1)
     lr_fake = np.diff(np.log(np.maximum(fake3, 1e-10)), axis=1)
+    lr_disc = np.diff(np.log(np.maximum(S_disc, 1e-10)), axis=1)  # (N, T-1) judge "real"
 
     # ── Fat Tail (A1–A5) ──────────────────────────────────────────────────────
     out["A1_kurtosis_error"]      = float(return_kurtosis_error(real3, fake3))
@@ -113,7 +132,7 @@ def compute_one_seed(
     # ── Adversarial (A18): discriminative score (GRU + MLP) ────────────────────
     if run_pytorch:
         from discriminative_score import compute_discriminative_score
-        lr_a = lr_real.squeeze(-1)
+        lr_a = lr_disc                    # DISC set (seed 2) — judge "real" class
         lr_b = lr_fake.squeeze(-1)
         d18 = compute_discriminative_score(lr_a, lr_b, n_steps=2000, device=device)
         out["A18_disc_score_gru"] = float(d18["disc_score_gru"])
@@ -125,7 +144,7 @@ def compute_one_seed(
     # ── Predictive (A19): TSTR predictive score (GRU + MLP) ────────────────────
     if run_pytorch:
         from predictive_score import compute_predictive_score
-        lr_a = lr_real.squeeze(-1)
+        lr_a = lr_disc                    # DISC set (seed 2) — judge "real" class
         lr_b = lr_fake.squeeze(-1)
         d19 = compute_predictive_score(lr_a, lr_b, n_steps=5000, device=device)
         out["A19_pred_score_gru"] = float(d19["pred_score_gru"])
@@ -152,13 +171,13 @@ def compute_one_seed(
     out["A32_vol_of_vol_error"]   = float(vol_of_vol_error(real3, fake3))
 
     # ── Heston Spec (A33–A34): teacher-sigma ──────────────────────────────────
-    corr_ts, rmse_ts = teacher_sigma_metrics(fake3, v_shuf)
+    corr_ts, rmse_ts = teacher_sigma_metrics(fake3, v_gen)
     out["A33_sigma_corr"] = float(corr_ts)
     out["A34_sigma_rmse"] = float(rmse_ts)
 
     # ── B curve metrics (6 plots × 3 sub-metrics) ─────────────────────────────
     print("  B curve metrics ...", end=" ", flush=True)
-    curve = compute_curve_metrics(S_real, S_shuf)
+    curve = compute_curve_metrics(S_real, S_gen)
     out.update(curve)
     print("done")
 
@@ -168,33 +187,34 @@ def compute_one_seed(
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--seeds",      type=int, default=N_SEEDS,
-                        help="Number of row-shuffle seeds (default 5)")
+                        help="Number of independent-draw seeds (default 5)")
     parser.add_argument("--no-pytorch", action="store_true",
-                        help="Skip A13/A14 (no GPU needed, fast)")
+                        help="Skip A18/A19 (no GPU needed, fast)")
     parser.add_argument("--device",     default="cuda",
-                        help="PyTorch device for A13/A14 (default: cuda)")
+                        help="PyTorch device for A18/A19 (default: cuda)")
     args = parser.parse_args()
 
     run_pytorch = not args.no_pytorch
 
-    # ── load real data ─────────────────────────────────────────────────────────
+    # ── load real reference (TEST set, seed 1) + judge set (DISC, seed 2) ───────
     data_dir = os.path.join(REPO, "dataset", DATASET)
-    S_real   = np.load(os.path.join(data_dir, "heston_S_8192x128.npy"))  # (8192, 128)
-    v_real   = np.load(os.path.join(data_dir, "heston_v_8192x128.npy"))  # (8192, 128)
+    S_real   = np.load(os.path.join(data_dir, "heston_S_test_8192x128.npy"))  # (8192, 128)
+    v_real   = np.load(os.path.join(data_dir, "heston_v_test_8192x128.npy"))  # (8192, 128)
+    S_disc   = np.load(os.path.join(data_dir, "heston_S_disc_8192x128.npy"))  # (8192, 128)
     N        = len(S_real)
-    print(f"Loaded {DATASET}: S {S_real.shape}, v {v_real.shape}")
+    print(f"Loaded {DATASET}: TEST S {S_real.shape}, v {v_real.shape}, DISC S {S_disc.shape}")
     if run_pytorch:
-        print("A13/A14 ENABLED (use --no-pytorch to skip)")
+        print("A18/A19 ENABLED (use --no-pytorch to skip)")
     else:
-        print("A13/A14 SKIPPED (--no-pytorch)")
+        print("A18/A19 SKIPPED (--no-pytorch)")
 
     # ── output directory ───────────────────────────────────────────────────────
     out_dir = os.path.join(REPO, "methods", "perfect_recovery", "results")
     os.makedirs(out_dir, exist_ok=True)
 
-    # materialised shuffled datasets (one .npy per seed) — the explicit
-    # "generated" side of the perfect-recovery floor, saved so the baseline is
-    # reproducible from files rather than an on-the-fly permutation.
+    # materialised independent Heston draws (one .npy per seed) — the explicit
+    # "generated" side of the finite-sample floor, saved so the baseline is
+    # reproducible from files rather than regenerated on the fly.
     seeds_dir = os.path.join(REPO, "methods", "perfect_recovery", "dataset", "seeds")
     os.makedirs(seeds_dir, exist_ok=True)
 
@@ -205,19 +225,20 @@ def main():
         t0 = time.time()
         print(f"\n--- Seed {seed} ---")
 
-        rng    = np.random.default_rng(seed)
-        idx    = rng.permutation(N)
-        S_shuf = S_real[idx]   # same distribution, different row order
-        v_shuf = v_real[idx]   # matching oracle variance (same permutation)
+        # independent true-Heston draw (fresh RNG seed, identical SDE params)
+        draw_seed = IND_SEED_BASE + seed
+        S_gen, v_gen = generate_heston(n_samples=N, seq_len=S_real.shape[1], seed=draw_seed)
+        S_gen = np.asarray(S_gen); v_gen = np.asarray(v_gen)
 
-        # persist the shuffled dataset for this seed (S and matching variance)
-        np.save(os.path.join(seeds_dir, f"heston_S_shuffled_seed{seed}.npy"), S_shuf)
-        np.save(os.path.join(seeds_dir, f"heston_v_shuffled_seed{seed}.npy"), v_shuf)
+        # persist the independent draw for this seed (S and matching variance)
+        np.save(os.path.join(seeds_dir, f"heston_S_independent_seed{seed}.npy"), S_gen)
+        np.save(os.path.join(seeds_dir, f"heston_v_independent_seed{seed}.npy"), v_gen)
 
         d = compute_one_seed(
             S_real      = S_real,
-            S_shuf      = S_shuf,
-            v_shuf      = v_shuf,
+            S_gen       = S_gen,
+            v_gen       = v_gen,
+            S_disc      = S_disc,
             seed        = seed,
             run_pytorch = run_pytorch,
             device      = args.device,

@@ -88,10 +88,20 @@ from sklearn.manifold import TSNE
 
 
 def load_data():
-    S = np.load(os.path.join(DATASET_DIR, "heston_S_8192x128.npy"))   # (8192, 128)
-    v = np.load(os.path.join(DATASET_DIR, "heston_v_8192x128.npy"))   # (8192, 128)
+    # "real" reference for ALL metrics/plots = the held-out TEST set (seed 1),
+    # independent of the seed-0 set the generators were trained on.
+    S = np.load(os.path.join(DATASET_DIR, "heston_S_test_8192x128.npy"))   # (8192, 128)
+    v = np.load(os.path.join(DATASET_DIR, "heston_v_test_8192x128.npy"))   # (8192, 128)
     # Note: file names are dataset-specific; update for new datasets
     return S, v
+
+
+def load_disc():
+    """Independent judge set (seed 2), used ONLY as the 'real' class for the A18
+    discriminative score and the A19 predictive-TSTR test set — a third Heston
+    draw, distinct from both the training (seed 0) and test (seed 1) sets, so the
+    adversarial/predictive judges never see the exact reference used elsewhere."""
+    return np.load(os.path.join(DATASET_DIR, "heston_S_disc_8192x128.npy"))   # (8192, 128)
 
 
 def load_generated(seed: int) -> np.ndarray:
@@ -101,7 +111,8 @@ def load_generated(seed: int) -> np.ndarray:
     return np.load(path)   # (8192, 128)
 
 
-def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray) -> dict:
+def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray,
+                             S_disc: np.ndarray) -> dict:
     print(f"\n=== Seed {seed} ===")
     fake = load_generated(seed)   # (8192, 128)
 
@@ -124,6 +135,10 @@ def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray) -> dict:
     _lr_fake_3d = np.diff(np.log(fake3), axis=1)
     _lr_S       = _lr_real_3d.squeeze(-1)                 # (N, T-1) for GRU/MLP
     _lr_F       = _lr_fake_3d.squeeze(-1)
+    # A18/A19 use the independent judge set (seed 2) as their 'real' class, NOT
+    # the test set — so the adversarial/predictive judges score against a Heston
+    # draw distinct from every reference used by the A1–A17/A20–A34 + B metrics.
+    _lr_disc    = np.diff(np.log(S_disc), axis=1)         # (N, T-1)
     import csv
 
     # ── Fat Tail (A1–A5) ──────────────────────────────────────────────────────
@@ -166,7 +181,7 @@ def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray) -> dict:
 
     # ── Adversarial (A18) — Discriminative Score on log-returns (GRU + MLP) ────
     print("  A18 discriminative (GRU + MLP) ...", flush=True)
-    d18 = compute_discriminative_score(_lr_S, _lr_F, n_steps=2000, device=DEVICE)
+    d18 = compute_discriminative_score(_lr_disc, _lr_F, n_steps=2000, device=DEVICE)
     results["A18_disc_score_gru"] = d18["disc_score_gru"]
     results["A18_disc_score_mlp"] = d18["disc_score_mlp"]
     print(f"       GRU={d18['disc_score_gru']:.4f}  MLP={d18['disc_score_mlp']:.4f}")
@@ -178,7 +193,7 @@ def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray) -> dict:
 
     # ── Predictive (A19) — TSTR Predictive Score on log-returns (GRU + MLP) ────
     print("  A19 predictive TSTR (GRU + MLP) ...", flush=True)
-    d19 = compute_predictive_score(_lr_S, _lr_F, n_steps=5000, device=DEVICE)
+    d19 = compute_predictive_score(_lr_disc, _lr_F, n_steps=5000, device=DEVICE)
     results.update({f"A19_{k}": v for k, v in d19.items()
                     if not k.startswith("loss_history")})
     print(f"       GRU={d19['pred_score_gru']:.4f}  MLP={d19['pred_score_mlp']:.4f}")
@@ -282,12 +297,14 @@ def save_plots(seed: int, S: np.ndarray, fake: np.ndarray):
 
 def main():
     S, v = load_data()
+    S_disc = load_disc()
     print(f"Real data: {S.shape}  min={S.min():.2f}  max={S.max():.2f}")
+    print(f"Disc judge data (seed 2): {S_disc.shape}")
 
     all_results = []
     for seed in range(N_SEEDS):
         try:
-            res = compute_metrics_for_seed(seed, S, v)
+            res = compute_metrics_for_seed(seed, S, v, S_disc)
             out_path = os.path.join(RESULTS_DIR, f"seed_{seed}_metrics.json")
             with open(out_path, "w") as f:
                 json.dump(res, f, indent=2)

@@ -13,8 +13,9 @@ It:
   4. rebuilds metrics_summary.csv from the (updated) seed JSONs, and
   5. prints the per-plot aggregate table (aggregate_curve_metrics) for the README.
 
-For method == "perfect_recovery" the "generated" side is a row-shuffled copy of
-the real dataset (same permutation rng as compute_perfect_recovery.py, seed=i).
+The real reference is the held-out TEST set (seed 1). For method ==
+"perfect_recovery" the "generated" side is the materialised independent
+Heston draw for that seed (written by compute_perfect_recovery.py).
 
 Usage
 ─────
@@ -36,13 +37,14 @@ DATASET = "Heston"
 
 def load_real():
     d = os.path.join(REPO, "dataset", DATASET)
-    return np.load(os.path.join(d, "heston_S_8192x128.npy"))
+    return np.load(os.path.join(d, "heston_S_test_8192x128.npy"))   # TEST set (seed 1)
 
 
 def load_generated(method, seed, S_real):
     if method == "perfect_recovery":
-        rng = np.random.default_rng(seed)
-        return S_real[rng.permutation(len(S_real))]
+        p = os.path.join(REPO, "methods", "perfect_recovery", "dataset",
+                         "seeds", f"heston_S_independent_seed{seed}.npy")
+        return np.load(p)
     p = os.path.join(REPO, "methods", method, "generated_paths",
                      f"seed_{seed}", "generated_paths_8192x128.npy")
     return np.load(p)
@@ -111,12 +113,14 @@ def main():
     print(f"\n===== {args.method}  B curve-shape aggregate =====")
     for prefix, name in CURVE_PLOTS:
         row = agg[prefix]
-        m, p = row["mse"], row["pct"]
+        m, p, n = row["mse"], row["pct"], row["nrmse"]
         print(f"\n{name}")
-        print(f"  MSE  {m['mean']:.6g} ± {m['std']:.6g}   "
+        print(f"  MSE   {m['mean']:.6g} ± {m['std']:.6g}   "
               f"seeds=[{', '.join(f'{x:.6g}' for x in m['per_seed'])}]")
-        print(f"  %err {p['mean']:.6g} ± {p['std']:.6g}   "
+        print(f"  %err  {p['mean']:.6g} ± {p['std']:.6g}   "
               f"seeds=[{', '.join(f'{x:.6g}' for x in p['per_seed'])}]")
+        print(f"  NRMSE {n['mean']:.6g} ± {n['std']:.6g}   "
+              f"seeds=[{', '.join(f'{x:.6g}' for x in n['per_seed'])}]")
 
     # machine-readable dump for README rendering
     dump = os.path.join(rdir, "curve_b_aggregate.json")

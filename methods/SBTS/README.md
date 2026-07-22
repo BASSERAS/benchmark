@@ -63,7 +63,7 @@ See [`code/README.md`](code/README.md) for source, original paper, and implement
 
 > **Convention:** ↓ lower is better; ↑ higher is better; — no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
 > **A1**: |kurt_real − kurt_gen| on log-returns. **A2–A3**: 95th/99th quantile error on |log-returns| — near-floor (SBTS reproduces marginal tail quantiles well; the deficiency is in tail *shape*, see A5). **A4**: QQ error restricted to top-5% tail quantiles — near-floor. **A5 Hill ≈ 9.5** (floor 0): kernel smoothing systematically attenuates tail heaviness — SBTS's main fat-tail weakness.
-> **A6–A11**: path-kernel distances (MMD² on paths / terminal / increments / realized-vol; sliced-Wasserstein on terminal & full paths). Non-zero perfect floor (row-shuffle keeps joint path structure).
+> **A6–A11**: path-kernel distances (MMD² on paths / terminal / increments / realized-vol; sliced-Wasserstein on terminal & full paths). Non-zero perfect floor (an independent Heston draw scored against the test set — finite-sample noise).
 > **A12**: W₁(RV_real, RV_gen) — SBTS produces compressed volatility (smoother → lower RV → distribution shift). **A13**: mean-path RMSE. **A14**: KS on pooled log-returns — small (0.053), stable. **A15**: |skew_real − skew_gen| — small (0.023), SBTS reproduces skew well. **A16**: QQ RMSE (bulk, 300-pt) — near-floor. **A17**: KS on terminal prices S_T — moderate mismatch (0.092).
 > **A18**: Discriminative classifier on log-returns; score = |accuracy − 0.5|. GRU high-variance — 3 of 5 seeds near 0.44 (temporal structure the Markov-1 kernel can't reproduce), 2 seeds near-perfect. MLP (no temporal context) near 0 — marginal moments well matched. **A19**: TSTR MAE; all methods cluster near 0.056–0.059 (irreducible floor).
 > **A20 Cov Error ≈ 145%** (floor 0): SBTS is **Markov-1** — each step only sees the previous state, so multi-step covariance is far weaker than real Heston. Single largest SBTS weakness vs TimeGAN (17.75%). **A21–A22**: ACF error on |r| and r² across lags — close population shape, small kernel-smoothing offset. **A23–A24**: ACF lag-1 error on |r| and r².
@@ -82,7 +82,7 @@ sub-scores into **one number per plot**:
 - **MSE row**: for each list, dᵢ = mean((L_r − L_g)²). Reported mean = m_funct + m_der + m_sec\_der (**sum** of the three seed-means); std = sqrt(s_funct² + s_der² + s_sec\_der²) (**quadrature**).
 - **% err row**: for each list, dᵢ = mean(|L_g − L_r| / (|L_r| + 1e-6)) × 100, a proper MAPE — one division (the mean already averages over the curve's points). Reported value = the **function-level MAPE on the curve L itself** — the derivative / 2nd-derivative MAPE is **excluded** because diff(L)/diff2(L) have near-zero true values, so their relative error explodes into meaningless 10⁴-% figures. mean/std = mean and **sample std across the 5 seeds** of that per-seed function MAPE.
 
-All ↓ lower is better. Perfect floor = 0 for all six plots (row-shuffled real data has identical curves).
+All ↓ lower is better. The perfect floor is **non-zero** for all six plots — it is the residual finite-sample error of an independent Heston draw scored against the test set, identical across methods.
 Two sublines per plot: **MSE** and **% error** (the per-seed columns hold that seed's combined score).
 
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect |

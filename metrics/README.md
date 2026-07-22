@@ -15,7 +15,7 @@ Heston-specific (A33–A34).
 | `discriminative_score.py` | A18 — post-hoc GRU + MLP classifiers (PyTorch) |
 | `predictive_score.py` | A19 — GRU + MLP predictors, TSTR protocol (PyTorch) |
 | `compute_all.py` | Orchestrator: A1–A34 + B metrics × N seeds → JSON + CSV + plots |
-| `compute_perfect_recovery.py` | Row-shuffle baseline: all metrics on permuted real data (floor) |
+| `compute_perfect_recovery.py` | Independent-draw floor: all metrics on a fresh Heston draw (seed 1000+i) scored against the test set |
 | `recompute_curve_b.py` | Recomputes `curve_b_aggregate.json` (per-plot combined B scores) |
 
 ## Run
@@ -628,7 +628,7 @@ For each plot the three sub-metrics are combined into a single number:
 
 All 36 keys (18 MSE + 18 %, i.e. 6 plots × 3 sub-metrics × 2 measures) are computed by `metrics.compute_curve_metrics(S_real, S_gen)`.
 `recompute_curve_b.py` aggregates them into the per-plot combined scores read by the READMEs.
-The perfect recovery floor for all B metrics is **0** (row-shuffled real data has identical curves).
+The perfect-recovery floor for all B metrics is **non-zero** — the residual finite-sample error of an independent Heston draw scored against the test set, identical across methods.
 
 > Ref: Cont (2001), *Quantitative Finance* 1, 223–236.
 

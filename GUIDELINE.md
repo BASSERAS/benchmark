@@ -290,6 +290,27 @@ cd metrics
 /home/tbasseras/gpu-venv/bin/python compute_all.py --method <Method> --dataset Heston --seeds 5
 ```
 
+### 5.0 Data split — "test set everywhere"
+
+The 8192×128 Heston dataset is drawn under **three disjoint seeds**, and each seed has exactly **one fixed
+role** for the whole benchmark:
+
+| Role | Seed | Used as | Scored? |
+|------|------|---------|---------|
+| **train** | seed 0 | the paths the generators were trained on | **never scored** |
+| **test** | seed 1 | the real reference for **A1–A17, A20–A34, all 6 B curves, all diagnostic plots, and PS-MC query prefixes** | yes — this is *the* real set |
+| **disc** | seed 2 | the "real" class for the two **learned** scorers only — **A18** (discriminative) and **A19** (predictive-TSTR) | judge-only |
+
+Rationale: the adversary / forecaster (A18/A19) must never be trained on the same real paths it is later
+asked to tell apart from / forecast against, so it gets its own **disc** seed (seed 2) while everything
+distributional is measured against the held-out **test** seed (seed 1). The five per-method result seeds are
+the **five generated draws** (a method's own seeds 0–4), each scored against this one fixed test set.
+
+**Generators are NOT retrained here.** Because every method's paths are already saved to disk, a metrics run
+only (re)fits the small A18/A19 judge/forecaster networks per seed; all A1–A17/A20–A34/B/plot/PS-MC numbers
+are pure re-scores of the saved paths against the test set. The perfect-recovery floor (§5.4) is a fresh
+**independent** Heston draw (seeds `1000+i`) scored against the same test set.
+
 ### 5.1 Input format expected by `compute_all.py`
 
 | Variable | Path | Shape | Scale |
@@ -372,15 +393,19 @@ variance per path). Ref: Barndorff-Nielsen & Shephard (2002).
 **B — Curve-shape metrics (6 diagnostic plots):**
 
 Each plot yields a **curve** L (a list of values). We build three lists — the curve L, its first finite
-difference L′ (der), and its second finite difference L″ (sec\_der) — and score each list under **two
+difference L′ (der), and its second finite difference L″ (sec\_der) — and score each list under **three
 measures**:
-- **MSE**: dᵢ = mean((L\_real − L\_gen)²) per list.
-- **% err**: dᵢ = mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100 per list.
+- **MSE**: dᵢ = mean((L\_gen − L\_real)²) per list. Decides the winner.
+- **% err**: dᵢ = mean(|L\_gen − L\_real| / (|L\_real| + ε)) × 100 per list — a scale-aware ε-floor MAPE with
+  ε = 1e-3 · (max|L\_real| + 1e-12) (ε keyed to the curve's own scale, not a fixed 1e-6).
+- **NRMSE**: dᵢ = sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100 per list.
 
-The three sub-scores are combined into **one number per plot per measure**: combined mean = sum of the
-three seed-means; combined std = sqrt(std\_funct² + std\_der² + std\_sec\_der²) (quadrature). The raw JSON
-therefore stores 6 keys per plot (funct/der/sec\_der × {mse, pct\_err}); the READMEs display the two
-**combined** measures as two sublines per plot (MSE row + % err row). Aggregation lives in
+The three sub-scores are combined into **one number per plot per measure** by **mean-of-3** (combined mean =
+mean of the three seed-means; combined std = sample std across the 5 seeds). **Exception:** for **Tail
+survival**, the **% err** and **NRMSE** measures use the **funct list only** (the der/sec\_der of a step-like
+survival curve are near-zero and blow the ratios up); its **MSE** stays mean-of-3. The raw JSON stores 9 keys
+per plot (funct/der/sec\_der × {mse, pct\_err, nrmse}); the READMEs display the three **combined** measures as
+three sublines per plot (MSE / % err / NRMSE). Aggregation lives in
 `metrics/metrics.py`; recompute with `metrics/recompute_curve_b.py`.
 
 | Plot | JSON key prefix | Curve description |
@@ -392,14 +417,16 @@ therefore stores 6 keys per plot (funct/der/sec\_der × {mse, pct\_err}); the RE
 | Rolling vol hist. | `B_roll_vol_hist_*` | Density of rolling-5 vol over shared bins |
 | Tail survival | `B_tail_surv_*` | P(\|r\|>x) at thresholds of real \|r\| |
 
-All B metrics ↓ lower is better. **Perfect floor = 0 for all** (row-shuffle preserves every marginal, so
-both the MSE and % err rows are exactly 0). The **% err** row blows up (triple-digit-plus %) wherever the
-real curve passes through near-zero values (empty histogram bins, tail-survival ≈ 0, near-zero ACF lags) —
-expected, a property of the curve, not a bug. Winner between methods is decided by the **MSE** row.
+All B metrics ↓ lower is better. **The perfect floor is non-zero and finite** — it is an independent Heston
+draw (fresh seeds `1000+i`, identical parameters) scored against the test set (§5.4), so every curve carries
+genuine finite-sample noise; no B measure is ever exactly 0. The **% err** row is read against this non-zero
+floor and can still be large (triple-digit %) wherever the real curve passes through near-zero values (empty
+histogram bins, tail-survival ≈ 0, near-zero ACF lags) — expected, a property of the curve, not a bug. Winner
+between methods is decided by the **MSE** row.
 
 Total A-metrics: 36 numbers (A1–A34, with **A18 Discriminative** and **A19 Predictive** each reported ×2
-for their GRU + MLP variants). Total B: 6 plots × 3 sub-metrics × 2 measures.
-Winner is by MSE; the two combined measures (MSE, % err) are what the READMEs display per plot.
+for their GRU + MLP variants). Total B: 6 plots × 3 sub-metrics (funct / der / sec_der) × 3 measures.
+Winner is by MSE; the three combined measures (MSE, % err, NRMSE) are what the READMEs display per plot.
 
 ### 5.3 Output files
 
@@ -424,35 +451,39 @@ python metrics/plot_diagnostics.py --method <Method> --dataset Heston --seed 0
 |------|---------|
 | `results/Heston/<Method>/plots/heston_diagnostics.png` | 8-panel stylised facts (50 sample paths, see §7.1) |
 
-### 5.4 Perfect-Recovery Floor (reproducible, full-shuffle)
+### 5.4 Perfect-Recovery Floor (independent-draw, non-zero)
 
-The perfect-recovery floor answers: *what would each metric read if the generator were perfect?* It is
-computed by **row-shuffling** the real dataset — `S_perfect = S_real[rng.permutation(N)]` — which preserves
-every column-wise marginal exactly, so the "generated" set is statistically identical to the real set.
-Under this construction all B-metrics and every marginal A-metric collapse to 0; the only non-zero floors
-are finite-sample noise on path-kernel metrics (A6–A11 MMD/SWD), the learned scores (A18/A19), and the
-Heston sigma-correlation metrics (A33 Corr ≈ 0.614, A34 RMSE ≈ 0.065).
+The perfect-recovery floor answers: *what would each metric read if the generator were a perfect Heston
+simulator?* It is computed by drawing a **fresh, independent Heston sample** — new seeds `1000+i`
+(`IND_SEED_BASE = 1000`, `i = 0…4`), identical model parameters — and scoring that draw against the **test
+set** (seed 1) exactly as any generator is scored. The two datasets are statistically identical in
+distribution but are **different finite samples**, so every metric reads a genuine **non-zero finite-sample
+noise floor**. This is *not* a row-shuffle and *not* a permutation of the real data; nothing collapses to 0.
 
-Run it once per dataset with the **reproducible** script (fixed seed, 5-seed average):
+The floor value shown in each method's `Perfect floor` column is the **mean across the 5 independent-draw
+seeds** (`perfect_floor_a()` / `perfect_floor_curve()` in `render_tables.py`). Because it depends only on the
+test set and the protocol — never on any generator — it is **identical across every method's tables**.
+
+Run it once per dataset with the **reproducible** script (fixed independent seeds, 5-seed average):
 
 ```bash
 python metrics/compute_perfect_recovery.py            # add --no-pytorch to skip A18/A19 (no GPU)
 # Outputs (source of truth for all floor columns):
-#   methods/perfect_recovery/results/metrics_summary.csv    ← A1–A34 floors (mean ± std, 5 shuffles)
-#   methods/perfect_recovery/results/curve_b_aggregate.json ← B floors (all 0)
+#   methods/perfect_recovery/results/metrics_summary.csv    ← A1–A34 floors (mean ± std, 5 independent draws)
+#   methods/perfect_recovery/results/curve_b_aggregate.json ← B floors (non-zero, MSE / %err / NRMSE per plot)
 #   methods/perfect_recovery/results/seed_{0..4}_metrics.json
 ```
 
-**Display rule (current standard — reversed from the old standalone-section rule):**
+**Display rule (current standard):**
 The floor is shown as the **last column** (`Perfect` / `Perfect floor`) of every metric table across the repo:
 `methods/<Method>/README.md`, `results/Heston/<Method>/README.md`, `results/README.md`, and root `README.md`.
-There is **no** standalone `## Perfect Recovery Floor` section any more — it was removed.
+`methods/perfect_recovery/README.md` is the one standalone place that documents the floor in full (it *is* the
+floor, so it carries no floor column of its own).
 
 Because floors are dataset-derived (never method-derived), the `Perfect` column values must be **identical**
-across every method's tables. Copy the A floors from `methods/perfect_recovery/results/metrics_summary.csv`
-and the B floors (all 0) from `curve_b_aggregate.json` — or from an existing method's README.
-`methods/perfect_recovery/` also holds its own README + 5 seed metric JSONs, so the floor is fully
-reproducible, not a hand-typed constant. PS-MC rows (which have no perfect analogue) show `—`.
+across every method's tables. Never hand-type them — regenerate from
+`methods/perfect_recovery/results/*` via `render_tables.py` so they match byte-for-byte. PS-MC rows (which
+have no perfect analogue) show `—`.
 
 ---
 
@@ -613,42 +644,46 @@ row before each group, no exceptions): **Fat Tail → Distribution → Adversari
 skeleton with every category populated.
 
 Rules:
-- 4 decimal places for values < 1; fewer for larger magnitudes (match the style already used in
-  `methods/TimeGAN/README.md` — plain numbers in the Perfect floor column, no bold, no "baseline" text)
+- 4 significant figures for values < 1; fewer for larger magnitudes (match the style produced by
+  `render_tables.py`'s `fmt()` — plain numbers in the Perfect floor column, no bold, no "baseline" text)
 - Include footnotes for A18, A19, and A20–A34 (any non-obvious ID). See §15.1 Section 2 for the exact verbatim footnote block.
 
 #### Section 3 — B Curve-Shape Metrics
 
-Two sublines per plot (MSE row + % err row), each combining funct/der/sec\_der into one number
-(mean = sum, std = quadrature). Last column = Perfect floor (0 for every B plot). Winner is by MSE.
+**Three** sublines per plot (MSE row + % err row + NRMSE row), each combining funct/der/sec\_der into one
+number (mean-of-3). Last column = Perfect floor (non-zero, from the independent draw). Winner is by MSE.
 
 ```markdown
 ## B — Curve-Shape Metrics — mean ± std across 5 seeds
 
 > Each plot yields a **curve** L. For the curve, its 1st diff (der) and 2nd diff (sec\_der) we compute
-> two measures and combine the three sub-scores into one number per measure:
-> - **MSE**: mean((L\_real − L\_gen)²) per sub-metric; combined mean = **sum** of the three, combined
->   std = **quadrature** of the three seed-stds.
-> - **% err**: mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100 per sub-metric — a proper MAPE
->   (ONE division: the mean already averages over the curve's points); combined mean = **mean** of the
->   three, combined std = **sample std across the 5 seeds**.
-> All ↓ lower is better. Perfect floor = 0 for all. Winner is by MSE.
+> three measures and combine the three sub-scores into one number per measure (**mean-of-3**):
+> - **MSE**: mean((L\_gen − L\_real)²) per sub-metric; combined = **mean** of the three. Decides the winner.
+> - **% err**: scale-aware ε-floor MAPE — mean(|L\_gen − L\_real| / (|L\_real| + ε)) × 100 per sub-metric,
+>   with ε = 1e-3 · (max|L\_real| + 1e-12); combined = **mean** of the three.
+> - **NRMSE**: sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100 per sub-metric;
+>   combined = **mean** of the three.
+> **Tail survival** is the one exception: its **% err** and **NRMSE** use the **funct curve only** (the der
+> and sec\_der of a step-like survival curve are near-zero and blow the ratios up); its **MSE** stays mean-of-3.
+> All ↓ lower is better. The Perfect floor is **non-zero** (independent Heston draw vs test set, §5.4).
+> Winner is by MSE.
 
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect |
 |------|---------|-----------|--------|--------|--------|--------|--------|:------:|
-| **Log-return histogram** | MSE   | ... | ... | ... | ... | ... | ... | 0 |
-|                          | % err | ... | ... | ... | ... | ... | ... | 0 |
-| **QQ plot**              | MSE   | ... | | | | | | 0 |
-|                          | % err | ... | | | | | | 0 |
-| ... (ACF \|r\|, ACF r², rolling vol hist., tail survival — same 2 rows each) |
+| **Log-return histogram** | MSE   | ... | ... | ... | ... | ... | ... | ... |
+|                          | % err | ... | ... | ... | ... | ... | ... | ... |
+|                          | NRMSE | ... | ... | ... | ... | ... | ... | ... |
+| **QQ plot**              | MSE   | ... | | | | | | ... |
+|                          | % err | ... | | | | | | ... |
+|                          | NRMSE | ... | | | | | | ... |
+| ... (ACF \|r\|, ACF r², rolling vol hist., tail survival — same 3 rows each) |
 ```
 
-> **Note on the Perfect Recovery floor.** There is **no** standalone `## Perfect Recovery Floor`
-> section. The floor is the **last column** (`Perfect` / `Perfect floor`) of the Section 2 (A1–A34)
-> and Section 3 (B) tables above. Copy the A values from
-> `methods/perfect_recovery/results/metrics_summary.csv` and the B values (all 0) from
-> `curve_b_aggregate.json` (§5.4); they are identical across every method because they are
-> dataset-derived, not method-derived. PS-MC rows show `—`.
+> **Note on the Perfect Recovery floor.** The floor is the **last column** (`Perfect` / `Perfect floor`) of
+> the Section 2 (A1–A34) and Section 3 (B) tables above, and is documented in full at
+> `methods/perfect_recovery/README.md`. Regenerate the A and B floor values from
+> `methods/perfect_recovery/results/*` via `render_tables.py` (§5.4) so they match byte-for-byte; they are
+> identical across every method because they are dataset-derived, not method-derived. PS-MC rows show `—`.
 
 #### Section 4 — Stylised Facts Diagnostic
 
@@ -894,13 +929,13 @@ DOCUMENTATION
   [ ] results/Heston/<Method>/README.md  — metrics table (with Perfect column), per-seed breakdown, observations
   [ ] results/Heston/<Method>/path_shadowing/README.md  — method detail, results, figures
 
-PERFECT RECOVERY FLOOR (reproducible, full-shuffle)
+PERFECT RECOVERY FLOOR (reproducible, independent draw vs test set)
   [ ] methods/perfect_recovery/results/{metrics_summary.csv, curve_b_aggregate.json, seed_*_metrics.json}
        — run: python metrics/compute_perfect_recovery.py   (add --no-pytorch to skip A18/A19)
   [ ] Perfect column added as the LAST column of every A1–A34 and B table in: methods/<Method>/README.md,
        results/Heston/<Method>/README.md, results/README.md, root README.md
-  [ ] Floor values IDENTICAL across all methods (A from metrics_summary.csv, B all 0 from curve_b_aggregate.json);
-       PS-MC rows show "—"
+  [ ] Floor values IDENTICAL across all methods (A + B non-zero, regenerated via render_tables.py from
+       methods/perfect_recovery/results/*); PS-MC rows show "—"
 
 GITHUB
   [ ] All files committed with correct message format
@@ -996,24 +1031,24 @@ A18 Adversarial, A19 Predictive, A20–A24 Temporal, A25–A32 Vol, A33–A34 He
 | ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------------|
 | | **— Fat Tail —** | | | | | | | | | |
-| A1 | Kurtosis Error | Fat Tail | ↓ | X.XXXX ± X.XXXX | ... | 0.017 |
-| A2 | \|r\| q95 Error | Fat Tail | ↓ | ... | 0.0000 |
-| A3 | \|r\| q99 Error | Fat Tail | ↓ | ... | 0.0000 |
-| A4 | Tail QQ Error | Fat Tail | ↓ | ... | 0.0000 |
-| A5 | Hill Tail Index Error | Fat Tail | ↓ | ... | 0.0000 |
+| A1 | Kurtosis Error | Fat Tail | ↓ | X.XXXX ± X.XXXX | ... | 0.008092 |
+| A2 | \|r\| q95 Error | Fat Tail | ↓ | ... | 6.57e-05 |
+| A3 | \|r\| q99 Error | Fat Tail | ↓ | ... | X.XXXX |
+| A4 | Tail QQ Error | Fat Tail | ↓ | ... | X.XXXX |
+| A5 | Hill Tail Index Error | Fat Tail | ↓ | ... | 0.5266 |
 | | **— Distribution —** | | | | | | | | | |
-| A6  | Path MMD²             | Distribution  | ↓ | X.XXXX ± X.XXXX | ... | 0.0018 |
+| A6  | Path MMD²             | Distribution  | ↓ | X.XXXX ± X.XXXX | ... | X.XXXX |
 ...
 | | **— Adversarial —** | | | | | | | | | |
-| A18 GRU | Discriminative Score GRU | Adversarial | ↓ | ... | 0.0000 |
-| A18 MLP | Discriminative Score MLP | Adversarial | ↓ | ... | 0.0000 |
+| A18 GRU | Discriminative Score GRU | Adversarial | ↓ | ... | X.XXXX |
+| A18 MLP | Discriminative Score MLP | Adversarial | ↓ | ... | X.XXXX |
 | | **— Predictive —** | | | | | | | | | |
-| A19 GRU | Predictive Score GRU (TSTR) | Predictive | ↓ | ... | baseline |
-| A19 MLP | Predictive Score MLP (TSTR) | Predictive | ↓ | ... | baseline |
+| A19 GRU | Predictive Score GRU (TSTR) | Predictive | ↓ | ... | X.XXXX |
+| A19 MLP | Predictive Score MLP (TSTR) | Predictive | ↓ | ... | X.XXXX |
 ...
 | | **— Heston Spec —** | | | | | | | | | |
-| A33 | Teacher-Sigma Correlation | Heston Spec | ↑ | ... | 1 |
-| A34 | Teacher-Sigma RMSE | Heston Spec | ↓ | ... | 0 |
+| A33 | Teacher-Sigma Correlation | Heston Spec | ↑ | ... | 0.6163 |
+| A34 | Teacher-Sigma RMSE | Heston Spec | ↓ | ... | 0.06559 |
 
 > **Convention:** ↓ lower is better; ↑ higher is better; — no monotone direction.
 > **A1**: excess kurtosis error of pooled log-returns. **A2–A3**: |r| q95 / q99 tail-quantile errors.
@@ -1034,41 +1069,36 @@ A18 Adversarial, A19 Predictive, A20–A24 Temporal, A25–A32 Vol, A33–A34 He
 ## B — Curve-Shape Metrics — mean ± std across 5 seeds
 
 > Each plot yields a **curve** L (not a scalar). For L, its 1st diff (der) and 2nd diff (sec\_der) we
-> compute two measures and combine the three sub-scores into one number per measure:
-> - **MSE**: mean((L\_real − L\_gen)²) per sub-metric; combined mean = **sum** of the three, combined
->   std = **quadrature** sqrt(std\_funct² + std\_der² + std\_sec\_der²).
-> - **% err**: mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100 per sub-metric — a proper MAPE
->   (ONE division: the mean already averages over the curve's points); combined mean = **mean** of the
->   three, combined std = **sample std across the 5 seeds**.
-> All ↓ lower is better. Perfect floor = 0 for all. Winner is by MSE.
+> compute three measures and combine the three sub-scores into one number per measure (**mean-of-3**):
+> - **MSE**: mean((L\_gen − L\_real)²) per sub-metric; combined = **mean** of the three. Decides the winner.
+> - **% err**: mean(|L\_gen − L\_real| / (|L\_real| + ε)) × 100 per sub-metric, ε = 1e-3 · (max|L\_real| +
+>   1e-12) — a scale-aware ε-floor MAPE; combined = **mean** of the three.
+> - **NRMSE**: sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100 per sub-metric;
+>   combined = **mean** of the three.
+> **Tail survival** exception: its **% err** and **NRMSE** use the **funct curve only**; MSE stays mean-of-3.
+> All ↓ lower is better. The Perfect floor is **non-zero** (independent draw vs test set, §5.4). Winner is by MSE.
 
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect |
 |------|---------|-----------|--------|--------|--------|--------|--------|:------:|
-| **Log-return histogram** | MSE   | X.XX ± X.XX | ... | 0 |
-|                          | % err | XXXXX% ± XXXX% | ... | 0 |
-| **QQ plot**              | MSE   | X.XXe-X ± X.XXe-X | ... | 0 |
-|                          | % err | XXX% ± XX% | ... | 0 |
-| **ACF \|r\| lags 1–20**  | MSE   | X.XXe-X ± X.XXe-X | ... | 0 |
-|                          | % err | XXXX% ± XX% | ... | 0 |
-| **ACF r² lags 1–20**     | MSE   | X.XXe-X ± X.XXe-X | ... | 0 |
-|                          | % err | XXXX% ± XXX% | ... | 0 |
-| **Rolling vol histogram**| MSE   | XXXX ± X.X | ... | 0 |
-|                          | % err | XXX% ± XX% | ... | 0 |
-| **Tail survival**        | MSE   | X.XXe-X ± X.Xe-X | ... | 0 |
-|                          | % err | XXXXX% ± XXX% | ... | 0 |
+| **Log-return histogram** | MSE   | X.XX ± X.XX | ... | X.XX |
+|                          | % err | XXXXX% ± XXXX% | ... | XXX% |
+|                          | NRMSE | XXX% ± XX% | ... | XX% |
+| **QQ plot**              | MSE   | X.XXe-X ± X.XXe-X | ... | X.XXe-X |
+|                          | % err | XXX% ± XX% | ... | XX% |
+|                          | NRMSE | XX% ± XX% | ... | XX% |
+| ... (ACF \|r\|, ACF r², rolling vol hist., tail survival — same 3 rows each) |
 ```
 
-The % err row blows up (triple-digit-plus %) wherever the real curve passes through near-zero values —
-expected, a property of the curve, not a bug.
+The % err row can still be large (triple-digit-plus %) wherever the real curve passes through near-zero
+values — expected, a property of the curve, not a bug.
 
-> **Note on the Perfect Recovery floor.** There is **no** standalone `## Perfect Recovery Floor`
-> section. The floor is the **last column** (`Perfect` / `Perfect floor`) of the Section 2 (A1–A34) and
-> Section 3 (B) tables. Copy the A floors from `methods/perfect_recovery/results/metrics_summary.csv`
-> and the B floors (all 0) from `curve_b_aggregate.json` (§5.4) — they are dataset-derived, so they must
-> be identical across every method's README. If the outputs don't exist yet, generate them once with
-> `python metrics/compute_perfect_recovery.py`. Row-shuffling the real dataset leaves all marginals
-> identical, so all B floors and all marginal A floors are exactly 0; only path-kernel, learned
-> (A18/A19) and Heston-sigma (A33/A34) floors are non-zero finite-sample noise. PS-MC rows show `—`.
+> **Note on the Perfect Recovery floor.** The floor is the **last column** (`Perfect` / `Perfect floor`) of
+> the Section 2 (A1–A34) and Section 3 (B) tables, documented in full at
+> `methods/perfect_recovery/README.md`. Regenerate the A and B floor values from
+> `methods/perfect_recovery/results/*` via `render_tables.py` (§5.4) so they match byte-for-byte — they are
+> dataset-derived (an independent Heston draw scored against the test set), so they are **non-zero** and
+> identical across every method's README. If the outputs don't exist yet, generate them once with
+> `python metrics/compute_perfect_recovery.py`. PS-MC rows show `—`.
 
 #### Sections 4–10 — Stylised Facts → Reproduce
 
@@ -1200,7 +1230,7 @@ Quick-reference ordering (same as the templates above):
 3. **Results (mean ± std across 5 seeds)**
    - Subsection **A1–A34 Core metrics**: full table with columns
      `ID | Metric | Mean ± Std | Seed 0..4 | Perfect` — the **last column is the Perfect floor**
-     (A floors from `methods/perfect_recovery/results/metrics_summary.csv`, B floors all 0, §5.4). Rows
+     (non-zero; regenerated from `methods/perfect_recovery/results/*` via `render_tables.py`, §5.4). Rows
      grouped by category in the mandatory order: **Fat Tail → Distribution → Adversarial → Predictive →
      Temporal → Vol → Heston Spec** (see §15.1).
    - Footnotes for A18, A19, A33, A34 (and any other non-obvious IDs).
@@ -1215,10 +1245,10 @@ Quick-reference ordering (same as the templates above):
    ![Heston Diagnostics](plots/heston_diagnostics.png)
    ```
 
-5. **Curve-shape metrics (B)** — the two-subline B table (MSE row + % err row per plot), each with a
-   trailing `Perfect` column (0 for every plot). Winner is by MSE. Reuse the header blockquote from
-   §15.1 Section 3 (MSE = sum-of-3 / quadrature std; % err = MAPE mean-of-3 / sample-std). The % err row
-   is expected to blow up (triple-digit %) wherever the real curve passes through near-zero values.
+5. **Curve-shape metrics (B)** — the three-subline B table (MSE row + % err row + NRMSE row per plot), each
+   with a trailing `Perfect` column (non-zero for every plot). Winner is by MSE. Reuse the header blockquote
+   from §15.1 Section 3 (all three measures combined mean-of-3; tail-survival % err / NRMSE funct-only). The
+   % err row can still be large (triple-digit %) wherever the real curve passes through near-zero values.
 
 6. **Comparison with the paper** — CANONICAL 3-COLUMN STRUCTURE.
    ⚠️ **This section uses the paper's OWN metrics ONLY** (whatever the paper reports in its results
@@ -1358,11 +1388,11 @@ tables. They must stay in sync with each other and with every method README.
    Winner | Perfect floor`. Rows grouped by category in the mandatory order (Fat Tail → Distribution →
    Adversarial → Predictive → Temporal → Vol → Heston Spec) with a `**— <Category> —**` separator row
    before each group. A18/A19 split into GRU + MLP sublines. **Winner** cell: ↓ smaller wins; ↑ larger
-   wins; A28 Kurtosis Ratio closest-to-1.0 wins. Report the overall win count (`<A> wins X/38,
-   <B> wins Y/38`, counting the A18/A19 GRU+MLP sublines).
+   wins; A28 Kurtosis Ratio closest-to-1.0 wins. Report the overall win count (`<A> wins X/36,
+   <B> wins Y/36`, counting the A18/A19 GRU+MLP sublines).
 3. **B Curve-Shape comparison table** — side-by-side by **MSE** (winner by MSE), each plot with a
-   trailing `Perfect` column (0). Include the two-subline (MSE + % err) description; % err uses the
-   MAPE (mean × 100, one division), mean-of-3, sample-std formula (§8 Section 3). Report B win count (`X/6` MSE each).
+   trailing `Perfect` column (non-zero). Include the three-subline (MSE + % err + NRMSE) description; each
+   measure is mean-of-3 (tail-survival % err / NRMSE funct-only, §8 Section 3). Report B win count (`X/6` MSE each).
 4. **Path Shadowing MC comparison** — H=32 / H=64 × {Uniform, Gaussian} CRPS/MAE/RMSE per method plus
    Naive RW baseline.
 5. **Training / Generation timing** row(s).
@@ -1377,8 +1407,8 @@ tables. They must stay in sync with each other and with every method README.
      `Perfect floor` columns) and fill every row — including the A18/A19 GRU+MLP sublines — from the new
      method's `metrics_summary.csv`. Then **recompute every `Winner` cell** across all method columns
      (↓ smaller wins; ↑ larger wins; A28 Kurtosis Ratio closest-to-1.0 wins) and **update the overall
-     win-count line** (`<A> wins X/38, <B> wins Y/38, <NewMethod> wins Z/38`).
-   - **Table B (Curve-Shape):** insert the new `<NewMethod>` column into every plot's MSE and % err
+     win-count line** (`<A> wins X/36, <B> wins Y/36, <NewMethod> wins Z/36`).
+   - **Table B (Curve-Shape):** insert the new `<NewMethod>` column into every plot's MSE, % err and NRMSE
      sublines from `curve_b_aggregate.json`, then **recompute the by-MSE `Winner`** for each of the 6
      plots and **update the B win-count line** (`X/6` MSE each).
    - Leave the `Perfect` / `Perfect floor` column unchanged (dataset-derived, identical for all methods).
@@ -1427,6 +1457,11 @@ When a new standard is established (new metric, new section format, new B metric
 - 2026-07-20: **CORRECTION to the Discriminative/Predictive Heston = 0 mechanism (root-caused to a metric-code bug, not "smooth data") + §16 P11.** The user challenged: paper Discriminative Heston = 0.0000 contradicts the benchmark's own **A18 GRU judge = 0.262 ± 0.158** on the *same* paths. Systematic debugging found the true root cause: `Utils/discriminative_metric.py` line 74 `hidden_dim = int(dim/2)` → for univariate Heston (`dim = 1`) `int(1/2) = 0` → `GRUCell(num_units=0)` → a **zero-capacity** judge → exactly 0.5 accuracy → `|0.5 − 0.5| = 0` on all 5 seeds (0-std is impossible for a working judge). The **identical** bug is in `Utils/predictive_metric.py` line 52, so Predictive 0.0653 is a constant-mean-output artifact, not a TSTR forecast. On Stocks (6 features) `int(6/2) = 3` works — univariate-specific. **This supersedes the earlier "degenerate GRU judge on smooth univariate" wording** in the 2026-07-20 entry above (that mechanism was wrong — it blamed data smoothness, not the `int(dim/2)=0` collapse). Fix (user chose "do both: document as degenerate AND state our comparable scores", no rerun): corrected notes [3]/[4] + the Heston caveat in **both** `methods/DiffusionTS/paper_reimplementation/README.md` and `results/Heston/DiffusionTS/README.md` to give the true `int(dim/2)=0` mechanism and cite **A18 disc GRU 0.262 ± 0.158 / A19 pred GRU 0.0549 ± 0.0002** (floored `hidden = max(8, n_features·8)`) as the real, comparable numbers; added §16 **P11** (post-hoc judge silently collapses to a zero-capacity network on univariate `dim=1` data — spot via exact-0/0-std + contradiction with another judge; document degeneracy + cite floored-dim judge, patch+rerun only if user asks). **Follow-up (same day):** the user then asked to re-check the *other* paper metrics' code — confirmed by reading + running each that **Correlational** is the SAME univariate degeneracy via a different path (`cacf_torch` + `tril_indices(1,1)` → only the standardized lag-0 self-correlation ≡ 1.0 for any real/fake → `|Δ|/10 = 1.19×10⁻⁸`; empirically real 0.99999905 vs fake 0.99999917), whereas **Context-FID is genuine** (TS2Vec embeds to 320-dim regardless of `input_dims=1`). So of the 4 paper metrics on univariate Heston, **3 degenerate** (Correlational, Discriminative, Predictive), only Context-FID is real. Reframed note [2] + the Correlational cell + Heston caveat in both DiffusionTS READMEs to "degenerate — real: **A21 ACF-abs 0.0201 ± 0.0030**" (the benchmark's temporal-autocorrelation metric, which stays defined on 1 feature), and strengthened §16 **P7** with the empirical proof, the P11 cross-reference, and the "cite the univariate-defined analog (A21/A22/A23)" cure.
 - 2026-07-21: **Added §16 P12–P13 (TimeVQVAE process lessons — workflow ordering, not numbers).** After integrating TimeVQVAE (7th method) the user flagged two ordering errors and asked they be captured in §16: **P12** — racing past the §3.0 paper-reproduction **GATE** straight into the 5 Heston seeds instead of STOPping to show the explicit ours-vs-paper table for sign-off before spending Heston compute (cure: paper-vs-ours table is a hard barrier between Phase 1 reproduce and Phase 2 Heston; if it doesn't match, explain and STOP); **P13** — launching training with a fixed GPU/core layout **without first checking `nvidia-smi` + `htop`** for the actually-free capacity and the measured per-run footprint, so runs either collide with a colleague or under-parallelize (cure: inspect free GPUs/cores first, measure one run's memory/SM, co-locate small runs to reclaim idle capacity, launch in waves within the 2-GPU / 16-core / ~250 GiB limits, verify with `nvidia-smi` + `pgrep -af`). Both are workflow/ordering pitfalls; neither produced a wrong benchmark number. Also completed the TimeVQVAE structure audit (folder tree vs §1 + vs TimeVAE example: no junk tracked; deviations — no `timevqvae_torch.py`, split `stage1/stage2` loss CSVs, verbatim `reference/stage1+stage2` for the paper repro — all documented in the code + paper-reimpl READMEs) and confirmed every scored method's code README carries the §15.3 §9 "Exact run path" table and a `paper_reimplementation/README.md` with exact reference-code links (incl. TimeVAE's `reconstruction_wt` 3.0→8.0 tuning table with honest out-of-[0.5,3.5]-range caveat).
 - 2026-07-21: **Metric modules unified into one `metrics/metrics.py`.** An external reviewer was confused by "B" appearing in two places — the live curve metrics **and** a dead legacy scalar `compute_stylized_metrics` (keys `B1_…`–`B12_…`) that no code imported. Root cause: those scalars had already been renamed into A25–A34, but the orphan function still sat in `stylized_metrics.py`. Fix: merged the B stylized-fact **curve** metrics (`compute_curve_metrics`, `aggregate_curve_metrics`, `CURVE_PLOTS`, `_curve_scores`, `_emit`, `_log_returns`/`_rolling_vol`/`_acf_mean` helpers) into `metrics/metrics.py` (renamed from `metrics_np.py`), **deleted** `metrics/stylized_metrics.py` (and with it the dead scalar B1–B12), and kept the two PyTorch scorers (`discriminative_score.py` A18, `predictive_score.py` A19) as separate files. Paper-reference headers preserved verbatim (Cont 2001; Ding/Granger/Engle 1993; Bollerslev 1986). Importers repointed to `from metrics import …` in `compute_all.py`, `recompute_curve_b.py`, `compute_perfect_recovery.py`. No metric formula, JSON key, or value changed — pure file reorganisation (verified: `py_compile` clean, all imports resolve, smoke test returns 36 curve keys + 6 plots). "B" now unambiguously means the 6 stylized-fact curves only. Updated §5 (three-file list + naming note) and §5.2/§15 filename references; historical changelog entries above keep their original `metrics_np.py`/`stylized_metrics.py` names (accurate for their date).
+- 2026-07-22: **Test-set-everywhere split protocol + independent-draw floor + 3-subline B tables + `render_tables.py` as sole renderer.** Three coupled standard changes, all recomputed for the full 9-method suite and rebuilt in every README from disk:
+  1. **Split protocol — "test set everywhere" (new §5.0).** The 8192×128 Heston dataset is drawn under three disjoint seeds and each has ONE fixed role: **train = seed 0** (generators were trained on it; it is NEVER scored), **test = seed 1** (the real reference every A1–A17/A20–A34, every B curve, every plot, and PS-MC query-prefix is measured against), **disc = seed 2** (supplies the "real" class for the two learned scorers ONLY — A18 discriminative and A19 predictive-TSTR — so the adversary/forecaster never touches the test set it is judged on). Generators are NOT retrained: since the paths are saved, only A18/A19's small judge/forecaster networks are (re)fit per seed. All five per-method result seeds are the five generated draws scored against this one test set.
+  2. **Perfect floor → independent draw, non-zero (§5.4 rewrite).** The floor is no longer a row-shuffle/permutation of the real data (which forced marginals to 0). It is a **fresh independent Heston draw** — new seeds `1000+i` (`IND_SEED_BASE = 1000`), identical parameters — scored against the test set exactly like a generator. Every A and B floor is therefore a genuine **non-zero finite-sample noise floor**; the column value is the **mean across the 5 independent-draw seeds** (`perfect_floor_a()`/`perfect_floor_curve()`), identical across all methods. `methods/perfect_recovery/README.md` documents it in full and is the one place with no floor column of its own.
+  3. **B tables → 3 sublines (MSE / % err / NRMSE), each mean-of-3.** Added **NRMSE** = sqrt(mean((L_gen−L_real)²))/(max|L_real|−min|L_real|+1e-12)×100. **% err** switched to a **scale-aware ε-floor MAPE** with ε = 1e-3·(max|L_real|+1e-12) (was the fixed `+1e-6`). All three measures combine funct/der/sec_der by **mean-of-3** (winner still decided by MSE). **Tail survival** is the one exception: its % err and NRMSE use the **funct curve only** (der/sec_der of a step-like survival curve blow the ratios up); its MSE stays mean-of-3. Raw JSON now stores 9 keys per plot (funct/der/sec_der × {mse, pct_err, nrmse}).
+  4. **`metrics/render_tables.py` is the single source of truth for every table.** `--method <M>` prints the per-method markdown A/B/PS tables; `--which A|B|PS` prints the family-grouped HTML comparison tables + win-count comments. All numbers use its `fmt()` (4 sig-figs / sci-notation) so every README matches byte-for-byte — values are regenerated, never hand-typed. Current win-counts: **A of 36** — LS4 26, Fourier Flow 4, CSDI 3, Diffusion-TS 2, TimeVAE 1, others 0; **B of 6 (MSE)** — LS4 5, CSDI 1. Updated §5.2, §5.4, §8 Section 2–3, §13 checklist, §15.1 Section 2–3, §15.2, §15.4 (win-count denominator corrected 38 → 36).
 
 ---
 
