@@ -299,8 +299,9 @@ def render_PS():
         if sums[m] is not None:
             base = sums[m]["baseline"]
             break
+    floor = perfect_floor_psmc()
     wins = {m: 0 for m in METHOD_NAMES}
-    out = [header_html("Metric", ["RW baseline", "Winner"])]
+    out = [header_html("Metric", ["RW baseline", "Perfect", "Winner"])]
     for h in (32, 64):
         means = [psmc_crps(sums[m], h)[0] for m in METHOD_DIRS]
         stds  = [psmc_crps(sums[m], h)[1] for m in METHOD_DIRS]
@@ -312,7 +313,9 @@ def render_PS():
         for i in range(len(METHOD_DIRS)):
             row.append(cell(ms(means[i], stds[i]), bold=(i == wi)))
         bval = fmt(base[f"CRPS_h{h}"]) if base else "—"
-        row.append(f'<td>{bval}</td><td><b>{win_name}</b></td></tr>')
+        pf = floor.get(h) if floor else None
+        pval = ms(pf[0], pf[1]) if pf else "—"
+        row.append(f'<td>{bval}</td><td>{pval}</td><td><b>{win_name}</b></td></tr>')
         out.append("".join(row))
     out += ["</tbody>", "</table>"]
     return "\n".join(out), wins
@@ -372,6 +375,22 @@ def perfect_floor_curve():
     return json.load(open(pp)) if os.path.exists(pp) else None
 
 
+def perfect_floor_psmc():
+    """PS-MC CRPS floor from an independent perfect-recovery draw scored against
+    the TEST set. Returns {h: (mean, std)} for h in {32, 64}, or None if absent."""
+    p = os.path.join(REPO, "methods", "perfect_recovery", "results",
+                     "path_shadowing", "summary.json")
+    if not os.path.exists(p):
+        return None
+    s = json.load(open(p))
+    out = {}
+    for h in (32, 64):
+        key = f"h{h}_CRPS_uniform"
+        if key in s and s[key] is not None:
+            out[h] = (s[key]["mean"], s[key]["std"])
+    return out or None
+
+
 def render_method_A_md(method):
     """Per-seed A table (markdown) for one method."""
     stats = load_a_stats(method)
@@ -419,11 +438,14 @@ def render_method_PS_md(method):
     if s is None:
         return "_(no path-shadowing results)_"
     base = s["baseline"]
-    lines = ["| Metric | Value (mean ± std) | RW baseline |",
-             "|--------|--------------------|-------------|"]
+    floor = perfect_floor_psmc()
+    lines = ["| Metric | Value (mean ± std) | RW baseline | Perfect floor |",
+             "|--------|--------------------|-------------|---------------|"]
     for h in (32, 64):
         m, sd = psmc_crps(s, h)
-        lines.append(f"| PS-MC CRPS H={h} ↓ | {ms(m, sd)} | {fmt(base[f'CRPS_h{h}'])} |")
+        pf = floor.get(h) if floor else None
+        pval = ms(pf[0], pf[1]) if pf else "—"
+        lines.append(f"| PS-MC CRPS H={h} ↓ | {ms(m, sd)} | {fmt(base[f'CRPS_h{h}'])} | {pval} |")
     return "\n".join(lines)
 
 

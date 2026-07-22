@@ -222,6 +222,7 @@ carries genuine forecast information beyond the marginal variance.
     <th>Schrödinger Bridge</th>
     <th>Fourier Flow</th>
     <th rowspan="2">RW baseline</th>
+    <th rowspan="2">Perfect</th>
     <th rowspan="2">Winner</th>
   </tr>
   <tr>
@@ -237,8 +238,8 @@ carries genuine forecast information beyond the marginal variance.
   </tr>
 </thead>
 <tbody>
-  <tr><td>PS-MC CRPS H=32 ↓</td><td>3.085 ± 0.3332</td><td>4.657 ± 0.7720</td><td>2.717 ± 0.002200</td><td>2.718 ± 0.003646</td><td>3.912 ± 0.07154</td><td>2.779 ± 0.01655</td><td><b>2.704 ± 0.002510</b></td><td>2.759 ± 0.006411</td><td>2.744 ± 0.03009</td><td>3.738</td><td><b>LS4</b></td></tr>
-  <tr><td>PS-MC CRPS H=64 ↓</td><td>4.337 ± 0.4329</td><td>5.789 ± 0.7528</td><td>3.804 ± 0.007848</td><td>3.776 ± 0.005153</td><td>5.670 ± 0.1222</td><td>3.851 ± 0.02210</td><td><b>3.763 ± 0.005851</b></td><td>3.859 ± 0.01236</td><td>3.961 ± 0.1098</td><td>5.246</td><td><b>LS4</b></td></tr>
+  <tr><td>PS-MC CRPS H=32 ↓</td><td>3.085 ± 0.3332</td><td>4.657 ± 0.7720</td><td>2.717 ± 0.002200</td><td>2.718 ± 0.003646</td><td>3.912 ± 0.07154</td><td>2.779 ± 0.01655</td><td><b>2.704 ± 0.002510</b></td><td>2.759 ± 0.006411</td><td>2.744 ± 0.03009</td><td>3.738</td><td>2.721 ± 0.004183</td><td><b>LS4</b></td></tr>
+  <tr><td>PS-MC CRPS H=64 ↓</td><td>4.337 ± 0.4329</td><td>5.789 ± 0.7528</td><td>3.804 ± 0.007848</td><td>3.776 ± 0.005153</td><td>5.670 ± 0.1222</td><td>3.851 ± 0.02210</td><td><b>3.763 ± 0.005851</b></td><td>3.859 ± 0.01236</td><td>3.961 ± 0.1098</td><td>5.246</td><td>3.788 ± 0.006463</td><td><b>LS4</b></td></tr>
 </tbody>
 </table>
 
@@ -256,17 +257,27 @@ set** (orange) on the eight stylised facts the B-metrics quantify: price fan, lo
 plot, ACF of |r| and r², rolling-volatility histogram, tail-survival and mean-path. One panel figure per
 method, ordered by family.
 
+### GAN
+
 #### TimeGAN
 ![TimeGAN diagnostics](results/Heston/TimeGAN/plots/heston_diagnostics.png)
 
 #### COSCI-GAN
 ![COSCI-GAN diagnostics](results/Heston/COSCI-GAN/plots/heston_diagnostics.png)
 
+---
+
+### Diffusion
+
 #### Diffusion-TS
 ![Diffusion-TS diagnostics](results/Heston/DiffusionTS/plots/heston_diagnostics.png)
 
 #### CSDI
 ![CSDI diagnostics](results/Heston/CSDI/plots/heston_diagnostics.png)
+
+---
+
+### VAE
 
 #### TimeVAE
 ![TimeVAE diagnostics](results/Heston/TimeVAE/plots/heston_diagnostics.png)
@@ -277,8 +288,16 @@ method, ordered by family.
 #### LS4
 ![LS4 diagnostics](results/Heston/LS4/plots/heston_diagnostics.png)
 
+---
+
+### Schrödinger Bridge
+
 #### SBTS
 ![SBTS diagnostics](results/Heston/SBTS/plots/heston_diagnostics.png)
+
+---
+
+### Fourier Flow
 
 #### Fourier Flow
 ![Fourier Flow diagnostics](results/Heston/FourierFlow/plots/heston_diagnostics.png)
