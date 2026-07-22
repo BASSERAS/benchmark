@@ -396,17 +396,20 @@ Each plot yields a **curve** L (a list of values). We build three lists — the 
 difference L′ (der), and its second finite difference L″ (sec\_der) — and score each list under **three
 measures**:
 - **MSE**: dᵢ = mean((L\_gen − L\_real)²) per list. Decides the winner.
-- **% err**: dᵢ = mean(|L\_gen − L\_real| / (|L\_real| + ε)) × 100 per list — a scale-aware ε-floor MAPE with
-  ε = 1e-3 · (max|L\_real| + 1e-12) (ε keyed to the curve's own scale, not a fixed 1e-6).
+- **% err**: dᵢ = mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100 — a function-level MAPE with a **fixed
+  1e-6 floor** and exactly **one division** (the mean already divides by the number of curve points).
 - **NRMSE**: dᵢ = sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100 per list.
 
-The three sub-scores are combined into **one number per plot per measure** by **mean-of-3** (combined mean =
-mean of the three seed-means; combined std = sample std across the 5 seeds). **Exception:** for **Tail
-survival**, the **% err** and **NRMSE** measures use the **funct list only** (the der/sec\_der of a step-like
-survival curve are near-zero and blow the ratios up); its **MSE** stays mean-of-3. The raw JSON stores 9 keys
-per plot (funct/der/sec\_der × {mse, pct\_err, nrmse}); the READMEs display the three **combined** measures as
-three sublines per plot (MSE / % err / NRMSE). Aggregation lives in
-`metrics/metrics.py`; recompute with `metrics/recompute_curve_b.py`.
+The three measures are combined into **one number per plot** DIFFERENTLY (combined std = sample std across the
+5 seeds in every case). **MSE** is **mean-of-3** — combined_per_seed = mean(funct, der, sec\_der) — because the
+absolute squared error never explodes; this is the number that decides the winner. **% err** and **NRMSE** are
+**funct-only for every plot** — combined_per_seed = the funct sub-metric alone — because the 1st and 2nd finite
+differences of every curve have near-zero true values, so their relative errors blow up into meaningless
+10⁴-% figures; only the curve itself (funct) carries a meaningful relative error. The raw JSON still stores 9
+keys per plot (funct/der/sec\_der × {mse, pct\_err, nrmse}), but the der/sec\_der %err and NRMSE are dropped in
+aggregation; the READMEs display the three **combined** measures as three sublines per plot (MSE / % err /
+NRMSE). Aggregation lives in `metrics/metrics.py` (`aggregate_curve_metrics`); recompute with
+`metrics/recompute_curve_b.py`.
 
 | Plot | JSON key prefix | Curve description |
 |------|----------------|-------------------|
@@ -650,21 +653,22 @@ Rules:
 
 #### Section 3 — B Curve-Shape Metrics
 
-**Three** sublines per plot (MSE row + % err row + NRMSE row), each combining funct/der/sec\_der into one
-number (mean-of-3). Last column = Perfect floor (non-zero, from the independent draw). Winner is by MSE.
+**Three** sublines per plot (MSE row + % err row + NRMSE row). **MSE** combines funct/der/sec\_der by
+mean-of-3; **% err** and **NRMSE** are **funct-only** (the funct sub-metric alone). Last column = Perfect
+floor (non-zero, from the independent draw). Winner is by MSE.
 
 ```markdown
 ## B — Curve-Shape Metrics — mean ± std across 5 seeds
 
-> Each plot yields a **curve** L. For the curve, its 1st diff (der) and 2nd diff (sec\_der) we compute
-> three measures and combine the three sub-scores into one number per measure (**mean-of-3**):
-> - **MSE**: mean((L\_gen − L\_real)²) per sub-metric; combined = **mean** of the three. Decides the winner.
-> - **% err**: scale-aware ε-floor MAPE — mean(|L\_gen − L\_real| / (|L\_real| + ε)) × 100 per sub-metric,
->   with ε = 1e-3 · (max|L\_real| + 1e-12); combined = **mean** of the three.
-> - **NRMSE**: sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100 per sub-metric;
->   combined = **mean** of the three.
-> **Tail survival** is the one exception: its **% err** and **NRMSE** use the **funct curve only** (the der
-> and sec\_der of a step-like survival curve are near-zero and blow the ratios up); its **MSE** stays mean-of-3.
+> Each plot yields a **curve** L. From L, its 1st diff (der) and 2nd diff (sec\_der) we compute three measures,
+> combined into one number per plot (combined std = sample std across the 5 seeds):
+> - **MSE**: mean((L\_gen − L\_real)²) per sub-metric; combined = **mean-of-3** (funct+der+sec\_der)/3. Decides the winner.
+> - **% err**: mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100 — a function-level MAPE with a **fixed 1e-6
+>   floor**, one division; **funct-only** (the funct sub-metric alone).
+> - **NRMSE**: sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100; **funct-only**.
+> **% err and NRMSE are funct-only for every plot**: the der/sec\_der of every curve have near-zero true
+> values, so their relative errors blow up into meaningless 10⁴-% figures; only the curve itself (funct)
+> carries a meaningful relative error. MSE has no such problem and keeps mean-of-3.
 > All ↓ lower is better. The Perfect floor is **non-zero** (independent Heston draw vs test set, §5.4).
 > Winner is by MSE.
 
@@ -1068,14 +1072,14 @@ A18 Adversarial, A19 Predictive, A20–A24 Temporal, A25–A32 Vol, A33–A34 He
 ```markdown
 ## B — Curve-Shape Metrics — mean ± std across 5 seeds
 
-> Each plot yields a **curve** L (not a scalar). For L, its 1st diff (der) and 2nd diff (sec\_der) we
-> compute three measures and combine the three sub-scores into one number per measure (**mean-of-3**):
-> - **MSE**: mean((L\_gen − L\_real)²) per sub-metric; combined = **mean** of the three. Decides the winner.
-> - **% err**: mean(|L\_gen − L\_real| / (|L\_real| + ε)) × 100 per sub-metric, ε = 1e-3 · (max|L\_real| +
->   1e-12) — a scale-aware ε-floor MAPE; combined = **mean** of the three.
-> - **NRMSE**: sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100 per sub-metric;
->   combined = **mean** of the three.
-> **Tail survival** exception: its **% err** and **NRMSE** use the **funct curve only**; MSE stays mean-of-3.
+> Each plot yields a **curve** L (not a scalar). From L, its 1st diff (der) and 2nd diff (sec\_der) we
+> compute three measures, combined into one number per plot (combined std = sample std across the 5 seeds):
+> - **MSE**: mean((L\_gen − L\_real)²) per sub-metric; combined = **mean-of-3** (funct+der+sec\_der)/3. Decides the winner.
+> - **% err**: mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100 — a function-level MAPE with a **fixed 1e-6
+>   floor**, one division; **funct-only** (the funct sub-metric alone).
+> - **NRMSE**: sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100; **funct-only**.
+> **% err and NRMSE are funct-only for every plot** (the der/sec\_der true values are near-zero and blow the
+> ratios up into 10⁴-% figures; only funct carries a meaningful relative error). MSE keeps mean-of-3.
 > All ↓ lower is better. The Perfect floor is **non-zero** (independent draw vs test set, §5.4). Winner is by MSE.
 
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect |
@@ -1247,7 +1251,7 @@ Quick-reference ordering (same as the templates above):
 
 5. **Curve-shape metrics (B)** — the three-subline B table (MSE row + % err row + NRMSE row per plot), each
    with a trailing `Perfect` column (non-zero for every plot). Winner is by MSE. Reuse the header blockquote
-   from §15.1 Section 3 (all three measures combined mean-of-3; tail-survival % err / NRMSE funct-only). The
+   from §15.1 Section 3 (MSE combined mean-of-3; % err / NRMSE funct-only for every plot, fixed 1e-6 floor). The
    % err row can still be large (triple-digit %) wherever the real curve passes through near-zero values.
 
 6. **Comparison with the paper** — CANONICAL 3-COLUMN STRUCTURE.
@@ -1391,8 +1395,8 @@ tables. They must stay in sync with each other and with every method README.
    wins; A28 Kurtosis Ratio closest-to-1.0 wins. Report the overall win count (`<A> wins X/36,
    <B> wins Y/36`, counting the A18/A19 GRU+MLP sublines).
 3. **B Curve-Shape comparison table** — side-by-side by **MSE** (winner by MSE), each plot with a
-   trailing `Perfect` column (non-zero). Include the three-subline (MSE + % err + NRMSE) description; each
-   measure is mean-of-3 (tail-survival % err / NRMSE funct-only, §8 Section 3). Report B win count (`X/6` MSE each).
+   trailing `Perfect` column (non-zero). Include the three-subline (MSE + % err + NRMSE) description; **MSE**
+   is mean-of-3, **% err / NRMSE are funct-only for every plot** (§8 Section 3). Report B win count (`X/6` MSE each).
 4. **Path Shadowing MC comparison** — H=32 / H=64 × {Uniform, Gaussian} CRPS/MAE/RMSE per method plus
    Naive RW baseline.
 5. **Training / Generation timing** row(s).
@@ -1462,6 +1466,7 @@ When a new standard is established (new metric, new section format, new B metric
   2. **Perfect floor → independent draw, non-zero (§5.4 rewrite).** The floor is no longer a row-shuffle/permutation of the real data (which forced marginals to 0). It is a **fresh independent Heston draw** — new seeds `1000+i` (`IND_SEED_BASE = 1000`), identical parameters — scored against the test set exactly like a generator. Every A and B floor is therefore a genuine **non-zero finite-sample noise floor**; the column value is the **mean across the 5 independent-draw seeds** (`perfect_floor_a()`/`perfect_floor_curve()`), identical across all methods. `methods/perfect_recovery/README.md` documents it in full and is the one place with no floor column of its own.
   3. **B tables → 3 sublines (MSE / % err / NRMSE), each mean-of-3.** Added **NRMSE** = sqrt(mean((L_gen−L_real)²))/(max|L_real|−min|L_real|+1e-12)×100. **% err** switched to a **scale-aware ε-floor MAPE** with ε = 1e-3·(max|L_real|+1e-12) (was the fixed `+1e-6`). All three measures combine funct/der/sec_der by **mean-of-3** (winner still decided by MSE). **Tail survival** is the one exception: its % err and NRMSE use the **funct curve only** (der/sec_der of a step-like survival curve blow the ratios up); its MSE stays mean-of-3. Raw JSON now stores 9 keys per plot (funct/der/sec_der × {mse, pct_err, nrmse}).
   4. **`metrics/render_tables.py` is the single source of truth for every table.** `--method <M>` prints the per-method markdown A/B/PS tables; `--which A|B|PS` prints the family-grouped HTML comparison tables + win-count comments. All numbers use its `fmt()` (4 sig-figs / sci-notation) so every README matches byte-for-byte — values are regenerated, never hand-typed. Current win-counts: **A of 36** — LS4 26, Fourier Flow 4, CSDI 3, Diffusion-TS 2, TimeVAE 1, others 0; **B of 6 (MSE)** — LS4 5, CSDI 1. Updated §5.2, §5.4, §8 Section 2–3, §13 checklist, §15.1 Section 2–3, §15.2, §15.4 (win-count denominator corrected 38 → 36).
+- 2026-07-22: **B % err → fixed 1e-6 MAPE + funct-only for EVERY plot (REVERSES sub-item 3 of the entry above).** The user re-derived the % err convention: `dᵢ = mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100` — a proper function-level MAPE with a **fixed 1e-6 floor** and **one division** (verbatim: "% err row: for each list, dᵢ = mean(|L_g − L_real| / (|L_real| + 1e-6)) × 100, a proper MAPE — one division … tke this convention pls"). Two corrections vs the same-day sub-item 3: (a) the **scale-aware ε = 1e-3·(max|L_real|+1e-12)** floor is **reverted to the fixed `+1e-6`**; (b) **% err AND NRMSE are now funct-only for every plot**, not just tail survival — the der/sec_der of every curve have near-zero true values, so their relative errors explode into meaningless 10⁴-% figures; only the funct sub-metric carries a meaningful relative error. **MSE is unchanged** (mean-of-3 (funct+der+sec_der)/3; still decides the winner). Raw JSON still stores all 9 keys/plot (funct/der/sec_der × {mse, pct_err, nrmse}); aggregation (`aggregate_curve_metrics`) drops the der/sec_der %err+NRMSE. mean/std = mean and sample std across the 5 seeds. Fixed in `metrics/metrics.py` (`_pct` fixed-1e-6, `aggregate_curve_metrics` funct-only), recomputed via `metrics/recompute_curve_b.py` for all 9 methods + perfect_recovery, and every README B table + prose rebuilt from `curve_b_aggregate.json` through `render_tables.py`. Also removed the orphan `results/Heston/SBTS/plots/small_test.png` (a `T=32/N=200` dev-sanity artifact, unreferenced by any README). Updated §5.2, §8 Section 3, §15.1 Section 3, §15.2 Sections 5 & 3.
 
 ---
 

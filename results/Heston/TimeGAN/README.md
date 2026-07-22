@@ -116,13 +116,13 @@ L'' (sec\_der) — and report **three rows per plot**:
 
 - **MSE** — `mean((L_gen − L_real)²)`, averaged over the three lists (funct/der/sec\_der). This is the
   quantity that decides the cross-method winner.
-- **% err** — scale-aware relative error `mean(|L_gen − L_real| / (|L_real| + ε)) × 100` with
-  `ε = 1e-3 · (max|L_real| + 1e-12)`, averaged over the three lists.
-- **NRMSE** — `sqrt(mean((L_gen − L_real)²)) / (max|L_real| − min|L_real| + 1e-12) × 100`, averaged over
-  the three lists.
+- **% err** — function-level MAPE `mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100` on the curve L
+  only (funct-only); the derivative / 2nd-difference MAPE is excluded as ill-posed (near-zero denominators).
+- **NRMSE** — `sqrt(mean((L_gen − L_real)²)) / (max|L_real| − min|L_real| + 1e-12) × 100` on the curve L
+  only (funct-only).
 
-*Special case:* for **Tail survival** the % err and NRMSE rows use the **function-level curve only**
-(funct); its MSE row stays the mean-of-three.
+For **all six plots** the % err and NRMSE rows use the **function-level curve only** (funct); the MSE
+row stays the mean of the three sub-scores.
 
 ↓ lower is better for all three rows. **Perfect floor** = the same independent-draw-vs-test floor as the A
 table (non-zero, finite-sample). Winner between methods is decided by the **MSE** row. TimeGAN's enormous
@@ -133,22 +133,22 @@ log-return-histogram MSE (45.40) and its ±57.91 std are driven by a genuine see
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
 | **Log-return histogram** | MSE | 45.40 ± 57.91 | 3.579 | 6.973 | 153.7 | 4.778 | 57.94 | 0.1098 |
-|  | % err | 419.7% ± 221.5% | 296.9% | 384.0% | 826.7% | 168.3% | 422.4% | 290.3% |
-|  | NRMSE | 157.7% ± 170.7% | 45.12% | 39.93% | 473.5% | 26.33% | 203.6% | 17.81% |
+|  | % err | 33.41% ± 6.533% | 26.37% | 36.99% | 32.64% | 27.13% | 43.94% | 1.799% |
+|  | NRMSE | 21.38% ± 14.34% | 8.194% | 12.08% | 44.34% | 10.17% | 32.12% | 0.5328% |
 | **QQ plot** | MSE | 2.38e-06 ± 1.14e-06 | 1.41e-06 | 2.44e-06 | 2.71e-06 | 1.05e-06 | 4.29e-06 | 1.09e-09 |
-|  | % err | 41.04% ± 12.07% | 29.03% | 32.21% | 60.14% | 33.57% | 50.27% | 16.51% |
-|  | NRMSE | 5.480% ± 1.004% | 5.014% | 4.412% | 6.262% | 4.676% | 7.037% | 0.3436% |
+|  | % err | 34.50% ± 11.22% | 20.51% | 23.70% | 47.99% | 34.21% | 46.12% | 0.4629% |
+|  | NRMSE | 6.960% ± 1.738% | 5.488% | 7.318% | 7.627% | 4.709% | 9.660% | 0.1206% |
 | **ACF \|r\| lags 1–20** | MSE | 0.003597 ± 0.003199 | 0.001026 | 0.001841 | 0.006211 | 3.79e-04 | 0.008526 | 9.61e-06 |
-|  | % err | 800.5% ± 427.8% | 865.1% | 515.5% | 791.8% | 281.2% | 1549% | 114.3% |
-|  | NRMSE | 391.2% ± 182.9% | 357.2% | 332.0% | 465.4% | 120.4% | 680.7% | 43.89% |
+|  | % err | 186.2% ± 107.8% | 107.0% | 128.7% | 264.2% | 72.79% | 358.2% | 8.724% |
+|  | NRMSE | 224.6% ± 123.4% | 116.9% | 181.2% | 346.7% | 85.32% | 392.9% | 6.071% |
 | **ACF r² lags 1–20** | MSE | 0.001982 ± 0.001602 | 7.02e-04 | 0.001482 | 0.002501 | 3.90e-04 | 0.004835 | 9.17e-06 |
-|  | % err | 1771% ± 1635% | 2094% | 665.3% | 733.2% | 525.6% | 4838% | 381.5% |
-|  | NRMSE | 346.3% ± 170.2% | 270.2% | 344.7% | 369.7% | 111.6% | 635.2% | 34.19% |
+|  | % err | 130.0% ± 65.84% | 95.37% | 88.69% | 113.6% | 91.94% | 260.6% | 11.34% |
+|  | NRMSE | 168.2% ± 70.21% | 94.68% | 157.1% | 224.2% | 94.36% | 270.8% | 6.486% |
 | **Rolling vol histogram** | MSE | 150.2 ± 75.22 | 96.14 | 215.1 | 207.3 | 27.97 | 204.5 | 1.372 |
-|  | % err | 201.4% ± 54.37% | 191.3% | 204.6% | 213.7% | 113.6% | 283.9% | 127.9% |
-|  | NRMSE | 34.40% ± 8.778% | 28.91% | 31.65% | 40.87% | 22.95% | 47.61% | 16.66% |
+|  | % err | 56.76% ± 21.18% | 53.37% | 72.71% | 84.37% | 22.36% | 51.01% | 2.264% |
+|  | NRMSE | 22.64% ± 7.203% | 19.01% | 28.61% | 27.91% | 10.07% | 27.61% | 0.8688% |
 | **Tail survival** | MSE | 0.003912 ± 0.003064 | 9.04e-04 | 0.002042 | 0.007307 | 0.001354 | 0.007952 | 5.22e-07 |
-|  | % err | 23.39% ± 6.106% | 18.13% | 24.33% | 25.66% | 15.73% | 33.09% | 0.3256% |
+|  | % err | 23.64% ± 6.097% | 18.46% | 24.62% | 25.99% | 15.89% | 33.26% | 0.3302% |
 |  | NRMSE | 10.02% ± 4.365% | 5.257% | 7.902% | 14.94% | 6.434% | 15.59% | 0.1050% |
 
 **Plot → curve mapping** (each curve is the shape whose funct/der/sec\_der are scored above):

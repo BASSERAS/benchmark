@@ -117,11 +117,10 @@ L″ (sec\_der) — then combine them into **three sub-scores per plot**:
 
 - **MSE row** (decides the winner): for each list, mean((L\_gen − L\_real)²), averaged over the three lists
   (funct / der / sec\_der). This is the headline curve-fit error.
-- **% err row** (scale-aware ε-floor MAPE): mean(|L\_gen − L\_real| / (|L\_real| + ε)) × 100 with
-  ε = 1e-3·(max|L\_real| + 1e-12), averaged over the three lists — except **Tail survival**, whose % err and
-  NRMSE use the **function curve only** (its near-zero survival tail makes the derivative MAPE explode).
-- **NRMSE row**: sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100, averaged over
-  the three lists (funct-only for Tail survival).
+- **% err row** (function-level MAPE): mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100 on the curve L
+  only (funct-only); the derivative / 2nd-difference MAPE is excluded as ill-posed (near-zero denominators).
+- **NRMSE row**: sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100 on the curve L
+  only (funct-only).
 
 ↓ lower is better for all three rows. **Perfect floor** is the non-zero real-vs-test value an independent
 Heston draw reaches — identical across methods.
@@ -130,22 +129,22 @@ Heston draw reaches — identical across methods.
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
 | **Log-return histogram** | MSE | 4.386 ± 0.8335 | 3.620 | 4.185 | 3.625 | 4.631 | 5.871 | 0.1098 |
-|  | % err | 308.5% ± 111.1% | 336.4% | 214.4% | 167.1% | 485.1% | 339.3% | 290.3% |
-|  | NRMSE | 25.66% ± 2.898% | 24.25% | 24.37% | 21.94% | 30.24% | 27.52% | 17.81% |
+|  | % err | 30.95% ± 1.747% | 28.63% | 30.54% | 30.43% | 31.16% | 34.01% | 1.799% |
+|  | NRMSE | 9.691% ± 0.9011% | 8.831% | 9.521% | 8.872% | 9.941% | 11.29% | 0.5328% |
 | **QQ plot** | MSE | 1.82e-06 ± 2.20e-07 | 1.53e-06 | 1.75e-06 | 1.77e-06 | 1.82e-06 | 2.21e-06 | 1.09e-09 |
-|  | % err | 27.65% ± 0.8494% | 27.22% | 27.57% | 26.38% | 28.88% | 28.18% | 16.51% |
-|  | NRMSE | 3.764% ± 0.2117% | 3.536% | 3.544% | 3.899% | 3.753% | 4.089% | 0.3436% |
+|  | % err | 23.84% ± 2.434% | 23.56% | 24.27% | 19.44% | 25.24% | 26.67% | 0.4629% |
+|  | NRMSE | 6.308% ± 0.3785% | 5.797% | 6.204% | 6.240% | 6.327% | 6.971% | 0.1206% |
 | **ACF \|r\| lags 1–20** | MSE | 1.22e-04 ± 3.84e-05 | 1.41e-04 | 1.11e-04 | 5.55e-05 | 1.30e-04 | 1.71e-04 | 9.61e-06 |
-|  | % err | 206.9% ± 30.30% | 263.8% | 206.8% | 175.0% | 190.8% | 198.2% | 114.3% |
-|  | NRMSE | 81.22% ± 16.03% | 109.5% | 88.56% | 67.40% | 70.43% | 70.18% | 43.89% |
+|  | % err | 63.03% ± 14.21% | 66.81% | 61.31% | 37.15% | 70.55% | 79.32% | 8.724% |
+|  | NRMSE | 45.54% ± 9.362% | 47.04% | 43.31% | 29.49% | 49.90% | 57.97% | 6.071% |
 | **ACF r² lags 1–20** | MSE | 1.05e-04 ± 3.00e-05 | 1.35e-04 | 9.82e-05 | 5.43e-05 | 1.03e-04 | 1.37e-04 | 9.17e-06 |
-|  | % err | 463.3% ± 82.83% | 552.4% | 457.3% | 389.6% | 356.4% | 560.6% | 381.5% |
-|  | NRMSE | 69.61% ± 14.32% | 96.57% | 71.40% | 56.34% | 62.01% | 61.74% | 34.19% |
+|  | % err | 70.37% ± 13.75% | 77.06% | 69.76% | 44.85% | 74.57% | 85.59% | 11.34% |
+|  | NRMSE | 45.61% ± 7.936% | 48.22% | 44.45% | 31.73% | 47.57% | 56.10% | 6.486% |
 | **Rolling vol histogram** | MSE | 113.9 ± 13.91 | 95.07 | 113.4 | 106.0 | 118.3 | 137.0 | 1.372 |
-|  | % err | 157.5% ± 5.259% | 160.1% | 158.5% | 165.2% | 149.9% | 153.8% | 127.9% |
-|  | NRMSE | 30.01% ± 1.265% | 27.86% | 30.02% | 30.46% | 29.94% | 31.79% | 16.66% |
+|  | % err | 54.51% ± 2.433% | 50.75% | 53.48% | 54.17% | 56.30% | 57.84% | 2.264% |
+|  | NRMSE | 20.68% ± 1.268% | 18.92% | 20.67% | 19.96% | 21.12% | 22.74% | 0.8688% |
 | **Tail survival** | MSE | 0.001709 ± 2.78e-04 | 0.001414 | 0.001643 | 0.001521 | 0.001748 | 0.002218 | 5.22e-07 |
-|  | % err | 22.03% ± 1.364% | 20.27% | 21.70% | 21.57% | 22.15% | 24.45% | 0.3256% |
+|  | % err | 22.34% ± 1.374% | 20.56% | 22.00% | 21.89% | 22.45% | 24.78% | 0.3302% |
 |  | NRMSE | 7.206% ± 0.5711% | 6.576% | 7.088% | 6.821% | 7.311% | 8.235% | 0.1050% |
 
 TimeVQVAE wins **none of the 6 B-plots** — LS4 takes the MSE headline on five and CSDI on the sixth — but it is

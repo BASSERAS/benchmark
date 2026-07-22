@@ -137,11 +137,10 @@ L″ (sec\_der) — then combine them into **three sub-scores per plot**:
 
 - **MSE row** (decides the winner): for each list, mean((L\_gen − L\_real)²), averaged over the three lists
   (funct / der / sec\_der). This is the headline curve-fit error.
-- **% err row** (scale-aware ε-floor MAPE): mean(|L\_gen − L\_real| / (|L\_real| + ε)) × 100 with
-  ε = 1e-3·(max|L\_real| + 1e-12), averaged over the three lists — except **Tail survival**, whose % err and
-  NRMSE use the **function curve only** (its near-zero survival tail makes the derivative MAPE explode).
-- **NRMSE row**: sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100, averaged over
-  the three lists (funct-only for Tail survival).
+- **% err row** (function-level MAPE): mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100 on the curve L
+  only (funct-only); the derivative / 2nd-difference MAPE is excluded as ill-posed (near-zero denominators).
+- **NRMSE row**: sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100 on the curve L
+  only (funct-only).
 
 ↓ lower is better for all three rows. **Perfect floor** is the non-zero real-vs-test value an independent
 Heston draw reaches — identical across methods.
@@ -150,22 +149,22 @@ Heston draw reaches — identical across methods.
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
 | **Log-return histogram** | MSE | 4.082 ± 0.04782 | 4.124 | 4.102 | 4.121 | 3.996 | 4.065 | 0.1098 |
-|  | % err | 227.7% ± 114.1% | 436.3% | 153.6% | 188.3% | 109.4% | 250.9% | 290.3% |
-|  | NRMSE | 26.80% ± 1.320% | 25.85% | 27.88% | 25.71% | 25.68% | 28.85% | 17.81% |
+|  | % err | 39.17% ± 0.1361% | 39.31% | 39.21% | 39.31% | 39.01% | 39.01% | 1.799% |
+|  | NRMSE | 9.368% ± 0.06168% | 9.435% | 9.374% | 9.434% | 9.284% | 9.312% | 0.5328% |
 | **QQ plot** | MSE | 3.01e-06 ± 2.28e-08 | 3.04e-06 | 3.01e-06 | 3.04e-06 | 2.99e-06 | 2.98e-06 | 1.09e-09 |
-|  | % err | 29.61% ± 1.136% | 29.03% | 30.82% | 30.11% | 27.67% | 30.40% | 16.51% |
-|  | NRMSE | 6.253% ± 0.05502% | 6.195% | 6.272% | 6.313% | 6.306% | 6.182% | 0.3436% |
+|  | % err | 21.47% ± 0.3841% | 21.50% | 21.04% | 21.86% | 21.02% | 21.92% | 0.4629% |
+|  | NRMSE | 8.083% ± 0.03106% | 8.120% | 8.083% | 8.116% | 8.052% | 8.045% | 0.1206% |
 | **ACF \|r\| lags 1–20** | MSE | 0.001512 ± 1.42e-05 | 0.001520 | 0.001499 | 0.001504 | 0.001502 | 0.001537 | 9.61e-06 |
-|  | % err | 624.4% ± 17.17% | 602.3% | 639.1% | 606.9% | 645.6% | 628.1% | 114.3% |
-|  | NRMSE | 489.4% ± 2.377% | 490.5% | 485.4% | 487.9% | 490.8% | 492.1% | 43.89% |
+|  | % err | 149.0% ± 1.780% | 150.1% | 150.2% | 149.1% | 145.5% | 149.9% | 8.724% |
+|  | NRMSE | 127.9% ± 0.8849% | 128.2% | 127.8% | 127.5% | 126.6% | 129.3% | 6.071% |
 | **ACF r² lags 1–20** | MSE | 0.001723 ± 2.85e-05 | 0.001748 | 0.001687 | 0.001695 | 0.001722 | 0.001760 | 9.17e-06 |
-|  | % err | 759.0% ± 46.45% | 753.7% | 846.9% | 739.6% | 745.8% | 709.2% | 381.5% |
-|  | NRMSE | 436.0% ± 4.231% | 439.8% | 429.8% | 432.1% | 438.4% | 440.0% | 34.19% |
+|  | % err | 171.3% ± 1.908% | 172.7% | 172.0% | 170.9% | 167.7% | 173.0% | 11.34% |
+|  | NRMSE | 145.2% ± 1.200% | 146.0% | 144.5% | 144.3% | 144.0% | 147.1% | 6.486% |
 | **Rolling vol histogram** | MSE | 412.9 ± 1.772 | 415.4 | 412.4 | 414.3 | 411.6 | 410.6 | 1.372 |
-|  | % err | 203.1% ± 11.46% | 200.8% | 192.2% | 193.7% | 224.1% | 204.7% | 127.9% |
-|  | NRMSE | 45.41% ± 0.7118% | 45.94% | 45.31% | 45.54% | 46.15% | 44.11% | 16.66% |
+|  | % err | 84.56% ± 0.1274% | 84.75% | 84.61% | 84.60% | 84.42% | 84.42% | 2.264% |
+|  | NRMSE | 39.59% ± 0.08241% | 39.71% | 39.57% | 39.66% | 39.52% | 39.49% | 0.8688% |
 | **Tail survival** | MSE | 0.001937 ± 2.20e-05 | 0.001962 | 0.001940 | 0.001959 | 0.001910 | 0.001913 | 5.22e-07 |
-|  | % err | 26.22% ± 0.1121% | 26.35% | 26.24% | 26.32% | 26.09% | 26.08% | 0.3256% |
+|  | % err | 26.62% ± 0.1128% | 26.76% | 26.65% | 26.73% | 26.50% | 26.49% | 0.3302% |
 |  | NRMSE | 7.694% ± 0.04378% | 7.744% | 7.701% | 7.739% | 7.641% | 7.647% | 0.1050% |
 
 SBTS wins **none of the 6 B-plots**. Consistent with the A table, its best curves are the **marginal**

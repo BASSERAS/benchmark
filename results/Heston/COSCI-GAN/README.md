@@ -139,11 +139,10 @@ L″ (sec\_der) — then combine them into **three sub-scores per plot**:
 
 - **MSE row** (decides the winner): for each list, mean((L\_gen − L\_real)²), averaged over the three lists
   (funct / der / sec\_der). This is the headline curve-fit error.
-- **% err row** (scale-aware ε-floor MAPE): mean(|L\_gen − L\_real| / (|L\_real| + ε)) × 100 with
-  ε = 1e-3·(max|L\_real| + 1e-12), averaged over the three lists — except **Tail survival**, whose % err and
-  NRMSE use the **function curve only** (its near-zero survival tail makes the derivative MAPE explode).
-- **NRMSE row**: sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100, averaged over
-  the three lists (funct-only for Tail survival).
+- **% err row** (function-level MAPE): mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100 on the curve L
+  only (funct-only); the derivative / 2nd-difference MAPE is excluded as ill-posed (near-zero denominators).
+- **NRMSE row**: sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100 on the curve L
+  only (funct-only).
 
 ↓ lower is better for all three rows. **Perfect floor** is the non-zero real-vs-test value an independent
 Heston draw reaches — identical across methods.
@@ -159,22 +158,22 @@ method** — the squared-return memory is essentially absent. Every curve sits f
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
 | **Log-return histogram** | MSE | 42.66 ± 1.999 | 41.16 | 40.58 | 41.39 | 45.11 | 45.07 | 0.1098 |
-|  | % err | 467.7% ± 171.8% | 429.7% | 315.9% | 797.4% | 350.0% | 445.2% | 290.3% |
-|  | NRMSE | 43.07% ± 1.920% | 42.83% | 40.38% | 41.85% | 45.90% | 44.37% | 17.81% |
+|  | % err | 246.6% ± 7.987% | 239.4% | 240.4% | 240.3% | 257.2% | 255.4% | 1.799% |
+|  | NRMSE | 30.81% ± 0.7154% | 30.27% | 30.07% | 30.36% | 31.68% | 31.68% | 0.5328% |
 | **QQ plot** | MSE | 8.25e-04 ± 6.60e-05 | 9.18e-04 | 8.24e-04 | 7.33e-04 | 8.74e-04 | 7.76e-04 | 1.09e-09 |
-|  | % err | 377.1% ± 18.26% | 409.1% | 365.4% | 357.0% | 384.2% | 370.0% | 16.51% |
-|  | NRMSE | 72.79% ± 4.557% | 73.17% | 70.90% | 70.32% | 81.34% | 68.21% | 0.3436% |
+|  | % err | 437.1% ± 19.17% | 447.9% | 436.8% | 401.3% | 457.4% | 442.2% | 0.4629% |
+|  | NRMSE | 134.7% ± 5.407% | 142.3% | 134.8% | 127.1% | 138.7% | 130.8% | 0.1206% |
 | **ACF \|r\| lags 1–20** | MSE | 0.008548 ± 0.003519 | 0.008189 | 0.01521 | 0.007491 | 0.007038 | 0.004809 | 9.61e-06 |
-|  | % err | 3831% ± 1214% | 4081% | 6051% | 3480% | 2790% | 2750% | 114.3% |
-|  | NRMSE | 1340% ± 296.1% | 1370% | 1876% | 1291% | 1168% | 996.8% | 43.89% |
+|  | % err | 230.0% ± 48.05% | 212.8% | 322.3% | 198.8% | 227.8% | 188.2% | 8.724% |
+|  | NRMSE | 198.2% ± 35.47% | 173.9% | 253.7% | 167.7% | 227.0% | 168.8% | 6.071% |
 | **ACF r² lags 1–20** | MSE | 0.008781 ± 0.003516 | 0.006998 | 0.01505 | 0.009647 | 0.007563 | 0.004648 | 9.17e-06 |
-|  | % err | 11227% ± 3842% | 10302% | 18285% | 10105% | 6564% | 10878% | 381.5% |
-|  | NRMSE | 1082% ± 235.1% | 995.6% | 1481% | 1166% | 989.1% | 776.3% | 34.19% |
+|  | % err | 287.8% ± 57.85% | 233.8% | 398.9% | 271.6% | 253.8% | 281.0% | 11.34% |
+|  | NRMSE | 221.1% ± 36.09% | 194.4% | 282.2% | 196.8% | 242.8% | 189.4% | 6.486% |
 | **Rolling vol histogram** | MSE | 1398 ± 34.29 | 1390 | 1444 | 1360 | 1365 | 1431 | 1.372 |
-|  | % err | 1160% ± 134.2% | 1333% | 980.1% | 1183% | 1269% | 1036% | 127.9% |
-|  | NRMSE | 70.04% ± 2.551% | 73.05% | 72.20% | 66.18% | 70.61% | 68.16% | 16.66% |
+|  | % err | 799.2% ± 14.12% | 796.1% | 817.9% | 781.4% | 787.6% | 812.9% | 2.264% |
+|  | NRMSE | 73.06% ± 0.8956% | 72.83% | 74.25% | 72.08% | 72.17% | 73.95% | 0.8688% |
 | **Tail survival** | MSE | 0.05973 ± 0.001991 | 0.05945 | 0.05962 | 0.05642 | 0.06257 | 0.06057 | 5.22e-07 |
-|  | % err | 320.6% ± 7.644% | 321.2% | 322.5% | 307.0% | 330.7% | 321.5% | 0.3256% |
+|  | % err | 342.3% ± 8.331% | 343.2% | 344.5% | 327.4% | 353.2% | 343.2% | 0.3302% |
 |  | NRMSE | 42.74% ± 0.7148% | 42.64% | 42.71% | 41.54% | 43.75% | 43.04% | 0.1050% |
 
 **Plot → curve mapping** (each curve is the shape whose funct/der/sec\_der are scored above):

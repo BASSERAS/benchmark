@@ -204,10 +204,11 @@ def cell(text, bold=False):
 # ── A table ─────────────────────────────────────────────────────────────────
 def render_A():
     stats = {m: load_a_stats(m) for m in METHOD_DIRS}
+    floor = perfect_floor_a_stats()
     wins = {m: 0 for m in METHOD_NAMES}
     total = 0
-    ncol = 1 + len(METHOD_DIRS) + 1
-    out = [header_html("Metric", ["Winner"])]
+    ncol = 1 + len(METHOD_DIRS) + 2  # Metric + methods + Perfect + Winner
+    out = [header_html("Metric", ["Perfect", "Winner"])]
     for label, key, direction in A_ROWS:
         if key is None:  # category separator
             out.append(f'  <tr><td colspan="{ncol}"><b>{label}</b></td></tr>')
@@ -222,6 +223,8 @@ def render_A():
         row = [f'  <tr><td>{label}</td>']
         for i in range(len(METHOD_DIRS)):
             row.append(cell(ms(means[i], stds[i]), bold=(i == wi)))
+        fm, fs = floor.get(key, (None, None))
+        row.append(f'<td>{ms(fm, fs)}</td>')
         row.append(f'<td><b>{win_name}</b></td></tr>')
         out.append("".join(row))
     out += ["</tbody>", "</table>"]
@@ -265,10 +268,13 @@ def render_B():
                     txt = f"{fmt(d['mean'])}% ± {fmt(d['std'])}%"
                 row.append(cell(txt, bold=(measure == "mse" and i == wi)))
             if pf is not None:
-                pv = pf[measure]["mean"]
-                row.append(f'<td>{fmt(pv)}</td>')
+                pm, psd = pf[measure]["mean"], pf[measure]["std"]
+                if measure in ("pct", "nrmse"):
+                    row.append(f'<td>{fmt(pm)}% ± {fmt(psd)}%</td>')
+                else:
+                    row.append(f'<td>{ms(pm, psd)}</td>')
             else:
-                row.append('<td>0</td>')
+                row.append('<td>—</td>')
             if mi == 0:
                 row.append(f'<td rowspan="3"><b>{win_name}</b></td>')
             row.append('</tr>')
@@ -341,6 +347,23 @@ def perfect_floor_a():
             continue
         vals = [d[key] for d in docs if key in d and d[key] is not None]
         out[key] = float(np.mean(vals)) if vals else None
+    return out
+
+
+def perfect_floor_a_stats():
+    """Mean AND sample std across the 5 independent-draw perfect-recovery seeds,
+    per A key -> {key: (mean, std)}. Used for the root Table-A 'Perfect' column."""
+    pdir = os.path.join(REPO, "methods", "perfect_recovery", "results")
+    docs = []
+    for seed in range(5):
+        with open(os.path.join(pdir, f"seed_{seed}_metrics.json")) as f:
+            docs.append(json.load(f))
+    out = {}
+    for _, key, _ in A_ROWS:
+        if key is None:
+            continue
+        vals = [d[key] for d in docs if key in d and d[key] is not None]
+        out[key] = (float(np.mean(vals)), float(np.std(vals))) if vals else (None, None)
     return out
 
 

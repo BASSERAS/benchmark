@@ -128,20 +128,19 @@ on a handful of axes but is edged everywhere by the four family leaders above.
 
 ## B — Curve-shape metrics cross-method comparison (mean ± std, 5 seeds)
 
-Each of the 6 diagnostic plots yields a **curve** L (a list of values), not a scalar. For each plot we build
-three lists — the curve L, its first finite difference (der), and its second finite difference (sec\_der) —
-then combine them into **one number per plot** under three measures (each the mean of the three sub-scores
-unless noted):
+Each of the 6 diagnostic plots yields a **curve** L (a list of values), not a scalar. **MSE** combines three
+lists — the curve L, its first finite difference (der), and its second finite difference (sec\_der); **% err**
+and **NRMSE** are **funct-only** (curve L only):
 
-- **MSE**: dᵢ = mean((L_gen − L_real)²), averaged over curve / der / sec\_der. Combined std = quadrature of the three seed-std.
-- **% err** (scale-aware ε-floor MAPE): dᵢ = mean(|L_gen − L_real| / (|L_real| + ε)) × 100 with ε = 1e-3·(max|L_real| + 1e-12), so near-zero reference points cannot make the relative error explode.
-- **NRMSE**: sqrt(mean((L_gen − L_real)²)) / (max|L_real| − min|L_real| + 1e-12) × 100 — RMSE normalised by the reference curve's range.
+- **MSE**: dᵢ = mean((L_gen − L_real)²), averaged over curve / der / sec\_der — the winner-deciding number. Combined std = quadrature of the three seed-std.
+- **% err** (function-level MAPE, funct-only): dᵢ = mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100 — one division, on the curve L only. The der / sec\_der MAPE is excluded as ill-posed (near-zero denominators explode).
+- **NRMSE** (funct-only): sqrt(mean((L_gen − L_real)²)) / (max|L_real| − min|L_real| + 1e-12) × 100 on the curve L only — RMSE normalised by the reference curve's range.
 
-For **Tail survival** the % err and NRMSE use the curve L only (funct-only); its finite differences are
-near-zero and ill-posed, so only the MSE averages all three. ↓ lower is better. Histogram bin edges use
-[0.5th, 99.5th]-percentile of **real data only**, so the reference curve is fixed. The **Perfect** column is
-an independent Heston draw (seeds 1000+) scored against the test set the same way — a **non-zero**
-finite-sample floor, not a degenerate zero. Winner is by MSE.
+**% err and NRMSE are funct-only for every plot**: the first and second finite differences of these curves are
+near-zero, so their relative error is ill-posed and would explode; only **MSE** averages all three sub-curves.
+↓ lower is better. Histogram bin edges use [0.5th, 99.5th]-percentile of **real data only**, so the reference
+curve is fixed. The **Perfect** column is an independent Heston draw (seeds 1000+) scored against the test set
+the same way — a **non-zero** finite-sample floor, not a degenerate zero. Winner is by MSE.
 
 <table>
 <thead>
@@ -170,23 +169,23 @@ finite-sample floor, not a degenerate zero. Winner is by MSE.
 </thead>
 <tbody>
   <tr><td rowspan="3"><b>Log-return histogram</b></td><td>MSE</td><td>45.40 ± 57.91</td><td>42.66 ± 1.999</td><td>4.883 ± 0.5079</td><td>4.644 ± 0.4940</td><td>968.0 ± 183.1</td><td>4.386 ± 0.8335</td><td><b>0.4517 ± 0.02799</b></td><td>4.082 ± 0.04782</td><td>0.9211 ± 0.02370</td><td>0.1098</td><td rowspan="3"><b>LS4</b></td></tr>
-  <tr><td>% err</td><td>419.7% ± 221.5%</td><td>467.7% ± 171.8%</td><td>313.8% ± 111.7%</td><td>173.1% ± 52.65%</td><td>2019% ± 124.3%</td><td>308.5% ± 111.1%</td><td>268.8% ± 57.81%</td><td>227.7% ± 114.1%</td><td>201.4% ± 70.21%</td><td>290.3</td></tr>
-  <tr><td>NRMSE</td><td>157.7% ± 170.7%</td><td>43.07% ± 1.920%</td><td>26.20% ± 2.004%</td><td>26.96% ± 1.822%</td><td>945.0% ± 211.7%</td><td>25.66% ± 2.898%</td><td>19.64% ± 1.129%</td><td>26.80% ± 1.320%</td><td>22.66% ± 2.236%</td><td>17.81</td></tr>
+  <tr><td>% err</td><td>33.41% ± 6.533%</td><td>246.6% ± 7.987%</td><td>42.14% ± 1.003%</td><td>35.27% ± 1.063%</td><td>114.9% ± 0.6458%</td><td>30.95% ± 1.747%</td><td>5.429% ± 0.1852%</td><td>39.17% ± 0.1361%</td><td>9.167% ± 0.5606%</td><td>1.799%</td></tr>
+  <tr><td>NRMSE</td><td>21.38% ± 14.34%</td><td>30.81% ± 0.7154%</td><td>10.28% ± 0.5317%</td><td>9.998% ± 0.5467%</td><td>123.7% ± 6.783%</td><td>9.691% ± 0.9011%</td><td>2.779% ± 0.08180%</td><td>9.368% ± 0.06168%</td><td>4.186% ± 0.1102%</td><td>0.5328%</td></tr>
   <tr><td rowspan="3"><b>QQ plot</b></td><td>MSE</td><td>2.38e-06 ± 1.14e-06</td><td>8.25e-04 ± 6.60e-05</td><td>3.48e-06 ± 1.75e-07</td><td>2.36e-06 ± 1.57e-07</td><td>3.99e-05 ± 5.99e-07</td><td>1.82e-06 ± 2.20e-07</td><td><b>4.59e-08 ± 2.12e-09</b></td><td>3.01e-06 ± 2.28e-08</td><td>1.45e-07 ± 2.63e-08</td><td>1.09e-09</td><td rowspan="3"><b>LS4</b></td></tr>
-  <tr><td>% err</td><td>41.04% ± 12.07%</td><td>377.1% ± 18.26%</td><td>31.90% ± 0.7667%</td><td>29.51% ± 1.432%</td><td>77.68% ± 0.6153%</td><td>27.65% ± 0.8494%</td><td>18.79% ± 0.3859%</td><td>29.61% ± 1.136%</td><td>21.35% ± 0.9706%</td><td>16.51</td></tr>
-  <tr><td>NRMSE</td><td>5.480% ± 1.004%</td><td>72.79% ± 4.557%</td><td>6.488% ± 0.1372%</td><td>4.411% ± 0.1584%</td><td>18.72% ± 0.06454%</td><td>3.764% ± 0.2117%</td><td>1.132% ± 0.08232%</td><td>6.253% ± 0.05502%</td><td>2.310% ± 0.3375%</td><td>0.3436</td></tr>
+  <tr><td>% err</td><td>34.50% ± 11.22%</td><td>437.1% ± 19.17%</td><td>25.71% ± 1.743%</td><td>24.22% ± 1.083%</td><td>90.53% ± 1.555%</td><td>23.84% ± 2.434%</td><td>6.022% ± 0.6435%</td><td>21.47% ± 0.3841%</td><td>9.342% ± 2.293%</td><td>0.4629%</td></tr>
+  <tr><td>NRMSE</td><td>6.960% ± 1.738%</td><td>134.7% ± 5.407%</td><td>8.689% ± 0.2248%</td><td>7.188% ± 0.2370%</td><td>29.57% ± 0.2260%</td><td>6.308% ± 0.3785%</td><td>0.9701% ± 0.02323%</td><td>8.083% ± 0.03106%</td><td>1.687% ± 0.1351%</td><td>0.1206%</td></tr>
   <tr><td rowspan="3"><b>ACF \|r\| lags 1–20</b></td><td>MSE</td><td>0.003597 ± 0.003199</td><td>0.008548 ± 0.003519</td><td>1.72e-04 ± 4.79e-05</td><td><b>3.02e-05 ± 1.61e-05</b></td><td>0.03390 ± 0.01422</td><td>1.22e-04 ± 3.84e-05</td><td>5.14e-05 ± 1.08e-05</td><td>0.001512 ± 1.42e-05</td><td>3.83e-04 ± 1.20e-05</td><td>9.61e-06</td><td rowspan="3"><b>CSDI</b></td></tr>
-  <tr><td>% err</td><td>800.5% ± 427.8%</td><td>3831% ± 1214%</td><td>215.5% ± 57.66%</td><td>150.8% ± 32.96%</td><td>2097% ± 543.3%</td><td>206.9% ± 30.30%</td><td>140.8% ± 27.27%</td><td>624.4% ± 17.17%</td><td>147.4% ± 19.81%</td><td>114.3</td></tr>
-  <tr><td>NRMSE</td><td>391.2% ± 182.9%</td><td>1340% ± 296.1%</td><td>117.1% ± 20.99%</td><td>58.94% ± 13.42%</td><td>845.1% ± 120.6%</td><td>81.22% ± 16.03%</td><td>56.86% ± 12.25%</td><td>489.4% ± 2.377%</td><td>74.72% ± 7.928%</td><td>43.89</td></tr>
+  <tr><td>% err</td><td>186.2% ± 107.8%</td><td>230.0% ± 48.05%</td><td>73.33% ± 13.17%</td><td>19.26% ± 8.314%</td><td>983.6% ± 273.1%</td><td>63.03% ± 14.21%</td><td>37.09% ± 3.059%</td><td>149.0% ± 1.780%</td><td>117.2% ± 2.149%</td><td>8.724%</td></tr>
+  <tr><td>NRMSE</td><td>224.6% ± 123.4%</td><td>198.2% ± 35.47%</td><td>51.98% ± 7.840%</td><td>19.33% ± 5.196%</td><td>795.3% ± 212.4%</td><td>45.54% ± 9.362%</td><td>29.46% ± 2.604%</td><td>127.9% ± 0.8849%</td><td>88.45% ± 1.425%</td><td>6.071%</td></tr>
   <tr><td rowspan="3"><b>ACF r² lags 1–20</b></td><td>MSE</td><td>0.001982 ± 0.001602</td><td>0.008781 ± 0.003516</td><td>1.32e-04 ± 4.43e-05</td><td>2.71e-05 ± 1.16e-05</td><td>0.02694 ± 0.01034</td><td>1.05e-04 ± 3.00e-05</td><td><b>2.48e-05 ± 6.52e-06</b></td><td>0.001723 ± 2.85e-05</td><td>2.80e-04 ± 1.13e-05</td><td>9.17e-06</td><td rowspan="3"><b>LS4</b></td></tr>
-  <tr><td>% err</td><td>1771% ± 1635%</td><td>11227% ± 3842%</td><td>365.5% ± 60.60%</td><td>362.4% ± 86.75%</td><td>4568% ± 1771%</td><td>463.3% ± 82.83%</td><td>377.7% ± 66.31%</td><td>759.0% ± 46.45%</td><td>310.9% ± 63.75%</td><td>381.5</td></tr>
-  <tr><td>NRMSE</td><td>346.3% ± 170.2%</td><td>1082% ± 235.1%</td><td>97.45% ± 20.23%</td><td>45.48% ± 7.131%</td><td>706.9% ± 56.85%</td><td>69.61% ± 14.32%</td><td>44.12% ± 7.818%</td><td>436.0% ± 4.231%</td><td>63.28% ± 6.029%</td><td>34.19</td></tr>
+  <tr><td>% err</td><td>130.0% ± 65.84%</td><td>287.8% ± 57.85%</td><td>73.19% ± 16.72%</td><td>21.75% ± 10.67%</td><td>1026% ± 265.1%</td><td>70.37% ± 13.75%</td><td>24.39% ± 3.127%</td><td>171.3% ± 1.908%</td><td>120.8% ± 3.065%</td><td>11.34%</td></tr>
+  <tr><td>NRMSE</td><td>168.2% ± 70.21%</td><td>221.1% ± 36.09%</td><td>46.32% ± 8.702%</td><td>20.43% ± 5.060%</td><td>782.1% ± 188.7%</td><td>45.61% ± 7.936%</td><td>19.10% ± 2.524%</td><td>145.2% ± 1.200%</td><td>82.92% ± 1.680%</td><td>6.486%</td></tr>
   <tr><td rowspan="3"><b>Rolling vol histogram</b></td><td>MSE</td><td>150.2 ± 75.22</td><td>1398 ± 34.29</td><td>220.2 ± 15.36</td><td>157.5 ± 12.45</td><td>16019 ± 2352</td><td>113.9 ± 13.91</td><td><b>8.514 ± 0.7580</b></td><td>412.9 ± 1.772</td><td>29.88 ± 2.639</td><td>1.372</td><td rowspan="3"><b>LS4</b></td></tr>
-  <tr><td>% err</td><td>201.4% ± 54.37%</td><td>1160% ± 134.2%</td><td>167.1% ± 16.21%</td><td>157.3% ± 11.64%</td><td>2765% ± 431.0%</td><td>157.5% ± 5.259%</td><td>113.0% ± 12.88%</td><td>203.1% ± 11.46%</td><td>120.6% ± 8.620%</td><td>127.9</td></tr>
-  <tr><td>NRMSE</td><td>34.40% ± 8.778%</td><td>70.04% ± 2.551%</td><td>35.77% ± 1.403%</td><td>32.04% ± 0.9269%</td><td>897.3% ± 133.3%</td><td>30.01% ± 1.265%</td><td>18.81% ± 0.7513%</td><td>45.41% ± 0.7118%</td><td>22.49% ± 1.051%</td><td>16.66</td></tr>
+  <tr><td>% err</td><td>56.76% ± 21.18%</td><td>799.2% ± 14.12%</td><td>69.05% ± 1.441%</td><td>61.91% ± 2.364%</td><td>340.0% ± 11.74%</td><td>54.51% ± 2.433%</td><td>11.70% ± 1.165%</td><td>84.56% ± 0.1274%</td><td>25.42% ± 3.199%</td><td>2.264%</td></tr>
+  <tr><td>NRMSE</td><td>22.64% ± 7.203%</td><td>73.06% ± 0.8956%</td><td>28.87% ± 0.9919%</td><td>24.39% ± 0.9523%</td><td>221.5% ± 13.05%</td><td>20.68% ± 1.268%</td><td>5.275% ± 0.3034%</td><td>39.59% ± 0.08241%</td><td>10.43% ± 0.4823%</td><td>0.8688%</td></tr>
   <tr><td rowspan="3"><b>Tail survival</b></td><td>MSE</td><td>0.003912 ± 0.003064</td><td>0.05973 ± 0.001991</td><td>0.002258 ± 2.00e-04</td><td>0.001960 ± 1.85e-04</td><td>0.07224 ± 0.001903</td><td>0.001709 ± 2.78e-04</td><td><b>6.90e-05 ± 8.10e-06</b></td><td>0.001937 ± 2.20e-05</td><td>1.71e-04 ± 1.49e-05</td><td>5.22e-07</td><td rowspan="3"><b>LS4</b></td></tr>
-  <tr><td>% err</td><td>23.39% ± 6.106%</td><td>320.6% ± 7.644%</td><td>27.97% ± 0.8384%</td><td>24.44% ± 0.8699%</td><td>89.46% ± 0.6378%</td><td>22.03% ± 1.364%</td><td>3.280% ± 0.1161%</td><td>26.22% ± 0.1121%</td><td>5.585% ± 0.2282%</td><td>0.3256</td></tr>
-  <tr><td>NRMSE</td><td>10.02% ± 4.365%</td><td>42.74% ± 0.7148%</td><td>8.301% ± 0.3648%</td><td>7.733% ± 0.3598%</td><td>46.97% ± 0.6196%</td><td>7.206% ± 0.5711%</td><td>1.449% ± 0.08321%</td><td>7.694% ± 0.04378%</td><td>2.287% ± 0.09795%</td><td>0.1050</td></tr>
+  <tr><td>% err</td><td>23.64% ± 6.097%</td><td>342.3% ± 8.331%</td><td>28.39% ± 0.8411%</td><td>24.78% ± 0.8772%</td><td>90.06% ± 0.6385%</td><td>22.34% ± 1.374%</td><td>3.345% ± 0.1144%</td><td>26.62% ± 0.1128%</td><td>5.711% ± 0.2437%</td><td>0.3302%</td></tr>
+  <tr><td>NRMSE</td><td>10.02% ± 4.365%</td><td>42.74% ± 0.7148%</td><td>8.301% ± 0.3648%</td><td>7.733% ± 0.3598%</td><td>46.97% ± 0.6196%</td><td>7.206% ± 0.5711%</td><td>1.449% ± 0.08321%</td><td>7.694% ± 0.04378%</td><td>2.287% ± 0.09795%</td><td>0.1050%</td></tr>
 </tbody>
 </table>
 
@@ -262,17 +261,23 @@ The 8-panel diagnostic below overlays each method's generated paths (blue) again
 of |r| and r², rolling-volatility histogram, tail-survival and mean-path. One panel figure per method,
 ordered by family.
 
+### GAN
+
 #### TimeGAN
 ![TimeGAN diagnostics](Heston/TimeGAN/plots/heston_diagnostics.png)
 
 #### COSCI-GAN
 ![COSCI-GAN diagnostics](Heston/COSCI-GAN/plots/heston_diagnostics.png)
 
+### Diffusion
+
 #### Diffusion-TS
 ![Diffusion-TS diagnostics](Heston/DiffusionTS/plots/heston_diagnostics.png)
 
 #### CSDI
 ![CSDI diagnostics](Heston/CSDI/plots/heston_diagnostics.png)
+
+### VAE
 
 #### TimeVAE
 ![TimeVAE diagnostics](Heston/TimeVAE/plots/heston_diagnostics.png)
@@ -283,8 +288,12 @@ ordered by family.
 #### LS4
 ![LS4 diagnostics](Heston/LS4/plots/heston_diagnostics.png)
 
+### Schrödinger Bridge
+
 #### SBTS
 ![SBTS diagnostics](Heston/SBTS/plots/heston_diagnostics.png)
+
+### Fourier Flow
 
 #### Fourier Flow
 ![Fourier Flow diagnostics](Heston/FourierFlow/plots/heston_diagnostics.png)
@@ -518,16 +527,39 @@ of truth for every "Perfect floor" column in the repo — see
 
 ## Key differences
 
-| Aspect | TimeGAN | SBTS | Fourier Flow | Diffusion-TS | CSDI | TimeVAE | TimeVQVAE | COSCI-GAN | LS4 |
-|--------|:-------:|:----:|:------------:|:------------:|:----:|:-------:|:---------:|:---------:|:---:|
-| **Type** | Neural GAN (5 GRU components) | Non-parametric kernel estimator | Explicit-likelihood normalizing flow (frequency domain) | Denoising diffusion (DDPM) + seasonal-trend transformer | Score-based diffusion (DDPM) + time×feature transformer | Variational auto-encoder (conv encoder + decoder, Base) | Two-stage vector-quantized (STFT VQ-VAE + MaskGIT prior) | Channel-decomposed GAN (per-channel LSTM GANs + MLP central discriminator) | VAE-style latent state-space model (S4 prior + S4 posterior + S4 decoder) |
-| **Learnable parameters** | ~120 k (GRU weights) | **0** (no parameters) | ~360 k (3 spectral-filter MLPs, hidden=200) | ~544 k (enc/dec transformer, mujoco) | ~413 k (2-D transformer, 4 residual layers) | ~247 k (conv encoder/decoder, latent 8) | LF+HF codebooks (32×64) + MaskGIT transformer (hidden 256, 4 layers) | ~800 k (LSTM channel gen/disc + MLP central disc) | ~2.15 M (Latent-S4 prior/posterior/decoder, d_model 128, d_state 64) |
-| **Training time / seed** | ~6–8 min (A100 GPU) | No training | ~8.2 min (CPU, 1000 epochs) | ~14.6 min (A100 GPU, 12 000 steps) | ~29.3 min (A100 GPU, 200 epochs) | ~13 min (A100 GPU, EarlyStop 230–340 epochs) | ~53 min (A100 GPU, stage1 250 + stage2 1000 epochs) | ~4.3 min (A100 GPU, 120 epochs) | ~16 min (A100 GPU, 100 epochs) |
-| **Generation time / seed** | <1 s (GPU inference) | ~6.3 min (64 CPU workers) | ~1.5 s (CPU inverse flow + iDFT) | 500-step DDPM sampling (GPU) | ~10.2 s (50-step DDPM, GPU) | <1 s (single decoder forward pass) | ~6 s (MaskGIT decode + iSTFT, GPU) | LSTM forward over shared noise (not sep. timed, GPU) | ~9 s (STEP-mode `latent.step`, GPU) |
-| **Temporal memory** | Full (GRU sees all past steps) | **Markov-1 only** | Global (per-frequency spectral coupling) | Global (transformer self-attention over full window) | Global (2-D transformer over time × feature) | Global (conv receptive field over full window) | Global (bidirectional MaskGIT transformer over token grid) | Full (LSTM sees all past steps) | Global (S4 structured state-space over full window) |
-| **Internal representation** | Latent embeddings (min-max) | Scaled log-returns R̃ | DFT spectral bins (real/imag) | x̂₀ = trend + seasonal (time + Fourier domain) | z-scored prices + diffusion noise | 8-d Gaussian latent z | STFT VQ tokens (LF + HF codebooks) | Per-channel LSTM hidden state (shared noise z) | Global-standardized prices + latent S4 state z |
-| **Final output** | Price paths (S_t) | Price paths (S_t) | Price paths (S_t) | Price paths (S_t) | Price paths (S_t) | Price paths (S_t) | Price paths (S_t) | Price paths (S_t) | Price paths (S_t) |
-| **Cross-seed stability** | Moderate (GAN variance) | **High** (deterministic kernel) | High on moments, moderate on covariance | High on moments/ACF, moderate on GRU disc | High on moments/ACF, moderate on GRU disc | High on moments, moderate on mean-path (A13/A25 std ~0.2–0.3) | High on PS-MC (std 0.017), moderate on covariance (A20 std 6.66) | Moderate (GAN variance); wide A5/A28 spread (sign-flipping kurtosis ratio) | High on distribution/tail metrics (A2 std 1.1e-04, PS-MC std 0.003–0.006), moderate on mean-path (A13/A25) |
-| **Scales to long T** | Well (RNN) | Degrades (K=1 insufficient) | Well (fixed spectral size) | Well (transformer handles any T) | Well (transformer handles any T) | Well (fixed conv/latent size) | Well (transformer + more STFT tokens) | Well (LSTM); central disc degenerate at C=1 (univariate) | Well (S4 SSM designed for long sequences) |
-| **Hyperparameter sensitivity** | Many (arch, lr, steps) | One critical: h (bandwidth) | Few (n_flows, hidden, grad-clip guard) | Moderate (depth preset, timesteps, EMA) | Moderate (layers, channels, diffusion steps, β schedule) | Few (latent dim, reconstruction_wt, hidden sizes) | Moderate (n_fft, codebook size, MaskGIT steps/temperature) | Moderate (γ central-disc weight, lr, epochs, LSTM hidden) | Moderate (z_dim, d_model, d_state, S4 blocks; Cauchy-sum fix required) |
-| **Training objective** | Adversarial + supervised | Schrödinger-bridge drift (closed-form) | **Exact negative log-likelihood** | Reweighted L1 + Fourier-FFT reconstruction | Noise-prediction MSE (ε-matching) | ELBO (weighted reconstruction + KL) | Stage-1 VQ reconstruction + Stage-2 masked-token cross-entropy | Three-player adversarial (channel BCE − γ·central-disc BCE) | ELBO (KL + reconstruction NLL) |
+<table>
+<thead>
+  <tr>
+    <th rowspan="2">Aspect</th>
+    <th colspan="2">GAN</th>
+    <th colspan="2">Diffusion</th>
+    <th colspan="3">VAE</th>
+    <th>Schrödinger Bridge</th>
+    <th>Fourier Flow</th>
+  </tr>
+  <tr>
+    <th>TimeGAN</th>
+    <th>COSCI-GAN</th>
+    <th>Diffusion-TS</th>
+    <th>CSDI</th>
+    <th>TimeVAE</th>
+    <th>TimeVQVAE</th>
+    <th>LS4</th>
+    <th>SBTS</th>
+    <th>Fourier Flow</th>
+  </tr>
+</thead>
+<tbody>
+  <tr><td>**Type**</td><td>Neural GAN (5 GRU components)</td><td>Channel-decomposed GAN (per-channel LSTM GANs + MLP central discriminator)</td><td>Denoising diffusion (DDPM) + seasonal-trend transformer</td><td>Score-based diffusion (DDPM) + time×feature transformer</td><td>Variational auto-encoder (conv encoder + decoder, Base)</td><td>Two-stage vector-quantized (STFT VQ-VAE + MaskGIT prior)</td><td>VAE-style latent state-space model (S4 prior + S4 posterior + S4 decoder)</td><td>Non-parametric kernel estimator</td><td>Explicit-likelihood normalizing flow (frequency domain)</td></tr>
+  <tr><td>**Learnable parameters**</td><td>~120 k (GRU weights)</td><td>~800 k (LSTM channel gen/disc + MLP central disc)</td><td>~544 k (enc/dec transformer, mujoco)</td><td>~413 k (2-D transformer, 4 residual layers)</td><td>~247 k (conv encoder/decoder, latent 8)</td><td>LF+HF codebooks (32×64) + MaskGIT transformer (hidden 256, 4 layers)</td><td>~2.15 M (Latent-S4 prior/posterior/decoder, d_model 128, d_state 64)</td><td>**0** (no parameters)</td><td>~360 k (3 spectral-filter MLPs, hidden=200)</td></tr>
+  <tr><td>**Training time / seed**</td><td>~6–8 min (A100 GPU)</td><td>~4.3 min (A100 GPU, 120 epochs)</td><td>~14.6 min (A100 GPU, 12 000 steps)</td><td>~29.3 min (A100 GPU, 200 epochs)</td><td>~13 min (A100 GPU, EarlyStop 230–340 epochs)</td><td>~53 min (A100 GPU, stage1 250 + stage2 1000 epochs)</td><td>~16 min (A100 GPU, 100 epochs)</td><td>No training</td><td>~8.2 min (CPU, 1000 epochs)</td></tr>
+  <tr><td>**Generation time / seed**</td><td><1 s (GPU inference)</td><td>LSTM forward over shared noise (not sep. timed, GPU)</td><td>500-step DDPM sampling (GPU)</td><td>~10.2 s (50-step DDPM, GPU)</td><td><1 s (single decoder forward pass)</td><td>~6 s (MaskGIT decode + iSTFT, GPU)</td><td>~9 s (STEP-mode `latent.step`, GPU)</td><td>~6.3 min (64 CPU workers)</td><td>~1.5 s (CPU inverse flow + iDFT)</td></tr>
+  <tr><td>**Temporal memory**</td><td>Full (GRU sees all past steps)</td><td>Full (LSTM sees all past steps)</td><td>Global (transformer self-attention over full window)</td><td>Global (2-D transformer over time × feature)</td><td>Global (conv receptive field over full window)</td><td>Global (bidirectional MaskGIT transformer over token grid)</td><td>Global (S4 structured state-space over full window)</td><td>**Markov-1 only**</td><td>Global (per-frequency spectral coupling)</td></tr>
+  <tr><td>**Internal representation**</td><td>Latent embeddings (min-max)</td><td>Per-channel LSTM hidden state (shared noise z)</td><td>x̂₀ = trend + seasonal (time + Fourier domain)</td><td>z-scored prices + diffusion noise</td><td>8-d Gaussian latent z</td><td>STFT VQ tokens (LF + HF codebooks)</td><td>Global-standardized prices + latent S4 state z</td><td>Scaled log-returns R̃</td><td>DFT spectral bins (real/imag)</td></tr>
+  <tr><td>**Final output**</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td></tr>
+  <tr><td>**Cross-seed stability**</td><td>Moderate (GAN variance)</td><td>Moderate (GAN variance); wide A5/A28 spread (sign-flipping kurtosis ratio)</td><td>High on moments/ACF, moderate on GRU disc</td><td>High on moments/ACF, moderate on GRU disc</td><td>High on moments, moderate on mean-path (A13/A25 std ~0.2–0.3)</td><td>High on PS-MC (std 0.017), moderate on covariance (A20 std 6.66)</td><td>High on distribution/tail metrics (A2 std 1.1e-04, PS-MC std 0.003–0.006), moderate on mean-path (A13/A25)</td><td>**High** (deterministic kernel)</td><td>High on moments, moderate on covariance</td></tr>
+  <tr><td>**Scales to long T**</td><td>Well (RNN)</td><td>Well (LSTM); central disc degenerate at C=1 (univariate)</td><td>Well (transformer handles any T)</td><td>Well (transformer handles any T)</td><td>Well (fixed conv/latent size)</td><td>Well (transformer + more STFT tokens)</td><td>Well (S4 SSM designed for long sequences)</td><td>Degrades (K=1 insufficient)</td><td>Well (fixed spectral size)</td></tr>
+  <tr><td>**Hyperparameter sensitivity**</td><td>Many (arch, lr, steps)</td><td>Moderate (γ central-disc weight, lr, epochs, LSTM hidden)</td><td>Moderate (depth preset, timesteps, EMA)</td><td>Moderate (layers, channels, diffusion steps, β schedule)</td><td>Few (latent dim, reconstruction_wt, hidden sizes)</td><td>Moderate (n_fft, codebook size, MaskGIT steps/temperature)</td><td>Moderate (z_dim, d_model, d_state, S4 blocks; Cauchy-sum fix required)</td><td>One critical: h (bandwidth)</td><td>Few (n_flows, hidden, grad-clip guard)</td></tr>
+  <tr><td>**Training objective**</td><td>Adversarial + supervised</td><td>Three-player adversarial (channel BCE − γ·central-disc BCE)</td><td>Reweighted L1 + Fourier-FFT reconstruction</td><td>Noise-prediction MSE (ε-matching)</td><td>ELBO (weighted reconstruction + KL)</td><td>Stage-1 VQ reconstruction + Stage-2 masked-token cross-entropy</td><td>ELBO (KL + reconstruction NLL)</td><td>Schrödinger-bridge drift (closed-form)</td><td>**Exact negative log-likelihood**</td></tr>
+</tbody>
+</table>

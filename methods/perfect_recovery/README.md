@@ -118,43 +118,45 @@ perfect generator would asymptote to.
 
 ## B — Curve-Shape Metrics — mean ± std across 5 independent-draw seeds
 
-Each stylised-fact curve is summarised by three sublines, all mean-of-three over
-{function, 1st derivative, 2nd derivative} unless noted:
+Each stylised-fact curve is summarised by three sublines. **MSE** is the mean-of-three over
+{function, 1st derivative, 2nd derivative}; **% err** and **NRMSE** are **funct-only** (curve L only):
 
-- **MSE** — `mean((L_gen − L_real)²)`, the winner-deciding number.
-- **% err** — scale-aware ε-floor MAPE, `mean(|L_gen − L_real| / (|L_real| + ε)) × 100`, `ε = 1e-3·(max|L_real| + 1e-12)`.
-- **NRMSE** — `sqrt(mean((L_gen − L_real)²)) / (max|L_real| − min|L_real| + 1e-12) × 100`.
+- **MSE** — `mean((L_gen − L_real)²)`, the winner-deciding number (mean of the three sub-curves).
+- **% err** — function-level MAPE, `mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100` on the curve L
+  only; the derivative / 2nd-difference MAPE is excluded as ill-posed (near-zero denominators).
+- **NRMSE** — `sqrt(mean((L_gen − L_real)²)) / (max|L_real| − min|L_real| + 1e-12) × 100` on the curve L only (funct-only).
 
-> **Tail survival** uses **function-only** for % err and NRMSE (its derivatives are near-zero, so the
-> ε-floor MAPE explodes); MSE stays mean-of-three.
+> **% err and NRMSE are funct-only for every plot**: the first and second finite differences of
+> these curves are near-zero, so their relative error is ill-posed and would explode; only **MSE**
+> averages all three sub-curves and decides the winner.
 
 <!-- ===== PERFECT-RECOVERY B TABLE ===== -->
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 |
 |------|---------|-----------|--------|--------|--------|--------|--------|
 | **Log-return histogram** | MSE | 0.1098 ± 0.02492 | 0.08507 | 0.1442 | 0.08047 | 0.1084 | 0.1310 |
-|  | % err | 290.3% ± 140.6% | 258.8% | 463.5% | 129.7% | 444.5% | 155.0% |
-|  | NRMSE | 17.81% ± 2.281% | 15.38% | 20.82% | 15.13% | 17.93% | 19.78% |
+|  | % err | 1.799% ± 0.04483% | 1.785% | 1.754% | 1.865% | 1.838% | 1.755% |
+|  | NRMSE | 0.5328% ± 0.02035% | 0.5648% | 0.5406% | 0.5132% | 0.5086% | 0.5366% |
 | **QQ plot** | MSE | 1.09e-09 ± 6.13e-10 | 2.21e-09 | 5.44e-10 | 1.27e-09 | 8.19e-10 | 6.31e-10 |
-|  | % err | 16.51% ± 0.9368% | 15.49% | 17.48% | 17.79% | 15.87% | 15.92% |
-|  | NRMSE | 0.3436% ± 0.03688% | 0.4054% | 0.2970% | 0.3291% | 0.3606% | 0.3260% |
+|  | % err | 0.4629% ± 0.1067% | 0.6353% | 0.3382% | 0.4862% | 0.3617% | 0.4929% |
+|  | NRMSE | 0.1206% ± 0.0467% | 0.1996% | 0.07741% | 0.1479% | 0.09494% | 0.08313% |
 | **ACF \|r\| lags 1–20** | MSE | 9.61e-06 ± 3.40e-06 | 1.16e-05 | 1.43e-05 | 1.07e-05 | 5.22e-06 | 6.23e-06 |
-|  | % err | 114.3% ± 22.37% | 109.5% | 139.5% | 139.8% | 82.82% | 100.1% |
-|  | NRMSE | 43.89% ± 8.375% | 50.95% | 54.14% | 45.71% | 32.10% | 36.57% |
+|  | % err | 8.724% ± 1.843% | 7.504% | 11.21% | 10.5% | 8.056% | 6.341% |
+|  | NRMSE | 6.071% ± 1.301% | 5.146% | 7.67% | 7.561% | 5.478% | 4.497% |
 | **ACF r² lags 1–20** | MSE | 9.17e-06 ± 3.08e-06 | 9.60e-06 | 1.45e-05 | 9.54e-06 | 5.74e-06 | 6.49e-06 |
-|  | % err | 381.5% ± 102.0% | 483.2% | 482.8% | 422.4% | 261.8% | 257.4% |
-|  | NRMSE | 34.19% ± 5.580% | 36.30% | 43.16% | 34.71% | 27.15% | 29.61% |
+|  | % err | 11.34% ± 2.219% | 9.455% | 15.07% | 12.61% | 10.34% | 9.216% |
+|  | NRMSE | 6.486% ± 1.351% | 5.39% | 8.565% | 7.556% | 5.879% | 5.042% |
 | **Rolling vol histogram** | MSE | 1.372 ± 0.07269 | 1.247 | 1.364 | 1.470 | 1.402 | 1.377 |
-|  | % err | 127.9% ± 9.845% | 124.4% | 141.4% | 137.3% | 120.6% | 115.8% |
-|  | NRMSE | 16.66% ± 0.4699% | 15.79% | 16.75% | 17.22% | 16.73% | 16.82% |
+|  | % err | 2.264% ± 0.07625% | 2.336% | 2.312% | 2.256% | 2.293% | 2.121% |
+|  | NRMSE | 0.8688% ± 0.05532% | 0.857% | 0.8012% | 0.9044% | 0.9554% | 0.8262% |
 | **Tail survival** | MSE | 5.22e-07 ± 5.50e-07 | 1.50e-06 | 1.78e-07 | 7.66e-07 | 9.10e-08 | 7.67e-08 |
-|  | % err | 0.3256% ± 0.2149% | 0.6631% | 0.1770% | 0.4966% | 0.1677% | 0.1237% |
-|  | NRMSE | 0.1050% ± 0.06651% | 0.2129% | 0.07004% | 0.1513% | 0.04806% | 0.04275% |
+|  | % err | 0.3302% ± 0.2167% | 0.6704% | 0.1785% | 0.503% | 0.1711% | 0.1282% |
+|  | NRMSE | 0.105% ± 0.06651% | 0.2129% | 0.07004% | 0.1513% | 0.04806% | 0.04275% |
 
-> **Why % err stays large even for a perfect draw.** The ε-floor MAPE divides by curve values that
-> are near zero over most of the support (histogram tails, high-lag ACF), so even sub-percent
-> absolute error inflates to hundreds of percent. This is a property of the metric, not the draw —
-> which is exactly why % err is a *context* subline and **MSE decides the winner**. Read a method's
-> % err against *this* floor (e.g. ACF r² floor ≈ 382%), never against 0%.
+> **Why % err is a context subline.** Even a perfect independent draw has a non-zero funct-only
+> MAPE from finite-sample noise: the ACF and rolling-vol curves sit near zero over much of their
+> support, so a small absolute error still reads as a few-percent relative error (ACF r² floor
+> ≈ 11.3%, ACF |r| ≈ 8.7%, rolling-vol ≈ 2.3%). **MSE decides the winner**; read a method's % err
+> against *this* floor, never against 0%.
 
 ---
 

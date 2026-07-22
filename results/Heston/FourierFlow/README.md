@@ -122,13 +122,13 @@ L'' (sec\_der) — and report **three rows per plot**:
 
 - **MSE** — `mean((L_gen − L_real)²)`, averaged over the three lists (funct/der/sec\_der). This is the
   quantity that decides the cross-method winner.
-- **% err** — scale-aware relative error `mean(|L_gen − L_real| / (|L_real| + ε)) × 100` with
-  `ε = 1e-3 · (max|L_real| + 1e-12)`, averaged over the three lists.
-- **NRMSE** — `sqrt(mean((L_gen − L_real)²)) / (max|L_real| − min|L_real| + 1e-12) × 100`, averaged over
-  the three lists.
+- **% err** — function-level MAPE `mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100` on the curve L
+  only (funct-only); the derivative / 2nd-difference MAPE is excluded as ill-posed (near-zero denominators).
+- **NRMSE** — `sqrt(mean((L_gen − L_real)²)) / (max|L_real| − min|L_real| + 1e-12) × 100` on the curve L
+  only (funct-only).
 
-*Special case:* for **Tail survival** the % err and NRMSE rows use the **function-level curve only**
-(funct); its MSE row stays the mean-of-three.
+For **all six plots** the % err and NRMSE rows use the **function-level curve only** (funct); the MSE
+row stays the mean of the three sub-scores.
 
 ↓ lower is better for all three rows. **Perfect floor** = the same independent-draw-vs-test floor as the A
 table (non-zero, finite-sample). Winner between methods is decided by the **MSE** row. Fourier Flow's B
@@ -139,22 +139,22 @@ scores are far more stable seed-to-seed than TimeGAN's — the log-return-histog
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
 | **Log-return histogram** | MSE | 0.9211 ± 0.02370 | 0.9371 | 0.9394 | 0.9444 | 0.8956 | 0.8891 | 0.1098 |
-|  | % err | 201.4% ± 70.21% | 256.8% | 108.0% | 302.6% | 152.2% | 187.5% | 290.3% |
-|  | NRMSE | 22.66% ± 2.236% | 25.17% | 19.40% | 22.15% | 25.16% | 21.42% | 17.81% |
+|  | % err | 9.167% ± 0.5606% | 8.987% | 10.28% | 8.876% | 8.912% | 8.782% | 1.799% |
+|  | NRMSE | 4.186% ± 0.1102% | 4.142% | 4.342% | 4.272% | 4.027% | 4.147% | 0.5328% |
 | **QQ plot** | MSE | 1.45e-07 ± 2.63e-08 | 1.37e-07 | 1.97e-07 | 1.25e-07 | 1.33e-07 | 1.32e-07 | 1.09e-09 |
-|  | % err | 21.35% ± 0.9706% | 23.13% | 20.41% | 21.07% | 20.61% | 21.55% | 16.51% |
-|  | NRMSE | 2.310% ± 0.3375% | 2.352% | 2.847% | 1.792% | 2.347% | 2.211% | 0.3436% |
+|  | % err | 9.342% ± 2.293% | 7.914% | 13.86% | 8.822% | 7.678% | 8.438% | 0.4629% |
+|  | NRMSE | 1.687% ± 0.1351% | 1.638% | 1.956% | 1.608% | 1.611% | 1.620% | 0.1206% |
 | **ACF \|r\| lags 1–20** | MSE | 3.83e-04 ± 1.20e-05 | 3.85e-04 | 3.95e-04 | 3.61e-04 | 3.91e-04 | 3.81e-04 | 9.61e-06 |
-|  | % err | 147.4% ± 19.81% | 130.1% | 146.7% | 132.4% | 185.0% | 143.0% | 114.3% |
-|  | NRMSE | 74.72% ± 7.928% | 68.30% | 73.82% | 75.93% | 89.00% | 66.54% | 43.89% |
+|  | % err | 117.2% ± 2.149% | 119.0% | 119.3% | 113.5% | 116.0% | 118.1% | 8.724% |
+|  | NRMSE | 88.45% ± 1.425% | 88.99% | 90.06% | 85.78% | 88.81% | 88.64% | 6.071% |
 | **ACF r² lags 1–20** | MSE | 2.80e-04 ± 1.13e-05 | 2.80e-04 | 2.94e-04 | 2.61e-04 | 2.89e-04 | 2.78e-04 | 9.17e-06 |
-|  | % err | 310.9% ± 63.75% | 316.6% | 371.1% | 334.1% | 344.4% | 188.4% | 381.5% |
-|  | NRMSE | 63.28% ± 6.029% | 57.37% | 63.69% | 63.47% | 74.08% | 57.81% | 34.19% |
+|  | % err | 120.8% ± 3.065% | 123.1% | 124.1% | 115.4% | 119.8% | 121.8% | 11.34% |
+|  | NRMSE | 82.92% ± 1.680% | 83.36% | 85.06% | 79.89% | 83.33% | 82.98% | 6.486% |
 | **Rolling vol histogram** | MSE | 29.88 ± 2.639 | 29.80 | 34.64 | 26.52 | 29.36 | 29.07 | 1.372 |
-|  | % err | 120.6% ± 8.620% | 108.4% | 131.9% | 113.1% | 123.1% | 126.4% | 127.9% |
-|  | NRMSE | 22.49% ± 1.051% | 22.46% | 21.88% | 21.20% | 24.36% | 22.54% | 16.66% |
+|  | % err | 25.42% ± 3.199% | 25.19% | 30.77% | 20.71% | 25.49% | 24.94% | 2.264% |
+|  | NRMSE | 10.43% ± 0.4823% | 10.43% | 11.31% | 9.838% | 10.29% | 10.29% | 0.8688% |
 | **Tail survival** | MSE | 1.71e-04 ± 1.49e-05 | 1.69e-04 | 1.72e-04 | 1.98e-04 | 1.53e-04 | 1.65e-04 | 5.22e-07 |
-|  | % err | 5.585% ± 0.2282% | 5.535% | 6.024% | 5.541% | 5.367% | 5.461% | 0.3256% |
+|  | % err | 5.711% ± 0.2437% | 5.659% | 6.185% | 5.629% | 5.495% | 5.584% | 0.3302% |
 |  | NRMSE | 2.287% ± 0.09795% | 2.272% | 2.295% | 2.461% | 2.163% | 2.244% | 0.1050% |
 
 Fourier Flow does not win any B-plot outright (LS4 takes 5 of 6, CSDI the sixth), but its **QQ**

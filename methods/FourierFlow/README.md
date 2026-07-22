@@ -13,51 +13,51 @@ applied to make the frequency-domain flow finite on Heston data.
 
 > All metrics on **log-returns** $r_t = \log(S_{t+1}/S_t)$ unless noted. A26 uses price increments $\Delta S_t$.
 
-| ID | Metric | Category | Dir | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
-|----|--------|----------|-----|-----------|--------|--------|--------|--------|--------|---------------|
-| | **— Fat Tail —** | | | | | | | | | |
-| A1 | Kurtosis Error | Fat Tail | ↓ | 0.5757 ± 0.0083 | 0.5668 | 0.5900 | 0.5728 | 0.5695 | 0.5795 | 0 |
-| A2 | \|r\| q95 Error | Fat Tail | ↓ | 6.52e-04 ± 2.10e-04 | 6.40e-04 | 9.13e-04 | 2.73e-04 | 7.24e-04 | 7.10e-04 | 0 |
-| A3 | \|r\| q99 Error | Fat Tail | ↓ | 0.0023 ± 5.06e-04 | 0.0023 | 0.0031 | 0.0015 | 0.0024 | 0.0023 | 0 |
-| A4 | Tail QQ Error | Fat Tail | ↓ | 7.15e-04 ± 1.23e-04 | 6.75e-04 | 9.40e-04 | 5.66e-04 | 7.11e-04 | 6.82e-04 | 0 |
-| A5 | Hill Tail Index Error | Fat Tail | ↓ | 6.368 ± 2.000 | 8.082 | 3.519 | 4.446 | 8.437 | 7.354 | 0 |
-| | **— Distribution —** | | | | | | | | | |
-| A6 | Path MMD² | Distribution | ↓ | 0.0052 ± 0.0019 | 0.0040 | 0.0051 | 0.0088 | 0.0036 | 0.0043 | 0.0015 |
-| A7 | Terminal MMD² | Distribution | ↓ | 0.0106 ± 0.0051 | 0.0119 | 0.0037 | 0.0187 | 0.0069 | 0.0117 | 0.0016 |
-| A8 | Increment MMD² | Distribution | ↓ | 0.0011 ± 7.70e-05 | 0.0010 | 0.0011 | 0.0012 | 9.45e-04 | 0.0011 | 7.45e-04 |
-| A9 | Volatility MMD | Distribution | ↓ | 0.0596 ± 0.0086 | 0.0541 | 0.0597 | 0.0740 | 0.0482 | 0.0622 | 0.0071 |
-| A10 | Terminal SWD | Distribution | ↓ | 2.815 ± 0.9433 | 2.526 | 2.194 | 4.673 | 2.144 | 2.540 | 0.6873 |
-| A11 | Path SWD | Distribution | ↓ | 1.289 ± 0.4198 | 0.9519 | 1.582 | 1.969 | 0.8821 | 1.059 | 0.4381 |
-| A12 | RV Law Loss | Distribution | ↓ | 0.5291 ± 0.1299 | 0.5209 | 0.7487 | 0.3413 | 0.5341 | 0.5004 | 0 |
-| A13 | Mean Path RMSE | Distribution | ↓ | 0.4910 ± 0.4022 | 0.4282 | 1.145 | 0.7092 | 0.1191 | 0.0536 | 0 |
-| A14 | KS Log-returns | Distribution | ↓ | 0.0191 ± 0.0024 | 0.0171 | 0.0234 | 0.0196 | 0.0173 | 0.0179 | 0 |
-| A15 | Skewness Error | Distribution | ↓ | 0.0282 ± 0.0152 | 0.0282 | 0.0062 | 0.0528 | 0.0214 | 0.0325 | 0 |
-| A16 | QQ RMSE (300-pt) | Distribution | ↓ | 5.86e-04 ± 4.20e-05 | 5.68e-04 | 6.66e-04 | 5.88e-04 | 5.52e-04 | 5.59e-04 | 0 |
-| A17 | Terminal Price KS | Distribution | ↓ | 0.0848 ± 0.0166 | 0.0759 | 0.0955 | 0.1085 | 0.0597 | 0.0842 | 0 |
-| | **— Adversarial —** | | | | | | | | | |
-| A18 GRU | Discriminative Score GRU | Adversarial | ↓ | 0.0094 ± 0.0097 | 0.0023 | 0.0273 | 0.0026 | 0.0026 | 0.0121 | 0.0071 |
-| A18 MLP | Discriminative Score MLP | Adversarial | ↓ | 0.0053 ± 0.0041 | 0.0117 | 0.0029 | 0.0011 | 0.0087 | 0.0023 | 0.0033 |
-| | **— Predictive —** | | | | | | | | | |
-| A19 GRU | Predictive Score GRU | Predictive | ↓ | 0.0537 ± 7.6e-06 | 0.05370 | 0.05372 | 0.05372 | 0.05371 | 0.05371 | 0.0537 |
-| A19 MLP | Predictive Score MLP | Predictive | ↓ | 0.0540 ± 4.90e-04 | 0.0539 | 0.0537 | 0.0536 | 0.0550 | 0.0538 | 0.0537 |
-| | **— Temporal —** | | | | | | | | | |
-| A20 | Covariance Error | Temporal | ↓ | 64.406 ± 38.255 | 45.628 | 33.517 | 138.316 | 41.015 | 63.554 | 0 |
-| A21 | ACF \|r\| Error (lags) | Temporal | ↓ | 0.0435 ± 5.50e-04 | 0.0438 | 0.0440 | 0.0424 | 0.0435 | 0.0436 | 0 |
-| A22 | ACF r² Error (lags) | Temporal | ↓ | 0.0379 ± 5.56e-04 | 0.0384 | 0.0384 | 0.0369 | 0.0378 | 0.0382 | 0 |
-| A23 | ACF \|r\| Lag-1 Error | Temporal | ↓ | 0.0526 ± 7.04e-04 | 0.0517 | 0.0535 | 0.0520 | 0.0533 | 0.0527 | 0 |
-| A24 | ACF r² Lag-1 Error | Temporal | ↓ | 0.0461 ± 7.01e-04 | 0.0447 | 0.0467 | 0.0460 | 0.0465 | 0.0462 | 0 |
-| | **— Vol —** | | | | | | | | | |
-| A25 | Mean RMSE | Vol | ↓ | 0.9000 ± 0.8807 | 0.7646 | 2.488 | 1.062 | 0.1535 | 0.0319 | 0 |
-| A26 | Return Std Error | Vol | ↓ | 0.0058 ± 0.0028 | 0.0064 | 8.53e-04 | 0.0096 | 0.0053 | 0.0067 | 0 |
-| A27 | Log-Return Std Error | Vol | ↓ | 6.70e-05 ± 6.60e-05 | 1.90e-05 | 1.02e-04 | 1.80e-04 | 2.90e-05 | 2.00e-06 | 0 |
-| A28 | Kurtosis Ratio | Vol | — | 3.039 ± 0.7605 | 2.820 | 4.491 | 2.251 | 2.904 | 2.727 | 1.000 |
-| A29 | Sigma Mean Error | Vol | ↓ | 0.0026 ± 8.77e-04 | 0.0027 | 0.0019 | 0.0043 | 0.0020 | 0.0022 | 0 |
-| A30 | Cross-Sect. Vol Path RMSE | Vol | ↓ | 1.367 ± 0.4499 | 0.9122 | 1.710 | 2.071 | 0.9772 | 1.165 | 0 |
-| A31 | Rolling Vol KS (w=5) | Vol | ↓ | 0.0740 ± 0.0014 | 0.0746 | 0.0762 | 0.0737 | 0.0724 | 0.0729 | 0 |
-| A32 | Vol-of-Vol Error | Vol | ↓ | 6.88e-04 ± 9.20e-05 | 6.77e-04 | 8.40e-04 | 5.51e-04 | 6.98e-04 | 6.76e-04 | 0 |
-| | **— Heston Spec —** | | | | | | | | | |
-| A33 | Teacher-Sigma Corr | Heston Spec | ↑ | 7.85e-04 ± 0.0038 | -0.0055 | 0.0027 | -0.0011 | 0.0023 | 0.0054 | 0.6143 |
-| A34 | Teacher-Sigma RMSE | Heston Spec | ↓ | 0.0894 ± 0.0013 | 0.0897 | 0.0874 | 0.0913 | 0.0892 | 0.0893 | 0.0654 |
+| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
+|--------|-----------|--------|--------|--------|--------|--------|---------------|
+| **— Fat Tail —** | | | | | | | |
+| A1 Kurtosis Error ↓ | 0.5761 ± 0.008273 | 0.5672 | 0.5903 | 0.5732 | 0.5699 | 0.5798 | 0.008092 |
+| A2 \|r\| q95 Error ↓ | 7.21e-04 ± 2.10e-04 | 7.09e-04 | 9.82e-04 | 3.43e-04 | 7.93e-04 | 7.80e-04 | 6.57e-05 |
+| A3 \|r\| q99 Error ↓ | 0.002325 ± 5.06e-04 | 0.002328 | 0.003091 | 0.001496 | 0.002402 | 0.002309 | 5.98e-05 |
+| A4 Tail QQ Error ↓ | 7.42e-04 ± 1.38e-04 | 7.02e-04 | 9.80e-04 | 5.53e-04 | 7.55e-04 | 7.22e-04 | 6.75e-05 |
+| A5 Hill Tail Index Error ↓ | 5.802 ± 2.000 | 7.516 | 2.953 | 3.881 | 7.872 | 6.789 | 0.5266 |
+| **— Distribution —** | | | | | | | |
+| A6 Path MMD² ↓ | 0.005527 ± 0.002289 | 0.003506 | 0.005485 | 0.009694 | 0.003346 | 0.005602 | 0.001842 |
+| A7 Terminal MMD² ↓ | 0.01105 ± 0.006414 | 0.007151 | 0.005616 | 0.02248 | 0.006248 | 0.01376 | 0.001983 |
+| A8 Increment MMD² ↓ | 0.001124 ± 6.46e-05 | 0.001188 | 0.001160 | 0.001086 | 0.001015 | 0.001171 | 8.69e-04 |
+| A9 Volatility MMD ↓ | 0.05871 ± 0.007003 | 0.05246 | 0.05759 | 0.07123 | 0.05196 | 0.06029 | 0.008554 |
+| A10 Terminal SWD ↓ | 2.710 ± 1.034 | 1.918 | 2.075 | 4.630 | 1.962 | 2.967 | 1.151 |
+| A11 Path SWD ↓ | 1.334 ± 0.3806 | 1.097 | 1.728 | 1.847 | 0.8888 | 1.107 | 0.6191 |
+| A12 RV Law Loss ↓ | 0.5397 ± 0.1300 | 0.5313 | 0.7595 | 0.3519 | 0.5447 | 0.5112 | 0.05202 |
+| A13 Mean Path RMSE ↓ | 0.4336 ± 0.3651 | 0.3360 | 1.049 | 0.6146 | 0.05405 | 0.1147 | 0.1205 |
+| A14 KS Log-returns ↓ | 0.01895 ± 0.002028 | 0.01726 | 0.02286 | 0.01874 | 0.01756 | 0.01830 | 0.001491 |
+| A15 Skewness Error ↓ | 0.02288 ± 0.01115 | 0.01933 | 0.01509 | 0.04385 | 0.01250 | 0.02363 | 0.005274 |
+| A16 QQ RMSE (300-pt) ↓ | 5.81e-04 ± 4.14e-05 | 5.63e-04 | 6.62e-04 | 5.74e-04 | 5.50e-04 | 5.56e-04 | 4.19e-05 |
+| A17 Terminal Price KS ↓ | 0.08098 ± 0.01617 | 0.07373 | 0.09021 | 0.1046 | 0.05627 | 0.08008 | 0.01099 |
+| **— Adversarial —** | | | | | | | |
+| A18 Disc Score GRU ↓ | 0.009185 ± 0.009209 | 0.005951 | 0.02670 | 0.003204 | 0.009307 | 7.63e-04 | 0.006195 |
+| A18 Disc Score MLP ↓ | 0.005951 ± 0.002921 | 0.008087 | 4.58e-04 | 0.005951 | 0.008697 | 0.006561 | 0.005951 |
+| **— Predictive —** | | | | | | | |
+| A19 Pred Score GRU ↓ | 0.05004 ± 2.00e-05 | 0.05004 | 0.05002 | 0.05007 | 0.05001 | 0.05004 | 0.05002 |
+| A19 Pred Score MLP ↓ | 0.05032 ± 3.48e-04 | 0.04992 | 0.05094 | 0.05040 | 0.05027 | 0.05009 | 0.05036 |
+| **— Temporal —** | | | | | | | |
+| A20 Covariance Error ↓ | 60.80 ± 36.58 | 39.62 | 39.52 | 132.3 | 35.01 | 57.55 | 4.923 |
+| A21 ACF \|r\| Error (lags) ↓ | 0.04095 ± 5.50e-04 | 0.04127 | 0.04149 | 0.03990 | 0.04096 | 0.04111 | 0.002234 |
+| A22 ACF r² Error (lags) ↓ | 0.03498 ± 5.56e-04 | 0.03542 | 0.03546 | 0.03395 | 0.03486 | 0.03520 | 0.002206 |
+| A23 ACF \|r\| Lag-1 Error ↓ | 0.04897 ± 7.04e-04 | 0.04807 | 0.04982 | 0.04827 | 0.04965 | 0.04902 | 0.002652 |
+| A24 ACF r² Lag-1 Error ↓ | 0.04195 ± 7.01e-04 | 0.04063 | 0.04261 | 0.04194 | 0.04243 | 0.04214 | 0.002790 |
+| **— Vol —** | | | | | | | |
+| A25 Mean RMSE ↓ | 0.7990 ± 0.7970 | 0.5667 | 2.290 | 0.8638 | 0.04447 | 0.2298 | 0.1392 |
+| A26 Return Std Error ↓ | 0.004832 ± 0.002757 | 0.005448 | 1.17e-04 | 0.008623 | 0.004291 | 0.005681 | 0.002523 |
+| A27 Log-Return Std Error ↓ | 7.64e-05 ± 5.51e-05 | 1.00e-05 | 1.32e-04 | 1.50e-04 | 5.86e-05 | 3.18e-05 | 3.15e-05 |
+| A28 Kurtosis Ratio (→ 1) | 3.098 ± 0.7754 | 2.875 | 4.578 | 2.295 | 2.961 | 2.781 | 1.006 |
+| A29 Sigma Mean Error ↓ | 0.002245 ± 8.77e-04 | 0.002362 | 0.001509 | 0.003899 | 0.001631 | 0.001823 | 4.96e-04 |
+| A30 Cross-Sect. Vol Path RMSE ↓ | 1.381 ± 0.4336 | 0.9429 | 1.876 | 1.935 | 1.012 | 1.138 | 0.1432 |
+| A31 Rolling Vol KS (w=5) ↓ | 0.07213 ± 0.001372 | 0.07279 | 0.07440 | 0.07190 | 0.07054 | 0.07103 | 0.003814 |
+| A32 Vol-of-Vol Error ↓ | 6.89e-04 ± 9.20e-05 | 6.78e-04 | 8.41e-04 | 5.52e-04 | 6.99e-04 | 6.77e-04 | 1.54e-05 |
+| **— Heston Spec —** | | | | | | | |
+| A33 Teacher-Sigma Corr ↑ | -0.002564 ± 0.002730 | -0.001968 | -0.003338 | -0.005218 | -0.004700 | 0.002406 | 0.6163 |
+| A34 Teacher-Sigma RMSE ↓ | 0.08963 ± 0.001225 | 0.08969 | 0.08773 | 0.09160 | 0.08957 | 0.08954 | 0.06559 |
 
 > **Convention:** ↓ lower is better; ↑ higher is better; — no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
 > **A1**: |kurt_real − kurt_gen| on log-returns. **A2–A3**: 95th/99th quantile error on |log-returns|. **A4**: QQ error restricted to top-5% tail quantiles. **A5**: |Hill tail index_real − Hill tail index_gen|, Hill estimator on |log-returns| above 95th pct.
@@ -77,30 +77,37 @@ data (L_r) and generated data (L_g) we build three lists — the curve L, its fi
 difference L' (der), and its second finite difference L'' (sec\_der) — then combine the three
 sub-scores into **one number per plot**:
 
-- **MSE row**: for each list, dᵢ = mean((L_r − L_g)²). Reported mean = m_funct + m_der + m_sec\_der (**sum** of the three seed-means); std = sqrt(s_funct² + s_der² + s_sec\_der²) (**quadrature**).
+- **MSE row**: for each list, dᵢ = mean((L_r − L_g)²). Reported mean = the **mean of the three sub-scores** (funct + der + sec\_der)/3; std = the sample std of that per-seed combined score across the 5 seeds. The **MSE row decides the cross-method winner**.
 - **% err row**: for each list, dᵢ = mean(|L_g − L_r| / (|L_r| + 1e-6)) × 100, a proper MAPE — one division (the mean already averages over the curve's points). Reported value = the **function-level MAPE on the curve L itself** — the derivative / 2nd-derivative MAPE is **excluded** because diff(L)/diff2(L) have near-zero true values, so their relative error explodes into meaningless 10⁴-% figures. mean/std = mean and **sample std across the 5 seeds** of that per-seed function MAPE.
+- **NRMSE row**: sqrt(mean((L_g − L_r)²)) / (max|L_r| − min|L_r| + 1e-12) × 100 on the curve L **only (funct-only)** — the ill-posed derivative / 2nd-derivative curves are excluded for the same reason as the % err row.
 
 All ↓ lower is better. The perfect floor is **non-zero** for all six plots — it is the residual finite-sample error of an independent Heston draw scored against the test set, identical across methods.
-Two sublines per plot: **MSE** and **% error** (the per-seed columns hold that seed's combined score).
+Three sublines per plot: **MSE**, **% error** and **NRMSE** (the per-seed columns hold that seed's combined score).
 
-| Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect |
-|------|---------|-----------|--------|--------|--------|--------|--------|:------:|
-| **Log-return histogram** | MSE | 2.847 ± 0.1405 | 2.716 | 3.091 | 2.916 | 2.746 | 2.764 | 0 |
-| | % err | 9.072% ± 0.5711% | 8.832% | 10.189% | 8.942% | 8.816% | 8.580% | 0 |
-| **QQ plot** | MSE | 4.43e-07 ± 6.56e-08 | 4.19e-07 | 5.97e-07 | 3.92e-07 | 4.03e-07 | 4.03e-07 | 0 |
-| | % err | 9.363% ± 2.272% | 8.048% | 13.826% | 8.956% | 7.638% | 8.345% | 0 |
-| **ACF \|r\| lags 1–20** | MSE | 0.0013 ± 3.81e-05 | 0.0013 | 0.0013 | 0.0012 | 0.0013 | 0.0013 | 0 |
-| | % err | 115.19% ± 1.926% | 116.72% | 117.15% | 111.88% | 114.26% | 115.94% | 0 |
-| **ACF r² lags 1–20** | MSE | 9.43e-04 ± 3.51e-05 | 9.50e-04 | 9.91e-04 | 8.79e-04 | 9.54e-04 | 9.43e-04 | 0 |
-| | % err | 117.36% ± 2.638% | 119.14% | 120.32% | 112.68% | 116.63% | 118.02% | 0 |
-| **Rolling vol histogram** | MSE | 92.44 ± 8.157 | 91.90 | 107.98 | 82.56 | 89.80 | 89.98 | 0 |
-| | % err | 25.29% ± 3.210% | 25.06% | 30.67% | 20.57% | 25.36% | 24.78% | 0 |
-| **Tail survival** | MSE | 5.30e-04 ± 4.58e-05 | 5.22e-04 | 5.32e-04 | 6.13e-04 | 4.74e-04 | 5.10e-04 | 0 |
-| | % err | 5.759% ± 0.2366% | 5.711% | 6.213% | 5.711% | 5.531% | 5.629% | 0 |
+| Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
+|------|---------|-----------|--------|--------|--------|--------|--------|---------------|
+| **Log-return histogram** | MSE | 0.9211 ± 0.02370 | 0.9371 | 0.9394 | 0.9444 | 0.8956 | 0.8891 | 0.1098 |
+|  | % err | 9.167% ± 0.5606% | 8.987% | 10.28% | 8.876% | 8.912% | 8.782% | 1.799% |
+|  | NRMSE | 4.186% ± 0.1102% | 4.142% | 4.342% | 4.272% | 4.027% | 4.147% | 0.5328% |
+| **QQ plot** | MSE | 1.45e-07 ± 2.63e-08 | 1.37e-07 | 1.97e-07 | 1.25e-07 | 1.33e-07 | 1.32e-07 | 1.09e-09 |
+|  | % err | 9.342% ± 2.293% | 7.914% | 13.86% | 8.822% | 7.678% | 8.438% | 0.4629% |
+|  | NRMSE | 1.687% ± 0.1351% | 1.638% | 1.956% | 1.608% | 1.611% | 1.620% | 0.1206% |
+| **ACF \|r\| lags 1–20** | MSE | 3.83e-04 ± 1.20e-05 | 3.85e-04 | 3.95e-04 | 3.61e-04 | 3.91e-04 | 3.81e-04 | 9.61e-06 |
+|  | % err | 117.2% ± 2.149% | 119.0% | 119.3% | 113.5% | 116.0% | 118.1% | 8.724% |
+|  | NRMSE | 88.45% ± 1.425% | 88.99% | 90.06% | 85.78% | 88.81% | 88.64% | 6.071% |
+| **ACF r² lags 1–20** | MSE | 2.80e-04 ± 1.13e-05 | 2.80e-04 | 2.94e-04 | 2.61e-04 | 2.89e-04 | 2.78e-04 | 9.17e-06 |
+|  | % err | 120.8% ± 3.065% | 123.1% | 124.1% | 115.4% | 119.8% | 121.8% | 11.34% |
+|  | NRMSE | 82.92% ± 1.680% | 83.36% | 85.06% | 79.89% | 83.33% | 82.98% | 6.486% |
+| **Rolling vol histogram** | MSE | 29.88 ± 2.639 | 29.80 | 34.64 | 26.52 | 29.36 | 29.07 | 1.372 |
+|  | % err | 25.42% ± 3.199% | 25.19% | 30.77% | 20.71% | 25.49% | 24.94% | 2.264% |
+|  | NRMSE | 10.43% ± 0.4823% | 10.43% | 11.31% | 9.838% | 10.29% | 10.29% | 0.8688% |
+| **Tail survival** | MSE | 1.71e-04 ± 1.49e-05 | 1.69e-04 | 1.72e-04 | 1.98e-04 | 1.53e-04 | 1.65e-04 | 5.22e-07 |
+|  | % err | 5.711% ± 0.2437% | 5.659% | 6.185% | 5.629% | 5.495% | 5.584% | 0.3302% |
+|  | NRMSE | 2.287% ± 0.09795% | 2.272% | 2.295% | 2.461% | 2.163% | 2.244% | 0.1050% |
 
-> **Log-ret histogram**: Fourier Flow is far more stable than TimeGAN here (MSE 2.85 ± 0.14 vs 144 ± 121) — explicit likelihood avoids the seed-to-seed collapse of adversarial training.
-> **ACF \|r\|, ACF r²**: the MSE is tiny (~1e-3) because the true ACF ≈ 0.05 sits near zero, but the **% error** (function-level MAPE) is large (115% / 117%) for exactly that reason — near-zero denominators amplify any deviation. Read MSE for absolute agreement, % error for relative shape.
-> **Rolling vol histogram**: MSE 92 from vol-distribution mismatch; still the weakest B panel in absolute terms alongside the log-return histogram.
+> **Log-ret histogram**: Fourier Flow is far more stable than TimeGAN here (MSE 0.921 ± 0.024 vs 45.40 ± 57.91) — explicit likelihood avoids the seed-to-seed collapse of adversarial training.
+> **ACF \|r\|, ACF r²**: the MSE is tiny (~3.8e-4) because the true ACF ≈ 0.05 sits near zero, but the **% error** (function-level MAPE) is large (117% / 121%) for exactly that reason — near-zero denominators amplify any deviation. Read MSE for absolute agreement, % error for relative shape.
+> **Rolling vol histogram**: MSE 29.88 from vol-distribution mismatch; still one of the weaker B panels alongside the log-return histogram.
 
 ---
 

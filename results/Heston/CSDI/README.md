@@ -132,10 +132,10 @@ L'' (sec\_der) — and report **three rows per plot**:
 
 - **MSE** — `mean((L_gen − L_real)²)`, averaged over the three lists (funct/der/sec\_der). This is the
   quantity that decides the cross-method winner.
-- **% err** — scale-aware relative error `mean(|L_gen − L_real| / (|L_real| + ε)) × 100` with
-  `ε = 1e-3 · (max|L_real| + 1e-12)`, averaged over the three lists.
-- **NRMSE** — `sqrt(mean((L_gen − L_real)²)) / (max|L_real| − min|L_real| + 1e-12) × 100`, averaged over
-  the three lists.
+- **% err** — function-level MAPE `mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100` on the curve L
+  only (funct-only); the derivative / 2nd-difference MAPE is excluded as ill-posed (near-zero denominators).
+- **NRMSE** — `sqrt(mean((L_gen − L_real)²)) / (max|L_real| − min|L_real| + 1e-12) × 100` on the curve L
+  only (funct-only).
 
 *Special case:* for **Tail survival** the % err and NRMSE rows use the **function-level curve only**
 (funct), because the near-zero true differences of the survival derivative make a relative error explode;
@@ -148,22 +148,22 @@ table (non-zero, finite-sample). Winner between methods is decided by the **MSE*
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
 | **Log-return histogram** | MSE | 4.644 ± 0.4940 | 4.521 | 4.808 | 4.128 | 4.249 | 5.513 | 0.1098 |
-|  | % err | 173.1% ± 52.65% | 171.5% | 174.0% | 125.2% | 269.4% | 125.2% | 290.3% |
-|  | NRMSE | 26.96% ± 1.822% | 26.06% | 27.36% | 29.84% | 24.27% | 27.26% | 17.81% |
+|  | % err | 35.27% ± 1.063% | 34.79% | 35.69% | 34.36% | 34.35% | 37.16% | 1.799% |
+|  | NRMSE | 9.998% ± 0.5467% | 9.889% | 10.19% | 9.368% | 9.601% | 10.94% | 0.5328% |
 | **QQ plot** | MSE | 2.36e-06 ± 1.57e-07 | 2.28e-06 | 2.43e-06 | 2.22e-06 | 2.23e-06 | 2.63e-06 | 1.09e-09 |
-|  | % err | 29.51% ± 1.432% | 30.08% | 28.40% | 28.53% | 28.46% | 32.09% | 16.51% |
-|  | NRMSE | 4.411% ± 0.1584% | 4.275% | 4.563% | 4.206% | 4.394% | 4.615% | 0.3436% |
+|  | % err | 24.22% ± 1.083% | 23.73% | 24.23% | 24.45% | 22.67% | 26.00% | 0.4629% |
+|  | NRMSE | 7.188% ± 0.2370% | 7.077% | 7.296% | 6.977% | 6.987% | 7.603% | 0.1206% |
 | **ACF \|r\| lags 1–20** | MSE | 3.02e-05 ± 1.61e-05 | 2.16e-05 | 2.98e-05 | 1.42e-05 | 2.48e-05 | 6.08e-05 | 9.61e-06 |
-|  | % err | 150.8% ± 32.96% | 167.2% | 150.5% | 109.2% | 124.0% | 202.9% | 114.3% |
-|  | NRMSE | 58.94% ± 13.42% | 54.93% | 59.45% | 43.58% | 53.03% | 83.71% | 43.89% |
+|  | % err | 19.26% ± 8.314% | 11.94% | 22.67% | 16.14% | 11.69% | 33.87% | 8.724% |
+|  | NRMSE | 19.33% ± 5.196% | 16.17% | 19.90% | 13.31% | 18.57% | 28.70% | 6.071% |
 | **ACF r² lags 1–20** | MSE | 2.71e-05 ± 1.16e-05 | 2.18e-05 | 2.72e-05 | 1.36e-05 | 2.42e-05 | 4.85e-05 | 9.17e-06 |
-|  | % err | 362.4% ± 86.75% | 418.7% | 394.7% | 293.7% | 233.2% | 471.9% | 381.5% |
-|  | NRMSE | 45.48% ± 7.131% | 44.83% | 45.88% | 36.04% | 42.64% | 57.99% | 34.19% |
+|  | % err | 21.75% ± 10.67% | 14.05% | 28.03% | 13.10% | 13.65% | 39.93% | 11.34% |
+|  | NRMSE | 20.43% ± 5.060% | 17.81% | 20.99% | 13.87% | 20.22% | 29.25% | 6.486% |
 | **Rolling vol histogram** | MSE | 157.5 ± 12.45 | 152.3 | 157.9 | 148.6 | 147.4 | 181.3 | 1.372 |
-|  | % err | 157.3% ± 11.64% | 164.4% | 170.8% | 156.2% | 136.3% | 158.8% | 127.9% |
-|  | NRMSE | 32.04% ± 0.9269% | 32.90% | 31.71% | 30.89% | 31.36% | 33.34% | 16.66% |
+|  | % err | 61.91% ± 2.364% | 60.96% | 62.71% | 59.19% | 60.62% | 66.08% | 2.264% |
+|  | NRMSE | 24.39% ± 0.9523% | 23.99% | 24.45% | 23.72% | 23.61% | 26.21% | 0.8688% |
 | **Tail survival** | MSE | 0.001960 ± 1.85e-04 | 0.001909 | 0.002027 | 0.001757 | 0.001824 | 0.002283 | 5.22e-07 |
-|  | % err | 24.44% ± 0.8699% | 24.12% | 24.81% | 23.55% | 23.76% | 25.95% | 0.3256% |
+|  | % err | 24.78% ± 0.8772% | 24.46% | 25.16% | 23.89% | 24.09% | 26.31% | 0.3302% |
 |  | NRMSE | 7.733% ± 0.3598% | 7.641% | 7.873% | 7.329% | 7.468% | 8.354% | 0.1050% |
 
 **CSDI's one B-win:** it takes the **ACF |r|** plot on MSE (3.02e-05), the tightest autocorrelation-magnitude

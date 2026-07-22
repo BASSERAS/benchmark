@@ -573,7 +573,8 @@ volatility process. **Perfect: 0. Direction: ↓**
 
 The B metrics move beyond scalars: for each of 6 diagnostic plots, the **full shape of the
 real and generated curves** is compared, including their first and second finite differences.
-Two measures are reported per sub-metric: an **MSE** variant and a **% error** variant.
+Three measures are reported per plot: an **MSE** variant (averaged over the three
+sub-metrics) and a **% error** and **NRMSE** variant (both on the curve L only, funct-only).
 
 ### Derivative definition
 
@@ -590,7 +591,7 @@ For each plot, three sub-metrics are reported:
 | `_der` | $L^{\text{real,der}}$ vs $L^{\text{gen,der}}$ | First-derivative shape (slope match) |
 | `_sec_der` | $L^{\text{real,sec}}$ vs $L^{\text{gen,sec}}$ | Second-derivative shape (curvature match) |
 
-### The two measures
+### The three measures
 
 **MSE measure** (raw squared error):
 
@@ -598,22 +599,28 @@ $$\text{MSE}(a, b) = \frac{1}{K}\sum_{k} (b_k - a_k)^2$$
 
 **% error measure** (mean absolute percentage error, MAPE):
 
-$$\text{\%err}(a, b) = \frac{1}{K}\sum_{k=1}^{K} \frac{|b_k - a_k|}{|a_k| + 10^{-6}} \times 100$$
+$$\text{pcterr}(a, b) = \frac{1}{K}\sum_{k=1}^{K} \frac{|b_k - a_k|}{|a_k| + 10^{-6}} \times 100$$
 
 i.e. a proper MAPE — the mean relative error (%) across the $K$ curve points. **One**
 division only: the $\frac{1}{K}$ already averages over the curve's points (a prior version
 divided a second time by $K$, collapsing the value ~$K\times$ into a sub-1% artefact).
 
+**NRMSE measure** (range-normalised RMSE):
+
+$$\text{NRMSE}(a, b) = \frac{\sqrt{\frac{1}{K}\sum_k (b_k - a_k)^2}}{\max_k a_k - \min_k a_k + 10^{-12}} \times 100$$
+
 ### Per-plot combined scores
 
-For each plot the three sub-metrics are combined into a single number:
+For each plot the sub-metrics are combined into a single number per measure:
 
-- **MSE combined** = $\text{funct} + \text{der} + \text{sec\_der}$ (sum); cross-seed
-  std combined in quadrature: $\sigma = \sqrt{\sigma_{\text{funct}}^2 + \sigma_{\text{der}}^2 + \sigma_{\text{sec\_der}}^2}$.
-- **% combined** = $\frac{1}{3}(\text{funct} + \text{der} + \text{sec\_der})$ (mean of 3);
-  cross-seed std = sample std of the per-seed combined values.
+- **MSE combined** = $\frac{1}{3}(\text{funct} + \text{der} + \text{sec})$ — the **mean** of the
+  three sub-metrics; cross-seed std = sample std of the per-seed combined values.
+- **% err combined** and **NRMSE combined** = the **funct** sub-metric only (funct-only). The
+  first and second differences of these curves are near-zero, so their relative error is
+  ill-posed and would explode into meaningless $10^4$-% figures; only the MSE averages all three.
 
-**Perfect: 0 for all sub-metrics and both measures. ↓**
+**Perfect floor: non-zero** — the residual finite-sample error of an independent Heston draw
+scored against the test set, identical across methods. Direction: ↓
 
 ### The 6 plots
 
