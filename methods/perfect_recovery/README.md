@@ -134,6 +134,7 @@ Each stylised-fact curve is summarised by five sublines. **MSE** is the mean-of-
 <!-- ===== PERFECT-RECOVERY B TABLE ===== -->
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 |
 |------|---------|-----------|--------|--------|--------|--------|--------|
+| **Path comparison** *(50×50 side-check · not ranked)* | grid_tvd 50×50 (%) ↓ | 2.237% ± 0.1564% | 2.060% | 2.481% | 2.356% | 2.130% | 2.160% |
 | **Log-return histogram** | MSE | 0.1098 ± 0.02492 | 0.08507 | 0.1442 | 0.08047 | 0.1084 | 0.1310 |
 |  | % err | 1.799% ± 0.04483% | 1.785% | 1.754% | 1.865% | 1.838% | 1.755% |
 |  | NRMSE | 0.5328% ± 0.02035% | 0.5648% | 0.5406% | 0.5132% | 0.5086% | 0.5366% |

@@ -455,7 +455,10 @@ first two diagnostic panels). Build a shared 50×50 grid over the union bounding
 cloud, normalize **each** histogram by its own total (p real, q gen), and report TVD = 0.5·Σ|pᵢ − qᵢ| × 100
 (a percentage in [0, 100]; lower = closer clouds). The grid is **locked at 50×50** for every method so curves
 stay comparable. It is a **visual sanity-check only: never averaged into any score and excluded from all
-A/B win-counts.** The **Perfect** column is the independent-draw floor (§5.4). Implemented in
+A/B win-counts.** The **Perfect** column is the independent-draw floor (§5.4). In every README it is
+rendered as the **first row of Table B**, labelled **Path comparison** (`grid_tvd 50×50 (%) ↓`, marked
+"side-check · not ranked", Winner = "—"), sitting above the six diagnostic-plot rows — a headline
+path-cloud comparison that does **not** compete for the MSE winner. Implemented in
 `metrics/metrics.py` (`grid_tvd`, `paths_to_points`, `GRID_TVD_DEFAULT_BINS=(50,50)`) and computed
 automatically by `compute_all.py`.
 
