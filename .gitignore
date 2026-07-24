@@ -17,3 +17,5 @@ methods/GT-GAN/code/reference/datasets/*.csv
 methods/GT-GAN/code/reference/gru_ode_bayes/datasets/
 methods/GT-GAN/**/smoke_*
 *.pdf
+# ...but keep the reference paper PDF committed for each method
+!methods/**/paper_reimplementation/*.pdf

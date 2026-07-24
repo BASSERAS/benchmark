@@ -6,7 +6,7 @@
 |-------|---------|
 | **Paper** | *GT-GAN: General Purpose Time Series Synthesis with Generative Adversarial Networks* |
 | **Authors** | Jinsung Jeon, Jeonghak Kim, Haryong Song, Seunghyeon Cho, Noseong Park |
-| **Venue** | NeurIPS 2022 — PDF `../paper_reimplementation/GT-GAN_NeurIPS2022_2210.02040v3.pdf` |
+| **Venue** | NeurIPS 2022 — PDF `../paper_reimplementation/GT-GAN_NeurIPS2022.pdf` |
 | **arXiv** | [2210.02040](https://arxiv.org/abs/2210.02040) |
 | **Original code** | https://github.com/Jinsung-Jeon/GT-GAN |
 | **Original framework** | **PyTorch** (already PyTorch — no framework port needed) |

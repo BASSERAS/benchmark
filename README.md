@@ -330,18 +330,101 @@ method, ordered by family.
 
 ## Methods
 
-| Method | Full name | Paper | Authors | Year | Venue | Original code |
-|--------|-----------|-------|---------|------|-------|---------------|
-| [TimeGAN](methods/TimeGAN/) | Time-series GAN | [arXiv:2010.00782](https://arxiv.org/abs/2010.00782) | Yoon, Jarrett, van der Schaar | 2019 | NeurIPS | [jsyoon0823/TimeGAN](https://github.com/jsyoon0823/TimeGAN) |
-| [SBTS](methods/SBTS/) | Schrödinger Bridge Time Series | [arXiv:2503.02943](https://arxiv.org/abs/2503.02943) | Alouadi, Barreau, Carlier, Pham | 2025 | ICAIF | [alexouadi/SBTS](https://github.com/alexouadi/SBTS) |
-| [FourierFlow](methods/FourierFlow/) | Fourier Flows | [OpenReview](https://openreview.net/forum?id=PpshD0AXfA) | Alaa, Chan, van der Schaar | 2021 | ICLR | [ahmedmalaa/Fourier-flows](https://github.com/ahmedmalaa/Fourier-flows) |
-| [DiffusionTS](methods/DiffusionTS/) | Diffusion-TS | [arXiv:2403.01742](https://arxiv.org/abs/2403.01742) | Yuan, Qiao | 2024 | ICLR | [Y-debug-sys/Diffusion-TS](https://github.com/Y-debug-sys/Diffusion-TS) |
-| [CSDI](methods/CSDI/) | Conditional Score-based Diffusion (Imputation) | [arXiv:2107.03502](https://arxiv.org/abs/2107.03502) | Tashiro, Song, Song, Ermon | 2021 | NeurIPS | [ermongroup/CSDI](https://github.com/ermongroup/CSDI) |
-| [TimeVAE](methods/TimeVAE/) | Variational Auto-Encoder for Time Series | [arXiv:2111.08095](https://arxiv.org/abs/2111.08095) | Desai, Freeman, Beaver, Wang | 2021 | arXiv | [abudesai/timeVAE](https://github.com/abudesai/timeVAE) |
-| [TimeVQVAE](methods/TimeVQVAE/) | Vector Quantized Time Series Generation | [arXiv:2303.04743](https://arxiv.org/abs/2303.04743) | Lee, Malacarne, Aune | 2023 | AISTATS | [ML4ITS/TimeVQVAE](https://github.com/ML4ITS/TimeVQVAE) |
-| [COSCI-GAN](methods/COSCI-GAN/) | COmmon Source CoordInated GAN | [arXiv:2210.07248](https://arxiv.org/abs/2210.07248) | Seyfi, Rajotte, Ng | 2022 | NeurIPS | [aliseyfi75/COSCI-GAN](https://github.com/aliseyfi75/COSCI-GAN) |
-| [GT-GAN](methods/GT-GAN/) | General Purpose Time Series GAN | [arXiv:2210.02040](https://arxiv.org/abs/2210.02040) | Jeon, Kim, Song, Cho, Park | 2022 | NeurIPS | [Jinsung-Jeon/GT-GAN](https://github.com/Jinsung-Jeon/GT-GAN) |
-| [LS4](methods/LS4/) | Deep Latent State-Space Model | [arXiv:2212.12749](https://arxiv.org/abs/2212.12749) | Zhou, Poli, Xu, Massaroli, Ermon | 2023 | ICML | [alexzhou907/ls4](https://github.com/alexzhou907/ls4) |
+Methods are grouped by generative family (same taxonomy as the results tables:
+GAN, Diffusion, VAE, Schrödinger Bridge, Fourier Flow). Each row links the
+paper, the original code, and the reference PDF committed under
+`methods/<m>/paper_reimplementation/`.
+
+<table>
+<thead>
+<tr>
+<th>Method</th><th>Paper</th><th>Authors</th><th>Year</th><th>Venue</th><th>Original code</th><th>PDF</th>
+</tr>
+</thead>
+<tbody>
+
+<tr><td colspan="7"><strong>🟥 GAN</strong></td></tr>
+<tr>
+<td><a href="methods/TimeGAN/">TimeGAN</a></td>
+<td><a href="https://papers.nips.cc/paper_files/paper/2019/hash/c9efe5f26cd17ba6216bbe2a7d26d490-Abstract.html">Time-series Generative Adversarial Networks</a></td>
+<td>Yoon, Jarrett, van der Schaar</td><td>2019</td><td>NeurIPS</td>
+<td><a href="https://github.com/jsyoon0823/TimeGAN">jsyoon0823/TimeGAN</a></td>
+<td><a href="methods/TimeGAN/paper_reimplementation/TimeGAN_NeurIPS2019.pdf">PDF</a></td>
+</tr>
+<tr>
+<td><a href="methods/COSCI-GAN/">COSCI-GAN</a></td>
+<td><a href="https://openreview.net/pdf?id=RP1CtZhEmR">Generating multivariate time series with COmmon Source CoordInated GAN (COSCI-GAN)</a></td>
+<td>Seyfi, Rajotte, Ng</td><td>2022</td><td>NeurIPS</td>
+<td><a href="https://github.com/aliseyfi75/COSCI-GAN">aliseyfi75/COSCI-GAN</a></td>
+<td><a href="methods/COSCI-GAN/paper_reimplementation/COSCI-GAN_NeurIPS2022.pdf">PDF</a></td>
+</tr>
+<tr>
+<td><a href="methods/GT-GAN/">GT-GAN</a></td>
+<td><a href="https://openreview.net/forum?id=ez6VHWvuXEx">GT-GAN: General Purpose Time Series Synthesis with Generative Adversarial Networks</a></td>
+<td>Jeon, Kim, Song, Cho, Park</td><td>2022</td><td>NeurIPS</td>
+<td><a href="https://github.com/Jinsung-Jeon/GT-GAN">Jinsung-Jeon/GT-GAN</a></td>
+<td><a href="methods/GT-GAN/paper_reimplementation/GT-GAN_NeurIPS2022.pdf">PDF</a></td>
+</tr>
+
+<tr><td colspan="7"><strong>🟦 Diffusion</strong></td></tr>
+<tr>
+<td><a href="methods/DiffusionTS/">Diffusion-TS</a></td>
+<td><a href="https://arxiv.org/abs/2403.01742">Diffusion-TS: Interpretable Diffusion for General Time Series Generation</a></td>
+<td>Yuan, Qiao</td><td>2024</td><td>ICLR</td>
+<td><a href="https://github.com/Y-debug-sys/Diffusion-TS">Y-debug-sys/Diffusion-TS</a></td>
+<td><a href="methods/DiffusionTS/paper_reimplementation/DiffusionTS_ICLR2024_2403.01742v3.pdf">PDF</a></td>
+</tr>
+<tr>
+<td><a href="methods/CSDI/">CSDI</a></td>
+<td><a href="https://arxiv.org/abs/2107.03502">CSDI: Conditional Score-based Diffusion Models for Probabilistic Time Series Imputation</a></td>
+<td>Tashiro, Song, Song, Ermon</td><td>2021</td><td>NeurIPS</td>
+<td><a href="https://github.com/ermongroup/CSDI">ermongroup/CSDI</a></td>
+<td><a href="methods/CSDI/paper_reimplementation/CSDI_NeurIPS2021_2107.03502v2.pdf">PDF</a></td>
+</tr>
+
+<tr><td colspan="7"><strong>🟩 VAE</strong></td></tr>
+<tr>
+<td><a href="methods/TimeVAE/">TimeVAE</a></td>
+<td><a href="https://arxiv.org/abs/2111.08095">TimeVAE: A Variational Auto-Encoder for Multivariate Time Series Generation</a></td>
+<td>Desai, Freeman, Beaver, Wang</td><td>2021</td><td>arXiv</td>
+<td><a href="https://github.com/abudesai/timeVAE">abudesai/timeVAE</a></td>
+<td><a href="methods/TimeVAE/paper_reimplementation/TimeVAE_arxiv_2111.08095v3.pdf">PDF</a></td>
+</tr>
+<tr>
+<td><a href="methods/TimeVQVAE/">TimeVQVAE</a></td>
+<td><a href="https://arxiv.org/abs/2303.04743">Vector Quantized Time Series Generation with a Bidirectional Prior Model</a></td>
+<td>Lee, Malacarne, Aune</td><td>2023</td><td>AISTATS</td>
+<td><a href="https://github.com/ML4ITS/TimeVQVAE">ML4ITS/TimeVQVAE</a></td>
+<td><a href="methods/TimeVQVAE/paper_reimplementation/TimeVQVAE_AISTATS2023_lee23d.pdf">PDF</a></td>
+</tr>
+<tr>
+<td><a href="methods/LS4/">LS4</a></td>
+<td><a href="https://arxiv.org/abs/2212.12749">Deep Latent State Space Models for Time-Series Generation</a></td>
+<td>Zhou, Poli, Xu, Massaroli, Ermon</td><td>2023</td><td>ICML</td>
+<td><a href="https://github.com/alexzhou907/ls4">alexzhou907/ls4</a></td>
+<td><a href="methods/LS4/paper_reimplementation/LS4_ICML2023.pdf">PDF</a></td>
+</tr>
+
+<tr><td colspan="7"><strong>🟨 Schrödinger Bridge</strong></td></tr>
+<tr>
+<td><a href="methods/SBTS/">SBTS</a></td>
+<td><a href="https://arxiv.org/abs/2503.02943">Robust time series generation via Schrödinger Bridge: a comprehensive evaluation</a></td>
+<td>Alouadi, Barreau, Carlier, Pham</td><td>2025</td><td>ICAIF</td>
+<td><a href="https://github.com/alexouadi/SBTS">alexouadi/SBTS</a></td>
+<td><a href="methods/SBTS/paper_reimplementation/SBTS_arXiv-2503.02943.pdf">PDF</a></td>
+</tr>
+
+<tr><td colspan="7"><strong>🟪 Fourier Flow</strong></td></tr>
+<tr>
+<td><a href="methods/FourierFlow/">FourierFlow</a></td>
+<td><a href="https://iclr.cc/virtual/2021/poster/2750">Generative Time-Series Modeling with Fourier Flows</a></td>
+<td>Alaa, Chan, van der Schaar</td><td>2021</td><td>ICLR</td>
+<td><a href="https://github.com/ahmedmalaa/Fourier-flows">ahmedmalaa/Fourier-flows</a></td>
+<td><a href="methods/FourierFlow/paper_reimplementation/FourierFlow_ICLR2021.pdf">PDF</a></td>
+</tr>
+
+</tbody>
+</table>
 
 ---
 
