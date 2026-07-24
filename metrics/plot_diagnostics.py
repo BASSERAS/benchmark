@@ -31,6 +31,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import heston_theory as ht  # third reference curve (theory / semi-theory / empirical)
+from metrics import grid_tvd, paths_to_points, GRID_TVD_DEFAULT_BINS  # (t,x) path-cloud TVD
 
 # ── Constants (benchmark standard — do not change per method) ────────────────
 BENCH    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -137,27 +138,54 @@ def plot_diagnostics(
     t        = np.arange(S_real.shape[1])
     lags     = np.arange(1, ACF_LAGS + 1)
 
+    # ── grid_tvd (t, x) path-cloud comparison ─────────────────────────────────
+    # Signed-difference field over the SAME 50×50 grid used by the reported
+    # metric (full 8192-path clouds). signed_diff = p_real − q_gen: positive
+    # (red) = real has more mass in that (t, x) cell, negative (blue) = the
+    # generator over-populates it. Drawn as a translucent background behind the
+    # sample paths in panels [0, 0] and [0, 1]; grid_tvd % annotated in titles.
+    tvd_pct, signed_diff, t_edges, x_edges = grid_tvd(
+        paths_to_points(S_real), paths_to_points(S_gen), GRID_TVD_DEFAULT_BINS)
+    tvd_vmax   = float(np.abs(signed_diff).max()) or 1e-12
+    tvd_extent = [t_edges[0], t_edges[-1], x_edges[0], x_edges[-1]]
+
+    def _draw_tvd_bg(ax):
+        im = ax.imshow(
+            signed_diff, origin="lower", aspect="auto", extent=tvd_extent,
+            cmap="RdBu_r", vmin=-tvd_vmax, vmax=tvd_vmax, alpha=0.55, zorder=0,
+        )
+        cb = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.02)
+        cb.set_label("real − gen mass  (grid_tvd 50×50)", fontsize=7)
+        cb.ax.tick_params(labelsize=6)
+        return im
+
     fig, axes = plt.subplots(4, 2, figsize=(14, 18))
     fig.suptitle(
         f"Heston diagnostics — Real vs {method}  (seed {seed})",
         fontsize=14, fontweight="bold", y=0.998,
     )
 
-    # ── [0, 0]  Real sample paths ─────────────────────────────────────────────
+    # ── [0, 0]  Real sample paths over the (t, x) mass-difference heatmap ──────
     ax = axes[0, 0]
+    _draw_tvd_bg(ax)
     for i in idx_show_r:
-        ax.plot(t, S_real[i], color=REAL_COL, alpha=0.25, lw=0.6)
-    ax.plot(t, S_real[idx_show_r].mean(axis=0), color=REAL_COL, lw=2.0, label="mean")
-    ax.set_title(f"Real paths  (n={N_SHOW} shown / 8192 total)")
+        ax.plot(t, S_real[i], color=REAL_COL, alpha=0.30, lw=0.6, zorder=2)
+    ax.plot(t, S_real[idx_show_r].mean(axis=0), color=REAL_COL, lw=2.0,
+            zorder=3, label="mean")
+    ax.set_title(f"Real paths  (n={N_SHOW} shown / 8192 total)  —  "
+                 f"grid_tvd(50×50) = {tvd_pct:.1f}%")
     ax.set_xlabel("t (steps)"); ax.set_ylabel("S(t)")
     ax.legend(fontsize=8)
 
-    # ── [0, 1]  Generated sample paths ───────────────────────────────────────
+    # ── [0, 1]  Generated sample paths over the same mass-difference heatmap ──
     ax = axes[0, 1]
+    _draw_tvd_bg(ax)
     for i in idx_show_g:
-        ax.plot(t, S_gen[i], color=GEN_COL, alpha=0.25, lw=0.6)
-    ax.plot(t, S_gen[idx_show_g].mean(axis=0), color=GEN_COL, lw=2.0, label="mean")
-    ax.set_title(f"{method} paths  (n={N_SHOW} shown / 8192 total)")
+        ax.plot(t, S_gen[i], color=GEN_COL, alpha=0.30, lw=0.6, zorder=2)
+    ax.plot(t, S_gen[idx_show_g].mean(axis=0), color=GEN_COL, lw=2.0,
+            zorder=3, label="mean")
+    ax.set_title(f"{method} paths  (n={N_SHOW} shown / 8192 total)  —  "
+                 f"grid_tvd(50×50) = {tvd_pct:.1f}%")
     ax.set_xlabel("t (steps)"); ax.set_ylabel("S(t)")
     ax.legend(fontsize=8)
 

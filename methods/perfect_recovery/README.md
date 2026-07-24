@@ -118,15 +118,16 @@ perfect generator would asymptote to.
 
 ## B — Curve-Shape Metrics — mean ± std across 5 independent-draw seeds
 
-Each stylised-fact curve is summarised by three sublines. **MSE** is the mean-of-three over
-{function, 1st derivative, 2nd derivative}; **% err** and **NRMSE** are **funct-only** (curve L only):
+Each stylised-fact curve is summarised by five sublines. **MSE** is the mean-of-three over
+{function, 1st derivative, 2nd derivative}; **% err**, **NRMSE**, **CVaR₉₀** and **CVaR₉₅** are **funct-only** (curve L only):
 
 - **MSE** — `mean((L_gen − L_real)²)`, the winner-deciding number (mean of the three sub-curves).
 - **% err** — function-level MAPE, `mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100` on the curve L
   only; the derivative / 2nd-difference MAPE is excluded as ill-posed (near-zero denominators).
 - **NRMSE** — `sqrt(mean((L_gen − L_real)²)) / (max|L_real| − min|L_real| + 1e-12) × 100` on the curve L only (funct-only).
+- **CVaR₉₀ / CVaR₉₅** — tail-averaged pointwise Expected Shortfall on the curve L only (funct-only): eₜ = |L_gen(t) − L_real(t)|, CVaR_q = mean(eₜ for eₜ ≥ the q-th percentile of eₜ), range-normalized like NRMSE. q ∈ {0.90, 0.95}. These are the non-zero finite-sample floor for the tail-error measure.
 
-> **% err and NRMSE are funct-only for every plot**: the first and second finite differences of
+> **% err, NRMSE and CVaR are funct-only for every plot**: the first and second finite differences of
 > these curves are near-zero, so their relative error is ill-posed and would explode; only **MSE**
 > averages all three sub-curves and decides the winner.
 
@@ -136,21 +137,33 @@ Each stylised-fact curve is summarised by three sublines. **MSE** is the mean-of
 | **Log-return histogram** | MSE | 0.1098 ± 0.02492 | 0.08507 | 0.1442 | 0.08047 | 0.1084 | 0.1310 |
 |  | % err | 1.799% ± 0.04483% | 1.785% | 1.754% | 1.865% | 1.838% | 1.755% |
 |  | NRMSE | 0.5328% ± 0.02035% | 0.5648% | 0.5406% | 0.5132% | 0.5086% | 0.5366% |
+|  | CVaR₉₀ | 1.234% ± 0.08860% | 1.371% | 1.298% | 1.138% | 1.152% | 1.212% |
+|  | CVaR₉₅ | 1.444% ± 0.08562% | 1.554% | 1.535% | 1.343% | 1.372% | 1.415% |
 | **QQ plot** | MSE | 1.09e-09 ± 6.13e-10 | 2.21e-09 | 5.44e-10 | 1.27e-09 | 8.19e-10 | 6.31e-10 |
 |  | % err | 0.4629% ± 0.1067% | 0.6353% | 0.3382% | 0.4862% | 0.3617% | 0.4929% |
-|  | NRMSE | 0.1206% ± 0.0467% | 0.1996% | 0.07741% | 0.1479% | 0.09494% | 0.08313% |
+|  | NRMSE | 0.1206% ± 0.04670% | 0.1996% | 0.07741% | 0.1479% | 0.09494% | 0.08313% |
+|  | CVaR₉₀ | 0.1319% ± 0.04206% | 0.2025% | 0.09134% | 0.1451% | 0.1339% | 0.08669% |
+|  | CVaR₉₅ | 0.1599% ± 0.04416% | 0.2400% | 0.1167% | 0.1643% | 0.1563% | 0.1220% |
 | **ACF \|r\| lags 1–20** | MSE | 9.61e-06 ± 3.40e-06 | 1.16e-05 | 1.43e-05 | 1.07e-05 | 5.22e-06 | 6.23e-06 |
-|  | % err | 8.724% ± 1.843% | 7.504% | 11.21% | 10.5% | 8.056% | 6.341% |
-|  | NRMSE | 6.071% ± 1.301% | 5.146% | 7.67% | 7.561% | 5.478% | 4.497% |
+|  | % err | 8.724% ± 1.843% | 7.504% | 11.21% | 10.50% | 8.056% | 6.341% |
+|  | NRMSE | 6.071% ± 1.301% | 5.146% | 7.670% | 7.561% | 5.478% | 4.497% |
+|  | CVaR₉₀ | 11.26% ± 1.961% | 10.75% | 13.62% | 13.20% | 10.48% | 8.249% |
+|  | CVaR₉₅ | 12.06% ± 1.837% | 11.49% | 14.94% | 13.36% | 10.50% | 10.02% |
 | **ACF r² lags 1–20** | MSE | 9.17e-06 ± 3.08e-06 | 9.60e-06 | 1.45e-05 | 9.54e-06 | 5.74e-06 | 6.49e-06 |
 |  | % err | 11.34% ± 2.219% | 9.455% | 15.07% | 12.61% | 10.34% | 9.216% |
-|  | NRMSE | 6.486% ± 1.351% | 5.39% | 8.565% | 7.556% | 5.879% | 5.042% |
+|  | NRMSE | 6.486% ± 1.351% | 5.390% | 8.565% | 7.556% | 5.879% | 5.042% |
+|  | CVaR₉₀ | 12.35% ± 2.511% | 12.78% | 15.61% | 13.63% | 11.72% | 8.027% |
+|  | CVaR₉₅ | 13.27% ± 2.724% | 13.89% | 17.41% | 13.66% | 12.43% | 8.939% |
 | **Rolling vol histogram** | MSE | 1.372 ± 0.07269 | 1.247 | 1.364 | 1.470 | 1.402 | 1.377 |
 |  | % err | 2.264% ± 0.07625% | 2.336% | 2.312% | 2.256% | 2.293% | 2.121% |
-|  | NRMSE | 0.8688% ± 0.05532% | 0.857% | 0.8012% | 0.9044% | 0.9554% | 0.8262% |
+|  | NRMSE | 0.8688% ± 0.05532% | 0.8570% | 0.8012% | 0.9044% | 0.9554% | 0.8262% |
+|  | CVaR₉₀ | 1.970% ± 0.1827% | 1.879% | 1.816% | 2.026% | 2.304% | 1.827% |
+|  | CVaR₉₅ | 2.308% ± 0.2413% | 2.174% | 2.240% | 2.163% | 2.788% | 2.178% |
 | **Tail survival** | MSE | 5.22e-07 ± 5.50e-07 | 1.50e-06 | 1.78e-07 | 7.66e-07 | 9.10e-08 | 7.67e-08 |
-|  | % err | 0.3302% ± 0.2167% | 0.6704% | 0.1785% | 0.503% | 0.1711% | 0.1282% |
-|  | NRMSE | 0.105% ± 0.06651% | 0.2129% | 0.07004% | 0.1513% | 0.04806% | 0.04275% |
+|  | % err | 0.3302% ± 0.2167% | 0.6704% | 0.1785% | 0.5030% | 0.1711% | 0.1282% |
+|  | NRMSE | 0.1050% ± 0.06651% | 0.2129% | 0.07004% | 0.1513% | 0.04806% | 0.04275% |
+|  | CVaR₉₀ | 0.1625% ± 0.08460% | 0.3080% | 0.1135% | 0.2080% | 0.08652% | 0.09630% |
+|  | CVaR₉₅ | 0.1682% ± 0.08394% | 0.3135% | 0.1206% | 0.2113% | 0.09167% | 0.1038% |
 
 > **Why % err is a context subline.** Even a perfect independent draw has a non-zero funct-only
 > MAPE from finite-sample noise: the ACF and rolling-vol curves sit near zero over much of their
@@ -159,6 +172,17 @@ Each stylised-fact curve is summarised by three sublines. **MSE** is the mean-of
 > against *this* floor, never against 0%.
 
 ---
+
+## grid_tvd — path-cloud visual sanity-check (50×50, not ranked)
+
+2D-histogram **Total Variation Distance (%)** between the held-out real test cloud
+and an independent Heston draw's **(t, x)** path cloud at a locked **50×50** grid —
+the non-zero finite-sample floor for the visual side-check. Lower = closer clouds.
+
+| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 |
+|--------|-----------|--------|--------|--------|--------|--------|
+| grid_tvd 50×50 (%) ↓ | 2.237% ± 0.1564% | 2.060% | 2.481% | 2.356% | 2.130% | 2.160% |
+
 
 ## File layout
 
@@ -171,7 +195,7 @@ methods/perfect_recovery/
 └── results/
     ├── seed_{0..4}_metrics.json  per-seed A1–A34 + B (independent draw vs test set)
     ├── metrics_summary.csv       mean ± std + per-seed for every metric
-    └── curve_b_aggregate.json    B three-subline aggregate (MSE + % err + NRMSE, per-seed)
+    └── curve_b_aggregate.json    B five-subline aggregate (MSE + % err + NRMSE + CVaR₉₀ + CVaR₉₅, per-seed)
 ```
 
 ## Reproduce

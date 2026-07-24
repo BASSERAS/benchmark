@@ -118,7 +118,7 @@ QQ plot, ACF of |returns|, ACF of squared returns, rolling vol histogram (window
 
 Each of the 6 diagnostic plots above yields a **curve** L (a list of values), not a scalar. For each plot
 we build three lists — the curve L, its first finite difference L' (der), and its second finite difference
-L'' (sec\_der) — and report **three rows per plot**:
+L'' (sec\_der) — and report **five rows per plot**:
 
 - **MSE** — `mean((L_gen − L_real)²)`, averaged over the three lists (funct/der/sec\_der). This is the
   quantity that decides the cross-method winner.
@@ -126,11 +126,14 @@ L'' (sec\_der) — and report **three rows per plot**:
   only (funct-only); the derivative / 2nd-difference MAPE is excluded as ill-posed (near-zero denominators).
 - **NRMSE** — `sqrt(mean((L_gen − L_real)²)) / (max|L_real| − min|L_real| + 1e-12) × 100` on the curve L
   only (funct-only).
+- **CVaR₉₀ / CVaR₉₅** — tail-averaged pointwise curve error (Expected Shortfall) on the curve L
+  only (funct-only): eₜ = |L_gen(t) − L_real(t)|, CVaR_q = mean(eₜ for eₜ ≥ the q-th percentile of eₜ),
+  range-normalized like NRMSE (÷ (max|L_real| − min|L_real| + 1e-12) × 100). q ∈ {0.90, 0.95}.
 
-For **all six plots** the % err and NRMSE rows use the **function-level curve only** (funct); the MSE
+For **all six plots** the % err, NRMSE and CVaR rows use the **function-level curve only** (funct); the MSE
 row stays the mean of the three sub-scores.
 
-↓ lower is better for all three rows. **Perfect floor** = the same independent-draw-vs-test floor as the A
+↓ lower is better for all five rows. **Perfect floor** = the same independent-draw-vs-test floor as the A
 table (non-zero, finite-sample). Winner between methods is decided by the **MSE** row. Fourier Flow's B
 scores are far more stable seed-to-seed than TimeGAN's — the log-return-histogram MSE is 0.9211 ± 0.024
 (vs TimeGAN's 45.4 ± 57.9 with a seed-2 collapse), reflecting the explicit-likelihood training.
@@ -141,21 +144,33 @@ scores are far more stable seed-to-seed than TimeGAN's — the log-return-histog
 | **Log-return histogram** | MSE | 0.9211 ± 0.02370 | 0.9371 | 0.9394 | 0.9444 | 0.8956 | 0.8891 | 0.1098 |
 |  | % err | 9.167% ± 0.5606% | 8.987% | 10.28% | 8.876% | 8.912% | 8.782% | 1.799% |
 |  | NRMSE | 4.186% ± 0.1102% | 4.142% | 4.342% | 4.272% | 4.027% | 4.147% | 0.5328% |
+|  | CVaR₉₀ | 10.19% ± 0.3052% | 10.14% | 10.42% | 10.60% | 9.706% | 10.10% | 1.234% |
+|  | CVaR₉₅ | 11.93% ± 0.3586% | 11.80% | 12.46% | 12.14% | 11.39% | 11.84% | 1.444% |
 | **QQ plot** | MSE | 1.45e-07 ± 2.63e-08 | 1.37e-07 | 1.97e-07 | 1.25e-07 | 1.33e-07 | 1.32e-07 | 1.09e-09 |
 |  | % err | 9.342% ± 2.293% | 7.914% | 13.86% | 8.822% | 7.678% | 8.438% | 0.4629% |
 |  | NRMSE | 1.687% ± 0.1351% | 1.638% | 1.956% | 1.608% | 1.611% | 1.620% | 0.1206% |
+|  | CVaR₉₀ | 1.636% ± 0.2264% | 1.562% | 2.060% | 1.377% | 1.597% | 1.585% | 0.1319% |
+|  | CVaR₉₅ | 2.268% ± 0.4096% | 2.213% | 2.936% | 1.647% | 2.316% | 2.228% | 0.1599% |
 | **ACF \|r\| lags 1–20** | MSE | 3.83e-04 ± 1.20e-05 | 3.85e-04 | 3.95e-04 | 3.61e-04 | 3.91e-04 | 3.81e-04 | 9.61e-06 |
 |  | % err | 117.2% ± 2.149% | 119.0% | 119.3% | 113.5% | 116.0% | 118.1% | 8.724% |
 |  | NRMSE | 88.45% ± 1.425% | 88.99% | 90.06% | 85.78% | 88.81% | 88.64% | 6.071% |
+|  | CVaR₉₀ | 127.7% ± 1.888% | 127.1% | 129.4% | 124.6% | 129.9% | 127.4% | 11.26% |
+|  | CVaR₉₅ | 130.3% ± 1.872% | 127.9% | 132.6% | 128.5% | 132.1% | 130.5% | 12.06% |
 | **ACF r² lags 1–20** | MSE | 2.80e-04 ± 1.13e-05 | 2.80e-04 | 2.94e-04 | 2.61e-04 | 2.89e-04 | 2.78e-04 | 9.17e-06 |
 |  | % err | 120.8% ± 3.065% | 123.1% | 124.1% | 115.4% | 119.8% | 121.8% | 11.34% |
 |  | NRMSE | 82.92% ± 1.680% | 83.36% | 85.06% | 79.89% | 83.33% | 82.98% | 6.486% |
+|  | CVaR₉₀ | 120.7% ± 1.567% | 120.0% | 121.7% | 118.1% | 122.7% | 121.1% | 12.35% |
+|  | CVaR₉₅ | 123.3% ± 1.328% | 121.0% | 124.8% | 122.8% | 124.3% | 123.4% | 13.27% |
 | **Rolling vol histogram** | MSE | 29.88 ± 2.639 | 29.80 | 34.64 | 26.52 | 29.36 | 29.07 | 1.372 |
 |  | % err | 25.42% ± 3.199% | 25.19% | 30.77% | 20.71% | 25.49% | 24.94% | 2.264% |
 |  | NRMSE | 10.43% ± 0.4823% | 10.43% | 11.31% | 9.838% | 10.29% | 10.29% | 0.8688% |
+|  | CVaR₉₀ | 19.99% ± 0.5784% | 20.09% | 21.05% | 19.40% | 19.79% | 19.61% | 1.970% |
+|  | CVaR₉₅ | 20.90% ± 0.5307% | 21.11% | 21.84% | 20.45% | 20.73% | 20.40% | 2.308% |
 | **Tail survival** | MSE | 1.71e-04 ± 1.49e-05 | 1.69e-04 | 1.72e-04 | 1.98e-04 | 1.53e-04 | 1.65e-04 | 5.22e-07 |
 |  | % err | 5.711% ± 0.2437% | 5.659% | 6.185% | 5.629% | 5.495% | 5.584% | 0.3302% |
 |  | NRMSE | 2.287% ± 0.09795% | 2.272% | 2.295% | 2.461% | 2.163% | 2.244% | 0.1050% |
+|  | CVaR₉₀ | 3.369% ± 0.1169% | 3.340% | 3.393% | 3.575% | 3.222% | 3.314% | 0.1625% |
+|  | CVaR₉₅ | 3.386% ± 0.1132% | 3.359% | 3.409% | 3.584% | 3.241% | 3.338% | 0.1682% |
 
 Fourier Flow does not win any B-plot outright (LS4 takes 5 of 6, CSDI the sixth), but its **QQ**
 (1.45e-07), **tail-survival** (1.71e-04) and **log-return-histogram** (0.9211) curves are the best of the
@@ -175,6 +190,18 @@ non-winners, consistent with its strong static-distribution scores in the A tabl
 > Full formulas: [`metrics/README.md`](../../../metrics/README.md).
 
 ---
+
+## grid_tvd — path-cloud visual sanity-check (50×50, not ranked)
+
+2D-histogram **Total Variation Distance (%)** between the real and this method's
+generated **(t, x)** path clouds at a locked **50×50** grid — the quantitative twin
+of the first two diagnostic panels. **Visual side-check only, not part of any
+ranking.** Lower = closer clouds.
+
+| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
+|--------|-----------|--------|--------|--------|--------|--------|---------------|
+| grid_tvd 50×50 (%) ↓ | 9.442% ± 1.721% | 7.873% | 11.91% | 11.07% | 7.732% | 8.624% | 2.237% |
+
 
 ## Discriminative & Predictive Classifier Losses (A18 / A19)
 
@@ -248,7 +275,7 @@ coincide.
 |------|-------------|
 | `metrics_summary.csv` | Mean ± std across 5 seeds for all metrics |
 | `seed_{i}_metrics.json` | Full per-seed metric dict |
-| `curve_b_aggregate.json` | B three-subline aggregates (MSE + % err + NRMSE) |
+| `curve_b_aggregate.json` | B five-subline aggregates (MSE + % err + NRMSE + CVaR₉₀ + CVaR₉₅) |
 | `seed_{i}_disc_gru_loss.csv` | GRU discriminator BCE loss per training step |
 | `seed_{i}_disc_mlp_loss.csv` | MLP discriminator BCE loss per training step |
 | `seed_{i}_pred_gru_loss.csv` | GRU predictor MAE loss per training step |

@@ -101,30 +101,43 @@ sub-scores into **one number per plot**:
 - **MSE row**: for each list, dᵢ = mean((L_r − L_g)²). Reported mean = the **mean of the three sub-scores** (funct + der + sec\_der)/3; std = the sample std of that per-seed combined score across the 5 seeds. The **MSE row decides the cross-method winner**.
 - **% err row**: for each list, dᵢ = mean(|L_g − L_r| / (|L_r| + 1e-6)) × 100, a proper MAPE — one division (the mean already averages over the curve's points). Reported value = the **function-level MAPE on the curve L itself** — the derivative / 2nd-derivative MAPE is **excluded** because diff(L)/diff2(L) have near-zero true values, so their relative error explodes into meaningless 10⁴-% figures. mean/std = mean and **sample std across the 5 seeds** of that per-seed function MAPE.
 - **NRMSE row**: sqrt(mean((L_g − L_r)²)) / (max|L_r| − min|L_r| + 1e-12) × 100 on the curve L **only (funct-only)** — the ill-posed derivative / 2nd-derivative curves are excluded for the same reason as the % err row.
+- **CVaR₉₀ / CVaR₉₅ rows**: tail-averaged pointwise curve error (Expected Shortfall) on the curve L **only (funct-only)**. Pointwise error eₜ = |L_g(t) − L_r(t)|; for q ∈ {0.90, 0.95}, CVaR_q = mean(eₜ for eₜ ≥ the q-th percentile of eₜ), then range-normalized like NRMSE (÷ (max|L_r| − min|L_r| + 1e-12) × 100).
 
 All ↓ lower is better. The perfect floor is **non-zero** for all six plots — it is the residual finite-sample error of an independent Heston draw scored against the test set, identical across methods.
-Three sublines per plot: **MSE**, **% error** and **NRMSE** (the per-seed columns hold that seed's combined score).
+Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CVaR₉₅** (the per-seed columns hold that seed's combined score).
 
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
 | **Log-return histogram** | MSE | 0.4517 ± 0.02799 | 0.4332 | 0.4900 | 0.4752 | 0.4478 | 0.4124 | 0.1098 |
 |  | % err | 5.429% ± 0.1852% | 5.500% | 5.328% | 5.621% | 5.579% | 5.117% | 1.799% |
 |  | NRMSE | 2.779% ± 0.08180% | 2.722% | 2.929% | 2.786% | 2.762% | 2.693% | 0.5328% |
+|  | CVaR₉₀ | 6.921% ± 0.2804% | 6.688% | 7.449% | 6.947% | 6.825% | 6.698% | 1.234% |
+|  | CVaR₉₅ | 8.401% ± 0.2798% | 8.286% | 8.842% | 8.589% | 8.238% | 8.051% | 1.444% |
 | **QQ plot** | MSE | 4.59e-08 ± 2.12e-09 | 4.59e-08 | 4.82e-08 | 4.77e-08 | 4.58e-08 | 4.21e-08 | 1.09e-09 |
 |  | % err | 6.022% ± 0.6435% | 6.813% | 6.336% | 5.213% | 6.442% | 5.304% | 0.4629% |
 |  | NRMSE | 0.9701% ± 0.02323% | 0.9701% | 0.9909% | 0.9842% | 0.9795% | 0.9256% | 0.1206% |
+|  | CVaR₉₀ | 0.9129% ± 0.06396% | 0.9893% | 0.8318% | 0.9866% | 0.8892% | 0.8677% | 0.1319% |
+|  | CVaR₉₅ | 1.197% ± 0.1293% | 1.320% | 1.018% | 1.369% | 1.135% | 1.144% | 0.1599% |
 | **ACF \|r\| lags 1–20** | MSE | 5.14e-05 ± 1.08e-05 | 6.76e-05 | 5.21e-05 | 5.74e-05 | 4.32e-05 | 3.66e-05 | 9.61e-06 |
 |  | % err | 37.09% ± 3.059% | 38.57% | 40.98% | 38.66% | 34.79% | 32.43% | 8.724% |
 |  | NRMSE | 29.46% ± 2.604% | 32.21% | 31.05% | 31.39% | 26.77% | 25.88% | 6.071% |
+|  | CVaR₉₀ | 45.94% ± 7.674% | 57.05% | 45.69% | 51.24% | 40.31% | 35.40% | 11.26% |
+|  | CVaR₉₅ | 50.46% ± 11.86% | 69.64% | 48.52% | 56.60% | 41.96% | 35.58% | 12.06% |
 | **ACF r² lags 1–20** | MSE | 2.48e-05 ± 6.52e-06 | 3.57e-05 | 2.40e-05 | 2.70e-05 | 2.11e-05 | 1.62e-05 | 9.17e-06 |
 |  | % err | 24.39% ± 3.127% | 24.85% | 28.58% | 26.75% | 21.57% | 20.19% | 11.34% |
 |  | NRMSE | 19.10% ± 2.524% | 21.49% | 21.03% | 20.93% | 16.23% | 15.81% | 6.486% |
+|  | CVaR₉₀ | 32.40% ± 6.104% | 41.52% | 34.20% | 34.68% | 27.77% | 23.84% | 12.35% |
+|  | CVaR₉₅ | 35.55% ± 9.255% | 52.30% | 35.21% | 34.68% | 31.40% | 24.16% | 13.27% |
 | **Rolling vol histogram** | MSE | 8.514 ± 0.7580 | 9.402 | 8.258 | 9.417 | 7.859 | 7.634 | 1.372 |
 |  | % err | 11.70% ± 1.165% | 12.72% | 10.83% | 13.36% | 10.26% | 11.31% | 2.264% |
 |  | NRMSE | 5.275% ± 0.3034% | 5.628% | 5.238% | 5.618% | 4.949% | 4.943% | 0.8688% |
+|  | CVaR₉₀ | 10.95% ± 0.4870% | 11.44% | 11.22% | 11.36% | 10.40% | 10.32% | 1.970% |
+|  | CVaR₉₅ | 11.53% ± 0.5086% | 12.07% | 11.77% | 11.95% | 11.03% | 10.81% | 2.308% |
 | **Tail survival** | MSE | 6.90e-05 ± 8.10e-06 | 6.12e-05 | 8.38e-05 | 6.37e-05 | 7.10e-05 | 6.51e-05 | 5.22e-07 |
 |  | % err | 3.345% ± 0.1144% | 3.265% | 3.557% | 3.362% | 3.308% | 3.233% | 0.3302% |
 |  | NRMSE | 1.449% ± 0.08321% | 1.367% | 1.601% | 1.395% | 1.473% | 1.410% | 0.1050% |
+|  | CVaR₉₀ | 2.157% ± 0.09912% | 2.045% | 2.340% | 2.113% | 2.166% | 2.124% | 0.1625% |
+|  | CVaR₉₅ | 2.170% ± 0.1011% | 2.056% | 2.356% | 2.124% | 2.178% | 2.138% | 0.1682% |
 
 > **Log-ret histogram**: MSE **0.4517** — the **best log-return-histogram fit in the whole benchmark** (next best Fourier Flow 0.92; SBTS 4.08, CSDI 4.64, Diffusion-TS 4.88; TimeGAN 45; TimeVAE 968). LS4's marginal return density is essentially on top of Heston's.
 > **QQ plot**: MSE **4.6e-08** (function-level %err 6.02%) — quantile-by-quantile the LS4 return distribution matches Heston's; the residual %err is tail-driven.
@@ -132,6 +145,18 @@ Three sublines per plot: **MSE**, **% error** and **NRMSE** (the per-seed column
 > **Rolling vol histogram**: MSE **8.514** — the **best rolling-volatility-histogram fit in the benchmark** (next Fourier Flow 29.88; the GAN/VAE baselines range 114–16000). Paired with A31 rolling-vol KS **0.038**, LS4 is the only method here whose rolling-vol distribution overlaps Heston's.
 
 ---
+
+## grid_tvd — path-cloud visual sanity-check (50×50, not ranked)
+
+2D-histogram **Total Variation Distance (%)** between the real and this method's
+generated **(t, x)** path clouds at a locked **50×50** grid — the quantitative twin
+of the first two diagnostic panels. **Visual side-check only, not part of any
+ranking.** Lower = closer clouds.
+
+| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
+|--------|-----------|--------|--------|--------|--------|--------|---------------|
+| grid_tvd 50×50 (%) ↓ | 2.772% ± 0.2228% | 2.861% | 2.365% | 3.012% | 2.895% | 2.728% | 2.237% |
+
 
 ## Reading the table — best-in-class density & path fit, no latent-vol recovery
 

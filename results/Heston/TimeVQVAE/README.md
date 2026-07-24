@@ -113,7 +113,7 @@ QQ plot, ACF of |returns|, ACF of squared returns, rolling vol histogram (window
 
 Each of the 6 diagnostic plots above yields a **curve** L (a list of values), not a scalar. For each plot
 we build three lists — the curve L, its first finite difference L′ (der), and its second finite difference
-L″ (sec\_der) — then combine them into **three sub-scores per plot**:
+L″ (sec\_der) — then combine them into **five sub-scores per plot**:
 
 - **MSE row** (decides the winner): for each list, mean((L\_gen − L\_real)²), averaged over the three lists
   (funct / der / sec\_der). This is the headline curve-fit error.
@@ -121,8 +121,11 @@ L″ (sec\_der) — then combine them into **three sub-scores per plot**:
   only (funct-only); the derivative / 2nd-difference MAPE is excluded as ill-posed (near-zero denominators).
 - **NRMSE row**: sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100 on the curve L
   only (funct-only).
+- **CVaR₉₀ / CVaR₉₅ rows**: tail-averaged pointwise curve error (Expected Shortfall) on the curve L
+  only (funct-only). eₜ = |L\_gen(t) − L\_real(t)|; CVaR\_q = mean(eₜ for eₜ ≥ the q-th percentile of eₜ),
+  range-normalized like NRMSE. q ∈ {0.90, 0.95}.
 
-↓ lower is better for all three rows. **Perfect floor** is the non-zero real-vs-test value an independent
+↓ lower is better for all five rows. **Perfect floor** is the non-zero real-vs-test value an independent
 Heston draw reaches — identical across methods.
 
 <!-- ===== PER-METHOD B TABLE ===== -->
@@ -131,21 +134,33 @@ Heston draw reaches — identical across methods.
 | **Log-return histogram** | MSE | 4.386 ± 0.8335 | 3.620 | 4.185 | 3.625 | 4.631 | 5.871 | 0.1098 |
 |  | % err | 30.95% ± 1.747% | 28.63% | 30.54% | 30.43% | 31.16% | 34.01% | 1.799% |
 |  | NRMSE | 9.691% ± 0.9011% | 8.831% | 9.521% | 8.872% | 9.941% | 11.29% | 0.5328% |
+|  | CVaR₉₀ | 24.32% ± 2.457% | 22.05% | 23.76% | 22.03% | 25.09% | 28.66% | 1.234% |
+|  | CVaR₉₅ | 26.67% ± 2.883% | 24.07% | 26.03% | 23.68% | 28.01% | 31.54% | 1.444% |
 | **QQ plot** | MSE | 1.82e-06 ± 2.20e-07 | 1.53e-06 | 1.75e-06 | 1.77e-06 | 1.82e-06 | 2.21e-06 | 1.09e-09 |
 |  | % err | 23.84% ± 2.434% | 23.56% | 24.27% | 19.44% | 25.24% | 26.67% | 0.4629% |
 |  | NRMSE | 6.308% ± 0.3785% | 5.797% | 6.204% | 6.240% | 6.327% | 6.971% | 0.1206% |
+|  | CVaR₉₀ | 6.515% ± 0.3574% | 5.968% | 6.378% | 6.709% | 6.475% | 7.046% | 0.1319% |
+|  | CVaR₉₅ | 7.395% ± 0.3894% | 6.805% | 7.213% | 7.696% | 7.333% | 7.927% | 0.1599% |
 | **ACF \|r\| lags 1–20** | MSE | 1.22e-04 ± 3.84e-05 | 1.41e-04 | 1.11e-04 | 5.55e-05 | 1.30e-04 | 1.71e-04 | 9.61e-06 |
 |  | % err | 63.03% ± 14.21% | 66.81% | 61.31% | 37.15% | 70.55% | 79.32% | 8.724% |
 |  | NRMSE | 45.54% ± 9.362% | 47.04% | 43.31% | 29.49% | 49.90% | 57.97% | 6.071% |
+|  | CVaR₉₀ | 71.36% ± 12.50% | 71.17% | 66.89% | 52.79% | 74.45% | 91.52% | 11.26% |
+|  | CVaR₉₅ | 73.51% ± 13.45% | 71.73% | 68.42% | 54.74% | 76.45% | 96.20% | 12.06% |
 | **ACF r² lags 1–20** | MSE | 1.05e-04 ± 3.00e-05 | 1.35e-04 | 9.82e-05 | 5.43e-05 | 1.03e-04 | 1.37e-04 | 9.17e-06 |
 |  | % err | 70.37% ± 13.75% | 77.06% | 69.76% | 44.85% | 74.57% | 85.59% | 11.34% |
 |  | NRMSE | 45.61% ± 7.936% | 48.22% | 44.45% | 31.73% | 47.57% | 56.10% | 6.486% |
+|  | CVaR₉₀ | 73.46% ± 10.86% | 75.22% | 71.19% | 56.46% | 73.88% | 90.55% | 12.35% |
+|  | CVaR₉₅ | 75.90% ± 12.22% | 79.02% | 72.14% | 58.13% | 74.18% | 96.01% | 13.27% |
 | **Rolling vol histogram** | MSE | 113.9 ± 13.91 | 95.07 | 113.4 | 106.0 | 118.3 | 137.0 | 1.372 |
 |  | % err | 54.51% ± 2.433% | 50.75% | 53.48% | 54.17% | 56.30% | 57.84% | 2.264% |
 |  | NRMSE | 20.68% ± 1.268% | 18.92% | 20.67% | 19.96% | 21.12% | 22.74% | 0.8688% |
+|  | CVaR₉₀ | 44.63% ± 3.197% | 41.58% | 44.22% | 41.59% | 45.50% | 50.25% | 1.970% |
+|  | CVaR₉₅ | 47.19% ± 3.505% | 44.27% | 46.67% | 43.56% | 48.06% | 53.41% | 2.308% |
 | **Tail survival** | MSE | 0.001709 ± 2.78e-04 | 0.001414 | 0.001643 | 0.001521 | 0.001748 | 0.002218 | 5.22e-07 |
 |  | % err | 22.34% ± 1.374% | 20.56% | 22.00% | 21.89% | 22.45% | 24.78% | 0.3302% |
 |  | NRMSE | 7.206% ± 0.5711% | 6.576% | 7.088% | 6.821% | 7.311% | 8.235% | 0.1050% |
+|  | CVaR₉₀ | 9.832% ± 0.7952% | 9.005% | 9.675% | 9.235% | 9.969% | 11.27% | 0.1625% |
+|  | CVaR₉₅ | 9.856% ± 0.7985% | 9.034% | 9.696% | 9.250% | 9.994% | 11.31% | 0.1682% |
 
 TimeVQVAE wins **none of the 6 B-plots** — LS4 takes the MSE headline on five and CSDI on the sixth — but it is
 consistently the runner-up. Its best relative curve is the **QQ plot** (MSE 1.82e-06, NRMSE 3.8 %): the
@@ -167,6 +182,18 @@ TimeVAE's — log-return-histogram MSE **4.386 vs 968** (~220× lower), rolling-
 > Full formulas: [`metrics/README.md`](../../../metrics/README.md).
 
 ---
+
+## grid_tvd — path-cloud visual sanity-check (50×50, not ranked)
+
+2D-histogram **Total Variation Distance (%)** between the real and this method's
+generated **(t, x)** path clouds at a locked **50×50** grid — the quantitative twin
+of the first two diagnostic panels. **Visual side-check only, not part of any
+ranking.** Lower = closer clouds.
+
+| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
+|--------|-----------|--------|--------|--------|--------|--------|---------------|
+| grid_tvd 50×50 (%) ↓ | 7.269% ± 0.3121% | 6.917% | 7.329% | 6.970% | 7.346% | 7.784% | 2.237% |
+
 
 ## Discriminative & Predictive Classifier Losses (A18 / A19)
 
@@ -229,7 +256,7 @@ time-homogeneous, so the uniform and Gaussian prefix weightings coincide.
 |------|-------------|
 | `metrics_summary.csv` | Mean ± std across 5 seeds for all metrics |
 | `seed_{i}_metrics.json` | Full per-seed metric dict |
-| `curve_b_aggregate.json` | B three-subline aggregates (MSE + % err + NRMSE) |
+| `curve_b_aggregate.json` | B five-subline aggregates (MSE + % err + NRMSE + CVaR₉₀ + CVaR₉₅) |
 | `seed_{i}_disc_gru_loss.csv` | GRU discriminator BCE loss per training step |
 | `seed_{i}_disc_mlp_loss.csv` | MLP discriminator BCE loss per training step |
 | `seed_{i}_pred_gru_loss.csv` | GRU predictor MAE loss per training step |

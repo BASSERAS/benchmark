@@ -137,15 +137,17 @@ kurtosis error 281.8; worst A14 KS 0.3881; near-separable A18-GRU 0.4871) and wi
 ## B — Curve-shape metrics cross-method comparison (mean ± std, 5 seeds)
 
 Each of the 6 diagnostic plots yields a **curve** L (a list of values), not a scalar. **MSE** combines three
-lists — the curve L, its first finite difference (der), and its second finite difference (sec\_der); **% err**
-and **NRMSE** are **funct-only** (curve L only):
+lists — the curve L, its first finite difference (der), and its second finite difference (sec\_der); **% err**,
+**NRMSE** and **CVaR** are **funct-only** (curve L only):
 
 - **MSE**: dᵢ = mean((L_gen − L_real)²), averaged over curve / der / sec\_der — the winner-deciding number. Combined std = quadrature of the three seed-std.
 - **% err** (function-level MAPE, funct-only): dᵢ = mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100 — one division, on the curve L only. The der / sec\_der MAPE is excluded as ill-posed (near-zero denominators explode).
 - **NRMSE** (funct-only): sqrt(mean((L_gen − L_real)²)) / (max|L_real| − min|L_real| + 1e-12) × 100 on the curve L only — RMSE normalised by the reference curve's range.
+- **CVaR₉₀ / CVaR₉₅** (tail-risk / Expected Shortfall, funct-only): with pointwise errors eₜ = |L_gen(t) − L_real(t)|, CVaR_q = mean(eₜ over the worst (1−q) tail, i.e. eₜ ≥ the q-th percentile), normalised by (max L_real − min L_real + 1e-12) × 100 — same range convention as NRMSE. Measures the *worst-fitting* slice of the curve rather than its average.
 
-**% err and NRMSE are funct-only for every plot**: the first and second finite differences of these curves are
+**% err, NRMSE and CVaR are funct-only for every plot**: the first and second finite differences of these curves are
 near-zero, so their relative error is ill-posed and would explode; only **MSE** averages all three sub-curves.
+A separate **grid_tvd** section below (path-cloud 2D-histogram TVD at a locked 50×50 grid) is a **visual side-check only** — not averaged in, never a win.
 ↓ lower is better. Histogram bin edges use [0.5th, 99.5th]-percentile of **real data only**, so the reference
 curve is fixed. The **Perfect** column is an independent Heston draw (seeds 1000+) scored against the test set
 the same way — a **non-zero** finite-sample floor, not a degenerate zero. Winner is by MSE.
@@ -177,24 +179,36 @@ the same way — a **non-zero** finite-sample floor, not a degenerate zero. Winn
   </tr>
 </thead>
 <tbody>
-  <tr><td rowspan="3"><b>Log-return histogram</b></td><td>MSE</td><td>45.40 ± 57.91</td><td>42.66 ± 1.999</td><td>2160 ± 655.2</td><td>4.883 ± 0.5079</td><td>4.644 ± 0.4940</td><td>968.0 ± 183.1</td><td>4.386 ± 0.8335</td><td><b>0.4517 ± 0.02799</b></td><td>4.082 ± 0.04782</td><td>0.9211 ± 0.02370</td><td>0.1098 ± 0.02492</td><td rowspan="3"><b>LS4</b></td></tr>
+  <tr><td rowspan="5"><b>Log-return histogram</b></td><td>MSE</td><td>45.40 ± 57.91</td><td>42.66 ± 1.999</td><td>2160 ± 655.2</td><td>4.883 ± 0.5079</td><td>4.644 ± 0.4940</td><td>968.0 ± 183.1</td><td>4.386 ± 0.8335</td><td><b>0.4517 ± 0.02799</b></td><td>4.082 ± 0.04782</td><td>0.9211 ± 0.02370</td><td>0.1098 ± 0.02492</td><td rowspan="5"><b>LS4</b></td></tr>
   <tr><td>% err</td><td>33.41% ± 6.533%</td><td>246.6% ± 7.987%</td><td>117.7% ± 1.125%</td><td>42.14% ± 1.003%</td><td>35.27% ± 1.063%</td><td>114.9% ± 0.6458%</td><td>30.95% ± 1.747%</td><td>5.429% ± 0.1852%</td><td>39.17% ± 0.1361%</td><td>9.167% ± 0.5606%</td><td>1.799% ± 0.04483%</td></tr>
   <tr><td>NRMSE</td><td>21.38% ± 14.34%</td><td>30.81% ± 0.7154%</td><td>151.6% ± 13.15%</td><td>10.28% ± 0.5317%</td><td>9.998% ± 0.5467%</td><td>123.7% ± 6.783%</td><td>9.691% ± 0.9011%</td><td>2.779% ± 0.08180%</td><td>9.368% ± 0.06168%</td><td>4.186% ± 0.1102%</td><td>0.5328% ± 0.02035%</td></tr>
-  <tr><td rowspan="3"><b>QQ plot</b></td><td>MSE</td><td>2.38e-06 ± 1.14e-06</td><td>8.25e-04 ± 6.60e-05</td><td>4.16e-05 ± 1.27e-06</td><td>3.48e-06 ± 1.75e-07</td><td>2.36e-06 ± 1.57e-07</td><td>3.99e-05 ± 5.99e-07</td><td>1.82e-06 ± 2.20e-07</td><td><b>4.59e-08 ± 2.12e-09</b></td><td>3.01e-06 ± 2.28e-08</td><td>1.45e-07 ± 2.63e-08</td><td>1.09e-09 ± 6.13e-10</td><td rowspan="3"><b>LS4</b></td></tr>
+  <tr><td>CVaR₉₀</td><td>50.55% ± 32.16%</td><td>58.05% ± 1.029%</td><td>317.1% ± 7.324%</td><td>21.62% ± 1.519%</td><td>23.51% ± 1.709%</td><td>287.6% ± 7.035%</td><td>24.32% ± 2.457%</td><td>6.921% ± 0.2804%</td><td>20.72% ± 0.1466%</td><td>10.19% ± 0.3052%</td><td>1.234% ± 0.08860%</td></tr>
+  <tr><td>CVaR₉₅</td><td>78.15% ± 57.07%</td><td>60.73% ± 0.9285%</td><td>553.4% ± 17.57%</td><td>22.55% ± 1.702%</td><td>25.24% ± 1.771%</td><td>483.9% ± 19.22%</td><td>26.67% ± 2.883%</td><td>8.401% ± 0.2798%</td><td>21.83% ± 0.2430%</td><td>11.93% ± 0.3586%</td><td>1.444% ± 0.08562%</td></tr>
+  <tr><td rowspan="5"><b>QQ plot</b></td><td>MSE</td><td>2.38e-06 ± 1.14e-06</td><td>8.25e-04 ± 6.60e-05</td><td>4.16e-05 ± 1.27e-06</td><td>3.48e-06 ± 1.75e-07</td><td>2.36e-06 ± 1.57e-07</td><td>3.99e-05 ± 5.99e-07</td><td>1.82e-06 ± 2.20e-07</td><td><b>4.59e-08 ± 2.12e-09</b></td><td>3.01e-06 ± 2.28e-08</td><td>1.45e-07 ± 2.63e-08</td><td>1.09e-09 ± 6.13e-10</td><td rowspan="5"><b>LS4</b></td></tr>
   <tr><td>% err</td><td>34.50% ± 11.22%</td><td>437.1% ± 19.17%</td><td>92.66% ± 2.380%</td><td>25.71% ± 1.743%</td><td>24.22% ± 1.083%</td><td>90.53% ± 1.555%</td><td>23.84% ± 2.434%</td><td>6.022% ± 0.6435%</td><td>21.47% ± 0.3841%</td><td>9.342% ± 2.293%</td><td>0.4629% ± 0.1067%</td></tr>
   <tr><td>NRMSE</td><td>6.960% ± 1.738%</td><td>134.7% ± 5.407%</td><td>30.25% ± 0.4431%</td><td>8.689% ± 0.2248%</td><td>7.188% ± 0.2370%</td><td>29.57% ± 0.2260%</td><td>6.308% ± 0.3785%</td><td>0.9701% ± 0.02323%</td><td>8.083% ± 0.03106%</td><td>1.687% ± 0.1351%</td><td>0.1206% ± 0.04670%</td></tr>
-  <tr><td rowspan="3"><b>ACF \|r\| lags 1–20</b></td><td>MSE</td><td>0.003597 ± 0.003199</td><td>0.008548 ± 0.003519</td><td>0.02626 ± 0.02245</td><td>1.72e-04 ± 4.79e-05</td><td><b>3.02e-05 ± 1.61e-05</b></td><td>0.03390 ± 0.01422</td><td>1.22e-04 ± 3.84e-05</td><td>5.14e-05 ± 1.08e-05</td><td>0.001512 ± 1.42e-05</td><td>3.83e-04 ± 1.20e-05</td><td>9.61e-06 ± 3.40e-06</td><td rowspan="3"><b>CSDI</b></td></tr>
+  <tr><td>CVaR₉₀</td><td>6.454% ± 1.512%</td><td>138.6% ± 5.112%</td><td>32.67% ± 0.7552%</td><td>10.19% ± 0.2059%</td><td>7.785% ± 0.2211%</td><td>32.31% ± 0.1596%</td><td>6.515% ± 0.3574%</td><td>0.9129% ± 0.06396%</td><td>9.497% ± 0.03506%</td><td>1.636% ± 0.2264%</td><td>0.1319% ± 0.04206%</td></tr>
+  <tr><td>CVaR₉₅</td><td>7.409% ± 1.912%</td><td>154.2% ± 6.106%</td><td>37.00% ± 1.251%</td><td>12.09% ± 0.2092%</td><td>8.895% ± 0.2534%</td><td>37.04% ± 0.1567%</td><td>7.395% ± 0.3894%</td><td>1.197% ± 0.1293%</td><td>11.33% ± 0.04832%</td><td>2.268% ± 0.4096%</td><td>0.1599% ± 0.04416%</td></tr>
+  <tr><td rowspan="5"><b>ACF \|r\| lags 1–20</b></td><td>MSE</td><td>0.003597 ± 0.003199</td><td>0.008548 ± 0.003519</td><td>0.02626 ± 0.02245</td><td>1.72e-04 ± 4.79e-05</td><td><b>3.02e-05 ± 1.61e-05</b></td><td>0.03390 ± 0.01422</td><td>1.22e-04 ± 3.84e-05</td><td>5.14e-05 ± 1.08e-05</td><td>0.001512 ± 1.42e-05</td><td>3.83e-04 ± 1.20e-05</td><td>9.61e-06 ± 3.40e-06</td><td rowspan="5"><b>CSDI</b></td></tr>
   <tr><td>% err</td><td>186.2% ± 107.8%</td><td>230.0% ± 48.05%</td><td>893.2% ± 463.3%</td><td>73.33% ± 13.17%</td><td>19.26% ± 8.314%</td><td>983.6% ± 273.1%</td><td>63.03% ± 14.21%</td><td>37.09% ± 3.059%</td><td>149.0% ± 1.780%</td><td>117.2% ± 2.149%</td><td>8.724% ± 1.843%</td></tr>
   <tr><td>NRMSE</td><td>224.6% ± 123.4%</td><td>198.2% ± 35.47%</td><td>668.0% ± 311.1%</td><td>51.98% ± 7.840%</td><td>19.33% ± 5.196%</td><td>795.3% ± 212.4%</td><td>45.54% ± 9.362%</td><td>29.46% ± 2.604%</td><td>127.9% ± 0.8849%</td><td>88.45% ± 1.425%</td><td>6.071% ± 1.301%</td></tr>
-  <tr><td rowspan="3"><b>ACF r² lags 1–20</b></td><td>MSE</td><td>0.001982 ± 0.001602</td><td>0.008781 ± 0.003516</td><td>0.008475 ± 0.01103</td><td>1.32e-04 ± 4.43e-05</td><td>2.71e-05 ± 1.16e-05</td><td>0.02694 ± 0.01034</td><td>1.05e-04 ± 3.00e-05</td><td><b>2.48e-05 ± 6.52e-06</b></td><td>0.001723 ± 2.85e-05</td><td>2.80e-04 ± 1.13e-05</td><td>9.17e-06 ± 3.08e-06</td><td rowspan="3"><b>LS4</b></td></tr>
+  <tr><td>CVaR₉₀</td><td>522.2% ± 262.2%</td><td>420.7% ± 65.18%</td><td>1012% ± 397.5%</td><td>73.44% ± 9.466%</td><td>46.07% ± 9.937%</td><td>1246% ± 313.1%</td><td>71.36% ± 12.50%</td><td>45.94% ± 7.674%</td><td>262.9% ± 2.662%</td><td>127.7% ± 1.888%</td><td>11.26% ± 1.961%</td></tr>
+  <tr><td>CVaR₉₅</td><td>612.3% ± 275.1%</td><td>474.2% ± 99.55%</td><td>1118% ± 426.4%</td><td>75.43% ± 9.523%</td><td>59.93% ± 12.65%</td><td>1273% ± 322.9%</td><td>73.51% ± 13.45%</td><td>50.46% ± 11.86%</td><td>392.3% ± 3.112%</td><td>130.3% ± 1.872%</td><td>12.06% ± 1.837%</td></tr>
+  <tr><td rowspan="5"><b>ACF r² lags 1–20</b></td><td>MSE</td><td>0.001982 ± 0.001602</td><td>0.008781 ± 0.003516</td><td>0.008475 ± 0.01103</td><td>1.32e-04 ± 4.43e-05</td><td>2.71e-05 ± 1.16e-05</td><td>0.02694 ± 0.01034</td><td>1.05e-04 ± 3.00e-05</td><td><b>2.48e-05 ± 6.52e-06</b></td><td>0.001723 ± 2.85e-05</td><td>2.80e-04 ± 1.13e-05</td><td>9.17e-06 ± 3.08e-06</td><td rowspan="5"><b>LS4</b></td></tr>
   <tr><td>% err</td><td>130.0% ± 65.84%</td><td>287.8% ± 57.85%</td><td>541.6% ± 420.6%</td><td>73.19% ± 16.72%</td><td>21.75% ± 10.67%</td><td>1026% ± 265.1%</td><td>70.37% ± 13.75%</td><td>24.39% ± 3.127%</td><td>171.3% ± 1.908%</td><td>120.8% ± 3.065%</td><td>11.34% ± 2.219%</td></tr>
   <tr><td>NRMSE</td><td>168.2% ± 70.21%</td><td>221.1% ± 36.09%</td><td>366.9% ± 274.6%</td><td>46.32% ± 8.702%</td><td>20.43% ± 5.060%</td><td>782.1% ± 188.7%</td><td>45.61% ± 7.936%</td><td>19.10% ± 2.524%</td><td>145.2% ± 1.200%</td><td>82.92% ± 1.680%</td><td>6.486% ± 1.351%</td></tr>
-  <tr><td rowspan="3"><b>Rolling vol histogram</b></td><td>MSE</td><td>150.2 ± 75.22</td><td>1398 ± 34.29</td><td>3029 ± 1983</td><td>220.2 ± 15.36</td><td>157.5 ± 12.45</td><td>16019 ± 2352</td><td>113.9 ± 13.91</td><td><b>8.514 ± 0.7580</b></td><td>412.9 ± 1.772</td><td>29.88 ± 2.639</td><td>1.372 ± 0.07269</td><td rowspan="3"><b>LS4</b></td></tr>
+  <tr><td>CVaR₉₀</td><td>421.3% ± 169.3%</td><td>469.3% ± 84.08%</td><td>577.9% ± 398.0%</td><td>66.27% ± 10.63%</td><td>50.15% ± 8.636%</td><td>1323% ± 304.4%</td><td>73.46% ± 10.86%</td><td>32.40% ± 6.104%</td><td>317.1% ± 3.759%</td><td>120.7% ± 1.567%</td><td>12.35% ± 2.511%</td></tr>
+  <tr><td>CVaR₉₅</td><td>537.1% ± 194.7%</td><td>586.1% ± 127.8%</td><td>664.9% ± 437.7%</td><td>68.14% ± 10.38%</td><td>63.50% ± 10.43%</td><td>1372% ± 331.0%</td><td>75.90% ± 12.22%</td><td>35.55% ± 9.255%</td><td>499.7% ± 4.950%</td><td>123.3% ± 1.328%</td><td>13.27% ± 2.724%</td></tr>
+  <tr><td rowspan="5"><b>Rolling vol histogram</b></td><td>MSE</td><td>150.2 ± 75.22</td><td>1398 ± 34.29</td><td>3029 ± 1983</td><td>220.2 ± 15.36</td><td>157.5 ± 12.45</td><td>16019 ± 2352</td><td>113.9 ± 13.91</td><td><b>8.514 ± 0.7580</b></td><td>412.9 ± 1.772</td><td>29.88 ± 2.639</td><td>1.372 ± 0.07269</td><td rowspan="5"><b>LS4</b></td></tr>
   <tr><td>% err</td><td>56.76% ± 21.18%</td><td>799.2% ± 14.12%</td><td>187.8% ± 42.87%</td><td>69.05% ± 1.441%</td><td>61.91% ± 2.364%</td><td>340.0% ± 11.74%</td><td>54.51% ± 2.433%</td><td>11.70% ± 1.165%</td><td>84.56% ± 0.1274%</td><td>25.42% ± 3.199%</td><td>2.264% ± 0.07625%</td></tr>
   <tr><td>NRMSE</td><td>22.64% ± 7.203%</td><td>73.06% ± 0.8956%</td><td>97.99% ± 31.28%</td><td>28.87% ± 0.9919%</td><td>24.39% ± 0.9523%</td><td>221.5% ± 13.05%</td><td>20.68% ± 1.268%</td><td>5.275% ± 0.3034%</td><td>39.59% ± 0.08241%</td><td>10.43% ± 0.4823%</td><td>0.8688% ± 0.05532%</td></tr>
-  <tr><td rowspan="3"><b>Tail survival</b></td><td>MSE</td><td>0.003912 ± 0.003064</td><td>0.05973 ± 0.001991</td><td>0.07918 ± 0.002862</td><td>0.002258 ± 2.00e-04</td><td>0.001960 ± 1.85e-04</td><td>0.07224 ± 0.001903</td><td>0.001709 ± 2.78e-04</td><td><b>6.90e-05 ± 8.10e-06</b></td><td>0.001937 ± 2.20e-05</td><td>1.71e-04 ± 1.49e-05</td><td>5.22e-07 ± 5.50e-07</td><td rowspan="3"><b>LS4</b></td></tr>
+  <tr><td>CVaR₉₀</td><td>51.23% ± 18.12%</td><td>121.7% ± 2.643%</td><td>236.6% ± 64.79%</td><td>59.83% ± 2.496%</td><td>50.44% ± 1.974%</td><td>434.8% ± 12.53%</td><td>44.63% ± 3.197%</td><td>10.95% ± 0.4870%</td><td>83.76% ± 0.2647%</td><td>19.99% ± 0.5784%</td><td>1.970% ± 0.1827%</td></tr>
+  <tr><td>CVaR₉₅</td><td>60.61% ± 26.33%</td><td>128.0% ± 3.162%</td><td>346.0% ± 123.4%</td><td>62.61% ± 2.777%</td><td>52.28% ± 2.063%</td><td>763.2% ± 29.64%</td><td>47.19% ± 3.505%</td><td>11.53% ± 0.5086%</td><td>88.06% ± 0.3275%</td><td>20.90% ± 0.5307%</td><td>2.308% ± 0.2413%</td></tr>
+  <tr><td rowspan="5"><b>Tail survival</b></td><td>MSE</td><td>0.003912 ± 0.003064</td><td>0.05973 ± 0.001991</td><td>0.07918 ± 0.002862</td><td>0.002258 ± 2.00e-04</td><td>0.001960 ± 1.85e-04</td><td>0.07224 ± 0.001903</td><td>0.001709 ± 2.78e-04</td><td><b>6.90e-05 ± 8.10e-06</b></td><td>0.001937 ± 2.20e-05</td><td>1.71e-04 ± 1.49e-05</td><td>5.22e-07 ± 5.50e-07</td><td rowspan="5"><b>LS4</b></td></tr>
   <tr><td>% err</td><td>23.64% ± 6.097%</td><td>342.3% ± 8.331%</td><td>91.34% ± 1.201%</td><td>28.39% ± 0.8411%</td><td>24.78% ± 0.8772%</td><td>90.06% ± 0.6385%</td><td>22.34% ± 1.374%</td><td>3.345% ± 0.1144%</td><td>26.62% ± 0.1128%</td><td>5.711% ± 0.2437%</td><td>0.3302% ± 0.2167%</td></tr>
   <tr><td>NRMSE</td><td>10.02% ± 4.365%</td><td>42.74% ± 0.7148%</td><td>49.16% ± 0.8809%</td><td>8.301% ± 0.3648%</td><td>7.733% ± 0.3598%</td><td>46.97% ± 0.6196%</td><td>7.206% ± 0.5711%</td><td>1.449% ± 0.08321%</td><td>7.694% ± 0.04378%</td><td>2.287% ± 0.09795%</td><td>0.1050% ± 0.06651%</td></tr>
+  <tr><td>CVaR₉₀</td><td>13.92% ± 6.684%</td><td>63.43% ± 1.276%</td><td>75.15% ± 1.286%</td><td>11.78% ± 0.4757%</td><td>10.69% ± 0.4778%</td><td>71.06% ± 0.8527%</td><td>9.832% ± 0.7952%</td><td>2.157% ± 0.09912%</td><td>10.69% ± 0.05022%</td><td>3.369% ± 0.1169%</td><td>0.1625% ± 0.08460%</td></tr>
+  <tr><td>CVaR₉₅</td><td>13.97% ± 6.723%</td><td>63.74% ± 1.294%</td><td>75.67% ± 1.299%</td><td>11.81% ± 0.4755%</td><td>10.72% ± 0.4743%</td><td>71.49% ± 0.8603%</td><td>9.856% ± 0.7985%</td><td>2.170% ± 0.1011%</td><td>10.71% ± 0.05155%</td><td>3.386% ± 0.1132%</td><td>0.1682% ± 0.08394%</td></tr>
 </tbody>
 </table>
 
@@ -216,6 +230,45 @@ method reaches the non-zero Perfect floor on any curve, but LS4 is within ~4× o
 histogram (0.4517 vs 0.1098). Each value is computed over the same **5 seeds** per method.
 
 ---
+
+## grid_tvd — path-cloud visual sanity-check (50×50, not ranked)
+
+A lightweight 2D-histogram **Total Variation Distance (%)** between the real and
+generated **(time, value)** path clouds — the quantitative twin of the first two
+diagnostic panels (real vs generated scatter). The grid is locked at **50×50** for
+every method so all curves stay comparable. **Visual side-check only: it is not
+averaged into any score and is excluded from all A/B win-counts.** Lower = closer
+clouds; the **Perfect** column is the independent-draw floor.
+
+<table>
+<thead>
+  <tr>
+    <th rowspan="2">Visual side-check (not ranked)</th>
+    <th colspan="3">GAN</th>
+    <th colspan="2">Diffusion</th>
+    <th colspan="3">VAE</th>
+    <th>Schrödinger Bridge</th>
+    <th>Fourier Flow</th>
+    <th rowspan="2">Perfect</th>
+  </tr>
+  <tr>
+    <th>TimeGAN</th>
+    <th>COSCI-GAN</th>
+    <th>GT-GAN</th>
+    <th>Diffusion-TS</th>
+    <th>CSDI</th>
+    <th>TimeVAE</th>
+    <th>TimeVQVAE</th>
+    <th>LS4</th>
+    <th>SBTS</th>
+    <th>Fourier Flow</th>
+  </tr>
+</thead>
+<tbody>
+  <tr><td>grid_tvd 50×50 (%) ↓</td><td>17.14% ± 8.253%</td><td>14.01% ± 1.126%</td><td>19.00% ± 3.806%</td><td>7.829% ± 0.9332%</td><td>5.990% ± 0.4649%</td><td>8.662% ± 0.4769%</td><td>7.269% ± 0.3121%</td><td><b>2.772% ± 0.2228%</b></td><td>13.48% ± 0.2141%</td><td>9.442% ± 1.721%</td><td>2.237% ± 0.1564%</td></tr>
+</tbody>
+</table>
+
 
 ## PS-MC — Path-Shadowing Monte-Carlo forecast (CRPS)
 

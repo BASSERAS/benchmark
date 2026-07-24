@@ -79,30 +79,43 @@ sub-scores into **one number per plot**:
 - **MSE row**: for each list, dᵢ = mean((L_r − L_g)²). Reported mean = the **mean of the three sub-scores** (funct + der + sec\_der)/3; std = the sample std of that per-seed combined score across the 5 seeds. The **MSE row decides the cross-method winner**.
 - **% err row**: for each list, dᵢ = mean(|L_g − L_r| / (|L_r| + 1e-6)) × 100, a proper MAPE — one division (the mean already averages over the curve's points). Reported value = the **function-level MAPE on the curve L itself** — the derivative / 2nd-derivative MAPE is **excluded** because diff(L)/diff2(L) have near-zero true values, so their relative error explodes into meaningless 10⁴-% figures. mean/std = mean and **sample std across the 5 seeds** of that per-seed function MAPE.
 - **NRMSE row**: sqrt(mean((L_g − L_r)²)) / (max|L_r| − min|L_r| + 1e-12) × 100 on the curve L **only (funct-only)** — the ill-posed derivative / 2nd-derivative curves are excluded for the same reason as the % err row.
+- **CVaR₉₀ / CVaR₉₅ rows**: tail-averaged pointwise curve error (Expected Shortfall) on the curve L **only (funct-only)**. Pointwise error eₜ = |L_g(t) − L_r(t)|; for q ∈ {0.90, 0.95}, CVaR_q = mean(eₜ for eₜ ≥ the q-th percentile of eₜ), then range-normalized like NRMSE (÷ (max|L_r| − min|L_r| + 1e-12) × 100).
 
 All ↓ lower is better. The perfect floor is **non-zero** for all six plots — it is the residual finite-sample error of an independent Heston draw scored against the test set, identical across methods.
-Three sublines per plot: **MSE**, **% error** and **NRMSE** (the per-seed columns hold that seed's combined score).
+Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CVaR₉₅** (the per-seed columns hold that seed's combined score).
 
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
 | **Log-return histogram** | MSE | 45.40 ± 57.91 | 3.579 | 6.973 | 153.7 | 4.778 | 57.94 | 0.1098 |
 |  | % err | 33.41% ± 6.533% | 26.37% | 36.99% | 32.64% | 27.13% | 43.94% | 1.799% |
 |  | NRMSE | 21.38% ± 14.34% | 8.194% | 12.08% | 44.34% | 10.17% | 32.12% | 0.5328% |
+|  | CVaR₉₀ | 50.55% ± 32.16% | 20.63% | 31.28% | 97.37% | 22.51% | 80.97% | 1.234% |
+|  | CVaR₉₅ | 78.15% ± 57.07% | 30.80% | 42.44% | 165.1% | 25.21% | 127.2% | 1.444% |
 | **QQ plot** | MSE | 2.38e-06 ± 1.14e-06 | 1.41e-06 | 2.44e-06 | 2.71e-06 | 1.05e-06 | 4.29e-06 | 1.09e-09 |
 |  | % err | 34.50% ± 11.22% | 20.51% | 23.70% | 47.99% | 34.21% | 46.12% | 0.4629% |
 |  | NRMSE | 6.960% ± 1.738% | 5.488% | 7.318% | 7.627% | 4.709% | 9.660% | 0.1206% |
+|  | CVaR₉₀ | 6.454% ± 1.512% | 6.546% | 8.005% | 5.838% | 3.927% | 7.954% | 0.1319% |
+|  | CVaR₉₅ | 7.409% ± 1.912% | 8.196% | 9.678% | 6.264% | 4.289% | 8.615% | 0.1599% |
 | **ACF \|r\| lags 1–20** | MSE | 0.003597 ± 0.003199 | 0.001026 | 0.001841 | 0.006211 | 3.79e-04 | 0.008526 | 9.61e-06 |
 |  | % err | 186.2% ± 107.8% | 107.0% | 128.7% | 264.2% | 72.79% | 358.2% | 8.724% |
 |  | NRMSE | 224.6% ± 123.4% | 116.9% | 181.2% | 346.7% | 85.32% | 392.9% | 6.071% |
+|  | CVaR₉₀ | 522.2% ± 262.2% | 307.1% | 451.6% | 831.4% | 197.0% | 824.1% | 11.26% |
+|  | CVaR₉₅ | 612.3% ± 275.1% | 418.8% | 573.9% | 986.1% | 233.3% | 849.3% | 12.06% |
 | **ACF r² lags 1–20** | MSE | 0.001982 ± 0.001602 | 7.02e-04 | 0.001482 | 0.002501 | 3.90e-04 | 0.004835 | 9.17e-06 |
 |  | % err | 130.0% ± 65.84% | 95.37% | 88.69% | 113.6% | 91.94% | 260.6% | 11.34% |
 |  | NRMSE | 168.2% ± 70.21% | 94.68% | 157.1% | 224.2% | 94.36% | 270.8% | 6.486% |
+|  | CVaR₉₀ | 421.3% ± 169.3% | 245.8% | 416.4% | 597.5% | 221.6% | 625.2% | 12.35% |
+|  | CVaR₉₅ | 537.1% ± 194.7% | 356.7% | 597.9% | 783.4% | 268.1% | 679.6% | 13.27% |
 | **Rolling vol histogram** | MSE | 150.2 ± 75.22 | 96.14 | 215.1 | 207.3 | 27.97 | 204.5 | 1.372 |
 |  | % err | 56.76% ± 21.18% | 53.37% | 72.71% | 84.37% | 22.36% | 51.01% | 2.264% |
 |  | NRMSE | 22.64% ± 7.203% | 19.01% | 28.61% | 27.91% | 10.07% | 27.61% | 0.8688% |
+|  | CVaR₉₀ | 51.23% ± 18.12% | 43.62% | 58.19% | 66.12% | 19.49% | 68.72% | 1.970% |
+|  | CVaR₉₅ | 60.61% ± 26.33% | 45.25% | 59.90% | 86.41% | 20.26% | 91.21% | 2.308% |
 | **Tail survival** | MSE | 0.003912 ± 0.003064 | 9.04e-04 | 0.002042 | 0.007307 | 0.001354 | 0.007952 | 5.22e-07 |
 |  | % err | 23.64% ± 6.097% | 18.46% | 24.62% | 25.99% | 15.89% | 33.26% | 0.3302% |
 |  | NRMSE | 10.02% ± 4.365% | 5.257% | 7.902% | 14.94% | 6.434% | 15.59% | 0.1050% |
+|  | CVaR₉₀ | 13.92% ± 6.684% | 6.576% | 9.883% | 22.28% | 9.166% | 21.70% | 0.1625% |
+|  | CVaR₉₅ | 13.97% ± 6.723% | 6.588% | 9.900% | 22.38% | 9.195% | 21.81% | 0.1682% |
 
 > **Log-ret histogram**: MSE std (57.91) approaches the mean (45.40), driven by seed 2 near-collapse (153.7 vs 3.6–58 for the other seeds). A std near the mean is expected for a non-negative combined score over 5 skewed samples — it is not a bug. SBTS is far more stable here (4.082 ± 0.048).
 > **ACF \|r\|, ACF r²**: TimeGAN misses the ARCH signature — near-zero generated ACF vs Heston ≈ +0.05 (A21 error 0.128, A23 error 0.230) — so both MSE and % error are larger than SBTS.
@@ -110,6 +123,18 @@ Three sublines per plot: **MSE**, **% error** and **NRMSE** (the per-seed column
 > **% error reading**: the **function-level MAPE** of the curve itself (mean |gen−real|/(|real|+1e-6) × 100); the derivative / 2nd-derivative MAPE is excluded as ill-posed (near-zero true differences blow up the denominator). ACF |r| (186%) and ACF r² (130%) are the largest — the true ACF ≈ 0.05 sits near zero, so any deviation is a big *relative* error; log-ret hist (33%), QQ (35%), rolling vol (57%) and tail survival (24%) are all modest. Read MSE for absolute agreement, % error for relative shape deviation.
 
 ---
+
+## grid_tvd — path-cloud visual sanity-check (50×50, not ranked)
+
+2D-histogram **Total Variation Distance (%)** between the real and this method's
+generated **(t, x)** path clouds at a locked **50×50** grid — the quantitative twin
+of the first two diagnostic panels. **Visual side-check only, not part of any
+ranking.** Lower = closer clouds.
+
+| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
+|--------|-----------|--------|--------|--------|--------|--------|---------------|
+| grid_tvd 50×50 (%) ↓ | 17.14% ± 8.253% | 14.45% | 6.945% | 26.35% | 10.67% | 27.27% | 2.237% |
+
 
 ## Stylised Facts Diagnostic (Heston vs TimeGAN, seed 0)
 

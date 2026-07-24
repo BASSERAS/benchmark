@@ -160,6 +160,24 @@ def load_psmc(method):
         return json.load(f)
 
 
+def load_grid_tvd(method):
+    """grid_tvd aggregate {name, n_bins, mean, std, per_seed} or None."""
+    p = os.path.join(results_dir(method), "grid_tvd_aggregate.json")
+    if not os.path.exists(p):
+        return None
+    with open(p) as f:
+        return json.load(f)
+
+
+def perfect_floor_grid_tvd():
+    p = os.path.join(REPO, "methods", "perfect_recovery", "results",
+                     "grid_tvd_aggregate.json")
+    if not os.path.exists(p):
+        return None
+    with open(p) as f:
+        return json.load(f)
+
+
 # ── winner logic ────────────────────────────────────────────────────────────
 def winner_idx(means, direction):
     """index of winning method among means (list, None allowed)."""
@@ -255,28 +273,32 @@ def render_B():
         if wi is not None:
             wins[win_name] += 1
         pf = perfect[prefix] if perfect else None
-        for mi, measure in enumerate(("mse", "pct", "nrmse")):
+        measures = ("mse", "pct", "nrmse", "cvar90", "cvar95")
+        pct_measures = ("pct", "nrmse", "cvar90", "cvar95")
+        nmeas = len(measures)
+        for mi, measure in enumerate(measures):
             row = ['  <tr>']
             if mi == 0:
-                row.append(f'<td rowspan="3"><b>{name}</b></td>')
-            meas_label = {"mse": "MSE", "pct": "% err", "nrmse": "NRMSE"}[measure]
+                row.append(f'<td rowspan="{nmeas}"><b>{name}</b></td>')
+            meas_label = {"mse": "MSE", "pct": "% err", "nrmse": "NRMSE",
+                          "cvar90": "CVaR₉₀", "cvar95": "CVaR₉₅"}[measure]
             row.append(f'<td>{meas_label}</td>')
             for i, m in enumerate(METHOD_DIRS):
                 d = curves[m][prefix][measure]
                 txt = ms(d["mean"], d["std"])
-                if measure in ("pct", "nrmse"):
+                if measure in pct_measures:
                     txt = f"{fmt(d['mean'])}% ± {fmt(d['std'])}%"
                 row.append(cell(txt, bold=(measure == "mse" and i == wi)))
             if pf is not None:
                 pm, psd = pf[measure]["mean"], pf[measure]["std"]
-                if measure in ("pct", "nrmse"):
+                if measure in pct_measures:
                     row.append(f'<td>{fmt(pm)}% ± {fmt(psd)}%</td>')
                 else:
                     row.append(f'<td>{ms(pm, psd)}</td>')
             else:
                 row.append('<td>—</td>')
             if mi == 0:
-                row.append(f'<td rowspan="3"><b>{win_name}</b></td>')
+                row.append(f'<td rowspan="{nmeas}"><b>{win_name}</b></td>')
             row.append('</tr>')
             out.append("".join(row))
     out += ["</tbody>", "</table>"]
@@ -319,6 +341,38 @@ def render_PS():
         out.append("".join(row))
     out += ["</tbody>", "</table>"]
     return "\n".join(out), wins
+
+
+# ── grid_tvd (visual side-check, NOT ranked) ────────────────────────────────
+def render_grid_tvd():
+    """Single-row HTML table: grid_tvd 50×50 (%) per method + perfect floor.
+    Purely a visual sanity-check on the first two diagnostic panels — it is NOT
+    part of any win-count and does NOT feed the A/B rankings."""
+    aggs = {m: load_grid_tvd(m) for m in METHOD_DIRS}
+    floor = perfect_floor_grid_tvd()
+    means = [aggs[m]["mean"] if aggs[m] else None for m in METHOD_DIRS]
+    stds  = [aggs[m]["std"]  if aggs[m] else None for m in METHOD_DIRS]
+    # bins label from whichever method has data (locked at 50×50 for all)
+    nb = None
+    for m in METHOD_DIRS:
+        if aggs[m]:
+            nb = aggs[m]["n_bins"]
+            break
+    blab = f"{nb[0]}×{nb[1]}" if nb else "50×50"
+    lo = winner_idx(means, "lo")   # bold the lowest for readability only
+    out = [header_html("Visual side-check (not ranked)", ["Perfect"])]
+    row = [f'  <tr><td>grid_tvd {blab} (%) ↓</td>']
+    for i in range(len(METHOD_DIRS)):
+        txt = f"{fmt(means[i])}% ± {fmt(stds[i])}%" if means[i] is not None else "—"
+        row.append(cell(txt, bold=(i == lo)))
+    if floor is not None:
+        row.append(f'<td>{fmt(floor["mean"])}% ± {fmt(floor["std"])}%</td>')
+    else:
+        row.append('<td>—</td>')
+    row.append('</tr>')
+    out.append("".join(row))
+    out += ["</tbody>", "</table>"]
+    return "\n".join(out)
 
 
 # ── per-method markdown (for results/Heston/<M>/README.md) ──────────────────
@@ -415,10 +469,12 @@ def render_method_B_md(method):
     pf = perfect_floor_curve()
     lines = ["| Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |",
              "|------|---------|-----------|--------|--------|--------|--------|--------|---------------|"]
+    measures = ("mse", "pct", "nrmse", "cvar90", "cvar95")
     for prefix, name in CURVE_PLOTS:
-        for mi, measure in enumerate(("mse", "pct", "nrmse")):
+        for mi, measure in enumerate(measures):
             d = cur[prefix][measure]
-            lab = {"mse": "MSE", "pct": "% err", "nrmse": "NRMSE"}[measure]
+            lab = {"mse": "MSE", "pct": "% err", "nrmse": "NRMSE",
+                   "cvar90": "CVaR₉₀", "cvar95": "CVaR₉₅"}[measure]
             ps = d.get("per_seed", [None] * 5)
             if measure == "mse":
                 val = ms(d["mean"], d["std"])
@@ -449,9 +505,27 @@ def render_method_PS_md(method):
     return "\n".join(lines)
 
 
+def render_method_grid_tvd_md(method):
+    """Per-method grid_tvd markdown: mean±std + per-seed + perfect floor."""
+    agg = load_grid_tvd(method)
+    if agg is None:
+        return "_(no grid_tvd results)_"
+    floor = perfect_floor_grid_tvd()
+    nb = agg["n_bins"]
+    blab = f"{nb[0]}×{nb[1]}"
+    ps = agg.get("per_seed", [None] * 5)
+    cells = " | ".join(f"{fmt(v)}%" for v in ps)
+    fv = f"{fmt(floor['mean'])}%" if floor else "—"
+    val = f"{fmt(agg['mean'])}% ± {fmt(agg['std'])}%"
+    lines = ["| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |",
+             "|--------|-----------|--------|--------|--------|--------|--------|---------------|",
+             f"| grid_tvd {blab} (%) ↓ | {val} | {cells} | {fv} |"]
+    return "\n".join(lines)
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--which", choices=["A", "B", "PS", "all"], default="all")
+    ap.add_argument("--which", choices=["A", "B", "PS", "GT", "all"], default="all")
     ap.add_argument("--method", default=None,
                     help="disk dir of a single method; prints per-method markdown tables")
     args = ap.parse_args()
@@ -463,6 +537,8 @@ def main():
         print(render_method_B_md(args.method))
         print("\n<!-- ===== PER-METHOD PS-MC TABLE ===== -->")
         print(render_method_PS_md(args.method))
+        print("\n<!-- ===== PER-METHOD grid_tvd TABLE ===== -->")
+        print(render_method_grid_tvd_md(args.method))
         return
 
     if args.which in ("A", "all"):
@@ -483,6 +559,10 @@ def main():
         print(html)
         print("\n<!-- PS-MC win-counts: " +
               ", ".join(f"{k}={v}" for k, v in sorted(wins.items(), key=lambda x: -x[1]) if v) + " -->\n")
+    if args.which in ("GT", "all"):
+        print("<!-- ===== grid_tvd VISUAL SIDE-CHECK (not ranked) ===== -->")
+        print(render_grid_tvd())
+        print("\n<!-- grid_tvd is a visual sanity-check only — not part of any win-count -->\n")
 
 
 if __name__ == "__main__":

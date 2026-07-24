@@ -407,22 +407,25 @@ variance per path). Ref: Barndorff-Nielsen & Shephard (2002).
 **B — Curve-shape metrics (6 diagnostic plots):**
 
 Each plot yields a **curve** L (a list of values). We build three lists — the curve L, its first finite
-difference L′ (der), and its second finite difference L″ (sec\_der) — and score each list under **three
-measures**:
+difference L′ (der), and its second finite difference L″ (sec\_der) — and score each list under **five
+measures** (three ranked + two tail-risk):
 - **MSE**: dᵢ = mean((L\_gen − L\_real)²) per list. Decides the winner.
 - **% err**: dᵢ = mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100 — a function-level MAPE with a **fixed
   1e-6 floor** and exactly **one division** (the mean already divides by the number of curve points).
 - **NRMSE**: dᵢ = sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100 per list.
+- **CVaR₉₀ / CVaR₉₅** (funct-only, tail-risk): pointwise error eₜ = |L\_gen(t) − L\_real(t)|; for q ∈ {0.90, 0.95},
+  CVaR\_q = mean(eₜ for eₜ ≥ percentile(eₜ, 100·q)), then range-normalized exactly like NRMSE
+  (÷ (max|L\_real| − min|L\_real| + 1e-12) × 100). A tail companion to NRMSE: larger when the worst-case
+  pointwise misfit is concentrated in a few points.
 
-The three measures are combined into **one number per plot** DIFFERENTLY (combined std = sample std across the
+The five measures are combined into **one number per plot** DIFFERENTLY (combined std = sample std across the
 5 seeds in every case). **MSE** is **mean-of-3** — combined_per_seed = mean(funct, der, sec\_der) — because the
-absolute squared error never explodes; this is the number that decides the winner. **% err** and **NRMSE** are
+absolute squared error never explodes; this is the number that decides the winner. **% err**, **NRMSE**, **CVaR₉₀** and **CVaR₉₅** are
 **funct-only for every plot** — combined_per_seed = the funct sub-metric alone — because the 1st and 2nd finite
 differences of every curve have near-zero true values, so their relative errors blow up into meaningless
-10⁴-% figures; only the curve itself (funct) carries a meaningful relative error. The raw JSON still stores 9
-keys per plot (funct/der/sec\_der × {mse, pct\_err, nrmse}), but the der/sec\_der %err and NRMSE are dropped in
-aggregation; the READMEs display the three **combined** measures as three sublines per plot (MSE / % err /
-NRMSE). Aggregation lives in `metrics/metrics.py` (`aggregate_curve_metrics`); recompute with
+10⁴-% figures; only the curve itself (funct) carries a meaningful relative error. The raw JSON stores 11 keys per plot (funct/der/sec\_der × {mse, pct\_err, nrmse} plus funct-only cvar90/cvar95), but the der/sec\_der
+%err and NRMSE are dropped in aggregation; the READMEs display the five **combined** measures as five sublines
+per plot (MSE / % err / NRMSE / CVaR₉₀ / CVaR₉₅). Aggregation lives in `metrics/metrics.py` (`aggregate_curve_metrics`); recompute with
 `metrics/recompute_curve_b.py`.
 
 | Plot | JSON key prefix | Curve description |
@@ -442,8 +445,19 @@ histogram bins, tail-survival ≈ 0, near-zero ACF lags) — expected, a propert
 between methods is decided by the **MSE** row.
 
 Total A-metrics: 36 numbers (A1–A34, with **A18 Discriminative** and **A19 Predictive** each reported ×2
-for their GRU + MLP variants). Total B: 6 plots × 3 sub-metrics (funct / der / sec_der) × 3 measures.
-Winner is by MSE; the three combined measures (MSE, % err, NRMSE) are what the READMEs display per plot.
+for their GRU + MLP variants). Total B: 6 plots × 3 sub-metrics (funct / der / sec_der) × {mse, pct, nrmse},
+plus funct-only CVaR₉₀ / CVaR₉₅. Winner is by MSE; the five combined measures (MSE, % err, NRMSE, CVaR₉₀,
+CVaR₉₅) are what the READMEs display per plot.
+
+**grid_tvd — path-cloud visual side-check (50×50, not ranked).** A lightweight 2D-histogram **Total
+Variation Distance** between the real and generated **(t, x)** path clouds (the quantitative twin of the
+first two diagnostic panels). Build a shared 50×50 grid over the union bounding box of both clouds, bin each
+cloud, normalize **each** histogram by its own total (p real, q gen), and report TVD = 0.5·Σ|pᵢ − qᵢ| × 100
+(a percentage in [0, 100]; lower = closer clouds). The grid is **locked at 50×50** for every method so curves
+stay comparable. It is a **visual sanity-check only: never averaged into any score and excluded from all
+A/B win-counts.** The **Perfect** column is the independent-draw floor (§5.4). Implemented in
+`metrics/metrics.py` (`grid_tvd`, `paths_to_points`, `GRID_TVD_DEFAULT_BINS=(50,50)`) and computed
+automatically by `compute_all.py`.
 
 ### 5.3 Output files
 
@@ -451,9 +465,10 @@ Winner is by MSE; the three combined measures (MSE, % err, NRMSE) are what the R
 
 | File | Contents |
 |------|---------|
-| `results/Heston/<Method>/seed_{i}_metrics.json` | All 55 metric values for seed i (A1-A34 + 18 B_ keys) |
+| `results/Heston/<Method>/seed_{i}_metrics.json` | Per-seed metrics: A1–A34 + B_ curve keys (incl. funct CVaR₉₀/₉₅) + `grid_tvd` |
 | `results/Heston/<Method>/metrics_summary.json` | Mean ± std across 5 seeds |
 | `results/Heston/<Method>/metrics_summary.csv` | Same, CSV format |
+| `results/Heston/<Method>/grid_tvd_aggregate.json` | grid_tvd path-cloud TVD (50×50): mean±std + per-seed — visual side-check, **not ranked** |
 | `results/Heston/<Method>/plots/disc_classifier_loss.png` | A18 BCE training loss, GRU + MLP, 5 seeds |
 | `results/Heston/<Method>/plots/pred_score_loss.png` | A19 MAE training loss, GRU + MLP, 5 seeds |
 | `results/Heston/<Method>/plots/seed_{i}_pca.png` | PCA of 500 real vs fake paths (per seed) |
@@ -667,20 +682,22 @@ Rules:
 
 #### Section 3 — B Curve-Shape Metrics
 
-**Three** sublines per plot (MSE row + % err row + NRMSE row). **MSE** combines funct/der/sec\_der by
-mean-of-3; **% err** and **NRMSE** are **funct-only** (the funct sub-metric alone). Last column = Perfect
-floor (non-zero, from the independent draw). Winner is by MSE.
+**Five** sublines per plot (MSE + % err + NRMSE + CVaR₉₀ + CVaR₉₅). **MSE** combines funct/der/sec\_der by
+mean-of-3; **% err**, **NRMSE**, **CVaR₉₀** and **CVaR₉₅** are **funct-only** (the funct sub-metric alone). Last column = Perfect
+floor (non-zero, from the independent draw). Winner is by MSE (the two CVaR sublines are tail-risk context, not ranked).
 
 ```markdown
 ## B — Curve-Shape Metrics — mean ± std across 5 seeds
 
-> Each plot yields a **curve** L. From L, its 1st diff (der) and 2nd diff (sec\_der) we compute three measures,
+> Each plot yields a **curve** L. From L, its 1st diff (der) and 2nd diff (sec\_der) we compute five measures,
 > combined into one number per plot (combined std = sample std across the 5 seeds):
 > - **MSE**: mean((L\_gen − L\_real)²) per sub-metric; combined = **mean-of-3** (funct+der+sec\_der)/3. Decides the winner.
 > - **% err**: mean(|L\_gen − L\_real| / (|L\_real| + 1e-6)) × 100 — a function-level MAPE with a **fixed 1e-6
 >   floor**, one division; **funct-only** (the funct sub-metric alone).
 > - **NRMSE**: sqrt(mean((L\_gen − L\_real)²)) / (max|L\_real| − min|L\_real| + 1e-12) × 100; **funct-only**.
-> **% err and NRMSE are funct-only for every plot**: the der/sec\_der of every curve have near-zero true
+> - **CVaR₉₀ / CVaR₉₅**: tail-averaged Expected Shortfall of eₜ = |L\_gen − L\_real| at/above the q-th percentile
+>   (q ∈ {0.90, 0.95}), range-normalized like NRMSE; **funct-only**. Tail companion to NRMSE, not ranked.
+> **% err, NRMSE and CVaR are funct-only for every plot**: the der/sec\_der of every curve have near-zero true
 > values, so their relative errors blow up into meaningless 10⁴-% figures; only the curve itself (funct)
 > carries a meaningful relative error. MSE has no such problem and keeps mean-of-3.
 > All ↓ lower is better. The Perfect floor is **non-zero** (independent Heston draw vs test set, §5.4).
@@ -688,13 +705,17 @@ floor (non-zero, from the independent draw). Winner is by MSE.
 
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect |
 |------|---------|-----------|--------|--------|--------|--------|--------|:------:|
-| **Log-return histogram** | MSE   | ... | ... | ... | ... | ... | ... | ... |
-|                          | % err | ... | ... | ... | ... | ... | ... | ... |
-|                          | NRMSE | ... | ... | ... | ... | ... | ... | ... |
-| **QQ plot**              | MSE   | ... | | | | | | ... |
-|                          | % err | ... | | | | | | ... |
-|                          | NRMSE | ... | | | | | | ... |
-| ... (ACF \|r\|, ACF r², rolling vol hist., tail survival — same 3 rows each) |
+| **Log-return histogram** | MSE    | ... | ... | ... | ... | ... | ... | ... |
+|                          | % err  | ... | ... | ... | ... | ... | ... | ... |
+|                          | NRMSE  | ... | ... | ... | ... | ... | ... | ... |
+|                          | CVaR₉₀ | ... | ... | ... | ... | ... | ... | ... |
+|                          | CVaR₉₅ | ... | ... | ... | ... | ... | ... | ... |
+| **QQ plot**              | MSE    | ... | | | | | | ... |
+|                          | % err  | ... | | | | | | ... |
+|                          | NRMSE  | ... | | | | | | ... |
+|                          | CVaR₉₀ | ... | | | | | | ... |
+|                          | CVaR₉₅ | ... | | | | | | ... |
+| ... (ACF \|r\|, ACF r², rolling vol hist., tail survival — same 5 rows each) |
 ```
 
 > **Note on the Perfect Recovery floor.** The floor is the **last column** (`Perfect` / `Perfect floor`) of
@@ -702,6 +723,22 @@ floor (non-zero, from the independent draw). Winner is by MSE.
 > `methods/perfect_recovery/README.md`. Regenerate the A and B floor values from
 > `methods/perfect_recovery/results/*` via `render_tables.py` (§5.4) so they match byte-for-byte; they are
 > identical across every method because they are dataset-derived, not method-derived. PS-MC rows show `—`.
+
+#### Section 3b — grid_tvd path-cloud side-check (50×50, not ranked)
+
+After the B table, add the grid_tvd visual side-check block (rendered by `render_tables.py --method <M>`,
+section `render_method_grid_tvd_md`). It is the quantitative twin of the Real-vs-Generated scatter panels:
+a 2D-histogram Total Variation Distance (%) between the real and generated (t, x) path clouds at a locked
+**50×50** grid. **Never ranked, never win-counted, never averaged into any score** — a visual sanity-check
+only. Lower = closer clouds; the Perfect column is the independent-draw floor.
+
+```markdown
+## grid_tvd — path-cloud visual sanity-check (50×50, not ranked)
+
+| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
+|--------|-----------|--------|--------|--------|--------|--------|:------:|
+| grid_tvd 50×50 (%) ↓ | ... | ... | ... | ... | ... | ... | ... |
+```
 
 #### Section 4 — Stylised Facts Diagnostic
 

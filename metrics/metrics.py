@@ -938,6 +938,22 @@ def _curve_scores(L_r: np.ndarray, L_g: np.ndarray) -> Dict[str, float]:
         rmse = np.sqrt(np.mean((b - a) ** 2))
         return float(rmse / rng * 100.0)
 
+    def _cvar(a: np.ndarray, b: np.ndarray, q: float) -> float:
+        # Expected Shortfall (CVaR_q) of the POINTWISE absolute curve error,
+        # range-normalised like NRMSE (Prop 2). With e_t = |L_g(t) - L_r(t)|:
+        #   threshold_q = percentile(e, q*100)  ==  np.quantile(e, q)
+        #   CVaR_q      = mean( e[e >= threshold_q] )   (the tail AVERAGE, not the
+        #                 quantile value itself — the mean of the worst (1-q) errors)
+        #   CVaR_q_norm = CVaR_q / (max(L_r) - min(L_r) + 1e-12) * 100
+        # Surfaced for the funct curve only (der/sec_der near-zero true values make
+        # a range-normalised tail error as meaningless as their %err / NRMSE).
+        e = np.abs(b - a)
+        thr = np.quantile(e, q)
+        tail = e[e >= thr]
+        cvar = float(tail.mean()) if tail.size else 0.0
+        rng = float(a.max() - a.min()) + 1e-12
+        return cvar / rng * 100.0
+
     d_r,  d_g  = np.diff(L_r),  np.diff(L_g)
     dd_r, dd_g = np.diff(d_r),  np.diff(d_g)
     return {
@@ -950,6 +966,8 @@ def _curve_scores(L_r: np.ndarray, L_g: np.ndarray) -> Dict[str, float]:
         "funct_nrmse":   _nrmse(L_r,  L_g),
         "der_nrmse":     _nrmse(d_r,  d_g),
         "sec_der_nrmse": _nrmse(dd_r, dd_g),
+        "funct_cvar90":  _cvar(L_r, L_g, 0.90),
+        "funct_cvar95":  _cvar(L_r, L_g, 0.95),
     }
 
 
@@ -969,6 +987,9 @@ def _emit(out: Dict[str, float], prefix: str, scores: Dict[str, float]) -> None:
     out[f"{prefix}_funct_nrmse"]   = scores["funct_nrmse"]
     out[f"{prefix}_der_nrmse"]     = scores["der_nrmse"]
     out[f"{prefix}_sec_der_nrmse"] = scores["sec_der_nrmse"]
+    # CVaR / Expected Shortfall tail-error, funct curve only (no der/sec_der).
+    out[f"{prefix}_funct_cvar90"]  = scores["funct_cvar90"]
+    out[f"{prefix}_funct_cvar95"]  = scores["funct_cvar95"]
 
 
 def compute_curve_metrics(
@@ -1093,23 +1114,32 @@ def aggregate_curve_metrics(per_seed: list) -> Dict[str, dict]:
     agg: Dict[str, dict] = {}
     for prefix, name in CURVE_PLOTS:
         row = {"name": name}
-        for measure, suffix in (("mse", ""), ("pct", "_pct"), ("nrmse", "_nrmse")):
-            sub_arrays = {
-                s: np.array([float(d[f"{prefix}_{s}{suffix}"]) for d in per_seed])
-                for s in _CURVE_SUBS
-            }
-            if measure in ("pct", "nrmse"):
-                # Function-level MAPE / NRMSE only: the derivative and second-
-                # derivative of every curve have near-zero true values, so their
-                # relative errors explode into meaningless 10^4-% figures. The
-                # reported %err and NRMSE are therefore the funct sub-metric alone
-                # (one number per seed); std is the direct sample std across seeds.
-                combined = sub_arrays["funct"]
+        for measure, suffix in (("mse", ""), ("pct", "_pct"), ("nrmse", "_nrmse"),
+                                ("cvar90", "_cvar90"), ("cvar95", "_cvar95")):
+            if measure in ("cvar90", "cvar95"):
+                # CVaR / Expected Shortfall of the pointwise curve error, funct-only
+                # (there is no der/sec_der CVaR key — same reasoning as %err/NRMSE:
+                # the finite differences have near-zero true values). One number per
+                # seed; std is the direct sample std across seeds.
+                combined = np.array(
+                    [float(d[f"{prefix}_funct{suffix}"]) for d in per_seed])
             else:
-                # MSE keeps the mean-of-3 (absolute, never explodes) and decides the
-                # winner; std is the direct sample std of that per-seed mean.
-                combined = (sub_arrays["funct"] + sub_arrays["der"]
-                            + sub_arrays["sec_der"]) / 3.0
+                sub_arrays = {
+                    s: np.array([float(d[f"{prefix}_{s}{suffix}"]) for d in per_seed])
+                    for s in _CURVE_SUBS
+                }
+                if measure in ("pct", "nrmse"):
+                    # Function-level MAPE / NRMSE only: the derivative and second-
+                    # derivative of every curve have near-zero true values, so their
+                    # relative errors explode into meaningless 10^4-% figures. The
+                    # reported %err and NRMSE are therefore the funct sub-metric alone
+                    # (one number per seed); std is the direct sample std across seeds.
+                    combined = sub_arrays["funct"]
+                else:
+                    # MSE keeps the mean-of-3 (absolute, never explodes) and decides
+                    # the winner; std is the direct sample std of that per-seed mean.
+                    combined = (sub_arrays["funct"] + sub_arrays["der"]
+                                + sub_arrays["sec_der"]) / 3.0
             std = float(combined.std())
             row[measure] = {
                 "mean": float(combined.mean()),
@@ -1118,3 +1148,84 @@ def aggregate_curve_metrics(per_seed: list) -> Dict[str, dict]:
             }
         agg[prefix] = row
     return agg
+
+
+# ---------------------------------------------------------------------------
+# grid_tvd — 2D histogram Total Variation Distance on (t, x) point clouds
+# ---------------------------------------------------------------------------
+# Qualitative "visual sanity-check" metric for the FIRST TWO diagnostic panels
+# (Real paths n=50 shown / 8192, and <method> paths n=50 shown / 8192). It bins
+# both (time, value) clouds onto a shared 2D grid over the union bounding box,
+# normalises EACH histogram independently by its own point count (so N_real may
+# differ from N_gen), and reports the Total Variation Distance as a percentage
+# in [0, 100] (0 = identical mass, 100 = fully disjoint). Purely a side-check —
+# NOT auto-averaged into any ranking summary.
+
+# Chosen grid resolution for all published curves (set after the TimeGAN test).
+GRID_TVD_DEFAULT_BINS = (50, 50)
+
+
+def paths_to_points(S: np.ndarray) -> np.ndarray:
+    """Flatten an (N, T) price matrix into an (N*T, 2) cloud of (t, x) pairs.
+
+    Column 0 is the integer time index t in [0, T-1] (broadcast across paths),
+    column 1 is the observed value x = S[i, t]. This is the point cloud that the
+    first two diagnostic panels scatter, so grid_tvd scores exactly what the eye
+    sees in those panels.
+    """
+    S = np.asarray(S, dtype=float)
+    if S.ndim != 2:
+        raise ValueError(f"paths_to_points expects (N, T); got shape {S.shape}")
+    n, T = S.shape
+    t = np.broadcast_to(np.arange(T, dtype=float), (n, T))
+    return np.column_stack([t.ravel(), S.ravel()])
+
+
+def grid_tvd(real_points: np.ndarray,
+             gen_points: np.ndarray,
+             n_bins: Tuple[int, int] = GRID_TVD_DEFAULT_BINS):
+    """Total Variation Distance between two 2D (t, x) point clouds.
+
+    Args:
+      real_points: (N_real, 2) array of (t, x) pairs from the real paths.
+      gen_points:  (N_gen, 2) array of (t, x) pairs from the generated paths.
+      n_bins:      (rows, cols) grid resolution over the shared bounding box.
+
+    Returns:
+      tvd_pct:     float in [0, 100]; 0.5 * sum_i |p_i - q_i| * 100, where p and
+                   q are the two histograms each normalised by its own total
+                   count (so N_real != N_gen is handled correctly).
+      signed_diff: (rows, cols) array of (p_i - q_i); positive = real has more
+                   mass (red on a diverging map), negative = generated more mass.
+      xedges:      (cols+1,) bin edges along the time axis.
+      yedges:      (rows+1,) bin edges along the value axis.
+    """
+    real_points = np.asarray(real_points, dtype=float)
+    gen_points = np.asarray(gen_points, dtype=float)
+    rows, cols = int(n_bins[0]), int(n_bins[1])
+
+    # Shared bounding box over the UNION of both clouds.
+    both = np.vstack([real_points, gen_points])
+    t_min, t_max = both[:, 0].min(), both[:, 0].max()
+    x_min, x_max = both[:, 1].min(), both[:, 1].max()
+    # Guard against a degenerate (zero-width) axis.
+    if t_max <= t_min:
+        t_max = t_min + 1e-12
+    if x_max <= x_min:
+        x_max = x_min + 1e-12
+    t_edges = np.linspace(t_min, t_max, cols + 1)
+    x_edges = np.linspace(x_min, x_max, rows + 1)
+
+    # Raw counts per cell (rows = value axis, cols = time axis).
+    h_real, _, _ = np.histogram2d(
+        real_points[:, 1], real_points[:, 0], bins=[x_edges, t_edges])
+    h_gen, _, _ = np.histogram2d(
+        gen_points[:, 1], gen_points[:, 0], bins=[x_edges, t_edges])
+
+    # Normalise EACH histogram independently by its own total point count.
+    p = h_real / (h_real.sum() + 1e-12)
+    q = h_gen / (h_gen.sum() + 1e-12)
+
+    tvd = 0.5 * np.abs(p - q).sum()
+    signed_diff = p - q
+    return float(tvd * 100.0), signed_diff, t_edges, x_edges

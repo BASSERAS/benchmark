@@ -78,7 +78,7 @@ from metrics import (
 )
 from discriminative_score import compute_discriminative_score
 from predictive_score import compute_predictive_score
-from metrics import compute_curve_metrics
+from metrics import compute_curve_metrics, paths_to_points, grid_tvd, GRID_TVD_DEFAULT_BINS
 
 import matplotlib
 matplotlib.use("Agg")
@@ -251,6 +251,15 @@ def compute_metrics_for_seed(seed: int, S: np.ndarray, v: np.ndarray,
     curve = compute_curve_metrics(S, fake)
     results.update(curve)
     print(f"B_log_ret_hist_funct={curve['B_log_ret_hist_funct']:.4f}  B_qq_plot_funct={curve['B_qq_plot_funct']:.6f}")
+
+    # grid_tvd — 2D-histogram TVD (%) on the (t, x) path clouds of the first two
+    # diagnostic panels. Locked at GRID_TVD_DEFAULT_BINS (50×50) for all methods.
+    # Visual sanity-check only; not part of the A/B rankings.
+    print("  grid_tvd (path-cloud TVD %) ...", end=" ", flush=True)
+    gtvd, _, _, _ = grid_tvd(paths_to_points(S), paths_to_points(fake),
+                             n_bins=GRID_TVD_DEFAULT_BINS)
+    results["grid_tvd"] = float(gtvd)
+    print(f"{results['grid_tvd']:.4f}")
 
     results["compute_time_sec"] = round(time.perf_counter() - t0, 2)
     print(f"  Done in {results['compute_time_sec']:.1f}s")
