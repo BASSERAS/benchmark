@@ -449,16 +449,16 @@ for their GRU + MLP variants). Total B: 6 plots × 3 sub-metrics (funct / der / 
 plus funct-only CVaR₉₀ / CVaR₉₅. Winner is by MSE; the five combined measures (MSE, % err, NRMSE, CVaR₉₀,
 CVaR₉₅) are what the READMEs display per plot.
 
-**grid_tvd — path-cloud visual side-check (50×50, not ranked).** A lightweight 2D-histogram **Total
+**grid_tvd — path-cloud comparison (50×50, ranked).** A lightweight 2D-histogram **Total
 Variation Distance** between the real and generated **(t, x)** path clouds (the quantitative twin of the
 first two diagnostic panels). Build a shared 50×50 grid over the union bounding box of both clouds, bin each
 cloud, normalize **each** histogram by its own total (p real, q gen), and report TVD = 0.5·Σ|pᵢ − qᵢ| × 100
 (a percentage in [0, 100]; lower = closer clouds). The grid is **locked at 50×50** for every method so curves
-stay comparable. It is a **visual sanity-check only: never averaged into any score and excluded from all
-A/B win-counts.** The **Perfect** column is the independent-draw floor (§5.4). In every README it is
-rendered as the **first row of Table B**, labelled **Path comparison** (`grid_tvd 50×50 (%) ↓`, marked
-"side-check · not ranked", Winner = "—"), sitting above the six diagnostic-plot rows — a headline
-path-cloud comparison that does **not** compete for the MSE winner. Implemented in
+stay comparable. The **Perfect** column is the independent-draw floor (§5.4). In every README it is
+rendered as the **ranked first row of Table B**, labelled **Path comparison** (`grid_tvd 50×50 (%) ↓`),
+sitting above the six diagnostic-plot rows. It **is ranked like any plot**: its winner (lowest mean TVD —
+currently **LS4**) is counted, so Table B now has **7 ranked contests** (the grid_tvd path-comparison row
+plus the six per-plot MSE winners). Implemented in
 `metrics/metrics.py` (`grid_tvd`, `paths_to_points`, `GRID_TVD_DEFAULT_BINS=(50,50)`) and computed
 automatically by `compute_all.py`.
 
@@ -471,7 +471,7 @@ automatically by `compute_all.py`.
 | `results/Heston/<Method>/seed_{i}_metrics.json` | Per-seed metrics: A1–A34 + B_ curve keys (incl. funct CVaR₉₀/₉₅) + `grid_tvd` |
 | `results/Heston/<Method>/metrics_summary.json` | Mean ± std across 5 seeds |
 | `results/Heston/<Method>/metrics_summary.csv` | Same, CSV format |
-| `results/Heston/<Method>/grid_tvd_aggregate.json` | grid_tvd path-cloud TVD (50×50): mean±std + per-seed — visual side-check, **not ranked** |
+| `results/Heston/<Method>/grid_tvd_aggregate.json` | grid_tvd path-cloud TVD (50×50): mean±std + per-seed — **ranked** as the first row of Table B |
 | `results/Heston/<Method>/plots/disc_classifier_loss.png` | A18 BCE training loss, GRU + MLP, 5 seeds |
 | `results/Heston/<Method>/plots/pred_score_loss.png` | A19 MAE training loss, GRU + MLP, 5 seeds |
 | `results/Heston/<Method>/plots/seed_{i}_pca.png` | PCA of 500 real vs fake paths (per seed) |
@@ -685,9 +685,12 @@ Rules:
 
 #### Section 3 — B Curve-Shape Metrics
 
-**Five** sublines per plot (MSE + % err + NRMSE + CVaR₉₀ + CVaR₉₅). **MSE** combines funct/der/sec\_der by
-mean-of-3; **% err**, **NRMSE**, **CVaR₉₀** and **CVaR₉₅** are **funct-only** (the funct sub-metric alone). Last column = Perfect
-floor (non-zero, from the independent draw). Winner is by MSE (the two CVaR sublines are tail-risk context, not ranked).
+The table opens with a single **Path comparison** row (`grid_tvd 50×50 (%) ↓`, §5.2) — the ranked
+path-cloud contest — followed by **five** sublines per plot (MSE + % err + NRMSE + CVaR₉₀ + CVaR₉₅). **MSE**
+combines funct/der/sec\_der by mean-of-3; **% err**, **NRMSE**, **CVaR₉₀** and **CVaR₉₅** are **funct-only**
+(the funct sub-metric alone). Last column = Perfect floor (non-zero, from the independent draw). Each plot's
+headline winner is by **MSE**; the grid_tvd Path-comparison row is ranked as **one additional contest** (7
+ranked contests total). The two CVaR sublines are tail-risk context, not ranked.
 
 ```markdown
 ## B — Curve-Shape Metrics — mean ± std across 5 seeds
@@ -704,10 +707,11 @@ floor (non-zero, from the independent draw). Winner is by MSE (the two CVaR subl
 > values, so their relative errors blow up into meaningless 10⁴-% figures; only the curve itself (funct)
 > carries a meaningful relative error. MSE has no such problem and keeps mean-of-3.
 > All ↓ lower is better. The Perfect floor is **non-zero** (independent Heston draw vs test set, §5.4).
-> Winner is by MSE.
+> Winner is by MSE; the leading **Path comparison** (grid_tvd) row is ranked as one extra contest.
 
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect |
 |------|---------|-----------|--------|--------|--------|--------|--------|:------:|
+| **Path comparison** *(50×50 path-cloud)* | grid_tvd 50×50 (%) ↓ | ... | ... | ... | ... | ... | ... | ... |
 | **Log-return histogram** | MSE    | ... | ... | ... | ... | ... | ... | ... |
 |                          | % err  | ... | ... | ... | ... | ... | ... | ... |
 |                          | NRMSE  | ... | ... | ... | ... | ... | ... | ... |
@@ -727,21 +731,12 @@ floor (non-zero, from the independent draw). Winner is by MSE (the two CVaR subl
 > `methods/perfect_recovery/results/*` via `render_tables.py` (§5.4) so they match byte-for-byte; they are
 > identical across every method because they are dataset-derived, not method-derived. PS-MC rows show `—`.
 
-#### Section 3b — grid_tvd path-cloud side-check (50×50, not ranked)
-
-After the B table, add the grid_tvd visual side-check block (rendered by `render_tables.py --method <M>`,
-section `render_method_grid_tvd_md`). It is the quantitative twin of the Real-vs-Generated scatter panels:
-a 2D-histogram Total Variation Distance (%) between the real and generated (t, x) path clouds at a locked
-**50×50** grid. **Never ranked, never win-counted, never averaged into any score** — a visual sanity-check
-only. Lower = closer clouds; the Perfect column is the independent-draw floor.
-
-```markdown
-## grid_tvd — path-cloud visual sanity-check (50×50, not ranked)
-
-| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
-|--------|-----------|--------|--------|--------|--------|--------|:------:|
-| grid_tvd 50×50 (%) ↓ | ... | ... | ... | ... | ... | ... | ... |
-```
+> **grid_tvd is now the first row of Table B** (labelled **Path comparison**, `grid_tvd 50×50 (%) ↓`) and is
+> **ranked** like any plot — there is **no separate standalone grid_tvd section** anymore. It is a
+> 2D-histogram Total Variation Distance (%) between the real and generated (t, x) path clouds at a locked
+> **50×50** grid; lower = closer clouds; the Perfect column is the independent-draw floor. Its winner (lowest
+> mean TVD) is counted, giving Table B **7 ranked contests** (grid_tvd + the six per-plot MSE winners). Do
+> **not** re-add any `## grid_tvd — path-cloud …` block below the B table.
 
 #### Section 4 — Stylised Facts Diagnostic
 
@@ -1544,9 +1539,10 @@ rule **between every family** (after the last method of each family). Concretely
      method's `metrics_summary.csv`. Then **recompute every `Winner` cell** across all method columns
      (↓ smaller wins; ↑ larger wins; A28 Kurtosis Ratio closest-to-1.0 wins) and **update the overall
      win-count line** (`<A> wins X/36, <B> wins Y/36, <NewMethod> wins Z/36`).
-   - **Table B (Curve-Shape):** insert the new `<NewMethod>` column into every plot's MSE, % err and NRMSE
-     sublines from `curve_b_aggregate.json`, then **recompute the by-MSE `Winner`** for each of the 6
-     plots and **update the B win-count line** (`X/6` MSE each).
+   - **Table B (Curve-Shape):** insert the new `<NewMethod>` column into every plot's grid_tvd (Path
+     comparison), MSE, % err and NRMSE sublines from `curve_b_aggregate.json` / `grid_tvd_aggregate.json`,
+     then **recompute the `Winner`** for each of the **7 ranked contests** (the grid_tvd Path-comparison row
+     + the by-MSE winner of each of the 6 plots) and **update the B win-count line** (`X/7` each).
    - Leave the `Perfect` / `Perfect floor` column unchanged (dataset-derived, identical for all methods).
    - Also add the new column to the **Path Shadowing MC** comparison table.
 
@@ -1597,7 +1593,7 @@ When a new standard is established (new metric, new section format, new B metric
   1. **Split protocol — "test set everywhere" (new §5.0).** The 8192×128 Heston dataset is drawn under three disjoint seeds and each has ONE fixed role: **train = seed 0** (generators were trained on it; it is NEVER scored), **test = seed 1** (the real reference every A1–A17/A20–A34, every B curve, every plot, and PS-MC query-prefix is measured against), **disc = seed 2** (supplies the "real" class for the two learned scorers ONLY — A18 discriminative and A19 predictive-TSTR — so the adversary/forecaster never touches the test set it is judged on). Generators are NOT retrained: since the paths are saved, only A18/A19's small judge/forecaster networks are (re)fit per seed. All five per-method result seeds are the five generated draws scored against this one test set.
   2. **Perfect floor → independent draw, non-zero (§5.4 rewrite).** The floor is no longer a row-shuffle/permutation of the real data (which forced marginals to 0). It is a **fresh independent Heston draw** — new seeds `1000+i` (`IND_SEED_BASE = 1000`), identical parameters — scored against the test set exactly like a generator. Every A and B floor is therefore a genuine **non-zero finite-sample noise floor**; the column value is the **mean across the 5 independent-draw seeds** (`perfect_floor_a()`/`perfect_floor_curve()`), identical across all methods. `methods/perfect_recovery/README.md` documents it in full and is the one place with no floor column of its own.
   3. **B tables → 3 sublines (MSE / % err / NRMSE), each mean-of-3.** Added **NRMSE** = sqrt(mean((L_gen−L_real)²))/(max|L_real|−min|L_real|+1e-12)×100. **% err** switched to a **scale-aware ε-floor MAPE** with ε = 1e-3·(max|L_real|+1e-12) (was the fixed `+1e-6`). All three measures combine funct/der/sec_der by **mean-of-3** (winner still decided by MSE). **Tail survival** is the one exception: its % err and NRMSE use the **funct curve only** (der/sec_der of a step-like survival curve blow the ratios up); its MSE stays mean-of-3. Raw JSON now stores 9 keys per plot (funct/der/sec_der × {mse, pct_err, nrmse}).
-  4. **`metrics/render_tables.py` is the single source of truth for every table.** `--method <M>` prints the per-method markdown A/B/PS tables; `--which A|B|PS` prints the family-grouped HTML comparison tables + win-count comments. All numbers use its `fmt()` (4 sig-figs / sci-notation) so every README matches byte-for-byte — values are regenerated, never hand-typed. Current win-counts: **A of 36** — LS4 26, Fourier Flow 4, CSDI 3, Diffusion-TS 2, TimeVAE 1, others 0; **B of 6 (MSE)** — LS4 5, CSDI 1. Updated §5.2, §5.4, §8 Section 2–3, §13 checklist, §15.1 Section 2–3, §15.2, §15.4 (win-count denominator corrected 38 → 36).
+  4. **`metrics/render_tables.py` is the single source of truth for every table.** `--method <M>` prints the per-method markdown A/B/PS tables; `--which A|B|PS` prints the family-grouped HTML comparison tables + win-count comments. All numbers use its `fmt()` (4 sig-figs / sci-notation) so every README matches byte-for-byte — values are regenerated, never hand-typed. Current win-counts: **A of 36** — LS4 26, Fourier Flow 4, CSDI 3, Diffusion-TS 2, TimeVAE 1, others 0; **B of 7 (grid_tvd + 6 MSE)** — LS4 6, CSDI 1. Updated §5.2, §5.4, §8 Section 2–3, §13 checklist, §15.1 Section 2–3, §15.2, §15.4 (win-count denominator corrected 38 → 36).
 - 2026-07-22: **B % err → fixed 1e-6 MAPE + funct-only for EVERY plot (REVERSES sub-item 3 of the entry above).** The user re-derived the % err convention: `dᵢ = mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100` — a proper function-level MAPE with a **fixed 1e-6 floor** and **one division** (verbatim: "% err row: for each list, dᵢ = mean(|L_g − L_real| / (|L_real| + 1e-6)) × 100, a proper MAPE — one division … tke this convention pls"). Two corrections vs the same-day sub-item 3: (a) the **scale-aware ε = 1e-3·(max|L_real|+1e-12)** floor is **reverted to the fixed `+1e-6`**; (b) **% err AND NRMSE are now funct-only for every plot**, not just tail survival — the der/sec_der of every curve have near-zero true values, so their relative errors explode into meaningless 10⁴-% figures; only the funct sub-metric carries a meaningful relative error. **MSE is unchanged** (mean-of-3 (funct+der+sec_der)/3; still decides the winner). Raw JSON still stores all 9 keys/plot (funct/der/sec_der × {mse, pct_err, nrmse}); aggregation (`aggregate_curve_metrics`) drops the der/sec_der %err+NRMSE. mean/std = mean and sample std across the 5 seeds. Fixed in `metrics/metrics.py` (`_pct` fixed-1e-6, `aggregate_curve_metrics` funct-only), recomputed via `metrics/recompute_curve_b.py` for all 9 methods + perfect_recovery, and every README B table + prose rebuilt from `curve_b_aggregate.json` through `render_tables.py`. Also removed the orphan `results/Heston/SBTS/plots/small_test.png` (a `T=32/N=200` dev-sanity artifact, unreferenced by any README). Updated §5.2, §8 Section 3, §15.1 Section 3, §15.2 Sections 5 & 3.
 - 2026-07-22: **PS-MC `Perfect` column + explicit deterministic category spec (§15.4 rewrite).** Two coupled changes: (1) **PS-MC Perfect floor → a real column.** `render_tables.py` gained `perfect_floor_psmc()` (reads `methods/perfect_recovery/results/path_shadowing/summary.json`, keys `h32_CRPS_uniform` / `h64_CRPS_uniform`), `render_PS()` now emits a `Perfect` column between `RW baseline` and `Winner` (mean ± std), and `render_method_PS_md()` a `Perfect floor` column. Produced by `metrics/compute_perfect_ps.py`, which runs PS-MC on a fresh independent Heston draw (seeds `1000+i`) using the **test-set** query prefixes — a genuine non-zero finite-sample floor identical across methods (H=32 = 2.721 ± 0.004183, H=64 = 3.788 ± 0.006463; LS4's 2.704 H=32 legitimately edges below it, reported as-is). Added the column to the PS-MC tables in both root `README.md` and `results/README.md`. (2) **§15.4 rewritten from the stale `ID | Metric | Category | Dir | Method…` column description to the current family-grouped HTML tables, with an EXPLICIT deterministic category spec.** New §15.4.1 quotes the `render_tables.py` `FAMILIES` list verbatim as the single source of truth (GAN = [TimeGAN, COSCI-GAN]; Diffusion = [Diffusion-TS (dir `DiffusionTS`), CSDI]; VAE = [TimeVAE, TimeVQVAE, LS4]; Schrödinger Bridge = [SBTS]; Fourier Flow = [Fourier Flow (dir `FourierFlow`)]) and tabulates the `disk_dir` ≠ `display_name` cases. New §15.4.3 specifies the stylised-curves layout deterministically (`### <Family>` → `#### <display_name>` → `![…](<PREFIX>Heston/<disk_dir>/plots/heston_diagnostics.png)` → `---` between families; the only cross-file difference is `<PREFIX>` = `results/` in root vs empty in results). §15.4.2 documents the PS-MC `Perfect` column and the win-count denominator 36; §15.4.4 rewrites the add-a-method edits to route through `FAMILIES` + `render_tables.py`. No metric value or formula changed — a documentation + PS-table-column change only. Verified `render_PS()` header/keys against disk. Updated §15.4.
 - 2026-07-22: **Disc/Pred loss plots retrained on the disc split (seed 2).** `metrics/regen_score_losses.py` regenerated, for all 9 methods, the training-loss CSVs and the two plots `plots/disc_classifier_loss.png` (A18 discriminator BCE) and `plots/pred_score_loss.png` (A19 predictor MAE), trained with **real = `heston_S_disc_8192x128.npy` (seed 2, disc split)** vs **fake = the method's generated paths** — matching the §5.0 rule that A18/A19's learned networks touch only the disc split, never the test set they are scored against. 180 CSVs (9 × 5 seeds × {disc_gru, disc_mlp, pred_gru, pred_mlp}) + 18 plots refreshed. No A/B/PS value changed.

@@ -103,7 +103,7 @@ Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CV
 
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
-| **Path comparison** *(50×50 side-check · not ranked)* | grid_tvd 50×50 (%) ↓ | 14.01% ± 1.126% | 15.05% | 13.05% | 15.67% | 12.95% | 13.34% | 2.237% |
+| **Path comparison** *(50×50 path-cloud)* | grid_tvd 50×50 (%) ↓ | 14.01% ± 1.126% | 15.05% | 13.05% | 15.67% | 12.95% | 13.34% | 2.237% |
 | **Log-return histogram** | MSE | 42.66 ± 1.999 | 41.16 | 40.58 | 41.39 | 45.11 | 45.07 | 0.1098 |
 |  | % err | 246.6% ± 7.987% | 239.4% | 240.4% | 240.3% | 257.2% | 255.4% | 1.799% |
 |  | NRMSE | 30.81% ± 0.7154% | 30.27% | 30.07% | 30.36% | 31.68% | 31.68% | 0.5328% |
@@ -140,18 +140,6 @@ Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CV
 > **Rolling vol histogram**: MSE 1398 — like every VAE/GAN baseline here, COSCI-GAN fails to reproduce the Heston rolling-volatility distribution (A31 rolling-vol KS 0.937, near-disjoint supports).
 
 ---
-
-## grid_tvd — path-cloud visual sanity-check (50×50, not ranked)
-
-2D-histogram **Total Variation Distance (%)** between the real and this method's
-generated **(t, x)** path clouds at a locked **50×50** grid — the quantitative twin
-of the first two diagnostic panels. **Visual side-check only, not part of any
-ranking.** Lower = closer clouds.
-
-| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
-|--------|-----------|--------|--------|--------|--------|--------|---------------|
-| grid_tvd 50×50 (%) ↓ | 14.01% ± 1.126% | 15.05% | 13.05% | 15.67% | 12.95% | 13.34% | 2.237% |
-
 
 ## Reading the table — honest mixed result
 

@@ -86,7 +86,7 @@ Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CV
 
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
-| **Path comparison** *(50×50 side-check · not ranked)* | grid_tvd 50×50 (%) ↓ | 17.14% ± 8.253% | 14.45% | 6.945% | 26.35% | 10.67% | 27.27% | 2.237% |
+| **Path comparison** *(50×50 path-cloud)* | grid_tvd 50×50 (%) ↓ | 17.14% ± 8.253% | 14.45% | 6.945% | 26.35% | 10.67% | 27.27% | 2.237% |
 | **Log-return histogram** | MSE | 45.40 ± 57.91 | 3.579 | 6.973 | 153.7 | 4.778 | 57.94 | 0.1098 |
 |  | % err | 33.41% ± 6.533% | 26.37% | 36.99% | 32.64% | 27.13% | 43.94% | 1.799% |
 |  | NRMSE | 21.38% ± 14.34% | 8.194% | 12.08% | 44.34% | 10.17% | 32.12% | 0.5328% |
@@ -124,18 +124,6 @@ Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CV
 > **% error reading**: the **function-level MAPE** of the curve itself (mean |gen−real|/(|real|+1e-6) × 100); the derivative / 2nd-derivative MAPE is excluded as ill-posed (near-zero true differences blow up the denominator). ACF |r| (186%) and ACF r² (130%) are the largest — the true ACF ≈ 0.05 sits near zero, so any deviation is a big *relative* error; log-ret hist (33%), QQ (35%), rolling vol (57%) and tail survival (24%) are all modest. Read MSE for absolute agreement, % error for relative shape deviation.
 
 ---
-
-## grid_tvd — path-cloud visual sanity-check (50×50, not ranked)
-
-2D-histogram **Total Variation Distance (%)** between the real and this method's
-generated **(t, x)** path clouds at a locked **50×50** grid — the quantitative twin
-of the first two diagnostic panels. **Visual side-check only, not part of any
-ranking.** Lower = closer clouds.
-
-| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
-|--------|-----------|--------|--------|--------|--------|--------|---------------|
-| grid_tvd 50×50 (%) ↓ | 17.14% ± 8.253% | 14.45% | 6.945% | 26.35% | 10.67% | 27.27% | 2.237% |
-
 
 ## Stylised Facts Diagnostic (Heston vs TimeGAN, seed 0)
 

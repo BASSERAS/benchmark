@@ -151,7 +151,7 @@ Heston draw reaches — identical across methods.
 <!-- ===== PER-METHOD B TABLE ===== -->
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
-| **Path comparison** *(50×50 side-check · not ranked)* | grid_tvd 50×50 (%) ↓ | 13.48% ± 0.2141% | 13.21% | 13.84% | 13.34% | 13.54% | 13.48% | 2.237% |
+| **Path comparison** *(50×50 path-cloud)* | grid_tvd 50×50 (%) ↓ | 13.48% ± 0.2141% | 13.21% | 13.84% | 13.34% | 13.54% | 13.48% | 2.237% |
 | **Log-return histogram** | MSE | 4.082 ± 0.04782 | 4.124 | 4.102 | 4.121 | 3.996 | 4.065 | 0.1098 |
 |  | % err | 39.17% ± 0.1361% | 39.31% | 39.21% | 39.31% | 39.01% | 39.01% | 1.799% |
 |  | NRMSE | 9.368% ± 0.06168% | 9.435% | 9.374% | 9.434% | 9.284% | 9.312% | 0.5328% |
@@ -202,18 +202,6 @@ method, the curve-shape signature of a memoryless K=1 kernel that cannot bend th
 > Full formulas: [`metrics/README.md`](../../../metrics/README.md).
 
 ---
-
-## grid_tvd — path-cloud visual sanity-check (50×50, not ranked)
-
-2D-histogram **Total Variation Distance (%)** between the real and this method's
-generated **(t, x)** path clouds at a locked **50×50** grid — the quantitative twin
-of the first two diagnostic panels. **Visual side-check only, not part of any
-ranking.** Lower = closer clouds.
-
-| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
-|--------|-----------|--------|--------|--------|--------|--------|---------------|
-| grid_tvd 50×50 (%) ↓ | 13.48% ± 0.2141% | 13.21% | 13.84% | 13.34% | 13.54% | 13.48% | 2.237% |
-
 
 ## Comparison with the paper (Alouadi et al., ICAIF 2025)
 

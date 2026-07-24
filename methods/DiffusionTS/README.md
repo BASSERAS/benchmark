@@ -88,7 +88,7 @@ Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CV
 
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
-| **Path comparison** *(50×50 side-check · not ranked)* | grid_tvd 50×50 (%) ↓ | 7.829% ± 0.9332% | 8.117% | 6.576% | 7.097% | 9.280% | 8.074% | 2.237% |
+| **Path comparison** *(50×50 path-cloud)* | grid_tvd 50×50 (%) ↓ | 7.829% ± 0.9332% | 8.117% | 6.576% | 7.097% | 9.280% | 8.074% | 2.237% |
 | **Log-return histogram** | MSE | 4.883 ± 0.5079 | 5.006 | 5.702 | 4.145 | 4.921 | 4.641 | 0.1098 |
 |  | % err | 42.14% ± 1.003% | 42.49% | 43.59% | 40.66% | 42.51% | 41.46% | 1.799% |
 |  | NRMSE | 10.28% ± 0.5317% | 10.39% | 11.13% | 9.501% | 10.35% | 10.03% | 0.5328% |
@@ -125,18 +125,6 @@ Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CV
 > **QQ plot**: MSE 3.5e-06 — the return-quantile curve is reproduced tightly, consistent with the tight A16 QQ RMSE.
 
 ---
-
-## grid_tvd — path-cloud visual sanity-check (50×50, not ranked)
-
-2D-histogram **Total Variation Distance (%)** between the real and this method's
-generated **(t, x)** path clouds at a locked **50×50** grid — the quantitative twin
-of the first two diagnostic panels. **Visual side-check only, not part of any
-ranking.** Lower = closer clouds.
-
-| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
-|--------|-----------|--------|--------|--------|--------|--------|---------------|
-| grid_tvd 50×50 (%) ↓ | 7.829% ± 0.9332% | 8.117% | 6.576% | 7.097% | 9.280% | 8.074% | 2.237% |
-
 
 ## Stylised Facts Diagnostic (Heston vs Diffusion-TS, seed 0)
 

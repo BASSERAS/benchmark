@@ -131,7 +131,7 @@ misses Heston's tails, autocorrelation and volatility shape by a wide margin.
 <!-- ===== PER-METHOD B TABLE ===== -->
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
-| **Path comparison** *(50×50 side-check · not ranked)* | grid_tvd 50×50 (%) ↓ | 8.662% ± 0.4769% | 9.126% | 9.057% | 8.695% | 8.643% | 7.788% | 2.237% |
+| **Path comparison** *(50×50 path-cloud)* | grid_tvd 50×50 (%) ↓ | 8.662% ± 0.4769% | 9.126% | 9.057% | 8.695% | 8.643% | 7.788% | 2.237% |
 | **Log-return histogram** | MSE | 968.0 ± 183.1 | 693.2 | 1055 | 810.6 | 1152 | 1129 | 0.1098 |
 |  | % err | 114.9% ± 0.6458% | 113.7% | 115.3% | 114.6% | 115.4% | 115.3% | 1.799% |
 |  | NRMSE | 123.7% ± 6.783% | 112.7% | 128.1% | 118.8% | 129.6% | 129.4% | 0.5328% |
@@ -180,18 +180,6 @@ curve is the QQ plot (MSE 3.99e-05), but even that NRMSE (18.7 %) is well above 
 > Full formulas: [`metrics/README.md`](../../../metrics/README.md).
 
 ---
-
-## grid_tvd — path-cloud visual sanity-check (50×50, not ranked)
-
-2D-histogram **Total Variation Distance (%)** between the real and this method's
-generated **(t, x)** path clouds at a locked **50×50** grid — the quantitative twin
-of the first two diagnostic panels. **Visual side-check only, not part of any
-ranking.** Lower = closer clouds.
-
-| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
-|--------|-----------|--------|--------|--------|--------|--------|---------------|
-| grid_tvd 50×50 (%) ↓ | 8.662% ± 0.4769% | 9.126% | 9.057% | 8.695% | 8.643% | 7.788% | 2.237% |
-
 
 ## Discriminative & Predictive Classifier Losses (A18 / A19)
 

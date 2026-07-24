@@ -104,7 +104,7 @@ Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CV
 
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
-| **Path comparison** *(50×50 side-check · not ranked)* | grid_tvd 50×50 (%) ↓ | 19.00% ± 3.806% | 17.68% | 15.52% | 15.64% | 20.43% | 25.72% | 2.237% |
+| **Path comparison** *(50×50 path-cloud)* | grid_tvd 50×50 (%) ↓ | 19.00% ± 3.806% | 17.68% | 15.52% | 15.64% | 20.43% | 25.72% | 2.237% |
 | **Log-return histogram** | MSE | 2160 ± 655.2 | 1243 | 1680 | 2986 | 2784 | 2107 | 0.1098 |
 |  | % err | 117.7% ± 1.125% | 117.3% | 116.5% | 118.6% | 119.4% | 116.6% | 1.799% |
 |  | NRMSE | 151.6% ± 13.15% | 130.7% | 143.1% | 163.9% | 165.5% | 154.9% | 0.5328% |
@@ -141,18 +141,6 @@ Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CV
 > **Rolling vol histogram**: MSE **3029** — paired with A31 rolling-vol KS **0.987** (near-separable), GT-GAN's rolling-volatility distribution does not overlap Heston's.
 
 ---
-
-## grid_tvd — path-cloud visual sanity-check (50×50, not ranked)
-
-2D-histogram **Total Variation Distance (%)** between the real and this method's
-generated **(t, x)** path clouds at a locked **50×50** grid — the quantitative twin
-of the first two diagnostic panels. **Visual side-check only, not part of any
-ranking.** Lower = closer clouds.
-
-| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
-|--------|-----------|--------|--------|--------|--------|--------|---------------|
-| grid_tvd 50×50 (%) ↓ | 19.00% ± 3.806% | 17.68% | 15.52% | 15.64% | 20.43% | 25.72% | 2.237% |
-
 
 ## Reading the table — the benchmark's weakest marginal-distribution matcher
 

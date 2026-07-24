@@ -150,7 +150,7 @@ table (non-zero, finite-sample). Winner between methods is decided by the **MSE*
 <!-- ===== PER-METHOD B TABLE ===== -->
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
-| **Path comparison** *(50×50 side-check · not ranked)* | grid_tvd 50×50 (%) ↓ | 5.990% ± 0.4649% | 5.883% | 6.402% | 5.572% | 6.647% | 5.448% | 2.237% |
+| **Path comparison** *(50×50 path-cloud)* | grid_tvd 50×50 (%) ↓ | 5.990% ± 0.4649% | 5.883% | 6.402% | 5.572% | 6.647% | 5.448% | 2.237% |
 | **Log-return histogram** | MSE | 4.644 ± 0.4940 | 4.521 | 4.808 | 4.128 | 4.249 | 5.513 | 0.1098 |
 |  | % err | 35.27% ± 1.063% | 34.79% | 35.69% | 34.36% | 34.35% | 37.16% | 1.799% |
 |  | NRMSE | 9.998% ± 0.5467% | 9.889% | 10.19% | 9.368% | 9.601% | 10.94% | 0.5328% |
@@ -200,18 +200,6 @@ QQ (2.36e-06) and tail-survival (0.00196) curves remain among the better fits.
 > Full formulas: [`metrics/README.md`](../../../metrics/README.md).
 
 ---
-
-## grid_tvd — path-cloud visual sanity-check (50×50, not ranked)
-
-2D-histogram **Total Variation Distance (%)** between the real and this method's
-generated **(t, x)** path clouds at a locked **50×50** grid — the quantitative twin
-of the first two diagnostic panels. **Visual side-check only, not part of any
-ranking.** Lower = closer clouds.
-
-| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
-|--------|-----------|--------|--------|--------|--------|--------|---------------|
-| grid_tvd 50×50 (%) ↓ | 5.990% ± 0.4649% | 5.883% | 6.402% | 5.572% | 6.647% | 5.448% | 2.237% |
-
 
 ## Discriminative & Predictive Classifier Losses (A18 / A19)
 

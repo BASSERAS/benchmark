@@ -251,13 +251,20 @@ def render_A():
 
 # ── B table ─────────────────────────────────────────────────────────────────
 def render_B():
+    """Curve-shape B table with a per-SUBLINE winner (every measure row gets its
+    own Winner cell — no rowspan) plus a ranked grid_tvd 'Path comparison' first
+    row. Returns (html, plot_wins, subline_wins):
+      plot_wins    — headline ranking = one winner per plot by MSE + grid_tvd
+      subline_wins — every subline (grid_tvd + 6×5 measures) counted once."""
     curves = {m: load_curve(m) for m in METHOD_DIRS}
+    gtvd   = {m: load_grid_tvd(m) for m in METHOD_DIRS}
+    gfloor = perfect_floor_grid_tvd()
     perfect = None
     pp = os.path.join(REPO, "methods", "perfect_recovery", "results", "curve_b_aggregate.json")
     if os.path.exists(pp):
         perfect = json.load(open(pp))
-    wins = {m: 0 for m in METHOD_NAMES}
-    ncol = 2 + len(METHOD_DIRS) + 2  # Plot,Measure + methods + Perfect + Winner
+    plot_wins = {m: 0 for m in METHOD_NAMES}
+    subline_wins = {m: 0 for m in METHOD_NAMES}
     sup = ['  <tr>', '    <th rowspan="2">Plot</th>', '    <th rowspan="2">Measure</th>']
     for fam, methods in FAMILIES:
         n = len(methods)
@@ -266,17 +273,40 @@ def render_B():
     sub = ['  <tr>'] + [f'    <th>{n}</th>' for n in METHOD_NAMES] + ['  </tr>']
     out = ["<table>", "<thead>"] + sup + sub + ["</thead>", "<tbody>"]
 
+    # ── grid_tvd 'Path comparison' — now a RANKED first row (winner counted) ──
+    gmeans = [gtvd[m]["mean"] if gtvd[m] else None for m in METHOD_DIRS]
+    gstds  = [gtvd[m]["std"]  if gtvd[m] else None for m in METHOD_DIRS]
+    gwi = winner_idx(gmeans, "lo")
+    gwin = METHOD_NAMES[gwi] if gwi is not None else "—"
+    if gwi is not None:
+        plot_wins[gwin] += 1
+        subline_wins[gwin] += 1
+    grow = ['  <tr>',
+            '<td><b>Path comparison</b><br><sub>grid_tvd 50×50 path-cloud</sub></td>',
+            '<td>grid_tvd 50×50 (%) ↓</td>']
+    for i in range(len(METHOD_DIRS)):
+        txt = f"{fmt(gmeans[i])}% ± {fmt(gstds[i])}%" if gmeans[i] is not None else "—"
+        grow.append(cell(txt, bold=(i == gwi)))
+    if gfloor is not None:
+        grow.append(f'<td>{fmt(gfloor["mean"])}% ± {fmt(gfloor["std"])}%</td>')
+    else:
+        grow.append('<td>—</td>')
+    grow.append(f'<td><b>{gwin}</b></td></tr>')
+    out.append("".join(grow))
+
     for prefix, name in CURVE_PLOTS:
-        mse_means = [curves[m][prefix]["mse"]["mean"] for m in METHOD_DIRS]
-        wi = winner_idx(mse_means, "lo")
-        win_name = METHOD_NAMES[wi] if wi is not None else "—"
-        if wi is not None:
-            wins[win_name] += 1
         pf = perfect[prefix] if perfect else None
         measures = ("mse", "pct", "nrmse", "cvar90", "cvar95")
         pct_measures = ("pct", "nrmse", "cvar90", "cvar95")
         nmeas = len(measures)
         for mi, measure in enumerate(measures):
+            means = [curves[m][prefix][measure]["mean"] for m in METHOD_DIRS]
+            wi = winner_idx(means, "lo")
+            win_name = METHOD_NAMES[wi] if wi is not None else "—"
+            if wi is not None:
+                subline_wins[win_name] += 1
+                if measure == "mse":          # MSE decides the plot-level ranking
+                    plot_wins[win_name] += 1
             row = ['  <tr>']
             if mi == 0:
                 row.append(f'<td rowspan="{nmeas}"><b>{name}</b></td>')
@@ -288,7 +318,7 @@ def render_B():
                 txt = ms(d["mean"], d["std"])
                 if measure in pct_measures:
                     txt = f"{fmt(d['mean'])}% ± {fmt(d['std'])}%"
-                row.append(cell(txt, bold=(measure == "mse" and i == wi)))
+                row.append(cell(txt, bold=(i == wi)))
             if pf is not None:
                 pm, psd = pf[measure]["mean"], pf[measure]["std"]
                 if measure in pct_measures:
@@ -297,12 +327,11 @@ def render_B():
                     row.append(f'<td>{ms(pm, psd)}</td>')
             else:
                 row.append('<td>—</td>')
-            if mi == 0:
-                row.append(f'<td rowspan="{nmeas}"><b>{win_name}</b></td>')
+            row.append(f'<td><b>{win_name}</b></td>')
             row.append('</tr>')
             out.append("".join(row))
     out += ["</tbody>", "</table>"]
-    return "\n".join(out), wins
+    return "\n".join(out), plot_wins, subline_wins
 
 
 # ── PS-MC table ─────────────────────────────────────────────────────────────
@@ -548,11 +577,13 @@ def main():
         print(f"\n<!-- A win-counts (of {total}): " +
               ", ".join(f"{k}={v}" for k, v in sorted(wins.items(), key=lambda x: -x[1])) + " -->\n")
     if args.which in ("B", "all"):
-        html, wins = render_B()
+        html, plot_wins, subline_wins = render_B()
         print("<!-- ===== B CURVE-SHAPE TABLE ===== -->")
         print(html)
-        print("\n<!-- B win-counts (MSE, of 6): " +
-              ", ".join(f"{k}={v}" for k, v in sorted(wins.items(), key=lambda x: -x[1]) if v) + " -->\n")
+        print("\n<!-- B plot-level win-counts (MSE per plot + grid_tvd, of 7): " +
+              ", ".join(f"{k}={v}" for k, v in sorted(plot_wins.items(), key=lambda x: -x[1]) if v) + " -->")
+        print("<!-- B per-subline win-counts (grid_tvd + 6×5 measures, of 31): " +
+              ", ".join(f"{k}={v}" for k, v in sorted(subline_wins.items(), key=lambda x: -x[1]) if v) + " -->\n")
     if args.which in ("PS", "all"):
         html, wins = render_PS()
         print("<!-- ===== PS-MC TABLE ===== -->")

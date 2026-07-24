@@ -141,7 +141,7 @@ scores are far more stable seed-to-seed than TimeGAN's — the log-return-histog
 <!-- ===== PER-METHOD B TABLE ===== -->
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
-| **Path comparison** *(50×50 side-check · not ranked)* | grid_tvd 50×50 (%) ↓ | 9.442% ± 1.721% | 7.873% | 11.91% | 11.07% | 7.732% | 8.624% | 2.237% |
+| **Path comparison** *(50×50 path-cloud)* | grid_tvd 50×50 (%) ↓ | 9.442% ± 1.721% | 7.873% | 11.91% | 11.07% | 7.732% | 8.624% | 2.237% |
 | **Log-return histogram** | MSE | 0.9211 ± 0.02370 | 0.9371 | 0.9394 | 0.9444 | 0.8956 | 0.8891 | 0.1098 |
 |  | % err | 9.167% ± 0.5606% | 8.987% | 10.28% | 8.876% | 8.912% | 8.782% | 1.799% |
 |  | NRMSE | 4.186% ± 0.1102% | 4.142% | 4.342% | 4.272% | 4.027% | 4.147% | 0.5328% |
@@ -191,18 +191,6 @@ non-winners, consistent with its strong static-distribution scores in the A tabl
 > Full formulas: [`metrics/README.md`](../../../metrics/README.md).
 
 ---
-
-## grid_tvd — path-cloud visual sanity-check (50×50, not ranked)
-
-2D-histogram **Total Variation Distance (%)** between the real and this method's
-generated **(t, x)** path clouds at a locked **50×50** grid — the quantitative twin
-of the first two diagnostic panels. **Visual side-check only, not part of any
-ranking.** Lower = closer clouds.
-
-| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
-|--------|-----------|--------|--------|--------|--------|--------|---------------|
-| grid_tvd 50×50 (%) ↓ | 9.442% ± 1.721% | 7.873% | 11.91% | 11.07% | 7.732% | 8.624% | 2.237% |
-
 
 ## Discriminative & Predictive Classifier Losses (A18 / A19)
 
