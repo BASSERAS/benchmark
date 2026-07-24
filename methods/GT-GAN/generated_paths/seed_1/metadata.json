@@ -1,0 +1,22 @@
+{
+  "method": "GT-GAN",
+  "seed": 1,
+  "shape": [
+    8192,
+    128
+  ],
+  "min_val": 12.347126663400111,
+  "max_val": 152.7139569767259,
+  "generated_mean": 101.95219127183665,
+  "generated_std": 10.511849157292389,
+  "real_mean": 101.32547381502403,
+  "real_std": 9.971659995159824,
+  "gen_sec": 5.3,
+  "train_time_sec": 76054.3,
+  "gpu": "A100-SXM4-80GB",
+  "date": "2026-07-24",
+  "params": 32957,
+  "first_epoch": 10000,
+  "max_steps": 3000,
+  "gen_has_nan": false
+}

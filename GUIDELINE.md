@@ -1409,7 +1409,7 @@ it exactly; do not invent a new family or re-order:
 
 ```python
 FAMILIES = [
-    ("GAN",                [("TimeGAN", "TimeGAN"),   ("COSCI-GAN", "COSCI-GAN")]),
+    ("GAN",                [("TimeGAN", "TimeGAN"),   ("COSCI-GAN", "COSCI-GAN"), ("GT-GAN", "GT-GAN")]),
     ("Diffusion",          [("DiffusionTS", "Diffusion-TS"), ("CSDI", "CSDI")]),
     ("VAE",                [("TimeVAE", "TimeVAE"), ("TimeVQVAE", "TimeVQVAE"), ("LS4", "LS4")]),
     ("Schrödinger Bridge", [("SBTS", "SBTS")]),
@@ -1426,6 +1426,7 @@ methods** — mind this everywhere:
 |--------|--------------------------------------------------------|----------------------------------------|
 | GAN | `TimeGAN` | TimeGAN |
 | GAN | `COSCI-GAN` | COSCI-GAN |
+| GAN | `GT-GAN` | GT-GAN |
 | Diffusion | `DiffusionTS` | **Diffusion-TS** |
 | Diffusion | `CSDI` | CSDI |
 | VAE | `TimeVAE` | TimeVAE |
