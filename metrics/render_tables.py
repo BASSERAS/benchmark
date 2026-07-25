@@ -35,8 +35,13 @@ FAMILIES = [
     ("VAE",                [("TimeVAE", "TimeVAE"), ("TimeVQVAE", "TimeVQVAE"), ("LS4", "LS4")]),
     ("Schrödinger Bridge", [("SBTS", "SBTS")]),
     ("Fourier Flow",       [("FourierFlow", "Fourier Flow")]),
-    ("Foundation Model",   [("Chronos2", "Chronos-2")]),
 ]
+# NOTE: Chronos-2 is NOT a generator — it is a conditional forecaster, used in
+# this benchmark only as a FORECASTER REFERENCE on the path-shadowing task
+# (see methods/Chronos2/path_shadowing/run_forecaster_ref.py and
+# results/Heston/Chronos2/forecaster_summary.json). It is therefore excluded
+# from every generator comparison table (A / B / PS) and from the win tallies.
+# The retired generator experiment lives under methods/Chronos2/old/.
 # flat ordered list of disk dirs / display names
 METHOD_DIRS  = [d for _, ms in FAMILIES for d, _ in ms]
 METHOD_NAMES = [n for _, ms in FAMILIES for _, n in ms]
