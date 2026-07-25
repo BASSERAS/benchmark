@@ -1,0 +1,6 @@
+dataset,model,MASE,WQL
+ercot,amazon/chronos-bolt-base,0.6933217425507392,0.02142183038021456
+exchange_rate,amazon/chronos-bolt-base,1.7095176257412634,0.01200682136751536
+monash_australian_electricity,amazon/chronos-bolt-base,0.7403239930185613,0.03584034231329335
+monash_traffic,amazon/chronos-bolt-base,0.7843310867739336,0.23148632068725078
+nn5,amazon/chronos-bolt-base,0.5764084996361287,0.1500519584148468

@@ -16,6 +16,7 @@ methods/TimeVQVAE/code/reference/saved_models/
 methods/GT-GAN/code/reference/datasets/*.csv
 methods/GT-GAN/code/reference/gru_ode_bayes/datasets/
 methods/GT-GAN/**/smoke_*
+methods/Chronos2/weights/*.pt
 *.pdf
 # ...but keep the reference paper PDF committed for each method
 !methods/**/paper_reimplementation/*.pdf

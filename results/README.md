@@ -26,6 +26,7 @@ Methods are grouped by model family. ↓ = lower is better, ↑ = higher is bett
     <th colspan="3">VAE</th>
     <th>Schrödinger Bridge</th>
     <th>Fourier Flow</th>
+    <th>Foundation Model</th>
     <th rowspan="2">Perfect</th>
     <th rowspan="2">Winner</th>
   </tr>
@@ -40,80 +41,83 @@ Methods are grouped by model family. ↓ = lower is better, ↑ = higher is bett
     <th>LS4</th>
     <th>SBTS</th>
     <th>Fourier Flow</th>
+    <th>Chronos-2</th>
   </tr>
 </thead>
 <tbody>
-  <tr><td colspan="13"><b>— Fat Tail —</b></td></tr>
-  <tr><td>A1 Kurtosis Error ↓</td><td>2.954 ± 2.098</td><td>0.5615 ± 0.1128</td><td>281.8 ± 288.2</td><td>0.4242 ± 0.02303</td><td><b>0.09543 ± 0.02623</b></td><td>2.257 ± 0.5719</td><td>0.1363 ± 0.09243</td><td>0.3684 ± 0.01609</td><td>0.1183 ± 0.006001</td><td>0.5761 ± 0.008273</td><td>0.008092 ± 0.006811</td><td><b>CSDI</b></td></tr>
-  <tr><td>A2 \|r\| q95 Error ↓</td><td>0.003196 ± 0.001907</td><td>0.09711 ± 0.003466</td><td>0.02279 ± 2.78e-04</td><td>0.006902 ± 1.57e-04</td><td>0.005393 ± 1.50e-04</td><td>0.02227 ± 1.22e-04</td><td>0.004515 ± 2.54e-04</td><td><b>3.99e-04 ± 1.13e-04</b></td><td>0.006390 ± 2.97e-05</td><td>7.21e-04 ± 2.10e-04</td><td>6.57e-05 ± 5.96e-05</td><td><b>LS4</b></td></tr>
-  <tr><td>A3 \|r\| q99 Error ↓</td><td>0.004342 ± 0.002767</td><td>0.1240 ± 0.005959</td><td>0.02978 ± 0.001743</td><td>0.01032 ± 1.75e-04</td><td>0.007327 ± 2.29e-04</td><td>0.03082 ± 1.05e-04</td><td>0.006058 ± 3.03e-04</td><td><b>0.001156 ± 1.66e-04</b></td><td>0.009803 ± 4.84e-05</td><td>0.002325 ± 5.06e-04</td><td>5.98e-05 ± 3.25e-05</td><td><b>LS4</b></td></tr>
-  <tr><td>A4 Tail QQ Error ↓</td><td>0.003401 ± 0.001522</td><td>0.09566 ± 0.003535</td><td>0.02240 ± 3.79e-04</td><td>0.006781 ± 1.50e-04</td><td>0.005296 ± 1.50e-04</td><td>0.02191 ± 1.17e-04</td><td>0.004444 ± 2.48e-04</td><td><b>4.05e-04 ± 8.23e-05</b></td><td>0.006290 ± 2.63e-05</td><td>7.42e-04 ± 1.38e-04</td><td>6.75e-05 ± 3.70e-05</td><td><b>LS4</b></td></tr>
-  <tr><td>A5 Hill Tail Index Error ↓</td><td>36.32 ± 17.05</td><td>1.614 ± 1.128</td><td>7.568 ± 1.267</td><td>3.047 ± 0.2789</td><td>1.426 ± 0.5856</td><td>1.831 ± 0.6794</td><td>3.777 ± 1.193</td><td><b>1.225 ± 0.4268</b></td><td>10.06 ± 0.3457</td><td>5.802 ± 2.000</td><td>0.5266 ± 0.5572</td><td><b>LS4</b></td></tr>
-  <tr><td colspan="13"><b>— Distribution —</b></td></tr>
-  <tr><td>A6 Path MMD² ↓</td><td>0.01866 ± 0.01472</td><td>0.04686 ± 0.004162</td><td>0.03292 ± 0.009071</td><td>0.004476 ± 8.48e-04</td><td>0.003646 ± 4.16e-04</td><td>0.01914 ± 0.001334</td><td>0.003433 ± 7.97e-04</td><td><b>0.001926 ± 2.51e-04</b></td><td>0.01106 ± 8.13e-04</td><td>0.005527 ± 0.002289</td><td>0.001842 ± 2.55e-04</td><td><b>LS4</b></td></tr>
-  <tr><td>A7 Terminal MMD² ↓</td><td>0.03072 ± 0.02472</td><td>0.01623 ± 0.01333</td><td>0.008520 ± 0.002539</td><td>0.003676 ± 0.001070</td><td>0.003605 ± 8.41e-04</td><td>0.004951 ± 0.001715</td><td>0.003838 ± 0.001368</td><td><b>0.001520 ± 3.61e-04</b></td><td>0.009545 ± 0.001668</td><td>0.01105 ± 0.006414</td><td>0.001983 ± 8.89e-04</td><td><b>LS4</b></td></tr>
-  <tr><td>A8 Increment MMD² ↓</td><td>0.008280 ± 0.004303</td><td>0.4788 ± 0.01185</td><td>0.2025 ± 0.01417</td><td>0.01109 ± 7.52e-04</td><td>0.008062 ± 7.11e-04</td><td>0.2130 ± 0.001204</td><td>0.007018 ± 0.001054</td><td><b>9.63e-04 ± 3.76e-05</b></td><td>0.007378 ± 3.39e-04</td><td>0.001124 ± 6.46e-05</td><td>8.69e-04 ± 2.70e-05</td><td><b>LS4</b></td></tr>
-  <tr><td>A9 Volatility MMD ↓</td><td>0.3975 ± 0.2486</td><td>3.955 ± 0.04883</td><td>2.882 ± 0.6128</td><td>0.3846 ± 0.02464</td><td>0.2498 ± 0.01607</td><td>3.575 ± 0.4476</td><td>0.1932 ± 0.02799</td><td><b>0.01447 ± 0.001550</b></td><td>0.3139 ± 0.01207</td><td>0.05871 ± 0.007003</td><td>0.008554 ± 0.001549</td><td><b>LS4</b></td></tr>
-  <tr><td>A10 Terminal SWD ↓</td><td>2.917 ± 1.131</td><td>4.756 ± 3.118</td><td>2.391 ± 0.1196</td><td>1.684 ± 0.3010</td><td>1.618 ± 0.2760</td><td>1.947 ± 0.3598</td><td>1.356 ± 0.2690</td><td><b>0.7480 ± 0.3255</b></td><td>3.710 ± 0.2944</td><td>2.710 ± 1.034</td><td>1.151 ± 0.4868</td><td><b>LS4</b></td></tr>
-  <tr><td>A11 Path SWD ↓</td><td>1.678 ± 0.5770</td><td>3.505 ± 0.1711</td><td>2.236 ± 0.2567</td><td>1.212 ± 0.1556</td><td>1.069 ± 0.1305</td><td>1.167 ± 0.1135</td><td>0.8781 ± 0.2081</td><td><b>0.5744 ± 0.1246</b></td><td>2.498 ± 0.1451</td><td>1.334 ± 0.3806</td><td>0.6191 ± 0.1960</td><td><b>LS4</b></td></tr>
-  <tr><td>A12 RV Law Loss ↓</td><td>1.558 ± 0.3879</td><td>118.7 ± 7.929</td><td>15.11 ± 13.84</td><td>2.274 ± 0.04910</td><td>1.920 ± 0.05633</td><td>5.010 ± 0.008395</td><td>1.706 ± 0.08942</td><td><b>0.2415 ± 0.01757</b></td><td>2.175 ± 0.007357</td><td>0.5397 ± 0.1300</td><td>0.05202 ± 0.006560</td><td><b>LS4</b></td></tr>
-  <tr><td>A13 Mean Path RMSE ↓</td><td>0.5356 ± 0.2514</td><td>3.995 ± 0.1803</td><td>0.7421 ± 0.3193</td><td>0.4399 ± 0.2584</td><td>0.3654 ± 0.3226</td><td>0.3196 ± 0.2225</td><td>0.7593 ± 0.1340</td><td><b>0.1722 ± 0.1200</b></td><td>0.8477 ± 0.1819</td><td>0.4336 ± 0.3651</td><td>0.1205 ± 0.05175</td><td><b>LS4</b></td></tr>
-  <tr><td>A14 KS Log-returns ↓</td><td>0.08474 ± 0.03769</td><td>0.3206 ± 0.007269</td><td>0.3881 ± 0.003914</td><td>0.06048 ± 0.001904</td><td>0.05391 ± 0.001972</td><td>0.3670 ± 0.004602</td><td>0.05084 ± 0.003747</td><td><b>0.01258 ± 6.74e-04</b></td><td>0.05413 ± 3.75e-04</td><td>0.01895 ± 0.002028</td><td>0.001491 ± 5.79e-04</td><td><b>LS4</b></td></tr>
-  <tr><td>A15 Skewness Error ↓</td><td>0.3412 ± 0.3279</td><td>0.04981 ± 0.04124</td><td>390.5 ± 355.8</td><td>0.06445 ± 0.03230</td><td>0.03681 ± 0.002124</td><td>0.5479 ± 0.09837</td><td>0.03079 ± 0.008248</td><td>0.02998 ± 0.01249</td><td>0.03158 ± 0.003742</td><td><b>0.02288 ± 0.01115</b></td><td>0.005274 ± 0.001459</td><td><b>Fourier Flow</b></td></tr>
-  <tr><td>A16 QQ RMSE (300-pt) ↓</td><td>0.002506 ± 6.49e-04</td><td>0.04857 ± 0.001967</td><td>0.01086 ± 1.44e-04</td><td>0.003073 ± 8.32e-05</td><td>0.002576 ± 8.57e-05</td><td>0.01057 ± 8.40e-05</td><td>0.002268 ± 1.38e-04</td><td><b>3.41e-04 ± 9.53e-06</b></td><td>0.002853 ± 1.15e-05</td><td>5.81e-04 ± 4.14e-05</td><td>4.19e-05 ± 1.89e-05</td><td><b>LS4</b></td></tr>
-  <tr><td>A17 Terminal Price KS ↓</td><td>0.1109 ± 0.05875</td><td>0.1473 ± 0.09804</td><td>0.06672 ± 0.01592</td><td>0.04436 ± 0.007030</td><td>0.03667 ± 0.004476</td><td>0.05127 ± 0.007848</td><td>0.05522 ± 0.009093</td><td><b>0.01584 ± 0.005488</b></td><td>0.09102 ± 0.005462</td><td>0.08098 ± 0.01617</td><td>0.01099 ± 0.001563</td><td><b>LS4</b></td></tr>
-  <tr><td colspan="13"><b>— Adversarial —</b></td></tr>
-  <tr><td>A18 Disc Score GRU ↓</td><td>0.03305 ± 0.05328</td><td>0.4999 ± 1.22e-04</td><td>0.4871 ± 0.01292</td><td>0.08987 ± 0.1524</td><td>0.06302 ± 0.1056</td><td>0.4272 ± 0.08815</td><td>0.07174 ± 0.06503</td><td><b>0.005890 ± 0.001676</b></td><td>0.1246 ± 0.1517</td><td>0.009185 ± 0.009209</td><td>0.006195 ± 0.007171</td><td><b>LS4</b></td></tr>
-  <tr><td>A18 Disc Score MLP ↓</td><td>0.08792 ± 0.04703</td><td>0.5000 ± 0</td><td>0.07345 ± 0.1266</td><td>0.02426 ± 0.03140</td><td>0.01138 ± 0.002541</td><td>0.1358 ± 0.1503</td><td>0.009002 ± 0.003393</td><td>0.006256 ± 0.002539</td><td>0.008331 ± 0.004230</td><td><b>0.005951 ± 0.002921</b></td><td>0.005951 ± 0.003469</td><td><b>Fourier Flow</b></td></tr>
-  <tr><td colspan="13"><b>— Predictive —</b></td></tr>
-  <tr><td>A19 Pred Score GRU ↓</td><td>0.05277 ± 0.001115</td><td>0.1331 ± 0.01808</td><td>0.05547 ± 0.001080</td><td>0.05112 ± 1.22e-04</td><td>0.05024 ± 1.88e-05</td><td>0.05385 ± 7.71e-04</td><td>0.05014 ± 2.87e-05</td><td><b>0.05001 ± 3.66e-06</b></td><td>0.05453 ± 3.55e-05</td><td>0.05004 ± 2.00e-05</td><td>0.05002 ± 1.08e-05</td><td><b>LS4</b></td></tr>
-  <tr><td>A19 Pred Score MLP ↓</td><td>0.05322 ± 0.001031</td><td>0.09591 ± 0.006992</td><td>0.05302 ± 2.01e-04</td><td>0.05112 ± 1.21e-04</td><td>0.05025 ± 1.43e-04</td><td>0.05243 ± 1.91e-04</td><td>0.05018 ± 6.79e-05</td><td><b>0.05006 ± 1.23e-04</b></td><td>0.05428 ± 3.54e-04</td><td>0.05032 ± 3.48e-04</td><td>0.05036 ± 6.63e-04</td><td><b>LS4</b></td></tr>
-  <tr><td colspan="13"><b>— Temporal —</b></td></tr>
-  <tr><td>A20 Covariance Error ↓</td><td>21.36 ± 9.068</td><td>30.59 ± 29.16</td><td>20.55 ± 7.355</td><td>44.18 ± 10.64</td><td>41.55 ± 5.776</td><td>57.28 ± 1.758</td><td>22.61 ± 14.72</td><td><b>13.63 ± 6.662</b></td><td>139.3 ± 4.886</td><td>60.80 ± 36.58</td><td>4.923 ± 3.284</td><td><b>LS4</b></td></tr>
-  <tr><td>A21 ACF \|r\| Error (lags) ↓</td><td>0.1278 ± 0.06738</td><td>0.08056 ± 0.02054</td><td>0.3181 ± 0.1375</td><td>0.01812 ± 0.002352</td><td><b>0.01126 ± 0.003095</b></td><td>0.3890 ± 0.1057</td><td>0.01979 ± 0.004246</td><td>0.01294 ± 0.001791</td><td>0.05886 ± 4.70e-04</td><td>0.04095 ± 5.50e-04</td><td>0.002234 ± 6.62e-04</td><td><b>CSDI</b></td></tr>
-  <tr><td>A22 ACF r² Error (lags) ↓</td><td>0.08676 ± 0.03470</td><td>0.09004 ± 0.02156</td><td>0.1619 ± 0.1184</td><td>0.01587 ± 0.002662</td><td>0.01124 ± 0.002605</td><td>0.3609 ± 0.08849</td><td>0.01817 ± 0.003251</td><td><b>0.006752 ± 0.001737</b></td><td>0.06136 ± 5.71e-04</td><td>0.03498 ± 5.56e-04</td><td>0.002206 ± 6.32e-04</td><td><b>LS4</b></td></tr>
-  <tr><td>A23 ACF \|r\| Lag-1 Error ↓</td><td>0.2301 ± 0.1034</td><td>0.1700 ± 0.04930</td><td>0.4201 ± 0.1602</td><td><b>0.002410 ± 0.001465</b></td><td>0.02252 ± 0.004755</td><td>0.4674 ± 0.1346</td><td>0.01523 ± 0.008014</td><td>0.01743 ± 0.005532</td><td>0.1474 ± 0.001169</td><td>0.04897 ± 7.04e-04</td><td>0.002652 ± 0.001035</td><td><b>Diffusion-TS</b></td></tr>
-  <tr><td>A24 ACF r² Lag-1 Error ↓</td><td>0.1760 ± 0.06259</td><td>0.1957 ± 0.05105</td><td>0.2270 ± 0.1494</td><td><b>0.007895 ± 0.002645</b></td><td>0.02168 ± 0.003561</td><td>0.4630 ± 0.1189</td><td>0.01323 ± 0.007254</td><td>0.009068 ± 0.005290</td><td>0.1706 ± 0.001690</td><td>0.04195 ± 7.01e-04</td><td>0.002790 ± 9.39e-04</td><td><b>Diffusion-TS</b></td></tr>
-  <tr><td colspan="13"><b>— Vol —</b></td></tr>
-  <tr><td>A25 Mean RMSE ↓</td><td>0.7781 ± 0.3669</td><td>4.539 ± 3.359</td><td>0.7845 ± 0.3300</td><td>0.7610 ± 0.4617</td><td>0.5139 ± 0.4595</td><td>0.3883 ± 0.2340</td><td>1.033 ± 0.1905</td><td><b>0.3270 ± 0.2333</b></td><td>1.499 ± 0.2776</td><td>0.7990 ± 0.7970</td><td>0.1392 ± 0.06359</td><td><b>LS4</b></td></tr>
-  <tr><td>A26 Return Std Error ↓</td><td>0.1525 ± 0.08911</td><td>5.032 ± 0.2229</td><td>1.005 ± 0.09141</td><td>0.3107 ± 0.009292</td><td>0.2580 ± 0.009849</td><td>1.074 ± 0.007809</td><td>0.2316 ± 0.01420</td><td>0.004853 ± 0.003540</td><td>0.2501 ± 0.001833</td><td><b>0.004832 ± 0.002757</b></td><td>0.002523 ± 0.001767</td><td><b>Fourier Flow</b></td></tr>
-  <tr><td>A27 Log-Return Std Error ↓</td><td>0.001703 ± 7.89e-04</td><td>0.04975 ± 0.002001</td><td>0.009540 ± 0.007044</td><td>0.003240 ± 8.19e-05</td><td>0.002667 ± 8.89e-05</td><td>0.01098 ± 7.75e-05</td><td>0.002336 ± 1.37e-04</td><td><b>4.63e-05 ± 2.22e-05</b></td><td>0.003028 ± 1.23e-05</td><td>7.64e-05 ± 5.51e-05</td><td>3.15e-05 ± 2.48e-05</td><td><b>LS4</b></td></tr>
-  <tr><td>A28 Kurtosis Ratio (→ 1)</td><td>-1.116 ± 3.593</td><td>-8.150 ± 12.11</td><td>0.002659 ± 0.004016</td><td>1.903 ± 0.2558</td><td><b>0.8706 ± 0.03043</b></td><td>0.2834 ± 0.04765</td><td>0.8410 ± 0.06953</td><td>1.565 ± 0.07840</td><td>2.028 ± 0.01851</td><td>3.098 ± 0.7754</td><td>1.006 ± 0.009834</td><td><b>CSDI</b></td></tr>
-  <tr><td>A29 Sigma Mean Error ↓</td><td>0.03089 ± 0.009106</td><td>0.7871 ± 0.03094</td><td>0.1649 ± 0.01028</td><td>0.04883 ± 0.001266</td><td>0.04078 ± 0.001489</td><td>0.1745 ± 0.001776</td><td>0.03743 ± 0.002059</td><td><b>0.001445 ± 6.99e-04</b></td><td>0.04432 ± 1.84e-04</td><td>0.002245 ± 8.77e-04</td><td>4.96e-04 ± 4.24e-04</td><td><b>LS4</b></td></tr>
-  <tr><td>A30 Cross-Sect. Vol Path RMSE ↓</td><td>0.4742 ± 0.2079</td><td>1.155 ± 0.3231</td><td>0.8923 ± 0.2085</td><td>1.365 ± 0.2012</td><td>1.134 ± 0.1303</td><td>1.325 ± 0.04564</td><td>0.5701 ± 0.3404</td><td><b>0.3372 ± 0.1171</b></td><td>3.066 ± 0.06387</td><td>1.381 ± 0.4336</td><td>0.1432 ± 0.03018</td><td><b>LS4</b></td></tr>
-  <tr><td>A31 Rolling Vol KS (w=5) ↓</td><td>0.2552 ± 0.1101</td><td>0.9371 ± 0.007667</td><td>0.9868 ± 0.004912</td><td>0.2576 ± 0.007919</td><td>0.2202 ± 0.008329</td><td>0.9869 ± 0.004527</td><td>0.1850 ± 0.01013</td><td><b>0.03798 ± 0.001391</b></td><td>0.3456 ± 6.49e-04</td><td>0.07213 ± 0.001372</td><td>0.003814 ± 0.001210</td><td><b>LS4</b></td></tr>
-  <tr><td>A32 Vol-of-Vol Error ↓</td><td>8.96e-04 ± 8.69e-04</td><td>0.01806 ± 0.001147</td><td>0.009854 ± 0.007895</td><td>0.001587 ± 3.82e-05</td><td>0.001048 ± 2.14e-05</td><td>0.004576 ± 5.62e-05</td><td>6.76e-04 ± 5.79e-05</td><td><b>3.21e-04 ± 4.23e-05</b></td><td>0.002109 ± 5.57e-06</td><td>6.89e-04 ± 9.20e-05</td><td>1.54e-05 ± 9.93e-06</td><td><b>LS4</b></td></tr>
-  <tr><td colspan="13"><b>— Heston Spec —</b></td></tr>
-  <tr><td>A33 Teacher-Sigma Corr ↑</td><td>0.002745 ± 0.01354</td><td>-0.005511 ± 0.008042</td><td>0.01003 ± 0.008468</td><td>0.001823 ± 0.004419</td><td>0.003948 ± 0.003596</td><td><b>0.02254 ± 0.003796</b></td><td>7.04e-04 ± 0.005837</td><td>-3.94e-04 ± 0.006577</td><td>0.002758 ± 0.002975</td><td>-0.002564 ± 0.002730</td><td>0.6163 ± 0.002371</td><td><b>TimeVAE</b></td></tr>
-  <tr><td>A34 Teacher-Sigma RMSE ↓</td><td>0.1186 ± 0.01863</td><td>0.8087 ± 0.02874</td><td>0.3088 ± 0.1407</td><td>0.09645 ± 9.09e-04</td><td>0.09917 ± 6.44e-04</td><td>0.1803 ± 0.001643</td><td>0.1014 ± 9.08e-04</td><td>0.09513 ± 7.87e-04</td><td>0.09615 ± 1.38e-04</td><td><b>0.08963 ± 0.001225</b></td><td>0.06559 ± 1.37e-04</td><td><b>Fourier Flow</b></td></tr>
+  <tr><td colspan="14"><b>— Fat Tail —</b></td></tr>
+  <tr><td>A1 Kurtosis Error ↓</td><td>2.954 ± 2.098</td><td>0.5615 ± 0.1128</td><td>281.8 ± 288.2</td><td>0.4242 ± 0.02303</td><td><b>0.09543 ± 0.02623</b></td><td>2.257 ± 0.5719</td><td>0.1363 ± 0.09243</td><td>0.3684 ± 0.01609</td><td>0.1183 ± 0.006001</td><td>0.5761 ± 0.008273</td><td>33213 ± 61713</td><td>0.008092 ± 0.006811</td><td><b>CSDI</b></td></tr>
+  <tr><td>A2 \|r\| q95 Error ↓</td><td>0.003196 ± 0.001907</td><td>0.09711 ± 0.003466</td><td>0.02279 ± 2.78e-04</td><td>0.006902 ± 1.57e-04</td><td>0.005393 ± 1.50e-04</td><td>0.02227 ± 1.22e-04</td><td>0.004515 ± 2.54e-04</td><td><b>3.99e-04 ± 1.13e-04</b></td><td>0.006390 ± 2.97e-05</td><td>7.21e-04 ± 2.10e-04</td><td>0.008183 ± 1.28e-04</td><td>6.57e-05 ± 5.96e-05</td><td><b>LS4</b></td></tr>
+  <tr><td>A3 \|r\| q99 Error ↓</td><td>0.004342 ± 0.002767</td><td>0.1240 ± 0.005959</td><td>0.02978 ± 0.001743</td><td>0.01032 ± 1.75e-04</td><td>0.007327 ± 2.29e-04</td><td>0.03082 ± 1.05e-04</td><td>0.006058 ± 3.03e-04</td><td><b>0.001156 ± 1.66e-04</b></td><td>0.009803 ± 4.84e-05</td><td>0.002325 ± 5.06e-04</td><td>0.02621 ± 3.47e-18</td><td>5.98e-05 ± 3.25e-05</td><td><b>LS4</b></td></tr>
+  <tr><td>A4 Tail QQ Error ↓</td><td>0.003401 ± 0.001522</td><td>0.09566 ± 0.003535</td><td>0.02240 ± 3.79e-04</td><td>0.006781 ± 1.50e-04</td><td>0.005296 ± 1.50e-04</td><td>0.02191 ± 1.17e-04</td><td>0.004444 ± 2.48e-04</td><td><b>4.05e-04 ± 8.23e-05</b></td><td>0.006290 ± 2.63e-05</td><td>7.42e-04 ± 1.38e-04</td><td>0.01329 ± 5.52e-05</td><td>6.75e-05 ± 3.70e-05</td><td><b>LS4</b></td></tr>
+  <tr><td>A5 Hill Tail Index Error ↓</td><td>36.32 ± 17.05</td><td>1.614 ± 1.128</td><td>7.568 ± 1.267</td><td>3.047 ± 0.2789</td><td>1.426 ± 0.5856</td><td>1.831 ± 0.6794</td><td>3.777 ± 1.193</td><td><b>1.225 ± 0.4268</b></td><td>10.06 ± 0.3457</td><td>5.802 ± 2.000</td><td>16.95 ± 0.3287</td><td>0.5266 ± 0.5572</td><td><b>LS4</b></td></tr>
+  <tr><td colspan="14"><b>— Distribution —</b></td></tr>
+  <tr><td>A6 Path MMD² ↓</td><td>0.01866 ± 0.01472</td><td>0.04686 ± 0.004162</td><td>0.03292 ± 0.009071</td><td>0.004476 ± 8.48e-04</td><td>0.003646 ± 4.16e-04</td><td>0.01914 ± 0.001334</td><td>0.003433 ± 7.97e-04</td><td><b>0.001926 ± 2.51e-04</b></td><td>0.01106 ± 8.13e-04</td><td>0.005527 ± 0.002289</td><td>0.01567 ± 0.001487</td><td>0.001842 ± 2.55e-04</td><td><b>LS4</b></td></tr>
+  <tr><td>A7 Terminal MMD² ↓</td><td>0.03072 ± 0.02472</td><td>0.01623 ± 0.01333</td><td>0.008520 ± 0.002539</td><td>0.003676 ± 0.001070</td><td>0.003605 ± 8.41e-04</td><td>0.004951 ± 0.001715</td><td>0.003838 ± 0.001368</td><td><b>0.001520 ± 3.61e-04</b></td><td>0.009545 ± 0.001668</td><td>0.01105 ± 0.006414</td><td>0.02727 ± 0.001487</td><td>0.001983 ± 8.89e-04</td><td><b>LS4</b></td></tr>
+  <tr><td>A8 Increment MMD² ↓</td><td>0.008280 ± 0.004303</td><td>0.4788 ± 0.01185</td><td>0.2025 ± 0.01417</td><td>0.01109 ± 7.52e-04</td><td>0.008062 ± 7.11e-04</td><td>0.2130 ± 0.001204</td><td>0.007018 ± 0.001054</td><td><b>9.63e-04 ± 3.76e-05</b></td><td>0.007378 ± 3.39e-04</td><td>0.001124 ± 6.46e-05</td><td>0.01223 ± 5.59e-04</td><td>8.69e-04 ± 2.70e-05</td><td><b>LS4</b></td></tr>
+  <tr><td>A9 Volatility MMD ↓</td><td>0.3975 ± 0.2486</td><td>3.955 ± 0.04883</td><td>2.882 ± 0.6128</td><td>0.3846 ± 0.02464</td><td>0.2498 ± 0.01607</td><td>3.575 ± 0.4476</td><td>0.1932 ± 0.02799</td><td><b>0.01447 ± 0.001550</b></td><td>0.3139 ± 0.01207</td><td>0.05871 ± 0.007003</td><td>0.7819 ± 0.03406</td><td>0.008554 ± 0.001549</td><td><b>LS4</b></td></tr>
+  <tr><td>A10 Terminal SWD ↓</td><td>2.917 ± 1.131</td><td>4.756 ± 3.118</td><td>2.391 ± 0.1196</td><td>1.684 ± 0.3010</td><td>1.618 ± 0.2760</td><td>1.947 ± 0.3598</td><td>1.356 ± 0.2690</td><td><b>0.7480 ± 0.3255</b></td><td>3.710 ± 0.2944</td><td>2.710 ± 1.034</td><td>13.27 ± 11.05</td><td>1.151 ± 0.4868</td><td><b>LS4</b></td></tr>
+  <tr><td>A11 Path SWD ↓</td><td>1.678 ± 0.5770</td><td>3.505 ± 0.1711</td><td>2.236 ± 0.2567</td><td>1.212 ± 0.1556</td><td>1.069 ± 0.1305</td><td>1.167 ± 0.1135</td><td>0.8781 ± 0.2081</td><td><b>0.5744 ± 0.1246</b></td><td>2.498 ± 0.1451</td><td>1.334 ± 0.3806</td><td>3.663 ± 1.763</td><td>0.6191 ± 0.1960</td><td><b>LS4</b></td></tr>
+  <tr><td>A12 RV Law Loss ↓</td><td>1.558 ± 0.3879</td><td>118.7 ± 7.929</td><td>15.11 ± 13.84</td><td>2.274 ± 0.04910</td><td>1.920 ± 0.05633</td><td>5.010 ± 0.008395</td><td>1.706 ± 0.08942</td><td><b>0.2415 ± 0.01757</b></td><td>2.175 ± 0.007357</td><td>0.5397 ± 0.1300</td><td>8.120 ± 0.07749</td><td>0.05202 ± 0.006560</td><td><b>LS4</b></td></tr>
+  <tr><td>A13 Mean Path RMSE ↓</td><td>0.5356 ± 0.2514</td><td>3.995 ± 0.1803</td><td>0.7421 ± 0.3193</td><td>0.4399 ± 0.2584</td><td>0.3654 ± 0.3226</td><td>0.3196 ± 0.2225</td><td>0.7593 ± 0.1340</td><td><b>0.1722 ± 0.1200</b></td><td>0.8477 ± 0.1819</td><td>0.4336 ± 0.3651</td><td>2.966 ± 0.5016</td><td>0.1205 ± 0.05175</td><td><b>LS4</b></td></tr>
+  <tr><td>A14 KS Log-returns ↓</td><td>0.08474 ± 0.03769</td><td>0.3206 ± 0.007269</td><td>0.3881 ± 0.003914</td><td>0.06048 ± 0.001904</td><td>0.05391 ± 0.001972</td><td>0.3670 ± 0.004602</td><td>0.05084 ± 0.003747</td><td><b>0.01258 ± 6.74e-04</b></td><td>0.05413 ± 3.75e-04</td><td>0.01895 ± 0.002028</td><td>0.2830 ± 6.09e-04</td><td>0.001491 ± 5.79e-04</td><td><b>LS4</b></td></tr>
+  <tr><td>A15 Skewness Error ↓</td><td>0.3412 ± 0.3279</td><td>0.04981 ± 0.04124</td><td>390.5 ± 355.8</td><td>0.06445 ± 0.03230</td><td>0.03681 ± 0.002124</td><td>0.5479 ± 0.09837</td><td>0.03079 ± 0.008248</td><td>0.02998 ± 0.01249</td><td>0.03158 ± 0.003742</td><td><b>0.02288 ± 0.01115</b></td><td>0.3153 ± 0.08030</td><td>0.005274 ± 0.001459</td><td><b>Fourier Flow</b></td></tr>
+  <tr><td>A16 QQ RMSE (300-pt) ↓</td><td>0.002506 ± 6.49e-04</td><td>0.04857 ± 0.001967</td><td>0.01086 ± 1.44e-04</td><td>0.003073 ± 8.32e-05</td><td>0.002576 ± 8.57e-05</td><td>0.01057 ± 8.40e-05</td><td>0.002268 ± 1.38e-04</td><td><b>3.41e-04 ± 9.53e-06</b></td><td>0.002853 ± 1.15e-05</td><td>5.81e-04 ± 4.14e-05</td><td>0.007833 ± 1.06e-05</td><td>4.19e-05 ± 1.89e-05</td><td><b>LS4</b></td></tr>
+  <tr><td>A17 Terminal Price KS ↓</td><td>0.1109 ± 0.05875</td><td>0.1473 ± 0.09804</td><td>0.06672 ± 0.01592</td><td>0.04436 ± 0.007030</td><td>0.03667 ± 0.004476</td><td>0.05127 ± 0.007848</td><td>0.05522 ± 0.009093</td><td><b>0.01584 ± 0.005488</b></td><td>0.09102 ± 0.005462</td><td>0.08098 ± 0.01617</td><td>0.1239 ± 0.002006</td><td>0.01099 ± 0.001563</td><td><b>LS4</b></td></tr>
+  <tr><td colspan="14"><b>— Adversarial —</b></td></tr>
+  <tr><td>A18 Disc Score GRU ↓</td><td>0.03305 ± 0.05328</td><td>0.4999 ± 1.22e-04</td><td>0.4871 ± 0.01292</td><td>0.08987 ± 0.1524</td><td>0.06302 ± 0.1056</td><td>0.4272 ± 0.08815</td><td>0.07174 ± 0.06503</td><td><b>0.005890 ± 0.001676</b></td><td>0.1246 ± 0.1517</td><td>0.009185 ± 0.009209</td><td>0.1606 ± 0.07803</td><td>0.006195 ± 0.007171</td><td><b>LS4</b></td></tr>
+  <tr><td>A18 Disc Score MLP ↓</td><td>0.08792 ± 0.04703</td><td>0.5000 ± 0</td><td>0.07345 ± 0.1266</td><td>0.02426 ± 0.03140</td><td>0.01138 ± 0.002541</td><td>0.1358 ± 0.1503</td><td>0.009002 ± 0.003393</td><td>0.006256 ± 0.002539</td><td>0.008331 ± 0.004230</td><td><b>0.005951 ± 0.002921</b></td><td>0.02298 ± 0.01150</td><td>0.005951 ± 0.003469</td><td><b>Fourier Flow</b></td></tr>
+  <tr><td colspan="14"><b>— Predictive —</b></td></tr>
+  <tr><td>A19 Pred Score GRU ↓</td><td>0.05277 ± 0.001115</td><td>0.1331 ± 0.01808</td><td>0.05547 ± 0.001080</td><td>0.05112 ± 1.22e-04</td><td>0.05024 ± 1.88e-05</td><td>0.05385 ± 7.71e-04</td><td>0.05014 ± 2.87e-05</td><td><b>0.05001 ± 3.66e-06</b></td><td>0.05453 ± 3.55e-05</td><td>0.05004 ± 2.00e-05</td><td>0.05003 ± 2.34e-05</td><td>0.05002 ± 1.08e-05</td><td><b>LS4</b></td></tr>
+  <tr><td>A19 Pred Score MLP ↓</td><td>0.05322 ± 0.001031</td><td>0.09591 ± 0.006992</td><td>0.05302 ± 2.01e-04</td><td>0.05112 ± 1.21e-04</td><td>0.05025 ± 1.43e-04</td><td>0.05243 ± 1.91e-04</td><td>0.05018 ± 6.79e-05</td><td><b>0.05006 ± 1.23e-04</b></td><td>0.05428 ± 3.54e-04</td><td>0.05032 ± 3.48e-04</td><td>0.05024 ± 3.00e-04</td><td>0.05036 ± 6.63e-04</td><td><b>LS4</b></td></tr>
+  <tr><td colspan="14"><b>— Temporal —</b></td></tr>
+  <tr><td>A20 Covariance Error ↓</td><td>21.36 ± 9.068</td><td>30.59 ± 29.16</td><td>20.55 ± 7.355</td><td>44.18 ± 10.64</td><td>41.55 ± 5.776</td><td>57.28 ± 1.758</td><td>22.61 ± 14.72</td><td><b>13.63 ± 6.662</b></td><td>139.3 ± 4.886</td><td>60.80 ± 36.58</td><td>19192 ± 37246</td><td>4.923 ± 3.284</td><td><b>LS4</b></td></tr>
+  <tr><td>A21 ACF \|r\| Error (lags) ↓</td><td>0.1278 ± 0.06738</td><td>0.08056 ± 0.02054</td><td>0.3181 ± 0.1375</td><td>0.01812 ± 0.002352</td><td><b>0.01126 ± 0.003095</b></td><td>0.3890 ± 0.1057</td><td>0.01979 ± 0.004246</td><td>0.01294 ± 0.001791</td><td>0.05886 ± 4.70e-04</td><td>0.04095 ± 5.50e-04</td><td>0.1339 ± 0.001922</td><td>0.002234 ± 6.62e-04</td><td><b>CSDI</b></td></tr>
+  <tr><td>A22 ACF r² Error (lags) ↓</td><td>0.08676 ± 0.03470</td><td>0.09004 ± 0.02156</td><td>0.1619 ± 0.1184</td><td>0.01587 ± 0.002662</td><td>0.01124 ± 0.002605</td><td>0.3609 ± 0.08849</td><td>0.01817 ± 0.003251</td><td><b>0.006752 ± 0.001737</b></td><td>0.06136 ± 5.71e-04</td><td>0.03498 ± 5.56e-04</td><td>0.07220 ± 0.001298</td><td>0.002206 ± 6.32e-04</td><td><b>LS4</b></td></tr>
+  <tr><td>A23 ACF \|r\| Lag-1 Error ↓</td><td>0.2301 ± 0.1034</td><td>0.1700 ± 0.04930</td><td>0.4201 ± 0.1602</td><td><b>0.002410 ± 0.001465</b></td><td>0.02252 ± 0.004755</td><td>0.4674 ± 0.1346</td><td>0.01523 ± 0.008014</td><td>0.01743 ± 0.005532</td><td>0.1474 ± 0.001169</td><td>0.04897 ± 7.04e-04</td><td>0.1905 ± 0.002310</td><td>0.002652 ± 0.001035</td><td><b>Diffusion-TS</b></td></tr>
+  <tr><td>A24 ACF r² Lag-1 Error ↓</td><td>0.1760 ± 0.06259</td><td>0.1957 ± 0.05105</td><td>0.2270 ± 0.1494</td><td><b>0.007895 ± 0.002645</b></td><td>0.02168 ± 0.003561</td><td>0.4630 ± 0.1189</td><td>0.01323 ± 0.007254</td><td>0.009068 ± 0.005290</td><td>0.1706 ± 0.001690</td><td>0.04195 ± 7.01e-04</td><td>0.1040 ± 0.001707</td><td>0.002790 ± 9.39e-04</td><td><b>Diffusion-TS</b></td></tr>
+  <tr><td colspan="14"><b>— Vol —</b></td></tr>
+  <tr><td>A25 Mean RMSE ↓</td><td>0.7781 ± 0.3669</td><td>4.539 ± 3.359</td><td>0.7845 ± 0.3300</td><td>0.7610 ± 0.4617</td><td>0.5139 ± 0.4595</td><td>0.3883 ± 0.2340</td><td>1.033 ± 0.1905</td><td><b>0.3270 ± 0.2333</b></td><td>1.499 ± 0.2776</td><td>0.7990 ± 0.7970</td><td>7.034 ± 1.428</td><td>0.1392 ± 0.06359</td><td><b>LS4</b></td></tr>
+  <tr><td>A26 Return Std Error ↓</td><td>0.1525 ± 0.08911</td><td>5.032 ± 0.2229</td><td>1.005 ± 0.09141</td><td>0.3107 ± 0.009292</td><td>0.2580 ± 0.009849</td><td>1.074 ± 0.007809</td><td>0.2316 ± 0.01420</td><td>0.004853 ± 0.003540</td><td>0.2501 ± 0.001833</td><td><b>0.004832 ± 0.002757</b></td><td>7.661 ± 13.38</td><td>0.002523 ± 0.001767</td><td><b>Fourier Flow</b></td></tr>
+  <tr><td>A27 Log-Return Std Error ↓</td><td>0.001703 ± 7.89e-04</td><td>0.04975 ± 0.002001</td><td>0.009540 ± 0.007044</td><td>0.003240 ± 8.19e-05</td><td>0.002667 ± 8.89e-05</td><td>0.01098 ± 7.75e-05</td><td>0.002336 ± 1.37e-04</td><td><b>4.63e-05 ± 2.22e-05</b></td><td>0.003028 ± 1.23e-05</td><td>7.64e-05 ± 5.51e-05</td><td>0.006403 ± 5.83e-05</td><td>3.15e-05 ± 2.48e-05</td><td><b>LS4</b></td></tr>
+  <tr><td>A28 Kurtosis Ratio (→ 1)</td><td>-1.116 ± 3.593</td><td>-8.150 ± 12.11</td><td>0.002659 ± 0.004016</td><td>1.903 ± 0.2558</td><td><b>0.8706 ± 0.03043</b></td><td>0.2834 ± 0.04765</td><td>0.8410 ± 0.06953</td><td>1.565 ± 0.07840</td><td>2.028 ± 0.01851</td><td>3.098 ± 0.7754</td><td>0.09859 ± 0.02940</td><td>1.006 ± 0.009834</td><td><b>CSDI</b></td></tr>
+  <tr><td>A29 Sigma Mean Error ↓</td><td>0.03089 ± 0.009106</td><td>0.7871 ± 0.03094</td><td>0.1649 ± 0.01028</td><td>0.04883 ± 0.001266</td><td>0.04078 ± 0.001489</td><td>0.1745 ± 0.001776</td><td>0.03743 ± 0.002059</td><td><b>0.001445 ± 6.99e-04</b></td><td>0.04432 ± 1.84e-04</td><td>0.002245 ± 8.77e-04</td><td>0.05589 ± 2.83e-04</td><td>4.96e-04 ± 4.24e-04</td><td><b>LS4</b></td></tr>
+  <tr><td>A30 Cross-Sect. Vol Path RMSE ↓</td><td>0.4742 ± 0.2079</td><td>1.155 ± 0.3231</td><td>0.8923 ± 0.2085</td><td>1.365 ± 0.2012</td><td>1.134 ± 0.1303</td><td>1.325 ± 0.04564</td><td>0.5701 ± 0.3404</td><td><b>0.3372 ± 0.1171</b></td><td>3.066 ± 0.06387</td><td>1.381 ± 0.4336</td><td>24.84 ± 39.72</td><td>0.1432 ± 0.03018</td><td><b>LS4</b></td></tr>
+  <tr><td>A31 Rolling Vol KS (w=5) ↓</td><td>0.2552 ± 0.1101</td><td>0.9371 ± 0.007667</td><td>0.9868 ± 0.004912</td><td>0.2576 ± 0.007919</td><td>0.2202 ± 0.008329</td><td>0.9869 ± 0.004527</td><td>0.1850 ± 0.01013</td><td><b>0.03798 ± 0.001391</b></td><td>0.3456 ± 6.49e-04</td><td>0.07213 ± 0.001372</td><td>0.3490 ± 0.002518</td><td>0.003814 ± 0.001210</td><td><b>LS4</b></td></tr>
+  <tr><td>A32 Vol-of-Vol Error ↓</td><td>8.96e-04 ± 8.69e-04</td><td>0.01806 ± 0.001147</td><td>0.009854 ± 0.007895</td><td>0.001587 ± 3.82e-05</td><td>0.001048 ± 2.14e-05</td><td>0.004576 ± 5.62e-05</td><td>6.76e-04 ± 5.79e-05</td><td><b>3.21e-04 ± 4.23e-05</b></td><td>0.002109 ± 5.57e-06</td><td>6.89e-04 ± 9.20e-05</td><td>0.007430 ± 6.32e-05</td><td>1.54e-05 ± 9.93e-06</td><td><b>LS4</b></td></tr>
+  <tr><td colspan="14"><b>— Heston Spec —</b></td></tr>
+  <tr><td>A33 Teacher-Sigma Corr ↑</td><td>0.002745 ± 0.01354</td><td>-0.005511 ± 0.008042</td><td>0.01003 ± 0.008468</td><td>0.001823 ± 0.004419</td><td>0.003948 ± 0.003596</td><td>0.02254 ± 0.003796</td><td>7.04e-04 ± 0.005837</td><td>-3.94e-04 ± 0.006577</td><td>0.002758 ± 0.002975</td><td>-0.002564 ± 0.002730</td><td><b>0.05739 ± 0.004889</b></td><td>0.6163 ± 0.002371</td><td><b>Chronos-2</b></td></tr>
+  <tr><td>A34 Teacher-Sigma RMSE ↓</td><td>0.1186 ± 0.01863</td><td>0.8087 ± 0.02874</td><td>0.3088 ± 0.1407</td><td>0.09645 ± 9.09e-04</td><td>0.09917 ± 6.44e-04</td><td>0.1803 ± 0.001643</td><td>0.1014 ± 9.08e-04</td><td>0.09513 ± 7.87e-04</td><td>0.09615 ± 1.38e-04</td><td><b>0.08963 ± 0.001225</b></td><td>0.2167 ± 0.001244</td><td>0.06559 ± 1.37e-04</td><td><b>Fourier Flow</b></td></tr>
 </tbody>
 </table>
 
 > **A33 Teacher-Sigma Corr**: floor = **0.6163** (not 1.0) — the 5-step rolling quadratic-variation is a
-> noisy estimator of instantaneous variance vₜ. TimeVAE (0.02254) has the highest correlation, then GT-GAN
-> (0.01003), CSDI (0.003948), SBTS (0.002758), TimeGAN (0.002745), Diffusion-TS (0.001823), TimeVQVAE
-> (7.0e-04), LS4 (−3.9e-04), Fourier Flow (−0.002564) and COSCI-GAN (−0.005511) — the last three slightly
-> negative. **None**
-> meaningfully preserves stochastic volatility relative to the 0.6163 floor: TimeVAE merely wins a race among
-> near-zero correlations, and LS4's single-factor latent-S4 prior cannot recover the two-factor Heston vol.
+> noisy estimator of instantaneous variance vₜ. Chronos-2 (0.05739) has the highest correlation, then
+> TimeVAE (0.02254), GT-GAN (0.01003), CSDI (0.003948), SBTS (0.002758), TimeGAN (0.002745), Diffusion-TS
+> (0.001823), TimeVQVAE (7.0e-04), LS4 (−3.9e-04), Fourier Flow (−0.002564) and COSCI-GAN (−0.005511) — the
+> last three slightly negative. **None**
+> meaningfully preserves stochastic volatility relative to the 0.6163 floor: the fine-tuned Chronos-2 pulls
+> furthest off the near-zero cluster the classical generators share but is still ~10× below the floor, and
+> LS4's single-factor latent-S4 prior cannot recover the two-factor Heston vol.
 >
 > **A28 Kurtosis Ratio**: target = 1.0. CSDI (0.8706) is closest — |CSDI−1| = 0.129 < |TimeVQVAE−1| = 0.159
-> < |LS4−1| = 0.565 < |TimeVAE−1| = 0.717 < |DTS−1| = 0.903 < |GT-GAN−1| = 0.997 < |SBTS−1| = 1.028 <
-> |TimeGAN−1| = 2.116 < |FF−1| = 2.098 < |COSCI-GAN−1| = 9.150. GT-GAN (0.002659) is the benchmark's most
+> < |LS4−1| = 0.565 < |TimeVAE−1| = 0.717 < |Chronos-2−1| = 0.901 < |DTS−1| = 0.903 < |GT-GAN−1| = 0.997 <
+> |SBTS−1| = 1.028 < |FF−1| = 2.098 < |TimeGAN−1| = 2.116 < |COSCI-GAN−1| = 9.150. GT-GAN (0.002659) is the benchmark's most
 > **leptokurtic** collapse — a return law ~375× more peaked than Heston, the largest single-metric marginal
 > failure in the suite. LS4 (1.565) is mildly **platykurtic** — its single-factor latent
 > decoder generates slightly thinner-than-Heston tails, the standard limitation of a one-factor generator on
 > a two-factor SDE. TimeVAE (0.2834) is heavily under-dispersed. TimeGAN (−1.116) and COSCI-GAN (−8.150)
 > have **negative** mean ratios (sign-flipping across seeds), the farthest from 1.
 
-**LS4 wins 26 of 36 A-metrics; Fourier Flow 4; CSDI 3; Diffusion-TS 2; TimeVAE 1.** SBTS, TimeGAN,
-COSCI-GAN, TimeVQVAE and GT-GAN win none outright. (36 = the 34 metrics with A18 and A19 each split into a GRU and
+**LS4 wins 26 of 36 A-metrics; Fourier Flow 4; CSDI 3; Diffusion-TS 2; Chronos-2 1.** SBTS, TimeGAN,
+COSCI-GAN, TimeVAE, TimeVQVAE and GT-GAN win none outright. (36 = the 34 metrics with A18 and A19 each split into a GRU and
 an MLP variant.) With every method scored against the held-out **test set**, **LS4**'s latent-S4 state-space
 prior dominates the benchmark: it sweeps the tail quantiles (A2–A4) and Hill index (A5), the entire
 distributional family (A6–A14, A16, A17), **both** adversarial-GRU and predictive scores (A18-GRU
 **0.005890**, A19-GRU **0.05001** / A19-MLP **0.05006**, all at or under the finite-sample floor), and most
 of the temporal/vol family (A20, A22, A25, A27, A29–A32). Two structural weaknesses remain real: LS4 carries
-**no latent-volatility recovery** (A33 σ-corr ≈ −4e-4, at the zero all single-factor generators share) and
+**no latent-volatility recovery** (A33 σ-corr ≈ −4e-4, at the zero nearly all generators share — only
+Chronos-2 pulls meaningfully off it, at 0.05739) and
 its return tails run slightly thin (A28 kurtosis ratio 1.565 vs the ideal 1.0, A1 kurtosis error 0.368
 mid-pack). See [`Heston/LS4/README.md`](Heston/LS4/README.md).
 
@@ -124,10 +128,13 @@ metrics that reward its faithful vol-clustering autocorrelation and heaviest tai
 metrics — **skewness** (A15 **0.02288**), the **MLP discriminative score** (A18-MLP **0.005951**, edging LS4),
 the **return-std error** (A26 **0.004832**) and the **teacher-sigma RMSE** (A34 **0.08963**). **Diffusion-TS**
 owns the two **lag-1 ACF** metrics (A23 **0.002410**, A24 **0.007895**) where its interpretable seasonal-trend
-decoder is sharpest. **TimeVAE** keeps the single metric its posterior-mean vol reconstruction is built for —
-the **teacher-sigma correlation** (A33 **0.02254**), though even this is a near-zero recovery far below the
-0.6163 floor. **SBTS, TimeGAN, COSCI-GAN and TimeVQVAE** win no A-metric outright: each is a competent second
-on a handful of axes but is edged everywhere by the four family leaders above. **GT-GAN** is the benchmark's
+decoder is sharpest. **Chronos-2**, the pretrained foundation-model anchor (fine-tuned, then rolled out
+autoregressively from real test prefixes), takes the single metric its one-step conditional is sharpest on —
+the **teacher-sigma correlation** (A33 **0.05739**, the best latent-vol recovery of any generator), though
+even this is ~10× below the 0.6163 floor. Its failure mode is the opposite of a collapse: rollout
+**over-disperses**, giving a return law ~10× more leptokurtic than the target (A28 kurtosis ratio **0.099**)
+and a per-step std ~1.5× the real. **SBTS, TimeGAN, COSCI-GAN, TimeVAE and TimeVQVAE** win no A-metric outright:
+each is a competent second on a handful of axes but is edged everywhere by the five family leaders above. **GT-GAN** is the benchmark's
 weakest marginal-distribution matcher — its continuous-time CNF generator (32957 params, the smallest in the
 suite) collapses the return law (A28 kurtosis ratio 0.002659, ~375× more leptokurtic than Heston; worst A1
 kurtosis error 281.8; worst A14 KS 0.3881; near-separable A18-GRU 0.4871) and wins no A-metric.
@@ -162,6 +169,7 @@ the same way — a **non-zero** finite-sample floor, not a degenerate zero. Each
     <th colspan="3">VAE</th>
     <th>Schrödinger Bridge</th>
     <th>Fourier Flow</th>
+    <th>Foundation Model</th>
     <th rowspan="2">Perfect</th>
     <th rowspan="2">Winner</th>
   </tr>
@@ -176,40 +184,41 @@ the same way — a **non-zero** finite-sample floor, not a degenerate zero. Each
     <th>LS4</th>
     <th>SBTS</th>
     <th>Fourier Flow</th>
+    <th>Chronos-2</th>
   </tr>
 </thead>
 <tbody>
-  <tr><td><b>Path comparison</b><br><sub>grid_tvd 50×50 path-cloud</sub></td><td>grid_tvd 50×50 (%) ↓</td><td>17.14% ± 8.253%</td><td>14.01% ± 1.126%</td><td>19.00% ± 3.806%</td><td>7.829% ± 0.9332%</td><td>5.990% ± 0.4649%</td><td>8.662% ± 0.4769%</td><td>7.269% ± 0.3121%</td><td><b>2.772% ± 0.2228%</b></td><td>13.48% ± 0.2141%</td><td>9.442% ± 1.721%</td><td>2.237% ± 0.1564%</td><td><b>LS4</b></td></tr>
-  <tr><td rowspan="5"><b>Log-return histogram</b></td><td>MSE</td><td>45.40 ± 57.91</td><td>42.66 ± 1.999</td><td>2160 ± 655.2</td><td>4.883 ± 0.5079</td><td>4.644 ± 0.4940</td><td>968.0 ± 183.1</td><td>4.386 ± 0.8335</td><td><b>0.4517 ± 0.02799</b></td><td>4.082 ± 0.04782</td><td>0.9211 ± 0.02370</td><td>0.1098 ± 0.02492</td><td><b>LS4</b></td></tr>
-  <tr><td>% err</td><td>33.41% ± 6.533%</td><td>246.6% ± 7.987%</td><td>117.7% ± 1.125%</td><td>42.14% ± 1.003%</td><td>35.27% ± 1.063%</td><td>114.9% ± 0.6458%</td><td>30.95% ± 1.747%</td><td><b>5.429% ± 0.1852%</b></td><td>39.17% ± 0.1361%</td><td>9.167% ± 0.5606%</td><td>1.799% ± 0.04483%</td><td><b>LS4</b></td></tr>
-  <tr><td>NRMSE</td><td>21.38% ± 14.34%</td><td>30.81% ± 0.7154%</td><td>151.6% ± 13.15%</td><td>10.28% ± 0.5317%</td><td>9.998% ± 0.5467%</td><td>123.7% ± 6.783%</td><td>9.691% ± 0.9011%</td><td><b>2.779% ± 0.08180%</b></td><td>9.368% ± 0.06168%</td><td>4.186% ± 0.1102%</td><td>0.5328% ± 0.02035%</td><td><b>LS4</b></td></tr>
-  <tr><td>CVaR₉₀</td><td>50.55% ± 32.16%</td><td>58.05% ± 1.029%</td><td>317.1% ± 7.324%</td><td>21.62% ± 1.519%</td><td>23.51% ± 1.709%</td><td>287.6% ± 7.035%</td><td>24.32% ± 2.457%</td><td><b>6.921% ± 0.2804%</b></td><td>20.72% ± 0.1466%</td><td>10.19% ± 0.3052%</td><td>1.234% ± 0.08860%</td><td><b>LS4</b></td></tr>
-  <tr><td>CVaR₉₅</td><td>78.15% ± 57.07%</td><td>60.73% ± 0.9285%</td><td>553.4% ± 17.57%</td><td>22.55% ± 1.702%</td><td>25.24% ± 1.771%</td><td>483.9% ± 19.22%</td><td>26.67% ± 2.883%</td><td><b>8.401% ± 0.2798%</b></td><td>21.83% ± 0.2430%</td><td>11.93% ± 0.3586%</td><td>1.444% ± 0.08562%</td><td><b>LS4</b></td></tr>
-  <tr><td rowspan="5"><b>QQ plot</b></td><td>MSE</td><td>2.38e-06 ± 1.14e-06</td><td>8.25e-04 ± 6.60e-05</td><td>4.16e-05 ± 1.27e-06</td><td>3.48e-06 ± 1.75e-07</td><td>2.36e-06 ± 1.57e-07</td><td>3.99e-05 ± 5.99e-07</td><td>1.82e-06 ± 2.20e-07</td><td><b>4.59e-08 ± 2.12e-09</b></td><td>3.01e-06 ± 2.28e-08</td><td>1.45e-07 ± 2.63e-08</td><td>1.09e-09 ± 6.13e-10</td><td><b>LS4</b></td></tr>
-  <tr><td>% err</td><td>34.50% ± 11.22%</td><td>437.1% ± 19.17%</td><td>92.66% ± 2.380%</td><td>25.71% ± 1.743%</td><td>24.22% ± 1.083%</td><td>90.53% ± 1.555%</td><td>23.84% ± 2.434%</td><td><b>6.022% ± 0.6435%</b></td><td>21.47% ± 0.3841%</td><td>9.342% ± 2.293%</td><td>0.4629% ± 0.1067%</td><td><b>LS4</b></td></tr>
-  <tr><td>NRMSE</td><td>6.960% ± 1.738%</td><td>134.7% ± 5.407%</td><td>30.25% ± 0.4431%</td><td>8.689% ± 0.2248%</td><td>7.188% ± 0.2370%</td><td>29.57% ± 0.2260%</td><td>6.308% ± 0.3785%</td><td><b>0.9701% ± 0.02323%</b></td><td>8.083% ± 0.03106%</td><td>1.687% ± 0.1351%</td><td>0.1206% ± 0.04670%</td><td><b>LS4</b></td></tr>
-  <tr><td>CVaR₉₀</td><td>6.454% ± 1.512%</td><td>138.6% ± 5.112%</td><td>32.67% ± 0.7552%</td><td>10.19% ± 0.2059%</td><td>7.785% ± 0.2211%</td><td>32.31% ± 0.1596%</td><td>6.515% ± 0.3574%</td><td><b>0.9129% ± 0.06396%</b></td><td>9.497% ± 0.03506%</td><td>1.636% ± 0.2264%</td><td>0.1319% ± 0.04206%</td><td><b>LS4</b></td></tr>
-  <tr><td>CVaR₉₅</td><td>7.409% ± 1.912%</td><td>154.2% ± 6.106%</td><td>37.00% ± 1.251%</td><td>12.09% ± 0.2092%</td><td>8.895% ± 0.2534%</td><td>37.04% ± 0.1567%</td><td>7.395% ± 0.3894%</td><td><b>1.197% ± 0.1293%</b></td><td>11.33% ± 0.04832%</td><td>2.268% ± 0.4096%</td><td>0.1599% ± 0.04416%</td><td><b>LS4</b></td></tr>
-  <tr><td rowspan="5"><b>ACF \|r\| lags 1–20</b></td><td>MSE</td><td>0.003597 ± 0.003199</td><td>0.008548 ± 0.003519</td><td>0.02626 ± 0.02245</td><td>1.72e-04 ± 4.79e-05</td><td><b>3.02e-05 ± 1.61e-05</b></td><td>0.03390 ± 0.01422</td><td>1.22e-04 ± 3.84e-05</td><td>5.14e-05 ± 1.08e-05</td><td>0.001512 ± 1.42e-05</td><td>3.83e-04 ± 1.20e-05</td><td>9.61e-06 ± 3.40e-06</td><td><b>CSDI</b></td></tr>
-  <tr><td>% err</td><td>186.2% ± 107.8%</td><td>230.0% ± 48.05%</td><td>893.2% ± 463.3%</td><td>73.33% ± 13.17%</td><td><b>19.26% ± 8.314%</b></td><td>983.6% ± 273.1%</td><td>63.03% ± 14.21%</td><td>37.09% ± 3.059%</td><td>149.0% ± 1.780%</td><td>117.2% ± 2.149%</td><td>8.724% ± 1.843%</td><td><b>CSDI</b></td></tr>
-  <tr><td>NRMSE</td><td>224.6% ± 123.4%</td><td>198.2% ± 35.47%</td><td>668.0% ± 311.1%</td><td>51.98% ± 7.840%</td><td><b>19.33% ± 5.196%</b></td><td>795.3% ± 212.4%</td><td>45.54% ± 9.362%</td><td>29.46% ± 2.604%</td><td>127.9% ± 0.8849%</td><td>88.45% ± 1.425%</td><td>6.071% ± 1.301%</td><td><b>CSDI</b></td></tr>
-  <tr><td>CVaR₉₀</td><td>522.2% ± 262.2%</td><td>420.7% ± 65.18%</td><td>1012% ± 397.5%</td><td>73.44% ± 9.466%</td><td>46.07% ± 9.937%</td><td>1246% ± 313.1%</td><td>71.36% ± 12.50%</td><td><b>45.94% ± 7.674%</b></td><td>262.9% ± 2.662%</td><td>127.7% ± 1.888%</td><td>11.26% ± 1.961%</td><td><b>LS4</b></td></tr>
-  <tr><td>CVaR₉₅</td><td>612.3% ± 275.1%</td><td>474.2% ± 99.55%</td><td>1118% ± 426.4%</td><td>75.43% ± 9.523%</td><td>59.93% ± 12.65%</td><td>1273% ± 322.9%</td><td>73.51% ± 13.45%</td><td><b>50.46% ± 11.86%</b></td><td>392.3% ± 3.112%</td><td>130.3% ± 1.872%</td><td>12.06% ± 1.837%</td><td><b>LS4</b></td></tr>
-  <tr><td rowspan="5"><b>ACF r² lags 1–20</b></td><td>MSE</td><td>0.001982 ± 0.001602</td><td>0.008781 ± 0.003516</td><td>0.008475 ± 0.01103</td><td>1.32e-04 ± 4.43e-05</td><td>2.71e-05 ± 1.16e-05</td><td>0.02694 ± 0.01034</td><td>1.05e-04 ± 3.00e-05</td><td><b>2.48e-05 ± 6.52e-06</b></td><td>0.001723 ± 2.85e-05</td><td>2.80e-04 ± 1.13e-05</td><td>9.17e-06 ± 3.08e-06</td><td><b>LS4</b></td></tr>
-  <tr><td>% err</td><td>130.0% ± 65.84%</td><td>287.8% ± 57.85%</td><td>541.6% ± 420.6%</td><td>73.19% ± 16.72%</td><td><b>21.75% ± 10.67%</b></td><td>1026% ± 265.1%</td><td>70.37% ± 13.75%</td><td>24.39% ± 3.127%</td><td>171.3% ± 1.908%</td><td>120.8% ± 3.065%</td><td>11.34% ± 2.219%</td><td><b>CSDI</b></td></tr>
-  <tr><td>NRMSE</td><td>168.2% ± 70.21%</td><td>221.1% ± 36.09%</td><td>366.9% ± 274.6%</td><td>46.32% ± 8.702%</td><td>20.43% ± 5.060%</td><td>782.1% ± 188.7%</td><td>45.61% ± 7.936%</td><td><b>19.10% ± 2.524%</b></td><td>145.2% ± 1.200%</td><td>82.92% ± 1.680%</td><td>6.486% ± 1.351%</td><td><b>LS4</b></td></tr>
-  <tr><td>CVaR₉₀</td><td>421.3% ± 169.3%</td><td>469.3% ± 84.08%</td><td>577.9% ± 398.0%</td><td>66.27% ± 10.63%</td><td>50.15% ± 8.636%</td><td>1323% ± 304.4%</td><td>73.46% ± 10.86%</td><td><b>32.40% ± 6.104%</b></td><td>317.1% ± 3.759%</td><td>120.7% ± 1.567%</td><td>12.35% ± 2.511%</td><td><b>LS4</b></td></tr>
-  <tr><td>CVaR₉₅</td><td>537.1% ± 194.7%</td><td>586.1% ± 127.8%</td><td>664.9% ± 437.7%</td><td>68.14% ± 10.38%</td><td>63.50% ± 10.43%</td><td>1372% ± 331.0%</td><td>75.90% ± 12.22%</td><td><b>35.55% ± 9.255%</b></td><td>499.7% ± 4.950%</td><td>123.3% ± 1.328%</td><td>13.27% ± 2.724%</td><td><b>LS4</b></td></tr>
-  <tr><td rowspan="5"><b>Rolling vol histogram</b></td><td>MSE</td><td>150.2 ± 75.22</td><td>1398 ± 34.29</td><td>3029 ± 1983</td><td>220.2 ± 15.36</td><td>157.5 ± 12.45</td><td>16019 ± 2352</td><td>113.9 ± 13.91</td><td><b>8.514 ± 0.7580</b></td><td>412.9 ± 1.772</td><td>29.88 ± 2.639</td><td>1.372 ± 0.07269</td><td><b>LS4</b></td></tr>
-  <tr><td>% err</td><td>56.76% ± 21.18%</td><td>799.2% ± 14.12%</td><td>187.8% ± 42.87%</td><td>69.05% ± 1.441%</td><td>61.91% ± 2.364%</td><td>340.0% ± 11.74%</td><td>54.51% ± 2.433%</td><td><b>11.70% ± 1.165%</b></td><td>84.56% ± 0.1274%</td><td>25.42% ± 3.199%</td><td>2.264% ± 0.07625%</td><td><b>LS4</b></td></tr>
-  <tr><td>NRMSE</td><td>22.64% ± 7.203%</td><td>73.06% ± 0.8956%</td><td>97.99% ± 31.28%</td><td>28.87% ± 0.9919%</td><td>24.39% ± 0.9523%</td><td>221.5% ± 13.05%</td><td>20.68% ± 1.268%</td><td><b>5.275% ± 0.3034%</b></td><td>39.59% ± 0.08241%</td><td>10.43% ± 0.4823%</td><td>0.8688% ± 0.05532%</td><td><b>LS4</b></td></tr>
-  <tr><td>CVaR₉₀</td><td>51.23% ± 18.12%</td><td>121.7% ± 2.643%</td><td>236.6% ± 64.79%</td><td>59.83% ± 2.496%</td><td>50.44% ± 1.974%</td><td>434.8% ± 12.53%</td><td>44.63% ± 3.197%</td><td><b>10.95% ± 0.4870%</b></td><td>83.76% ± 0.2647%</td><td>19.99% ± 0.5784%</td><td>1.970% ± 0.1827%</td><td><b>LS4</b></td></tr>
-  <tr><td>CVaR₉₅</td><td>60.61% ± 26.33%</td><td>128.0% ± 3.162%</td><td>346.0% ± 123.4%</td><td>62.61% ± 2.777%</td><td>52.28% ± 2.063%</td><td>763.2% ± 29.64%</td><td>47.19% ± 3.505%</td><td><b>11.53% ± 0.5086%</b></td><td>88.06% ± 0.3275%</td><td>20.90% ± 0.5307%</td><td>2.308% ± 0.2413%</td><td><b>LS4</b></td></tr>
-  <tr><td rowspan="5"><b>Tail survival</b></td><td>MSE</td><td>0.003912 ± 0.003064</td><td>0.05973 ± 0.001991</td><td>0.07918 ± 0.002862</td><td>0.002258 ± 2.00e-04</td><td>0.001960 ± 1.85e-04</td><td>0.07224 ± 0.001903</td><td>0.001709 ± 2.78e-04</td><td><b>6.90e-05 ± 8.10e-06</b></td><td>0.001937 ± 2.20e-05</td><td>1.71e-04 ± 1.49e-05</td><td>5.22e-07 ± 5.50e-07</td><td><b>LS4</b></td></tr>
-  <tr><td>% err</td><td>23.64% ± 6.097%</td><td>342.3% ± 8.331%</td><td>91.34% ± 1.201%</td><td>28.39% ± 0.8411%</td><td>24.78% ± 0.8772%</td><td>90.06% ± 0.6385%</td><td>22.34% ± 1.374%</td><td><b>3.345% ± 0.1144%</b></td><td>26.62% ± 0.1128%</td><td>5.711% ± 0.2437%</td><td>0.3302% ± 0.2167%</td><td><b>LS4</b></td></tr>
-  <tr><td>NRMSE</td><td>10.02% ± 4.365%</td><td>42.74% ± 0.7148%</td><td>49.16% ± 0.8809%</td><td>8.301% ± 0.3648%</td><td>7.733% ± 0.3598%</td><td>46.97% ± 0.6196%</td><td>7.206% ± 0.5711%</td><td><b>1.449% ± 0.08321%</b></td><td>7.694% ± 0.04378%</td><td>2.287% ± 0.09795%</td><td>0.1050% ± 0.06651%</td><td><b>LS4</b></td></tr>
-  <tr><td>CVaR₉₀</td><td>13.92% ± 6.684%</td><td>63.43% ± 1.276%</td><td>75.15% ± 1.286%</td><td>11.78% ± 0.4757%</td><td>10.69% ± 0.4778%</td><td>71.06% ± 0.8527%</td><td>9.832% ± 0.7952%</td><td><b>2.157% ± 0.09912%</b></td><td>10.69% ± 0.05022%</td><td>3.369% ± 0.1169%</td><td>0.1625% ± 0.08460%</td><td><b>LS4</b></td></tr>
-  <tr><td>CVaR₉₅</td><td>13.97% ± 6.723%</td><td>63.74% ± 1.294%</td><td>75.67% ± 1.299%</td><td>11.81% ± 0.4755%</td><td>10.72% ± 0.4743%</td><td>71.49% ± 0.8603%</td><td>9.856% ± 0.7985%</td><td><b>2.170% ± 0.1011%</b></td><td>10.71% ± 0.05155%</td><td>3.386% ± 0.1132%</td><td>0.1682% ± 0.08394%</td><td><b>LS4</b></td></tr>
+  <tr><td><b>Path comparison</b><br><sub>grid_tvd 50×50 path-cloud</sub></td><td>grid_tvd 50×50 (%) ↓</td><td>17.14% ± 8.253%</td><td>14.01% ± 1.126%</td><td>19.00% ± 3.806%</td><td>7.829% ± 0.9332%</td><td>5.990% ± 0.4649%</td><td>8.662% ± 0.4769%</td><td>7.269% ± 0.3121%</td><td><b>2.772% ± 0.2228%</b></td><td>13.48% ± 0.2141%</td><td>9.442% ± 1.721%</td><td>8.835% ± 5.165%</td><td>2.237% ± 0.1564%</td><td><b>LS4</b></td></tr>
+  <tr><td rowspan="5"><b>Log-return histogram</b></td><td>MSE</td><td>45.40 ± 57.91</td><td>42.66 ± 1.999</td><td>2160 ± 655.2</td><td>4.883 ± 0.5079</td><td>4.644 ± 0.4940</td><td>968.0 ± 183.1</td><td>4.386 ± 0.8335</td><td><b>0.4517 ± 0.02799</b></td><td>4.082 ± 0.04782</td><td>0.9211 ± 0.02370</td><td>20704 ± 69.62</td><td>0.1098 ± 0.02492</td><td><b>LS4</b></td></tr>
+  <tr><td>% err</td><td>33.41% ± 6.533%</td><td>246.6% ± 7.987%</td><td>117.7% ± 1.125%</td><td>42.14% ± 1.003%</td><td>35.27% ± 1.063%</td><td>114.9% ± 0.6458%</td><td>30.95% ± 1.747%</td><td><b>5.429% ± 0.1852%</b></td><td>39.17% ± 0.1361%</td><td>9.167% ± 0.5606%</td><td>182.5% ± 0.1675%</td><td>1.799% ± 0.04483%</td><td><b>LS4</b></td></tr>
+  <tr><td>NRMSE</td><td>21.38% ± 14.34%</td><td>30.81% ± 0.7154%</td><td>151.6% ± 13.15%</td><td>10.28% ± 0.5317%</td><td>9.998% ± 0.5467%</td><td>123.7% ± 6.783%</td><td>9.691% ± 0.9011%</td><td><b>2.779% ± 0.08180%</b></td><td>9.368% ± 0.06168%</td><td>4.186% ± 0.1102%</td><td>221.2% ± 0.3808%</td><td>0.5328% ± 0.02035%</td><td><b>LS4</b></td></tr>
+  <tr><td>CVaR₉₀</td><td>50.55% ± 32.16%</td><td>58.05% ± 1.029%</td><td>317.1% ± 7.324%</td><td>21.62% ± 1.519%</td><td>23.51% ± 1.709%</td><td>287.6% ± 7.035%</td><td>24.32% ± 2.457%</td><td><b>6.921% ± 0.2804%</b></td><td>20.72% ± 0.1466%</td><td>10.19% ± 0.3052%</td><td>322.7% ± 0.3105%</td><td>1.234% ± 0.08860%</td><td><b>LS4</b></td></tr>
+  <tr><td>CVaR₉₅</td><td>78.15% ± 57.07%</td><td>60.73% ± 0.9285%</td><td>553.4% ± 17.57%</td><td>22.55% ± 1.702%</td><td>25.24% ± 1.771%</td><td>483.9% ± 19.22%</td><td>26.67% ± 2.883%</td><td><b>8.401% ± 0.2798%</b></td><td>21.83% ± 0.2430%</td><td>11.93% ± 0.3586%</td><td>565.6% ± 0.5994%</td><td>1.444% ± 0.08562%</td><td><b>LS4</b></td></tr>
+  <tr><td rowspan="5"><b>QQ plot</b></td><td>MSE</td><td>2.38e-06 ± 1.14e-06</td><td>8.25e-04 ± 6.60e-05</td><td>4.16e-05 ± 1.27e-06</td><td>3.48e-06 ± 1.75e-07</td><td>2.36e-06 ± 1.57e-07</td><td>3.99e-05 ± 5.99e-07</td><td>1.82e-06 ± 2.20e-07</td><td><b>4.59e-08 ± 2.12e-09</b></td><td>3.01e-06 ± 2.28e-08</td><td>1.45e-07 ± 2.63e-08</td><td>2.41e-05 ± 5.94e-08</td><td>1.09e-09 ± 6.13e-10</td><td><b>LS4</b></td></tr>
+  <tr><td>% err</td><td>34.50% ± 11.22%</td><td>437.1% ± 19.17%</td><td>92.66% ± 2.380%</td><td>25.71% ± 1.743%</td><td>24.22% ± 1.083%</td><td>90.53% ± 1.555%</td><td>23.84% ± 2.434%</td><td><b>6.022% ± 0.6435%</b></td><td>21.47% ± 0.3841%</td><td>9.342% ± 2.293%</td><td>78.69% ± 0.06065%</td><td>0.4629% ± 0.1067%</td><td><b>LS4</b></td></tr>
+  <tr><td>NRMSE</td><td>6.960% ± 1.738%</td><td>134.7% ± 5.407%</td><td>30.25% ± 0.4431%</td><td>8.689% ± 0.2248%</td><td>7.188% ± 0.2370%</td><td>29.57% ± 0.2260%</td><td>6.308% ± 0.3785%</td><td><b>0.9701% ± 0.02323%</b></td><td>8.083% ± 0.03106%</td><td>1.687% ± 0.1351%</td><td>21.72% ± 0.02665%</td><td>0.1206% ± 0.04670%</td><td><b>LS4</b></td></tr>
+  <tr><td>CVaR₉₀</td><td>6.454% ± 1.512%</td><td>138.6% ± 5.112%</td><td>32.67% ± 0.7552%</td><td>10.19% ± 0.2059%</td><td>7.785% ± 0.2211%</td><td>32.31% ± 0.1596%</td><td>6.515% ± 0.3574%</td><td><b>0.9129% ± 0.06396%</b></td><td>9.497% ± 0.03506%</td><td>1.636% ± 0.2264%</td><td>24.08% ± 0.04125%</td><td>0.1319% ± 0.04206%</td><td><b>LS4</b></td></tr>
+  <tr><td>CVaR₉₅</td><td>7.409% ± 1.912%</td><td>154.2% ± 6.106%</td><td>37.00% ± 1.251%</td><td>12.09% ± 0.2092%</td><td>8.895% ± 0.2534%</td><td>37.04% ± 0.1567%</td><td>7.395% ± 0.3894%</td><td><b>1.197% ± 0.1293%</b></td><td>11.33% ± 0.04832%</td><td>2.268% ± 0.4096%</td><td>29.36% ± 0.08250%</td><td>0.1599% ± 0.04416%</td><td><b>LS4</b></td></tr>
+  <tr><td rowspan="5"><b>ACF \|r\| lags 1–20</b></td><td>MSE</td><td>0.003597 ± 0.003199</td><td>0.008548 ± 0.003519</td><td>0.02626 ± 0.02245</td><td>1.72e-04 ± 4.79e-05</td><td><b>3.02e-05 ± 1.61e-05</b></td><td>0.03390 ± 0.01422</td><td>1.22e-04 ± 3.84e-05</td><td>5.14e-05 ± 1.08e-05</td><td>0.001512 ± 1.42e-05</td><td>3.83e-04 ± 1.20e-05</td><td>0.003108 ± 9.05e-05</td><td>9.61e-06 ± 3.40e-06</td><td><b>CSDI</b></td></tr>
+  <tr><td>% err</td><td>186.2% ± 107.8%</td><td>230.0% ± 48.05%</td><td>893.2% ± 463.3%</td><td>73.33% ± 13.17%</td><td><b>19.26% ± 8.314%</b></td><td>983.6% ± 273.1%</td><td>63.03% ± 14.21%</td><td>37.09% ± 3.059%</td><td>149.0% ± 1.780%</td><td>117.2% ± 2.149%</td><td>255.1% ± 3.890%</td><td>8.724% ± 1.843%</td><td><b>CSDI</b></td></tr>
+  <tr><td>NRMSE</td><td>224.6% ± 123.4%</td><td>198.2% ± 35.47%</td><td>668.0% ± 311.1%</td><td>51.98% ± 7.840%</td><td><b>19.33% ± 5.196%</b></td><td>795.3% ± 212.4%</td><td>45.54% ± 9.362%</td><td>29.46% ± 2.604%</td><td>127.9% ± 0.8849%</td><td>88.45% ± 1.425%</td><td>251.0% ± 3.755%</td><td>6.071% ± 1.301%</td><td><b>CSDI</b></td></tr>
+  <tr><td>CVaR₉₀</td><td>522.2% ± 262.2%</td><td>420.7% ± 65.18%</td><td>1012% ± 397.5%</td><td>73.44% ± 9.466%</td><td>46.07% ± 9.937%</td><td>1246% ± 313.1%</td><td>71.36% ± 12.50%</td><td><b>45.94% ± 7.674%</b></td><td>262.9% ± 2.662%</td><td>127.7% ± 1.888%</td><td>453.6% ± 5.754%</td><td>11.26% ± 1.961%</td><td><b>LS4</b></td></tr>
+  <tr><td>CVaR₉₅</td><td>612.3% ± 275.1%</td><td>474.2% ± 99.55%</td><td>1118% ± 426.4%</td><td>75.43% ± 9.523%</td><td>59.93% ± 12.65%</td><td>1273% ± 322.9%</td><td>73.51% ± 13.45%</td><td><b>50.46% ± 11.86%</b></td><td>392.3% ± 3.112%</td><td>130.3% ± 1.872%</td><td>506.8% ± 6.147%</td><td>12.06% ± 1.837%</td><td><b>LS4</b></td></tr>
+  <tr><td rowspan="5"><b>ACF r² lags 1–20</b></td><td>MSE</td><td>0.001982 ± 0.001602</td><td>0.008781 ± 0.003516</td><td>0.008475 ± 0.01103</td><td>1.32e-04 ± 4.43e-05</td><td>2.71e-05 ± 1.16e-05</td><td>0.02694 ± 0.01034</td><td>1.05e-04 ± 3.00e-05</td><td><b>2.48e-05 ± 6.52e-06</b></td><td>0.001723 ± 2.85e-05</td><td>2.80e-04 ± 1.13e-05</td><td>9.03e-04 ± 3.42e-05</td><td>9.17e-06 ± 3.08e-06</td><td><b>LS4</b></td></tr>
+  <tr><td>% err</td><td>130.0% ± 65.84%</td><td>287.8% ± 57.85%</td><td>541.6% ± 420.6%</td><td>73.19% ± 16.72%</td><td><b>21.75% ± 10.67%</b></td><td>1026% ± 265.1%</td><td>70.37% ± 13.75%</td><td>24.39% ± 3.127%</td><td>171.3% ± 1.908%</td><td>120.8% ± 3.065%</td><td>173.0% ± 3.750%</td><td>11.34% ± 2.219%</td><td><b>CSDI</b></td></tr>
+  <tr><td>NRMSE</td><td>168.2% ± 70.21%</td><td>221.1% ± 36.09%</td><td>366.9% ± 274.6%</td><td>46.32% ± 8.702%</td><td>20.43% ± 5.060%</td><td>782.1% ± 188.7%</td><td>45.61% ± 7.936%</td><td><b>19.10% ± 2.524%</b></td><td>145.2% ± 1.200%</td><td>82.92% ± 1.680%</td><td>147.7% ± 2.884%</td><td>6.486% ± 1.351%</td><td><b>LS4</b></td></tr>
+  <tr><td>CVaR₉₀</td><td>421.3% ± 169.3%</td><td>469.3% ± 84.08%</td><td>577.9% ± 398.0%</td><td>66.27% ± 10.63%</td><td>50.15% ± 8.636%</td><td>1323% ± 304.4%</td><td>73.46% ± 10.86%</td><td><b>32.40% ± 6.104%</b></td><td>317.1% ± 3.759%</td><td>120.7% ± 1.567%</td><td>272.4% ± 4.462%</td><td>12.35% ± 2.511%</td><td><b>LS4</b></td></tr>
+  <tr><td>CVaR₉₅</td><td>537.1% ± 194.7%</td><td>586.1% ± 127.8%</td><td>664.9% ± 437.7%</td><td>68.14% ± 10.38%</td><td>63.50% ± 10.43%</td><td>1372% ± 331.0%</td><td>75.90% ± 12.22%</td><td><b>35.55% ± 9.255%</b></td><td>499.7% ± 4.950%</td><td>123.3% ± 1.328%</td><td>304.5% ± 4.999%</td><td>13.27% ± 2.724%</td><td><b>LS4</b></td></tr>
+  <tr><td rowspan="5"><b>Rolling vol histogram</b></td><td>MSE</td><td>150.2 ± 75.22</td><td>1398 ± 34.29</td><td>3029 ± 1983</td><td>220.2 ± 15.36</td><td>157.5 ± 12.45</td><td>16019 ± 2352</td><td>113.9 ± 13.91</td><td><b>8.514 ± 0.7580</b></td><td>412.9 ± 1.772</td><td>29.88 ± 2.639</td><td>9718 ± 132.0</td><td>1.372 ± 0.07269</td><td><b>LS4</b></td></tr>
+  <tr><td>% err</td><td>56.76% ± 21.18%</td><td>799.2% ± 14.12%</td><td>187.8% ± 42.87%</td><td>69.05% ± 1.441%</td><td>61.91% ± 2.364%</td><td>340.0% ± 11.74%</td><td>54.51% ± 2.433%</td><td><b>11.70% ± 1.165%</b></td><td>84.56% ± 0.1274%</td><td>25.42% ± 3.199%</td><td>239.2% ± 1.525%</td><td>2.264% ± 0.07625%</td><td><b>LS4</b></td></tr>
+  <tr><td>NRMSE</td><td>22.64% ± 7.203%</td><td>73.06% ± 0.8956%</td><td>97.99% ± 31.28%</td><td>28.87% ± 0.9919%</td><td>24.39% ± 0.9523%</td><td>221.5% ± 13.05%</td><td>20.68% ± 1.268%</td><td><b>5.275% ± 0.3034%</b></td><td>39.59% ± 0.08241%</td><td>10.43% ± 0.4823%</td><td>72.66% ± 0.2984%</td><td>0.8688% ± 0.05532%</td><td><b>LS4</b></td></tr>
+  <tr><td>CVaR₉₀</td><td>51.23% ± 18.12%</td><td>121.7% ± 2.643%</td><td>236.6% ± 64.79%</td><td>59.83% ± 2.496%</td><td>50.44% ± 1.974%</td><td>434.8% ± 12.53%</td><td>44.63% ± 3.197%</td><td><b>10.95% ± 0.4870%</b></td><td>83.76% ± 0.2647%</td><td>19.99% ± 0.5784%</td><td>162.4% ± 0.4303%</td><td>1.970% ± 0.1827%</td><td><b>LS4</b></td></tr>
+  <tr><td>CVaR₉₅</td><td>60.61% ± 26.33%</td><td>128.0% ± 3.162%</td><td>346.0% ± 123.4%</td><td>62.61% ± 2.777%</td><td>52.28% ± 2.063%</td><td>763.2% ± 29.64%</td><td>47.19% ± 3.505%</td><td><b>11.53% ± 0.5086%</b></td><td>88.06% ± 0.3275%</td><td>20.90% ± 0.5307%</td><td>258.0% ± 0.9043%</td><td>2.308% ± 0.2413%</td><td><b>LS4</b></td></tr>
+  <tr><td rowspan="5"><b>Tail survival</b></td><td>MSE</td><td>0.003912 ± 0.003064</td><td>0.05973 ± 0.001991</td><td>0.07918 ± 0.002862</td><td>0.002258 ± 2.00e-04</td><td>0.001960 ± 1.85e-04</td><td>0.07224 ± 0.001903</td><td>0.001709 ± 2.78e-04</td><td><b>6.90e-05 ± 8.10e-06</b></td><td>0.001937 ± 2.20e-05</td><td>1.71e-04 ± 1.49e-05</td><td>0.02570 ± 1.09e-04</td><td>5.22e-07 ± 5.50e-07</td><td><b>LS4</b></td></tr>
+  <tr><td>% err</td><td>23.64% ± 6.097%</td><td>342.3% ± 8.331%</td><td>91.34% ± 1.201%</td><td>28.39% ± 0.8411%</td><td>24.78% ± 0.8772%</td><td>90.06% ± 0.6385%</td><td>22.34% ± 1.374%</td><td><b>3.345% ± 0.1144%</b></td><td>26.62% ± 0.1128%</td><td>5.711% ± 0.2437%</td><td>69.52% ± 0.07637%</td><td>0.3302% ± 0.2167%</td><td><b>LS4</b></td></tr>
+  <tr><td>NRMSE</td><td>10.02% ± 4.365%</td><td>42.74% ± 0.7148%</td><td>49.16% ± 0.8809%</td><td>8.301% ± 0.3648%</td><td>7.733% ± 0.3598%</td><td>46.97% ± 0.6196%</td><td>7.206% ± 0.5711%</td><td><b>1.449% ± 0.08321%</b></td><td>7.694% ± 0.04378%</td><td>2.287% ± 0.09795%</td><td>27.94% ± 0.05985%</td><td>0.1050% ± 0.06651%</td><td><b>LS4</b></td></tr>
+  <tr><td>CVaR₉₀</td><td>13.92% ± 6.684%</td><td>63.43% ± 1.276%</td><td>75.15% ± 1.286%</td><td>11.78% ± 0.4757%</td><td>10.69% ± 0.4778%</td><td>71.06% ± 0.8527%</td><td>9.832% ± 0.7952%</td><td><b>2.157% ± 0.09912%</b></td><td>10.69% ± 0.05022%</td><td>3.369% ± 0.1169%</td><td>52.88% ± 0.09414%</td><td>0.1625% ± 0.08460%</td><td><b>LS4</b></td></tr>
+  <tr><td>CVaR₉₅</td><td>13.97% ± 6.723%</td><td>63.74% ± 1.294%</td><td>75.67% ± 1.299%</td><td>11.81% ± 0.4755%</td><td>10.72% ± 0.4743%</td><td>71.49% ± 0.8603%</td><td>9.856% ± 0.7985%</td><td><b>2.170% ± 0.1011%</b></td><td>10.71% ± 0.05155%</td><td>3.386% ± 0.1132%</td><td>54.97% ± 0.09358%</td><td>0.1682% ± 0.08394%</td><td><b>LS4</b></td></tr>
 </tbody>
 </table>
 
@@ -222,11 +231,12 @@ autocorrelation that LS4's smooth prior slightly over-damps, the same axis on wh
 A-table; on **ACF r²** LS4 edges back ahead (2.48e-05 vs CSDI 2.71e-05). **Fourier Flow** is the clear
 second on the four marginal-shape curves. **TimeVAE loses all six B plots** by one-to-three orders of
 magnitude — its posterior-mean decoder collapses the marginal shape (log-return histogram MSE 968 vs LS4
-0.45, rolling-vol MSE 16019 vs 8.51), consistent with its heavily under-dispersed samples. **TimeVQVAE**,
-**COSCI-GAN** and **GT-GAN** win no B plot; COSCI-GAN ranks near the bottom of every one (worst QQ MSE at
-8.25e-04), its near-Gaussian marginal matching the low-order *scalar* moments (A5) but not the full-density
-*curves*. **GT-GAN** posts the single **worst log-return-histogram MSE of any method** (2160 vs TimeVAE's
-968) — its over-peaked, spiky return law is the coarsest marginal fit in the suite. No
+0.45, worst rolling-vol MSE of any method 16019 vs 8.51), consistent with its heavily under-dispersed
+samples. **TimeVQVAE**, **COSCI-GAN**, **GT-GAN** and **Chronos-2** win no B plot; COSCI-GAN ranks near the
+bottom of every one (worst QQ MSE at 8.25e-04), its near-Gaussian marginal matching the low-order *scalar*
+moments (A5) but not the full-density *curves*. **Chronos-2** posts the single **worst log-return-histogram
+MSE of any method** (20704 vs GT-GAN's 2160) and the second-worst rolling-vol MSE (9718, behind TimeVAE) —
+the curve-space image of its over-dispersed, heavy-tailed autoregressive rollout. No
 method reaches the non-zero Perfect floor on any curve, but LS4 is within ~4× of it on the log-return
 histogram (0.4517 vs 0.1098). Each value is computed over the same **5 seeds** per method.
 
@@ -248,6 +258,7 @@ forecast information beyond the marginal variance.
     <th colspan="3">VAE</th>
     <th>Schrödinger Bridge</th>
     <th>Fourier Flow</th>
+    <th>Foundation Model</th>
     <th rowspan="2">RW baseline</th>
     <th rowspan="2">Perfect</th>
     <th rowspan="2">Winner</th>
@@ -263,11 +274,12 @@ forecast information beyond the marginal variance.
     <th>LS4</th>
     <th>SBTS</th>
     <th>Fourier Flow</th>
+    <th>Chronos-2</th>
   </tr>
 </thead>
 <tbody>
-  <tr><td>PS-MC CRPS H=32 ↓</td><td>3.085 ± 0.3332</td><td>4.657 ± 0.7720</td><td>3.551 ± 0.1083</td><td>2.717 ± 0.002200</td><td>2.718 ± 0.003646</td><td>3.912 ± 0.07154</td><td>2.779 ± 0.01655</td><td><b>2.704 ± 0.002510</b></td><td>2.759 ± 0.006411</td><td>2.744 ± 0.03009</td><td>3.738</td><td>2.721 ± 0.004183</td><td><b>LS4</b></td></tr>
-  <tr><td>PS-MC CRPS H=64 ↓</td><td>4.337 ± 0.4329</td><td>5.789 ± 0.7528</td><td>4.996 ± 0.1952</td><td>3.804 ± 0.007848</td><td>3.776 ± 0.005153</td><td>5.670 ± 0.1222</td><td>3.851 ± 0.02210</td><td><b>3.763 ± 0.005851</b></td><td>3.859 ± 0.01236</td><td>3.961 ± 0.1098</td><td>5.246</td><td>3.788 ± 0.006463</td><td><b>LS4</b></td></tr>
+  <tr><td>PS-MC CRPS H=32 ↓</td><td>3.085 ± 0.3332</td><td>4.657 ± 0.7720</td><td>3.551 ± 0.1083</td><td>2.717 ± 0.002200</td><td>2.718 ± 0.003646</td><td>3.912 ± 0.07154</td><td>2.779 ± 0.01655</td><td><b>2.704 ± 0.002510</b></td><td>2.759 ± 0.006411</td><td>2.744 ± 0.03009</td><td>3.719 ± 0.001705</td><td>3.738</td><td>2.721 ± 0.004183</td><td><b>LS4</b></td></tr>
+  <tr><td>PS-MC CRPS H=64 ↓</td><td>4.337 ± 0.4329</td><td>5.789 ± 0.7528</td><td>4.996 ± 0.1952</td><td>3.804 ± 0.007848</td><td>3.776 ± 0.005153</td><td>5.670 ± 0.1222</td><td>3.851 ± 0.02210</td><td><b>3.763 ± 0.005851</b></td><td>3.859 ± 0.01236</td><td>3.961 ± 0.1098</td><td>5.218 ± 0.002697</td><td>5.246</td><td>3.788 ± 0.006463</td><td><b>LS4</b></td></tr>
 </tbody>
 </table>
 
@@ -276,11 +288,13 @@ forecast information beyond the marginal variance.
 (3.776). Every method except **COSCI-GAN** (4.657 / 5.789) and **TimeVAE** (3.912 / 5.670) beats the RW
 baseline (3.738 / 5.246) at both horizons, so the generated paths carry real predictive structure beyond
 the marginal variance; the two exceptions overshoot the random walk because their samples are over-dispersed
-(COSCI-GAN) or collapsed (TimeVAE). Notably, **GT-GAN** — the benchmark's weakest marginal-distribution
-matcher — still **beats the RW on CRPS at both horizons** (3.551 / 4.996): price-anchoring plus K=77
+(COSCI-GAN) or collapsed (TimeVAE). Notably, **GT-GAN** — despite its collapsed, over-peaked return law —
+still **beats the RW on CRPS at both horizons** (3.551 / 4.996): price-anchoring plus K=77
 nearest-neighbour averaging washes out its over-peaked per-step returns, leaving a calibrated ensemble
 *spread* even where the per-step marginal is mis-shaped (the gain is CRPS-specific and does not extend to
-point MAE/RMSE).
+point MAE/RMSE). **Chronos-2** likewise edges the RW at both horizons (3.719 / 5.218), but only marginally:
+its fine-tuned one-step conditional is so well-calibrated that the anchored ensemble mean essentially
+reproduces the random walk.
 
 ---
 
@@ -466,11 +480,12 @@ whole length-T series in one forward pass:
   Adam lr 1e-3, batch 16, EarlyStopping (5 seeds stop between 230–340 epochs)
 - ~247 k parameters (feat_dim 1, seq_len 128). See [`../methods/TimeVAE/code/README.md`](../methods/TimeVAE/code/README.md).
 
-Because the decoder regresses toward the **posterior mean**, TimeVAE keeps the single metric its
-posterior-mean vol reconstruction is built for — the **teacher-sigma correlation** (A33 0.02254, highest of
-the pool, though still a near-zero recovery far below the 0.6163 floor) — but produces heavily
-**under-dispersed** marginals (worst-of-pool on fat-tail A1, vol MMD A9, rolling-vol KS A31; loses **all six**
-B curve-shape plots). Its Path-Shadowing CRPS (3.912/5.670) does **not** beat the random-walk baseline.
+Because the decoder regresses toward the **posterior mean**, TimeVAE posts the **highest teacher-sigma
+correlation among the classical generators** (A33 0.02254 — second only to the fine-tuned Chronos-2 foundation
+model at 0.05739, and still a near-zero recovery far below the 0.6163 floor), so it wins **no A-metric
+outright**; and it produces heavily **under-dispersed** marginals — among the weakest in the pool on vol MMD
+(A9 3.575) and marginally the worst on rolling-vol KS (A31 0.9869), and it loses **all six** B curve-shape
+plots. Its Path-Shadowing CRPS (3.912/5.670) does **not** beat the random-walk baseline.
 
 **Training**: ~13 min/seed (A100 GPU). **Generation**: <1 s/seed (single decoder forward pass). **Hardware**: GPU used for training and A18/A19 metric evaluation.
 
@@ -543,11 +558,12 @@ only) then joint adversarial (3000 steps). Two changes from the paper's Stocks c
 `seq_len` 24→128) plus a one-line `run_ctfp` de-conflation fix (byte-identical on the paper case) adapt it
 to Heston.
 
-On the test set, GT-GAN is the benchmark's **weakest marginal-distribution matcher**: it wins **no** A-metric,
-**no** B-plot and **no** PS horizon. Its continuous normalizing flow collapses the return law — **A28 kurtosis
-ratio 0.002659** (~375× more leptokurtic than Heston, the largest single-metric marginal failure in the suite),
-worst **A1** kurtosis error (281.8), worst **A14** KS (0.3881), the **worst log-return-histogram B-MSE of any
-method** (2160 vs TimeVAE's 968) and a near-separable **A18-GRU** score (0.4871). It carries no latent-vol
+On the test set, GT-GAN carries the benchmark's most extreme **systematic** return-law collapse: it wins **no**
+A-metric, **no** B-plot and **no** PS horizon. Its continuous normalizing flow over-peaks the return law — **A28
+kurtosis ratio 0.002659** (~375× more leptokurtic than Heston, the suite's most extreme kurtosis-ratio collapse),
+the **worst A14** KS (0.3881), a severe **A1** kurtosis error (281.8) and a near-separable **A18-GRU** score
+(0.4871). (Chronos-2 posts a higher raw A1 (33213) and the worst log-return-histogram B-MSE (20704 vs GT-GAN's
+2160), but those trace to its single seed-3 multiplicative runaway rather than a systematic across-seed collapse.) It carries no latent-vol
 recovery (A33 ≈ 0.010). Yet its Path-Shadowing CRPS (**3.551 / 4.996**) still **beats the random-walk
 baseline at both horizons** — price-anchoring plus K=77 nearest-neighbour averaging recovers a calibrated
 ensemble spread even from a mis-shaped per-step marginal (the gain is CRPS-specific and does not extend to
@@ -585,6 +601,35 @@ two-factor stochastic vol). See [`Heston/LS4/README.md`](Heston/LS4/README.md).
 
 **Training**: ~16 min/seed (973 s, A100 GPU, 100 epochs). **Generation**: ~9 s/seed (STEP-mode `latent.step`, A100 GPU). **Hardware**: GPU used for training, generation and A18/A19 metric evaluation.
 
+### Chronos-2 — pretrained foundation forecaster
+**Paper:** Ansari, Turkmen, Shchur, et al. (Amazon Science) — *Chronos-2: From Univariate to Universal Forecasting* — 2025, [arXiv:2510.15821](https://arxiv.org/abs/2510.15821)
+**Code:** [amazon-science/chronos-forecasting](https://github.com/amazon-science/chronos-forecasting) — official checkpoint `amazon/chronos-2`
+
+Chronos-2 is a **pretrained encoder-decoder T5-style probabilistic forecaster** with group attention
+(**~120M parameters — the largest model in the benchmark**). It is **full fine-tuned**
+(`finetune_mode="full"`, 1 000 steps, lr 1e-4, batch 256, prediction length 16) on the Heston train split,
+then rolled out **autoregressively in log-price space** from the first 16 steps of a real test path, drawing
+one inverse-CDF Monte-Carlo sample per step from the 21 forecast quantiles until length 128. Zero-shot rollout
+is fundamentally unstable on this low-vol geometric process (level-proportional scaling runs the price away
+even in log-space), so only the **fine-tuned** variant ships.
+
+Chronos-2 splits cleanly along the local/global axis. **Locally it is the strongest generator here:** the
+A19 predictive-TSTR score sits **at the perfect floor** (GRU 0.05003 vs 0.05002 on every seed) and the A18
+GRU discriminative score reaches **0.009 on seed 0** (near-indistinguishable). It takes the single A-metric
+its one-step conditional is sharpest on — the **teacher-sigma correlation** (A33 **0.05739**, the best
+latent-vol recovery of any generator, though still ~10× below the 0.6163 floor). **Globally it over-disperses:**
+compounding a slightly-too-wide next-step quantile over 112 autoregressive steps gives a return law ~10× more
+leptokurtic than Heston (A28 kurtosis ratio **0.09859**), a generated price std ~1.5× real, and the **worst
+log-return-histogram B-MSE of any method** (20704 vs GT-GAN's 2160). A single **seed-3 runaway** path
+(terminal price ≈ 1323, kept unclipped) inflates the raw A1 (33213), A20 (93683), A26 (34.43) and A30 (104.3)
+outliers — an honest artifact of level-proportional scaling that fine-tuning tames but does not fully remove.
+Under Path-Shadowing MC the price-anchored pool **beats the naive RW on CRPS at both horizons** (3.719/5.218),
+though the gain is CRPS-specific — the clearest demonstration in the benchmark that a strong one-step
+forecaster is not automatically a faithful long-horizon generator. See
+[`Heston/Chronos2/README.md`](Heston/Chronos2/README.md).
+
+**Training**: ~85 s/seed (A100 GPU, 1 000 fine-tune steps). **Generation**: ~2.5 min/seed (112 autoregressive steps × 8 192 paths, 21-quantile inverse-CDF sampling, A100 GPU). **Hardware**: GPU used for fine-tuning, generation and A18/A19 metric evaluation.
+
 ### Perfect recovery — reproducible floor
 An **independent Heston simulation** (a fresh 8 192-path draw with seeds 1000+i, one per benchmark seed)
 scored against the **held-out test set** exactly as every method is scored. Because it is a genuine — but
@@ -606,6 +651,7 @@ of truth for every "Perfect floor" column in the repo — see
     <th colspan="3">VAE</th>
     <th>Schrödinger Bridge</th>
     <th>Fourier Flow</th>
+    <th>Foundation Model</th>
   </tr>
   <tr>
     <th>TimeGAN</th>
@@ -618,19 +664,20 @@ of truth for every "Perfect floor" column in the repo — see
     <th>LS4</th>
     <th>SBTS</th>
     <th>Fourier Flow</th>
+    <th>Chronos-2</th>
   </tr>
 </thead>
 <tbody>
-  <tr><td>**Type**</td><td>Neural GAN (5 GRU components)</td><td>Channel-decomposed GAN (per-channel LSTM GANs + MLP central discriminator)</td><td>Continuous-time GAN (Neural-CDE embedder + Neural-ODE recovery/discriminator + continuous normalizing-flow generator)</td><td>Denoising diffusion (DDPM) + seasonal-trend transformer</td><td>Score-based diffusion (DDPM) + time×feature transformer</td><td>Variational auto-encoder (conv encoder + decoder, Base)</td><td>Two-stage vector-quantized (STFT VQ-VAE + MaskGIT prior)</td><td>VAE-style latent state-space model (S4 prior + S4 posterior + S4 decoder)</td><td>Non-parametric kernel estimator</td><td>Explicit-likelihood normalizing flow (frequency domain)</td></tr>
-  <tr><td>**Learnable parameters**</td><td>~120 k (GRU weights)</td><td>~800 k (LSTM channel gen/disc + MLP central disc)</td><td>**32 957 (smallest in benchmark** — CNF generator + Neural-CDE/ODE nets)</td><td>~544 k (enc/dec transformer, mujoco)</td><td>~413 k (2-D transformer, 4 residual layers)</td><td>~247 k (conv encoder/decoder, latent 8)</td><td>LF+HF codebooks (32×64) + MaskGIT transformer (hidden 256, 4 layers)</td><td>~2.15 M (Latent-S4 prior/posterior/decoder, d_model 128, d_state 64)</td><td>**0** (no parameters)</td><td>~360 k (3 spectral-filter MLPs, hidden=200)</td></tr>
-  <tr><td>**Training time / seed**</td><td>~6–8 min (A100 GPU)</td><td>~4.3 min (A100 GPU, 120 epochs)</td><td>~21–34 h (A100 GPU, embed 10 000 + joint 3 000 steps; ODE-solver dominated)</td><td>~14.6 min (A100 GPU, 12 000 steps)</td><td>~29.3 min (A100 GPU, 200 epochs)</td><td>~13 min (A100 GPU, EarlyStop 230–340 epochs)</td><td>~53 min (A100 GPU, stage1 250 + stage2 1000 epochs)</td><td>~16 min (A100 GPU, 100 epochs)</td><td>No training</td><td>~8.2 min (CPU, 1000 epochs)</td></tr>
-  <tr><td>**Generation time / seed**</td><td><1 s (GPU inference)</td><td>LSTM forward over shared noise (not sep. timed, GPU)</td><td>~4.5 s (CNF sample + Neural-ODE decode, GPU)</td><td>500-step DDPM sampling (GPU)</td><td>~10.2 s (50-step DDPM, GPU)</td><td><1 s (single decoder forward pass)</td><td>~6 s (MaskGIT decode + iSTFT, GPU)</td><td>~9 s (STEP-mode `latent.step`, GPU)</td><td>~6.3 min (64 CPU workers)</td><td>~1.5 s (CPU inverse flow + iDFT)</td></tr>
-  <tr><td>**Temporal memory**</td><td>Full (GRU sees all past steps)</td><td>Full (LSTM sees all past steps)</td><td>Global (continuous-time CDE/ODE integrated over the full path)</td><td>Global (transformer self-attention over full window)</td><td>Global (2-D transformer over time × feature)</td><td>Global (conv receptive field over full window)</td><td>Global (bidirectional MaskGIT transformer over token grid)</td><td>Global (S4 structured state-space over full window)</td><td>**Markov-1 only**</td><td>Global (per-frequency spectral coupling)</td></tr>
-  <tr><td>**Internal representation**</td><td>Latent embeddings (min-max)</td><td>Per-channel LSTM hidden state (shared noise z)</td><td>[0,1] min-max prices → 24-d Neural-CDE latent + CNF base noise</td><td>x̂₀ = trend + seasonal (time + Fourier domain)</td><td>z-scored prices + diffusion noise</td><td>8-d Gaussian latent z</td><td>STFT VQ tokens (LF + HF codebooks)</td><td>Global-standardized prices + latent S4 state z</td><td>Scaled log-returns R̃</td><td>DFT spectral bins (real/imag)</td></tr>
-  <tr><td>**Final output**</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td></tr>
-  <tr><td>**Cross-seed stability**</td><td>Moderate (GAN variance)</td><td>Moderate (GAN variance); wide A5/A28 spread (sign-flipping kurtosis ratio)</td><td>Low–moderate (very wide A1 281.8±288.2 and A28 spread; over-peaked returns, per-seed CRPS tight ±0.11)</td><td>High on moments/ACF, moderate on GRU disc</td><td>High on moments/ACF, moderate on GRU disc</td><td>High on moments, moderate on mean-path (A13/A25 std ~0.2–0.3)</td><td>High on PS-MC (std 0.017), moderate on covariance (A20 std 6.66)</td><td>High on distribution/tail metrics (A2 std 1.1e-04, PS-MC std 0.003–0.006), moderate on mean-path (A13/A25)</td><td>**High** (deterministic kernel)</td><td>High on moments, moderate on covariance</td></tr>
-  <tr><td>**Scales to long T**</td><td>Well (RNN)</td><td>Well (LSTM); central disc degenerate at C=1 (univariate)</td><td>In principle (continuous-time), but ODE-solver cost heavy — 21–34 h to train at T=128</td><td>Well (transformer handles any T)</td><td>Well (transformer handles any T)</td><td>Well (fixed conv/latent size)</td><td>Well (transformer + more STFT tokens)</td><td>Well (S4 SSM designed for long sequences)</td><td>Degrades (K=1 insufficient)</td><td>Well (fixed spectral size)</td></tr>
-  <tr><td>**Hyperparameter sensitivity**</td><td>Many (arch, lr, steps)</td><td>Moderate (γ central-disc weight, lr, epochs, LSTM hidden)</td><td>Moderate (ODE solver + tolerances, CNF dims 32-64-64-32, kinetic/Jacobian penalties)</td><td>Moderate (depth preset, timesteps, EMA)</td><td>Moderate (layers, channels, diffusion steps, β schedule)</td><td>Few (latent dim, reconstruction_wt, hidden sizes)</td><td>Moderate (n_fft, codebook size, MaskGIT steps/temperature)</td><td>Moderate (z_dim, d_model, d_state, S4 blocks; Cauchy-sum fix required)</td><td>One critical: h (bandwidth)</td><td>Few (n_flows, hidden, grad-clip guard)</td></tr>
-  <tr><td>**Training objective**</td><td>Adversarial + supervised</td><td>Three-player adversarial (channel BCE − γ·central-disc BCE)</td><td>Two-phase: autoencoding MSE pretrain, then adversarial + CTFP latent log-likelihood (no supervisor net)</td><td>Reweighted L1 + Fourier-FFT reconstruction</td><td>Noise-prediction MSE (ε-matching)</td><td>ELBO (weighted reconstruction + KL)</td><td>Stage-1 VQ reconstruction + Stage-2 masked-token cross-entropy</td><td>ELBO (KL + reconstruction NLL)</td><td>Schrödinger-bridge drift (closed-form)</td><td>**Exact negative log-likelihood**</td></tr>
+  <tr><td>**Type**</td><td>Neural GAN (5 GRU components)</td><td>Channel-decomposed GAN (per-channel LSTM GANs + MLP central discriminator)</td><td>Continuous-time GAN (Neural-CDE embedder + Neural-ODE recovery/discriminator + continuous normalizing-flow generator)</td><td>Denoising diffusion (DDPM) + seasonal-trend transformer</td><td>Score-based diffusion (DDPM) + time×feature transformer</td><td>Variational auto-encoder (conv encoder + decoder, Base)</td><td>Two-stage vector-quantized (STFT VQ-VAE + MaskGIT prior)</td><td>VAE-style latent state-space model (S4 prior + S4 posterior + S4 decoder)</td><td>Non-parametric kernel estimator</td><td>Explicit-likelihood normalizing flow (frequency domain)</td><td>Pretrained foundation model — encoder-decoder T5-style forecaster with group attention (`amazon/chronos-2`); full fine-tune, then autoregressive rollout from real test prefixes</td></tr>
+  <tr><td>**Learnable parameters**</td><td>~120 k (GRU weights)</td><td>~800 k (LSTM channel gen/disc + MLP central disc)</td><td>**32 957 (smallest in benchmark** — CNF generator + Neural-CDE/ODE nets)</td><td>~544 k (enc/dec transformer, mujoco)</td><td>~413 k (2-D transformer, 4 residual layers)</td><td>~247 k (conv encoder/decoder, latent 8)</td><td>LF+HF codebooks (32×64) + MaskGIT transformer (hidden 256, 4 layers)</td><td>~2.15 M (Latent-S4 prior/posterior/decoder, d_model 128, d_state 64)</td><td>**0** (no parameters)</td><td>~360 k (3 spectral-filter MLPs, hidden=200)</td><td>**~120 M (largest in benchmark** — pretrained encoder-decoder, full fine-tune)</td></tr>
+  <tr><td>**Training time / seed**</td><td>~6–8 min (A100 GPU)</td><td>~4.3 min (A100 GPU, 120 epochs)</td><td>~21–34 h (A100 GPU, embed 10 000 + joint 3 000 steps; ODE-solver dominated)</td><td>~14.6 min (A100 GPU, 12 000 steps)</td><td>~29.3 min (A100 GPU, 200 epochs)</td><td>~13 min (A100 GPU, EarlyStop 230–340 epochs)</td><td>~53 min (A100 GPU, stage1 250 + stage2 1000 epochs)</td><td>~16 min (A100 GPU, 100 epochs)</td><td>No training</td><td>~8.2 min (CPU, 1000 epochs)</td><td>~1.4 min (A100 GPU, full fine-tune, 1000 steps)</td></tr>
+  <tr><td>**Generation time / seed**</td><td><1 s (GPU inference)</td><td>LSTM forward over shared noise (not sep. timed, GPU)</td><td>~4.5 s (CNF sample + Neural-ODE decode, GPU)</td><td>500-step DDPM sampling (GPU)</td><td>~10.2 s (50-step DDPM, GPU)</td><td><1 s (single decoder forward pass)</td><td>~6 s (MaskGIT decode + iSTFT, GPU)</td><td>~9 s (STEP-mode `latent.step`, GPU)</td><td>~6.3 min (64 CPU workers)</td><td>~1.5 s (CPU inverse flow + iDFT)</td><td>~2.5 min (autoregressive rollout, 112 steps × 8192 paths, 21-quantile inverse-CDF sampling)</td></tr>
+  <tr><td>**Temporal memory**</td><td>Full (GRU sees all past steps)</td><td>Full (LSTM sees all past steps)</td><td>Global (continuous-time CDE/ODE integrated over the full path)</td><td>Global (transformer self-attention over full window)</td><td>Global (2-D transformer over time × feature)</td><td>Global (conv receptive field over full window)</td><td>Global (bidirectional MaskGIT transformer over token grid)</td><td>Global (S4 structured state-space over full window)</td><td>**Markov-1 only**</td><td>Global (per-frequency spectral coupling)</td><td>Global (transformer context; rollout re-feeds the full generated history each step)</td></tr>
+  <tr><td>**Internal representation**</td><td>Latent embeddings (min-max)</td><td>Per-channel LSTM hidden state (shared noise z)</td><td>[0,1] min-max prices → 24-d Neural-CDE latent + CNF base noise</td><td>x̂₀ = trend + seasonal (time + Fourier domain)</td><td>z-scored prices + diffusion noise</td><td>8-d Gaussian latent z</td><td>STFT VQ tokens (LF + HF codebooks)</td><td>Global-standardized prices + latent S4 state z</td><td>Scaled log-returns R̃</td><td>DFT spectral bins (real/imag)</td><td>Log-space prices → per-step 21-quantile predictive distribution (inverse-CDF MC sample)</td></tr>
+  <tr><td>**Final output**</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td></tr>
+  <tr><td>**Cross-seed stability**</td><td>Moderate (GAN variance)</td><td>Moderate (GAN variance); wide A5/A28 spread (sign-flipping kurtosis ratio)</td><td>Low–moderate (very wide A1 281.8±288.2 and A28 spread; over-peaked returns, per-seed CRPS tight ±0.11)</td><td>High on moments/ACF, moderate on GRU disc</td><td>High on moments/ACF, moderate on GRU disc</td><td>High on moments, moderate on mean-path (A13/A25 std ~0.2–0.3)</td><td>High on PS-MC (std 0.017), moderate on covariance (A20 std 6.66)</td><td>High on distribution/tail metrics (A2 std 1.1e-04, PS-MC std 0.003–0.006), moderate on mean-path (A13/A25)</td><td>**High** (deterministic kernel)</td><td>High on moments, moderate on covariance</td><td>Moderate — 4/5 seeds tight (gen std ~15), seed 3 multiplicative runaway (std 110.3); PS-MC very tight (std 0.0017)</td></tr>
+  <tr><td>**Scales to long T**</td><td>Well (RNN)</td><td>Well (LSTM); central disc degenerate at C=1 (univariate)</td><td>In principle (continuous-time), but ODE-solver cost heavy — 21–34 h to train at T=128</td><td>Well (transformer handles any T)</td><td>Well (transformer handles any T)</td><td>Well (fixed conv/latent size)</td><td>Well (transformer + more STFT tokens)</td><td>Well (S4 SSM designed for long sequences)</td><td>Degrades (K=1 insufficient)</td><td>Well (fixed spectral size)</td><td>Well (pretrained transformer context), but autoregressive rollout accumulates error and can run away on low-vol geometric paths</td></tr>
+  <tr><td>**Hyperparameter sensitivity**</td><td>Many (arch, lr, steps)</td><td>Moderate (γ central-disc weight, lr, epochs, LSTM hidden)</td><td>Moderate (ODE solver + tolerances, CNF dims 32-64-64-32, kinetic/Jacobian penalties)</td><td>Moderate (depth preset, timesteps, EMA)</td><td>Moderate (layers, channels, diffusion steps, β schedule)</td><td>Few (latent dim, reconstruction_wt, hidden sizes)</td><td>Moderate (n_fft, codebook size, MaskGIT steps/temperature)</td><td>Moderate (z_dim, d_model, d_state, S4 blocks; Cauchy-sum fix required)</td><td>One critical: h (bandwidth)</td><td>Few (n_flows, hidden, grad-clip guard)</td><td>Few (fine-tune steps/lr/batch, prefix len, n_quantiles); rollout stability the critical axis</td></tr>
+  <tr><td>**Training objective**</td><td>Adversarial + supervised</td><td>Three-player adversarial (channel BCE − γ·central-disc BCE)</td><td>Two-phase: autoencoding MSE pretrain, then adversarial + CTFP latent log-likelihood (no supervisor net)</td><td>Reweighted L1 + Fourier-FFT reconstruction</td><td>Noise-prediction MSE (ε-matching)</td><td>ELBO (weighted reconstruction + KL)</td><td>Stage-1 VQ reconstruction + Stage-2 masked-token cross-entropy</td><td>ELBO (KL + reconstruction NLL)</td><td>Schrödinger-bridge drift (closed-form)</td><td>**Exact negative log-likelihood**</td><td>Full fine-tune on the model's native quantile/distributional loss (zero-shot rollout dropped as unstable)</td></tr>
 </tbody>
 </table>

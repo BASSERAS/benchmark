@@ -1,0 +1,15 @@
+- name: monash_traffic
+  hf_repo: autogluon/chronos_datasets
+  offset: -24
+  prediction_length: 24
+  num_rolls: 1
+- name: exchange_rate
+  hf_repo: autogluon/chronos_datasets
+  offset: -30
+  prediction_length: 30
+  num_rolls: 1
+- name: nn5
+  hf_repo: autogluon/chronos_datasets
+  offset: -56
+  prediction_length: 56
+  num_rolls: 1

@@ -1,0 +1,18 @@
+{
+  "method": "Chronos2",
+  "variant": "finetune",
+  "seed": 2,
+  "model_id": "amazon/chronos-2",
+  "feat_dim": 1,
+  "seq_len": 128,
+  "gen_scheme": "autoregressive_rollout_from_real_test_prefix",
+  "prefix": 16,
+  "hstep": 1,
+  "ctx_cap": null,
+  "n_quantiles": 21,
+  "ft_pred_len": 16,
+  "ft_steps": 1000,
+  "ft_lr": 0.0001,
+  "ft_batch": 256,
+  "finetune_mode": "full"
+}

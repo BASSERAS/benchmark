@@ -35,6 +35,7 @@ FAMILIES = [
     ("VAE",                [("TimeVAE", "TimeVAE"), ("TimeVQVAE", "TimeVQVAE"), ("LS4", "LS4")]),
     ("Schrödinger Bridge", [("SBTS", "SBTS")]),
     ("Fourier Flow",       [("FourierFlow", "Fourier Flow")]),
+    ("Foundation Model",   [("Chronos2", "Chronos-2")]),
 ]
 # flat ordered list of disk dirs / display names
 METHOD_DIRS  = [d for _, ms in FAMILIES for d, _ in ms]

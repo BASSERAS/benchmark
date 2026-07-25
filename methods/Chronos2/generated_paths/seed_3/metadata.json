@@ -1,0 +1,23 @@
+{
+  "method": "Chronos2",
+  "variant": "finetune",
+  "seed": 3,
+  "shape": [
+    8192,
+    128
+  ],
+  "min_val": 25.39049775763493,
+  "max_val": 50917.349442295475,
+  "generated_mean": 103.93781892722055,
+  "generated_std": 110.33442450214699,
+  "real_mean": 101.25095154147887,
+  "real_std": 10.174550290889263,
+  "prefix": 16,
+  "gen_sec": 145.3,
+  "train_time_sec": 81.2,
+  "gpu": "A100-SXM4-80GB",
+  "date": "2026-07-24",
+  "ft_first_loss": 8.59023208618164,
+  "ft_min_loss": 7.573320770263672,
+  "gen_has_nan": false
+}
