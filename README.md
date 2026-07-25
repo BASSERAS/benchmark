@@ -275,27 +275,31 @@ over-dispersed (COSCI-GAN) or collapsed (TimeVAE). Notably **GT-GAN beats RW on 
 neighbour averaging launders its spiky returns into a well-calibrated ensemble spread — the gain is
 CRPS-specific and does not carry to point-wise MAE/RMSE.
 
-**Forecaster reference (not a generator).** Chronos-2 is a purpose-built **conditional forecaster**, not an
-unconditional generator, so it is excluded from the generator table above. Instead it forecasts the Heston
-future **directly** (64-step real prefix → single-shot 64-step `predict_quantiles`, K=77 inverse-CDF ensemble),
-scored with the **identical CRPS harness** and RW baseline — the "best forecaster" yardstick these generator
-PS-MC rows are measured against. Directly comparable:
+**Forecaster references (not generators).** Chronos-2 and TimesFM are purpose-built **conditional
+forecasters**, not unconditional generators, so they are excluded from the generator table above. Instead
+each forecasts the Heston future **directly** (64-step real prefix → single-shot 64-step forecast, K=77
+inverse-CDF ensemble), scored with the **identical CRPS harness** and RW baseline — the "best forecaster"
+yardsticks these generator PS-MC rows are measured against. Directly comparable:
 
 | CRPS ↓ (price space) | H=32 | H=64 |
 |----------------------|:----:|:----:|
-| **Forecaster reference** *(Chronos-2, direct forecast)* | | |
+| **Forecaster reference** *(direct forecast)* | | |
 | Chronos-2 zero-shot | 2.996 | 4.234 |
 | Chronos-2 fine-tuned *(5 seeds)* | 2.760 ± 0.0001944 | 3.980 ± 0.0004099 |
+| TimesFM zero-shot | 3.065 | 4.347 |
+| TimesFM fine-tuned *(5 seeds)* | 2.976 ± 0.140 | 4.046 ± 0.139 |
 | **Best generator PS-MC** | | |
 | LS4 (path-shadowing, best of 10 generators) | **2.704 ± 0.002510** | **3.763 ± 0.005851** |
 | **Baselines** | | |
 | Random walk (naive) | 3.738 | 5.246 |
 | Perfect (oracle Heston pool) | 2.721 ± 0.004183 | 3.788 ± 0.006463 |
 
-**Both Chronos variants beat the RW baseline**, but the fine-tuned direct forecast (2.760 / 3.980) **does not
-beat LS4 PS-MC** (2.704 / 3.763), which reaches the Perfect oracle floor while the forecaster does not — so
-Path-Shadowing MC over a well-trained generator is itself a competitive conditional forecaster. See
-[`methods/Chronos2/`](methods/Chronos2/) and [`results/Heston/Chronos2/`](results/Heston/Chronos2/).
+**All four forecaster variants beat the RW baseline** (TimesFM sits just behind Chronos-2 at both horizons),
+but **neither foundation forecaster beats LS4 PS-MC** (2.704 / 3.763), which reaches the Perfect oracle floor
+while the forecasters do not — so Path-Shadowing MC over a well-trained generator is itself a competitive
+conditional forecaster. See [`methods/Chronos2/`](methods/Chronos2/),
+[`methods/TimesFM/`](methods/TimesFM/), [`results/Heston/Chronos2/`](results/Heston/Chronos2/) and
+[`results/Heston/TimesFM/`](results/Heston/TimesFM/).
 
 ### Stylised curves
 
@@ -464,6 +468,13 @@ paper, the original code, and the reference PDF committed under
 <td>Ansari, Turkmen, Shchur, et al.</td><td>2025</td><td>arXiv</td>
 <td><a href="https://github.com/amazon-science/chronos-forecasting">amazon-science/chronos-forecasting</a></td>
 <td><a href="methods/Chronos2/paper_reimplementation/Chronos2_2510.15821v1.pdf">PDF</a></td>
+</tr>
+<tr>
+<td><a href="methods/TimesFM/">TimesFM</a></td>
+<td><a href="https://arxiv.org/abs/2310.10688">A decoder-only foundation model for time-series forecasting</a></td>
+<td>Das, Kong, Sen, Zhou</td><td>2024</td><td>ICML</td>
+<td><a href="https://github.com/google-research/timesfm">google-research/timesfm</a></td>
+<td><a href="methods/TimesFM/paper_reimplementation/TimesFM_2310.10688v4.pdf">PDF</a></td>
 </tr>
 
 </tbody>

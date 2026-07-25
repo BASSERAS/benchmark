@@ -284,28 +284,33 @@ nearest-neighbour averaging washes out its over-peaked per-step returns, leaving
 *spread* even where the per-step marginal is mis-shaped (the gain is CRPS-specific and does not extend to
 point MAE/RMSE).
 
-**Forecaster reference (not a generator).** Chronos-2 is a purpose-built **conditional forecaster**, not an
-unconditional generator, so it is excluded from the generator PS-MC table above. Instead it forecasts the
-Heston future **directly** (64-step real prefix → single-shot 64-step `predict_quantiles`, K=77 inverse-CDF
-ensemble), scored with the **identical CRPS harness** and RW baseline — the "best forecaster" yardstick these
-generator PS-MC rows are measured against. Directly comparable:
+**Forecaster references (not generators).** Chronos-2 and TimesFM are purpose-built **conditional
+forecasters**, not unconditional generators, so they are excluded from the generator PS-MC table above.
+Instead each forecasts the Heston future **directly** (64-step real prefix → single-shot 64-step forecast,
+K=77 inverse-CDF ensemble), scored with the **identical CRPS harness** and RW baseline — the "best
+forecaster" yardsticks these generator PS-MC rows are measured against. Directly comparable:
 
 | CRPS ↓ (price space) | H=32 | H=64 |
 |----------------------|:----:|:----:|
-| **Forecaster reference** *(Chronos-2, direct forecast)* | | |
+| **Forecaster reference** *(direct forecast)* | | |
 | Chronos-2 zero-shot | 2.996 | 4.234 |
 | Chronos-2 fine-tuned *(5 seeds)* | 2.760 ± 0.0001944 | 3.980 ± 0.0004099 |
+| TimesFM zero-shot | 3.065 | 4.347 |
+| TimesFM fine-tuned *(5 seeds)* | 2.976 ± 0.140 | 4.046 ± 0.139 |
 | **Best generator PS-MC** | | |
 | LS4 (path-shadowing, best of 10 generators) | **2.704 ± 0.002510** | **3.763 ± 0.005851** |
 | **Baselines** | | |
 | Random walk (naive) | 3.738 | 5.246 |
 | Perfect (oracle Heston pool) | 2.721 ± 0.004183 | 3.788 ± 0.006463 |
 
-**Both Chronos variants beat the RW baseline**, but the fine-tuned direct forecast (2.760 / 3.980) **does not
-beat LS4 PS-MC** (2.704 / 3.763), which reaches the Perfect oracle floor while the forecaster does not — so
-Path-Shadowing MC over a well-trained generator is itself a competitive conditional forecaster. Full write-up
-in the [Chronos-2 forecaster reference](#chronos-2--forecaster-reference-not-a-generator) below and
-[`Heston/Chronos2/README.md`](Heston/Chronos2/README.md).
+**All four forecaster variants beat the RW baseline** (TimesFM sits just behind Chronos-2 at both horizons),
+but **neither foundation forecaster beats LS4 PS-MC** (2.704 / 3.763), which reaches the Perfect oracle floor
+while the forecasters do not — so Path-Shadowing MC over a well-trained generator is itself a competitive
+conditional forecaster. Full write-ups in the
+[Chronos-2 forecaster reference](#chronos-2--forecaster-reference-not-a-generator) and
+[TimesFM forecaster reference](#timesfm--forecaster-reference-not-a-generator) below,
+[`Heston/Chronos2/README.md`](Heston/Chronos2/README.md) and
+[`Heston/TimesFM/README.md`](Heston/TimesFM/README.md).
 
 ---
 
@@ -648,6 +653,45 @@ check. The retired unconditional-generator experiment (autoregressive log-space 
 
 **Fine-tune**: ~85 s/seed (A100 GPU, 1 000 steps). **Forecast**: single-shot `predict_quantiles`, K=77 inverse-CDF members per path (A100 GPU). **Hardware**: GPU used for fine-tuning, forecasting and metric evaluation.
 
+### TimesFM — Forecaster reference (not a generator)
+**Paper:** Das, Kong, Sen, Zhou (Google Research) — *A decoder-only foundation model for time-series forecasting* — ICML 2024, [arXiv:2310.10688](https://arxiv.org/abs/2310.10688)
+**Code:** [google-research/timesfm](https://github.com/google-research/timesfm) — official checkpoint `google/timesfm-1.0-200m-pytorch`
+
+TimesFM is used here as a **forecaster reference, not a generative method** — the second such yardstick
+alongside Chronos-2. Every other entry is an **unconditional generator** whose forecasting ability is measured
+*indirectly* through Path-Shadowing Monte-Carlo. TimesFM answers the same question — *how good is a
+purpose-built conditional forecaster on the same task?* — by forecasting the Heston future **directly**. It is
+**excluded from every A/B/PS-MC table and win-count** above. **Unlike Chronos-2, there is no `old/` folder:**
+TimesFM was never run as an unconditional generator here, so there is no retired experiment to archive.
+
+TimesFM is a **pretrained decoder-only patched probabilistic conditional forecaster** (**~200M parameters**;
+20 layers, model_dims 1280, input-patch 32, output-patch 128, positional embeddings on). Given a context
+window it emits a mean plus **9 predictive quantiles** (levels 0.1…0.9) per future step. **Forecaster-reference
+protocol:** feed the **64-step real prefix** (steps 0–63) of each test path, **single-shot** forecast the next
+64 steps in price space (`tfm.forecast`, reversible instance-norm applied internally), and draw **K=77
+inverse-CDF ensemble members** over the 9 quantile heads (the mean column is dropped) — then score with the
+**identical** `crps`/`evaluate_horizon`/`naive_baseline` harness as the generators, so CRPS is directly
+comparable to the PS-MC rows and the shared RW baseline. Two variants ship as two rows: **zero-shot**
+(pretrained checkpoint) and **fine-tuned** (5 per-seed full fine-tunes, mean ± std). Horizons H=32 and H=64 are
+cut from the same 64-step forecast.
+
+| Forecaster | CRPS H=32 ↓ | CRPS H=64 ↓ | MAE H=32 | MAE H=64 | RMSE H=32 | RMSE H=64 |
+|------------|:-----------:|:-----------:|:--------:|:--------:|:---------:|:---------:|
+| **TimesFM zero-shot** | 3.065 | 4.347 | 4.147 | 5.770 | 5.639 | 7.811 |
+| **TimesFM fine-tuned** *(5 seeds)* | **2.976 ± 0.140** | **4.046 ± 0.139** | 4.039 ± 0.169 | 5.470 ± 0.153 | 5.365 ± 0.174 | 7.338 ± 0.173 |
+| *RW baseline* | *3.738* | *5.246* | *3.738* | *5.246* | *5.040* | *7.066* |
+
+**Both variants beat the naive random walk on CRPS at both horizons.** TimesFM is **comparable to but slightly
+behind Chronos-2** (fine-tuned 2.976 / 4.046 vs 2.760 / 3.980), and — like Chronos-2 — the fine-tuned direct
+forecast **does not beat the best generator's path-shadowing**: LS4 PS-MC (**2.704 / 3.763**) edges it out and
+reaches the Perfect oracle floor (2.721 / 3.788) while the forecaster does not. Unlike Chronos-2, the 5
+fine-tune seeds show **genuine spread** (std ≈ 0.14) because the fine-tuner draws random per-seed minibatches.
+A second honest external forecaster confirms the headline: Path-Shadowing MC over a well-trained unconditional
+generator is a **competitive conditional forecaster in its own right**. See
+[`Heston/TimesFM/README.md`](Heston/TimesFM/README.md).
+
+**Fine-tune**: ~72 s/seed (A100 GPU, 1 000 steps, masked MSE + 9-quantile pinball). **Forecast**: single-shot `tfm.forecast`, K=77 inverse-CDF members per path (A100 GPU). **Hardware**: GPU used for fine-tuning, forecasting and metric evaluation.
+
 ### Perfect recovery — reproducible floor
 An **independent Heston simulation** (a fresh 8 192-path draw with seeds 1000+i, one per benchmark seed)
 scored against the **held-out test set** exactly as every method is scored. Because it is a genuine — but
@@ -669,7 +713,7 @@ of truth for every "Perfect floor" column in the repo — see
     <th colspan="3">VAE</th>
     <th>Schrödinger Bridge</th>
     <th>Fourier Flow</th>
-    <th>Forecaster reference</th>
+    <th colspan="2">Forecaster reference</th>
   </tr>
   <tr>
     <th>TimeGAN</th>
@@ -683,19 +727,20 @@ of truth for every "Perfect floor" column in the repo — see
     <th>SBTS</th>
     <th>Fourier Flow</th>
     <th>Chronos-2</th>
+    <th>TimesFM</th>
   </tr>
 </thead>
 <tbody>
-  <tr><td>**Type**</td><td>Neural GAN (5 GRU components)</td><td>Channel-decomposed GAN (per-channel LSTM GANs + MLP central discriminator)</td><td>Continuous-time GAN (Neural-CDE embedder + Neural-ODE recovery/discriminator + continuous normalizing-flow generator)</td><td>Denoising diffusion (DDPM) + seasonal-trend transformer</td><td>Score-based diffusion (DDPM) + time×feature transformer</td><td>Variational auto-encoder (conv encoder + decoder, Base)</td><td>Two-stage vector-quantized (STFT VQ-VAE + MaskGIT prior)</td><td>VAE-style latent state-space model (S4 prior + S4 posterior + S4 decoder)</td><td>Non-parametric kernel estimator</td><td>Explicit-likelihood normalizing flow (frequency domain)</td><td>Pretrained encoder-decoder T5-style probabilistic **conditional forecaster** (group attention) — <em>forecaster reference, not a generator</em></td></tr>
-  <tr><td>**Learnable parameters**</td><td>~120 k (GRU weights)</td><td>~800 k (LSTM channel gen/disc + MLP central disc)</td><td>**32 957 (smallest in benchmark** — CNF generator + Neural-CDE/ODE nets)</td><td>~544 k (enc/dec transformer, mujoco)</td><td>~413 k (2-D transformer, 4 residual layers)</td><td>~247 k (conv encoder/decoder, latent 8)</td><td>LF+HF codebooks (32×64) + MaskGIT transformer (hidden 256, 4 layers)</td><td>~2.15 M (Latent-S4 prior/posterior/decoder, d_model 128, d_state 64)</td><td>**0** (no parameters)</td><td>~360 k (3 spectral-filter MLPs, hidden=200)</td><td>**~120 M (largest in benchmark** — pretrained checkpoint <code>amazon/chronos-2</code>)</td></tr>
-  <tr><td>**Training time / seed**</td><td>~6–8 min (A100 GPU)</td><td>~4.3 min (A100 GPU, 120 epochs)</td><td>~21–34 h (A100 GPU, embed 10 000 + joint 3 000 steps; ODE-solver dominated)</td><td>~14.6 min (A100 GPU, 12 000 steps)</td><td>~29.3 min (A100 GPU, 200 epochs)</td><td>~13 min (A100 GPU, EarlyStop 230–340 epochs)</td><td>~53 min (A100 GPU, stage1 250 + stage2 1000 epochs)</td><td>~16 min (A100 GPU, 100 epochs)</td><td>No training</td><td>~8.2 min (CPU, 1000 epochs)</td><td>~85 s fine-tune (A100 GPU, 1 000 steps); zero-shot needs none</td></tr>
-  <tr><td>**Generation time / seed**</td><td><1 s (GPU inference)</td><td>LSTM forward over shared noise (not sep. timed, GPU)</td><td>~4.5 s (CNF sample + Neural-ODE decode, GPU)</td><td>500-step DDPM sampling (GPU)</td><td>~10.2 s (50-step DDPM, GPU)</td><td><1 s (single decoder forward pass)</td><td>~6 s (MaskGIT decode + iSTFT, GPU)</td><td>~9 s (STEP-mode `latent.step`, GPU)</td><td>~6.3 min (64 CPU workers)</td><td>~1.5 s (CPU inverse flow + iDFT)</td><td>No generation — single-shot <code>predict_quantiles</code> forecast (GPU)</td></tr>
-  <tr><td>**Temporal memory**</td><td>Full (GRU sees all past steps)</td><td>Full (LSTM sees all past steps)</td><td>Global (continuous-time CDE/ODE integrated over the full path)</td><td>Global (transformer self-attention over full window)</td><td>Global (2-D transformer over time × feature)</td><td>Global (conv receptive field over full window)</td><td>Global (bidirectional MaskGIT transformer over token grid)</td><td>Global (S4 structured state-space over full window)</td><td>**Markov-1 only**</td><td>Global (per-frequency spectral coupling)</td><td>Global (T5 encoder attention over the 64-step context)</td></tr>
-  <tr><td>**Internal representation**</td><td>Latent embeddings (min-max)</td><td>Per-channel LSTM hidden state (shared noise z)</td><td>[0,1] min-max prices → 24-d Neural-CDE latent + CNF base noise</td><td>x̂₀ = trend + seasonal (time + Fourier domain)</td><td>z-scored prices + diffusion noise</td><td>8-d Gaussian latent z</td><td>STFT VQ tokens (LF + HF codebooks)</td><td>Global-standardized prices + latent S4 state z</td><td>Scaled log-returns R̃</td><td>DFT spectral bins (real/imag)</td><td>Tokenized context → 21 predictive quantiles per future step</td></tr>
-  <tr><td>**Final output**</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>**Conditional forecast** of future S_t (21 quantiles → K=77 ensemble), not unconditional paths</td></tr>
-  <tr><td>**Cross-seed stability**</td><td>Moderate (GAN variance)</td><td>Moderate (GAN variance); wide A5/A28 spread (sign-flipping kurtosis ratio)</td><td>Low–moderate (very wide A1 281.8±288.2 and A28 spread; over-peaked returns, per-seed CRPS tight ±0.11)</td><td>High on moments/ACF, moderate on GRU disc</td><td>High on moments/ACF, moderate on GRU disc</td><td>High on moments, moderate on mean-path (A13/A25 std ~0.2–0.3)</td><td>High on PS-MC (std 0.017), moderate on covariance (A20 std 6.66)</td><td>High on distribution/tail metrics (A2 std 1.1e-04, PS-MC std 0.003–0.006), moderate on mean-path (A13/A25)</td><td>**High** (deterministic kernel)</td><td>High on moments, moderate on covariance</td><td>**Very high** (CRPS std ≈ 2e-04 across 5 fine-tune seeds, deterministic data order)</td></tr>
-  <tr><td>**Scales to long T**</td><td>Well (RNN)</td><td>Well (LSTM); central disc degenerate at C=1 (univariate)</td><td>In principle (continuous-time), but ODE-solver cost heavy — 21–34 h to train at T=128</td><td>Well (transformer handles any T)</td><td>Well (transformer handles any T)</td><td>Well (fixed conv/latent size)</td><td>Well (transformer + more STFT tokens)</td><td>Well (S4 SSM designed for long sequences)</td><td>Degrades (K=1 insufficient)</td><td>Well (fixed spectral size)</td><td>Forecasts at fixed prediction length (trained pred-len 16, single-shot to 64)</td></tr>
-  <tr><td>**Hyperparameter sensitivity**</td><td>Many (arch, lr, steps)</td><td>Moderate (γ central-disc weight, lr, epochs, LSTM hidden)</td><td>Moderate (ODE solver + tolerances, CNF dims 32-64-64-32, kinetic/Jacobian penalties)</td><td>Moderate (depth preset, timesteps, EMA)</td><td>Moderate (layers, channels, diffusion steps, β schedule)</td><td>Few (latent dim, reconstruction_wt, hidden sizes)</td><td>Moderate (n_fft, codebook size, MaskGIT steps/temperature)</td><td>Moderate (z_dim, d_model, d_state, S4 blocks; Cauchy-sum fix required)</td><td>One critical: h (bandwidth)</td><td>Few (n_flows, hidden, grad-clip guard)</td><td>Few (pretrained; fine-tune lr / steps / prediction length)</td></tr>
-  <tr><td>**Training objective**</td><td>Adversarial + supervised</td><td>Three-player adversarial (channel BCE − γ·central-disc BCE)</td><td>Two-phase: autoencoding MSE pretrain, then adversarial + CTFP latent log-likelihood (no supervisor net)</td><td>Reweighted L1 + Fourier-FFT reconstruction</td><td>Noise-prediction MSE (ε-matching)</td><td>ELBO (weighted reconstruction + KL)</td><td>Stage-1 VQ reconstruction + Stage-2 masked-token cross-entropy</td><td>ELBO (KL + reconstruction NLL)</td><td>Schrödinger-bridge drift (closed-form)</td><td>**Exact negative log-likelihood**</td><td>Quantile (WQL) forecasting loss — pretrained, then full fine-tuned on Heston</td></tr>
+  <tr><td>**Type**</td><td>Neural GAN (5 GRU components)</td><td>Channel-decomposed GAN (per-channel LSTM GANs + MLP central discriminator)</td><td>Continuous-time GAN (Neural-CDE embedder + Neural-ODE recovery/discriminator + continuous normalizing-flow generator)</td><td>Denoising diffusion (DDPM) + seasonal-trend transformer</td><td>Score-based diffusion (DDPM) + time×feature transformer</td><td>Variational auto-encoder (conv encoder + decoder, Base)</td><td>Two-stage vector-quantized (STFT VQ-VAE + MaskGIT prior)</td><td>VAE-style latent state-space model (S4 prior + S4 posterior + S4 decoder)</td><td>Non-parametric kernel estimator</td><td>Explicit-likelihood normalizing flow (frequency domain)</td><td>Pretrained encoder-decoder T5-style probabilistic **conditional forecaster** (group attention) — <em>forecaster reference, not a generator</em></td><td>Pretrained decoder-only patched probabilistic **conditional forecaster** — <em>forecaster reference, not a generator</em></td></tr>
+  <tr><td>**Learnable parameters**</td><td>~120 k (GRU weights)</td><td>~800 k (LSTM channel gen/disc + MLP central disc)</td><td>**32 957 (smallest in benchmark** — CNF generator + Neural-CDE/ODE nets)</td><td>~544 k (enc/dec transformer, mujoco)</td><td>~413 k (2-D transformer, 4 residual layers)</td><td>~247 k (conv encoder/decoder, latent 8)</td><td>LF+HF codebooks (32×64) + MaskGIT transformer (hidden 256, 4 layers)</td><td>~2.15 M (Latent-S4 prior/posterior/decoder, d_model 128, d_state 64)</td><td>**0** (no parameters)</td><td>~360 k (3 spectral-filter MLPs, hidden=200)</td><td>**~120 M (largest in benchmark** — pretrained checkpoint <code>amazon/chronos-2</code>)</td><td>**~200 M** — pretrained checkpoint <code>google/timesfm-1.0-200m-pytorch</code></td></tr>
+  <tr><td>**Training time / seed**</td><td>~6–8 min (A100 GPU)</td><td>~4.3 min (A100 GPU, 120 epochs)</td><td>~21–34 h (A100 GPU, embed 10 000 + joint 3 000 steps; ODE-solver dominated)</td><td>~14.6 min (A100 GPU, 12 000 steps)</td><td>~29.3 min (A100 GPU, 200 epochs)</td><td>~13 min (A100 GPU, EarlyStop 230–340 epochs)</td><td>~53 min (A100 GPU, stage1 250 + stage2 1000 epochs)</td><td>~16 min (A100 GPU, 100 epochs)</td><td>No training</td><td>~8.2 min (CPU, 1000 epochs)</td><td>~85 s fine-tune (A100 GPU, 1 000 steps); zero-shot needs none</td><td>~72 s fine-tune (A100 GPU, 1 000 steps); zero-shot needs none</td></tr>
+  <tr><td>**Generation time / seed**</td><td><1 s (GPU inference)</td><td>LSTM forward over shared noise (not sep. timed, GPU)</td><td>~4.5 s (CNF sample + Neural-ODE decode, GPU)</td><td>500-step DDPM sampling (GPU)</td><td>~10.2 s (50-step DDPM, GPU)</td><td><1 s (single decoder forward pass)</td><td>~6 s (MaskGIT decode + iSTFT, GPU)</td><td>~9 s (STEP-mode `latent.step`, GPU)</td><td>~6.3 min (64 CPU workers)</td><td>~1.5 s (CPU inverse flow + iDFT)</td><td>No generation — single-shot <code>predict_quantiles</code> forecast (GPU)</td><td>No generation — single-shot <code>tfm.forecast</code> forecast (GPU)</td></tr>
+  <tr><td>**Temporal memory**</td><td>Full (GRU sees all past steps)</td><td>Full (LSTM sees all past steps)</td><td>Global (continuous-time CDE/ODE integrated over the full path)</td><td>Global (transformer self-attention over full window)</td><td>Global (2-D transformer over time × feature)</td><td>Global (conv receptive field over full window)</td><td>Global (bidirectional MaskGIT transformer over token grid)</td><td>Global (S4 structured state-space over full window)</td><td>**Markov-1 only**</td><td>Global (per-frequency spectral coupling)</td><td>Global (T5 encoder attention over the 64-step context)</td><td>Global (decoder attention over the 64-step patched context)</td></tr>
+  <tr><td>**Internal representation**</td><td>Latent embeddings (min-max)</td><td>Per-channel LSTM hidden state (shared noise z)</td><td>[0,1] min-max prices → 24-d Neural-CDE latent + CNF base noise</td><td>x̂₀ = trend + seasonal (time + Fourier domain)</td><td>z-scored prices + diffusion noise</td><td>8-d Gaussian latent z</td><td>STFT VQ tokens (LF + HF codebooks)</td><td>Global-standardized prices + latent S4 state z</td><td>Scaled log-returns R̃</td><td>DFT spectral bins (real/imag)</td><td>Tokenized context → 21 predictive quantiles per future step</td><td>Patched context (input-patch 32) → mean + 9 predictive quantiles per future step</td></tr>
+  <tr><td>**Final output**</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>Price paths (S_t)</td><td>**Conditional forecast** of future S_t (21 quantiles → K=77 ensemble), not unconditional paths</td><td>**Conditional forecast** of future S_t (9 quantiles → K=77 ensemble), not unconditional paths</td></tr>
+  <tr><td>**Cross-seed stability**</td><td>Moderate (GAN variance)</td><td>Moderate (GAN variance); wide A5/A28 spread (sign-flipping kurtosis ratio)</td><td>Low–moderate (very wide A1 281.8±288.2 and A28 spread; over-peaked returns, per-seed CRPS tight ±0.11)</td><td>High on moments/ACF, moderate on GRU disc</td><td>High on moments/ACF, moderate on GRU disc</td><td>High on moments, moderate on mean-path (A13/A25 std ~0.2–0.3)</td><td>High on PS-MC (std 0.017), moderate on covariance (A20 std 6.66)</td><td>High on distribution/tail metrics (A2 std 1.1e-04, PS-MC std 0.003–0.006), moderate on mean-path (A13/A25)</td><td>**High** (deterministic kernel)</td><td>High on moments, moderate on covariance</td><td>**Very high** (CRPS std ≈ 2e-04 across 5 fine-tune seeds, deterministic data order)</td><td>Moderate (CRPS std ≈ 0.14 across 5 fine-tune seeds, random per-seed minibatch order)</td></tr>
+  <tr><td>**Scales to long T**</td><td>Well (RNN)</td><td>Well (LSTM); central disc degenerate at C=1 (univariate)</td><td>In principle (continuous-time), but ODE-solver cost heavy — 21–34 h to train at T=128</td><td>Well (transformer handles any T)</td><td>Well (transformer handles any T)</td><td>Well (fixed conv/latent size)</td><td>Well (transformer + more STFT tokens)</td><td>Well (S4 SSM designed for long sequences)</td><td>Degrades (K=1 insufficient)</td><td>Well (fixed spectral size)</td><td>Forecasts at fixed prediction length (trained pred-len 16, single-shot to 64)</td><td>Forecasts at native output-patch 128, single-shot to 64</td></tr>
+  <tr><td>**Hyperparameter sensitivity**</td><td>Many (arch, lr, steps)</td><td>Moderate (γ central-disc weight, lr, epochs, LSTM hidden)</td><td>Moderate (ODE solver + tolerances, CNF dims 32-64-64-32, kinetic/Jacobian penalties)</td><td>Moderate (depth preset, timesteps, EMA)</td><td>Moderate (layers, channels, diffusion steps, β schedule)</td><td>Few (latent dim, reconstruction_wt, hidden sizes)</td><td>Moderate (n_fft, codebook size, MaskGIT steps/temperature)</td><td>Moderate (z_dim, d_model, d_state, S4 blocks; Cauchy-sum fix required)</td><td>One critical: h (bandwidth)</td><td>Few (n_flows, hidden, grad-clip guard)</td><td>Few (pretrained; fine-tune lr / steps / prediction length)</td><td>Few (pretrained; fine-tune lr / steps / quantile-loss weight)</td></tr>
+  <tr><td>**Training objective**</td><td>Adversarial + supervised</td><td>Three-player adversarial (channel BCE − γ·central-disc BCE)</td><td>Two-phase: autoencoding MSE pretrain, then adversarial + CTFP latent log-likelihood (no supervisor net)</td><td>Reweighted L1 + Fourier-FFT reconstruction</td><td>Noise-prediction MSE (ε-matching)</td><td>ELBO (weighted reconstruction + KL)</td><td>Stage-1 VQ reconstruction + Stage-2 masked-token cross-entropy</td><td>ELBO (KL + reconstruction NLL)</td><td>Schrödinger-bridge drift (closed-form)</td><td>**Exact negative log-likelihood**</td><td>Quantile (WQL) forecasting loss — pretrained, then full fine-tuned on Heston</td><td>Masked MSE + 9-quantile pinball forecasting loss — pretrained, then full fine-tuned on Heston</td></tr>
 </tbody>
 </table>

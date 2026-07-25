@@ -1,0 +1,13 @@
+{
+  "etth1_h96": 0.4283,
+  "etth1_h192": 0.4654,
+  "etth2_h96": 0.3206,
+  "etth2_h192": 0.5296,
+  "ettm1_h96": 0.1772,
+  "ettm1_h192": 0.3055,
+  "ettm2_h96": 0.2103,
+  "ettm2_h192": 0.29,
+  "avg": 0.3409,
+  "_model": "google/timesfm-1.0-200m-pytorch",
+  "_context": 512
+}
