@@ -275,11 +275,27 @@ over-dispersed (COSCI-GAN) or collapsed (TimeVAE). Notably **GT-GAN beats RW on 
 neighbour averaging launders its spiky returns into a well-calibrated ensemble spread — the gain is
 CRPS-specific and does not carry to point-wise MAE/RMSE.
 
-> **Forecaster reference (not a generator).** Chronos-2 is scored separately as a direct conditional
-> forecaster of the Heston future — the "best forecaster" yardstick these generator PS-MC rows are measured
-> against — rather than as an unconditional generator. Its fine-tuned direct forecast (CRPS 2.760 / 3.980)
-> beats the RW baseline but does **not** beat LS4 PS-MC (2.704 / 3.763). See
-> [`methods/Chronos2/`](methods/Chronos2/) and [`results/Heston/Chronos2/`](results/Heston/Chronos2/).
+**Forecaster reference (not a generator).** Chronos-2 is a purpose-built **conditional forecaster**, not an
+unconditional generator, so it is excluded from the generator table above. Instead it forecasts the Heston
+future **directly** (64-step real prefix → single-shot 64-step `predict_quantiles`, K=77 inverse-CDF ensemble),
+scored with the **identical CRPS harness** and RW baseline — the "best forecaster" yardstick these generator
+PS-MC rows are measured against. Directly comparable:
+
+| CRPS ↓ (price space) | H=32 | H=64 |
+|----------------------|:----:|:----:|
+| **Forecaster reference** *(Chronos-2, direct forecast)* | | |
+| Chronos-2 zero-shot | 2.996 | 4.234 |
+| Chronos-2 fine-tuned *(5 seeds)* | 2.760 ± 0.0001944 | 3.980 ± 0.0004099 |
+| **Best generator PS-MC** | | |
+| LS4 (path-shadowing, best of 10 generators) | **2.704 ± 0.002510** | **3.763 ± 0.005851** |
+| **Baselines** | | |
+| Random walk (naive) | 3.738 | 5.246 |
+| Perfect (oracle Heston pool) | 2.721 ± 0.004183 | 3.788 ± 0.006463 |
+
+**Both Chronos variants beat the RW baseline**, but the fine-tuned direct forecast (2.760 / 3.980) **does not
+beat LS4 PS-MC** (2.704 / 3.763), which reaches the Perfect oracle floor while the forecaster does not — so
+Path-Shadowing MC over a well-trained generator is itself a competitive conditional forecaster. See
+[`methods/Chronos2/`](methods/Chronos2/) and [`results/Heston/Chronos2/`](results/Heston/Chronos2/).
 
 ### Stylised curves
 
