@@ -286,15 +286,18 @@ yardsticks these generator PS-MC rows are measured against. Directly comparable:
 | **Forecaster reference** *(direct forecast)* | | |
 | Chronos-2 zero-shot | 2.996 | 4.234 |
 | Chronos-2 fine-tuned *(5 seeds)* | 2.760 ± 0.0001944 | 3.980 ± 0.0004099 |
-| TimesFM zero-shot | 3.065 | 4.347 |
-| TimesFM fine-tuned *(5 seeds)* | 2.976 ± 0.140 | 4.046 ± 0.139 |
+| TimesFM-1.0-200m zero-shot | 3.065 | 4.347 |
+| TimesFM-1.0-200m fine-tuned *(5 seeds)* | 2.976 ± 0.140 | 4.046 ± 0.139 |
+| TimesFM-2.0-500m zero-shot | 3.103 | 4.549 |
+| TimesFM-2.0-500m fine-tuned *(5 seeds)* | 3.169 ± 0.312 | 4.440 ± 0.539 |
 | **Best generator PS-MC** | | |
 | LS4 (path-shadowing, best of 10 generators) | **2.704 ± 0.002510** | **3.763 ± 0.005851** |
 | **Baselines** | | |
 | Random walk (naive) | 3.738 | 5.246 |
 | Perfect (oracle Heston pool) | 2.721 ± 0.004183 | 3.788 ± 0.006463 |
 
-**All four forecaster variants beat the RW baseline** (TimesFM sits just behind Chronos-2 at both horizons),
+**All six forecaster variants beat the RW baseline** (TimesFM sits just behind Chronos-2 at both horizons,
+and the smaller 1.0-200m checkpoint beats the newer 2.0-500m on Heston),
 but **neither foundation forecaster beats LS4 PS-MC** (2.704 / 3.763), which reaches the Perfect oracle floor
 while the forecasters do not — so Path-Shadowing MC over a well-trained generator is itself a competitive
 conditional forecaster. See [`methods/Chronos2/`](methods/Chronos2/),

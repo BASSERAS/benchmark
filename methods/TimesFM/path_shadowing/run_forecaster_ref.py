@@ -56,9 +56,7 @@ sys.path.insert(0, PS_DIR)
 from path_shadowing import crps, evaluate_horizon, naive_baseline  # noqa: E402
 
 TEST_DATA = os.path.join(BENCH_ROOT, "dataset", "Heston", "heston_S_test_8192x128.npy")
-MODEL_ID = "google/timesfm-1.0-200m-pytorch"
-NUM_LAYERS = 20
-USE_POS_EMB = True
+DEFAULT_MODEL_ID = "google/timesfm-1.0-200m-pytorch"
 PREFIX_LEN = 64
 HORIZON = 64                       # forecast steps 64..127
 K = 77                             # ensemble members (matches PS-MC K)
@@ -66,6 +64,13 @@ HORIZONS = {"h32": (0, 32), "h64": (0, 64)}
 FC_BATCH = 512
 CRPS_BATCH_N = 512
 Q_LEVELS = np.round(np.arange(1, 10) * 0.1, 1)   # 0.1 .. 0.9 (TimesFM native)
+
+
+def model_cfg(model_id):
+    """(num_layers, use_positional_embedding) per released checkpoint."""
+    if "2.0-500m" in model_id:
+        return 50, False      # 2.0-500m
+    return 20, True           # 1.0-200m
 
 
 # --------------------------------------------------------------------------- #
@@ -133,18 +138,18 @@ def score_ensemble(ensemble, y_fut):
     return res, crps_step
 
 
-def load_tfm(device, state_dict_path=None):
+def load_tfm(device, model_id, num_layers, use_pos_emb, state_dict_path=None):
     import timesfm
     tfm = timesfm.TimesFm(
         hparams=timesfm.TimesFmHparams(
             backend="gpu" if device == "cuda" else "cpu",
             per_core_batch_size=32,
             horizon_len=HORIZON,
-            num_layers=NUM_LAYERS,
+            num_layers=num_layers,
             context_len=512,
-            use_positional_embedding=USE_POS_EMB,
+            use_positional_embedding=use_pos_emb,
         ),
-        checkpoint=timesfm.TimesFmCheckpoint(huggingface_repo_id=MODEL_ID),
+        checkpoint=timesfm.TimesFmCheckpoint(huggingface_repo_id=model_id),
     )
     if state_dict_path is not None:
         sd = torch.load(state_dict_path, map_location=device, weights_only=True)
@@ -156,6 +161,19 @@ def load_tfm(device, state_dict_path=None):
 
 # --------------------------------------------------------------------------- #
 def main():
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--model", default=DEFAULT_MODEL_ID,
+                    help="released TimesFM checkpoint (1.0-200m or 2.0-500m)")
+    args = ap.parse_args()
+
+    num_layers, use_pos_emb = model_cfg(args.model)
+    tag = args.model.split("/")[-1]                                # timesfm-2.0-500m-pytorch
+    is_default = "1.0-200m" in args.model
+    # 1.0-200m keeps the committed flat weights/ dir and unsuffixed output filenames.
+    weights_dir = WEIGHTS_DIR if is_default else os.path.join(WEIGHTS_DIR, tag)
+    suffix = "" if is_default else f"_{tag}"
+
     os.makedirs(OUT_DIR, exist_ok=True)
     os.makedirs(PLOT_DIR, exist_ok=True)
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -165,7 +183,7 @@ def main():
     N, T = X_real.shape
     prefixes = X_real[:, :PREFIX_LEN].astype(np.float32)           # (N, 64)
     y_fut = X_real[:, PREFIX_LEN:]                                 # (N, 64)
-    print(f"=== TimesFM-1.0-200m forecaster reference  device={dev_name} ===", flush=True)
+    print(f"=== {tag} forecaster reference  device={dev_name} ===", flush=True)
     print(f"[data] test{X_real.shape}  prefix={PREFIX_LEN}  horizon={HORIZON}  "
           f"K={K}", flush=True)
 
@@ -173,13 +191,13 @@ def main():
     print(f"[baseline RW] {baseline}", flush=True)
 
     summary = {"prefix_len": PREFIX_LEN, "horizon": HORIZON, "K": K,
-               "model_id": MODEL_ID, "baseline": baseline}
+               "model_id": args.model, "baseline": baseline}
     per_step = {}
 
     # -- zero-shot (single model) --------------------------------------------
     print("\n-- zero_shot ------------------------------------------------", flush=True)
     t0 = time.time()
-    tfm = load_tfm(device, state_dict_path=None)
+    tfm = load_tfm(device, args.model, num_layers, use_pos_emb, state_dict_path=None)
     rng = np.random.default_rng(0)
     ens_zs = forecast_ensemble(tfm, prefixes, HORIZON, K, rng, batch_size=FC_BATCH)
     zs_res, zs_step = score_ensemble(ens_zs, y_fut)
@@ -199,8 +217,8 @@ def main():
     ens_ft0 = None
     for seed in range(5):
         t0 = time.time()
-        sd_path = os.path.join(WEIGHTS_DIR, f"seed_{seed}_model.pt")
-        tfm = load_tfm(device, state_dict_path=sd_path)
+        sd_path = os.path.join(weights_dir, f"seed_{seed}_model.pt")
+        tfm = load_tfm(device, args.model, num_layers, use_pos_emb, state_dict_path=sd_path)
         rng = np.random.default_rng(seed)
         ens = forecast_ensemble(tfm, prefixes, HORIZON, K, rng, batch_size=FC_BATCH)
         res, step = score_ensemble(ens, y_fut)
@@ -229,12 +247,12 @@ def main():
 
     # -- save JSON ------------------------------------------------------------
     summary["per_step_crps"] = per_step
-    with open(os.path.join(OUT_DIR, "forecaster_summary.json"), "w") as f:
+    with open(os.path.join(OUT_DIR, f"forecaster_summary{suffix}.json"), "w") as f:
         json.dump(summary, f, indent=2)
     for r in ft_seeds:
-        with open(os.path.join(OUT_DIR, f"forecaster_seed_{r['seed']}.json"), "w") as f:
+        with open(os.path.join(OUT_DIR, f"forecaster_seed_{r['seed']}{suffix}.json"), "w") as f:
             json.dump(r, f, indent=2)
-    print(f"\nSaved -> {OUT_DIR}/forecaster_summary.json", flush=True)
+    print(f"\nSaved -> {OUT_DIR}/forecaster_summary{suffix}.json", flush=True)
 
     # -- Figure 1 -- example forecasts (fine-tune seed 0) --------------------
     import matplotlib
@@ -246,7 +264,7 @@ def main():
     t_axis = np.arange(T)
     fig, axes = plt.subplots(1, 4, figsize=(16, 3.5))
     fig.suptitle(
-        f"TimesFM-1.0-200m forecaster reference -- 64-step prefix (blue) + K={K} "
+        f"{tag} forecaster reference -- 64-step prefix (blue) + K={K} "
         f"forecast members (red), fine-tune seed 0", fontsize=10)
     for ax, i in zip(axes, idx):
         ax.plot(t_axis[:PREFIX_LEN], X_real[i, :PREFIX_LEN],
@@ -270,7 +288,7 @@ def main():
     fig.legend(h2, l2, loc="lower center", ncol=3, fontsize=8,
                bbox_to_anchor=(0.5, -0.1))
     plt.tight_layout()
-    out1 = os.path.join(PLOT_DIR, "forecaster_example.png")
+    out1 = os.path.join(PLOT_DIR, f"forecaster_example{suffix}.png")
     plt.savefig(out1, dpi=150, bbox_inches="tight")
     plt.close()
     print(f"Saved: {out1}", flush=True)
@@ -293,12 +311,12 @@ def main():
     ax.axvline(32, color="black", linewidth=0.7, linestyle=":")
     ax.set_xlabel("Forecast horizon (steps ahead)", fontsize=9)
     ax.set_ylabel("Mean CRPS", fontsize=9)
-    ax.set_title("TimesFM-1.0-200m forecaster reference -- CRPS per step (Heston test set)",
+    ax.set_title(f"{tag} forecaster reference -- CRPS per step (Heston test set)",
                  fontsize=9)
     ax.legend(fontsize=7)
     ax.tick_params(labelsize=8)
     plt.tight_layout()
-    out2 = os.path.join(PLOT_DIR, "forecaster_crps_per_step.png")
+    out2 = os.path.join(PLOT_DIR, f"forecaster_crps_per_step{suffix}.png")
     plt.savefig(out2, dpi=150, bbox_inches="tight")
     plt.close()
     print(f"Saved: {out2}", flush=True)

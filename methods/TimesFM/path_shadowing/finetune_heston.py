@@ -54,13 +54,18 @@ BENCH_ROOT = os.path.dirname(os.path.dirname(METHOD_DIR))     # benchmark/
 WEIGHTS_DIR = os.path.join(METHOD_DIR, "weights")
 TRAIN_DATA = os.path.join(BENCH_ROOT, "dataset", "Heston", "heston_S_8192x128.npy")
 
-MODEL_ID = "google/timesfm-1.0-200m-pytorch"
+DEFAULT_MODEL_ID = "google/timesfm-1.0-200m-pytorch"
 PREFIX_LEN = 64
 HORIZON = 64
 CONTEXT_LEN = 64          # 2 input patches of length 32
-NUM_LAYERS = 20           # 1.0-200m
-USE_POS_EMB = True        # 1.0-200m
 QUANTILES = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]  # create_quantiles()
+
+
+def model_cfg(model_id):
+    """(num_layers, use_positional_embedding) per released checkpoint."""
+    if "2.0-500m" in model_id:
+        return 50, False      # 2.0-500m
+    return 20, True           # 1.0-200m
 
 
 def pinball(pred, actual, q):
@@ -69,19 +74,19 @@ def pinball(pred, actual, q):
     return 2.0 * torch.where(dev * q >= 0, dev * q, -dev * (1.0 - q))
 
 
-def build_model(device):
-    """Load released timesfm-1.0-200m and return its trainable torch decoder."""
+def build_model(device, model_id, num_layers, use_pos_emb):
+    """Load a released TimesFM checkpoint and return its trainable torch decoder."""
     import timesfm
     tfm = timesfm.TimesFm(
         hparams=timesfm.TimesFmHparams(
             backend="gpu" if device == "cuda" else "cpu",
             per_core_batch_size=32,
             horizon_len=128,           # native output patch length
-            num_layers=NUM_LAYERS,
+            num_layers=num_layers,
             context_len=512,           # wrapper cap; we feed 64 directly
-            use_positional_embedding=USE_POS_EMB,
+            use_positional_embedding=use_pos_emb,
         ),
-        checkpoint=timesfm.TimesFmCheckpoint(huggingface_repo_id=MODEL_ID),
+        checkpoint=timesfm.TimesFmCheckpoint(huggingface_repo_id=model_id),
     )
     model = tfm._model.to(device)      # PatchedTimeSeriesDecoder, weights loaded
     return model
@@ -96,6 +101,8 @@ def make_samples(series, context_len, horizon_len):
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("--model", default=DEFAULT_MODEL_ID,
+                    help="released TimesFM checkpoint (1.0-200m or 2.0-500m)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--frac", type=float, default=1.0, help="fraction of train paths")
     ap.add_argument("--steps", type=int, default=1000)
@@ -116,6 +123,12 @@ def main():
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
+    num_layers, use_pos_emb = model_cfg(args.model)
+    tag = args.model.split("/")[-1]                          # e.g. timesfm-2.0-500m-pytorch
+    # 1.0-200m keeps the original flat weights/ dir (committed); others get a subdir.
+    weights_dir = WEIGHTS_DIR if "1.0-200m" in args.model \
+        else os.path.join(WEIGHTS_DIR, tag)
+
     X = np.load(TRAIN_DATA).astype(np.float64)                # (8192, 128)
     if args.frac < 1.0:
         n = max(args.batch, int(len(X) * args.frac))
@@ -123,7 +136,7 @@ def main():
         X = X[rng.choice(len(X), n, replace=False)]
     ctx_np, fut_np = make_samples(X, CONTEXT_LEN, HORIZON)
     N = ctx_np.shape[0]
-    print(f"=== TimesFM-1.0-200m Heston fine-tune  seed={args.seed}  device={dev_name} ===",
+    print(f"=== {tag} Heston fine-tune  seed={args.seed}  device={dev_name} ===",
           flush=True)
     print(f"[data] train paths={N}  ctx={CONTEXT_LEN}  horizon={HORIZON}  "
           f"frac={args.frac}  steps={args.steps}  batch={args.batch}", flush=True)
@@ -133,7 +146,7 @@ def main():
     pad = torch.zeros_like(ctx)                               # (N, ctx) no padding
     freq = torch.zeros((args.batch, 1), dtype=torch.long, device=device)
 
-    model = build_model(device)
+    model = build_model(device, args.model, num_layers, use_pos_emb)
     model.train()
     opt = torch.optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
 
@@ -179,13 +192,13 @@ def main():
         print("[smoke] weights NOT saved.", flush=True)
         return
 
-    os.makedirs(WEIGHTS_DIR, exist_ok=True)
-    ckpt = os.path.join(WEIGHTS_DIR, f"seed_{args.seed}_model.pt")
+    os.makedirs(weights_dir, exist_ok=True)
+    ckpt = os.path.join(weights_dir, f"seed_{args.seed}_model.pt")
     torch.save(model.state_dict(), ckpt)
     cfg = {
         "method": "TimesFM", "variant": "finetune", "seed": args.seed,
-        "model_id": MODEL_ID, "num_layers": NUM_LAYERS,
-        "use_positional_embedding": USE_POS_EMB,
+        "model_id": args.model, "num_layers": num_layers,
+        "use_positional_embedding": use_pos_emb,
         "feat_dim": 1, "seq_len": 128, "context_len": CONTEXT_LEN,
         "horizon": HORIZON, "ft_pred_len": HORIZON, "ft_steps": args.steps,
         "ft_lr": args.lr, "ft_batch": args.batch, "ft_weight_decay": args.wd,
@@ -195,9 +208,9 @@ def main():
         "n_train": N, "first_mse": first, "last_mse": last_l,
         "train_time_sec": round(dt, 1),
     }
-    with open(os.path.join(WEIGHTS_DIR, f"seed_{args.seed}_config.json"), "w") as f:
+    with open(os.path.join(weights_dir, f"seed_{args.seed}_config.json"), "w") as f:
         json.dump(cfg, f, indent=2)
-    with open(os.path.join(WEIGHTS_DIR, f"seed_{args.seed}_losses.csv"), "w", newline="") as f:
+    with open(os.path.join(weights_dir, f"seed_{args.seed}_losses.csv"), "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["step", "mse"])
         w.writerows(loss_log)
