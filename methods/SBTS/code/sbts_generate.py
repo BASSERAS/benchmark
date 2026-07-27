@@ -12,11 +12,11 @@ Pipeline (SBTS paper §6 Scaling Procedure):
   7. Inverse-scale: R_gen = output * sigma / sqrt(dt)   shape (M_simu, 127)
   8. Reconstruct prices: S_gen[:,0]=100, S_gen[:,t+1]=S_gen[:,t]*exp(R_gen[:,t])
 
-Key decisions (SBTS paper Appendix C, Table 4, confirmed 2026-07-17):
-  K=1 (Markovian order 1 for Heston)
-  h=0.4 (bandwidth, starting point from paper — tuned via CV)
-  N_pi=200 (Euler substeps per interval)
-  dt=1/250
+Key decisions (author-specified, A. Alouadi, confirmed 2026-07-27):
+  K=20 (Markovian order for this length-128 benchmark)
+  h=0.05 (bandwidth; paper's h=0.4 was far too large for this setup)
+  N_pi=50 (Euler substeps per interval; chosen for speed, low impact)
+  dt=1/250 (kept to match the shared Heston dataset)
 
 Parallelisation: Python multiprocessing fork — workers inherit Numba JIT cache.
 On this machine: up to 16 physical cores.
@@ -159,16 +159,16 @@ def scale_log_returns(S):
 
 
 def generate_paths(S_train, M_simu, h,
-                   K=1, N_pi=200, n_workers=16, seed=0):
+                   K=20, N_pi=50, n_workers=16, seed=0):
     """Generate M_simu Heston-like price paths using SBTS Markovian.
 
     Parameters
     ----------
     S_train   : (M, 128) float64 — training price paths (dataset/Heston only)
     M_simu    : int               — paths to generate (8192 for full run)
-    h         : float             — kernel bandwidth (paper default: 0.4)
-    K         : int               — Markovian order  (paper: 1 for Heston)
-    N_pi      : int               — Euler substeps   (paper: 200 for Heston)
+    h         : float             — kernel bandwidth (author: 0.05)
+    K         : int               — Markovian order  (author: 20)
+    N_pi      : int               — Euler substeps   (author: 50)
     n_workers : int               — CPU workers (hard max 16 on this machine)
     seed      : int               — base random seed
 

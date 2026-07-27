@@ -10,7 +10,7 @@ Runs SBTS on a SMALL subset of the Heston data before launching the full
   4. No NaN / inf in output
   5. Visual plot saved for manual inspection
 
-Paper reference (Appendix C):  h=0.4, K=1, N_pi=200, dt=1/252 for Heston T=100.
+Author-specified for this benchmark: h=0.05, K=20, N_pi=50 (A. Alouadi, 2026-07-27).
 We use dt=1/250 and T=128; small test uses N_train=200, M_simu=20, T_small=32.
 
 Run:
@@ -31,9 +31,9 @@ from sbts_generate import generate_paths, warmup_jit, DT, S0
 N_TRAIN = 200    # training paths (subset of 8192)
 M_SIMU  = 20     # paths to generate
 T_SMALL = 32     # timesteps (truncated from 128)
-H       = 0.4    # paper default for Heston (Appendix C)
-K       = 1      # Markovian order (paper: 1 for Heston)
-N_PI    = 200    # Euler substeps (paper: 200)
+H       = 0.05   # author-specified (A. Alouadi, 2026-07-27)
+K       = 20     # Markovian order (author: 20 for this benchmark)
+N_PI    = 50     # Euler substeps (author: 50)
 N_WORK  = 4      # workers for small test (well within 16-core limit)
 
 print("=" * 60)

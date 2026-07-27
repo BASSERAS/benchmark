@@ -27,10 +27,14 @@ sys.path.insert(0, CODE)
 
 from sbts_generate import generate_paths, warmup_jit, DT, S0
 
-# ── Hyper-parameters (paper Appendix C, Table 4 — Heston) ────────────────────
-H        = 0.4    # bandwidth (paper: h=0.4 for Heston T=100, Δt=1/252)
-K        = 1      # Markovian order (paper: k=1 for Heston)
-N_PI     = 200    # Euler substeps  (paper: N^π=200 for Heston)
+# ── Hyper-parameters (author-specified for this ICAIF benchmark) ─────────────
+# Confirmed by A. Alouadi (SBTS author) 2026-07-27 for the length-128 Heston
+# benchmark. These SUPERSEDE the paper's length-100 Heston values (h=0.4, k=1,
+# N_pi=200): h=0.4 was far too large for this setup and produced degenerate
+# paths. N_pi=50 is mainly for speed (low impact on quality per the author).
+H        = 0.05   # bandwidth (author: 0.4 was much too large for length-128)
+K        = 20     # Markovian order (author: k=20 for this benchmark)
+N_PI     = 50     # Euler substeps  (author: 50, chosen for speed; low impact)
 M_SIMU   = 8192   # paths to generate per seed
 # Override via env: SBTS_NWORK=64 SBTS_SEEDS=1,2,3,4 python run_all.py
 N_WORK   = int(os.environ.get("SBTS_NWORK",  "16"))
@@ -101,11 +105,13 @@ for seed in SEEDS:
     bw_path = os.path.join(LOSSES_DIR, f"seed_{seed}_bandwidth.json")
     bw_info = dict(
         seed=seed, h=H, K=K, N_pi=N_PI, dt=DT,
-        method="paper_default",
+        method="author_specified",
         note=(
-            "h=0.4 from SBTS paper Appendix C Table 4 "
-            "(Heston T=100, dt=1/252). "
-            "SBTS is kernel-based — no training loss to log."
+            "h=0.05, K=20, N_pi=50 — confirmed by A. Alouadi (SBTS author) "
+            "2026-07-27 for the length-128 Heston benchmark; supersedes the "
+            "paper's length-100 values (h=0.4 was much too large). dt=1/250 "
+            "kept to match the shared dataset. SBTS is kernel-based — no "
+            "training loss to log."
         ),
     )
     with open(bw_path, "w") as f:

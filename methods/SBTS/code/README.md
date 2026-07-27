@@ -4,11 +4,11 @@
 
 | Field | Details |
 |-------|---------|
-| **Paper** | *Schrödinger Bridge Time Series* |
-| **Authors** | Guillaume Principato, Luca De Gennaro Aquino, Gustavo Boretto, Brieuc Lehmann |
-| **Venue** | arXiv 2025 |
+| **Paper** | *Robust Time Series Generation via Schrödinger Bridge: A Comprehensive Evaluation* |
+| **Authors** | Alexandre Alouadi, Baptiste Barreau, Laurent Carlier, Huyên Pham |
+| **Venue** | ICAIF 2025 |
 | **arXiv** | https://arxiv.org/abs/2503.02943 |
-| **Original code** | https://github.com/g-principato/SBTS |
+| **Original code** | https://github.com/alexouadi/SBTS |
 | **Method type** | Non-parametric kernel density estimation (no neural network, no training) |
 
 The verbatim reference implementation is kept under [`reference/`](reference/) for transparency.
@@ -29,9 +29,10 @@ $$\hat{a}(t, x; \{x_i\}) = \frac{\sum_i w_i(t) \cdot \frac{x_i^{t+1} - x}{t+1 - 
 where `w_i(t)` are kernel weights measuring how close training path `i`
 has been to the current trajectory up to time `t`.
 
-**Markovian order K=1** (Heston, paper Appendix C Table 4): weights depend only
-on the most recent state — `w_i ∝ K_h(X_i^t - x_t)` — reflecting that Heston
-is a Markov process (no memory beyond the current state).
+**Markovian order K=20** (author-specified for this length-128 Heston benchmark,
+confirmed by A. Alouadi 2026-07-27): weights depend on the last **K** states —
+`w_i ∝ ∏_{j} K_h(X_i^{t-j} - x_{t-j})` — giving the kernel enough memory to
+reproduce Heston's volatility autocorrelation over the 128-step horizon.
 
 **Quartic kernel:** `K_h(x) = (h² − x²)²·1_{|x|<h}` (compact support, differentiable).
 
@@ -39,14 +40,19 @@ is a Markov process (no memory beyond the current state).
 We scale log-returns as `R̃ = R × √Δt / σ(R)` before SBTS,
 then inverse-scale: `R_gen = R̃_gen × σ(R) / √Δt`.
 
-### Hyperparameters (paper Appendix C, Table 4 — Heston)
+### Hyperparameters (author-specified for this length-128 Heston benchmark)
+
+Confirmed by A. Alouadi (SBTS author) 2026-07-27. These **supersede** the paper's
+length-100 Heston values (h=0.4, K=1, N_pi=200): h=0.4 was far too large for this
+setup and over-smoothed the paths into a degenerate near-Gaussian. dt=1/250 is kept
+to match the shared Heston dataset used by every method.
 
 | Parameter | Value | Meaning |
 |-----------|-------|---------|
-| `h` | 0.4 | Kernel bandwidth (quartic compact-support) |
-| `K` | 1 | Markovian order (Heston is Markov-1) |
-| `N_pi` | 200 | Euler substeps per observation interval |
-| `dt` | 1/250 | Observation interval |
+| `h` | 0.05 | Kernel bandwidth (quartic compact-support) — paper's 0.4 was much too large |
+| `K` | 20 | Markovian order — enough memory to reproduce Heston vol autocorrelation |
+| `N_pi` | 50 | Euler substeps per observation interval (chosen for speed; low impact) |
+| `dt` | 1/250 | Observation interval (shared dataset) |
 
 ### Pipeline
 
@@ -63,9 +69,9 @@ S_train (8192, 128)
 
 ### Parallelisation
 
-Python `multiprocessing.Pool` with `n_workers=64` (seeds 1–4) or `n_workers=16`
-(seed 0). Each worker inherits the parent's Numba JIT cache (Linux fork semantics)
-and generates its `M_simu / n_workers` paths serially in a loop.
+Python `multiprocessing.Pool` with `n_workers=64` for all seeds. Each worker inherits
+the parent's Numba JIT cache (Linux fork semantics) and generates its
+`M_simu / n_workers` paths serially in a loop.
 
 No GPU is needed: SBTS is a kernel-based method with no learnable parameters.
 
@@ -78,7 +84,7 @@ No GPU is needed: SBTS is a kernel-based method with no learnable parameters.
 | `sbts_generate.py` | Core module: `generate_paths()`, `warmup_jit()`, Numba kernels |
 | `small_test.py` | Sanity test: N_train=200, M_simu=20, T=32 — passes all checks |
 | `run_all.py` | Full run: 5 seeds × 8 192 paths × 128 steps |
-| `reference/` | Verbatim SBTS repo (g-principato/SBTS, .git stripped) |
+| `reference/` | Verbatim SBTS repo (alexouadi/SBTS, .git stripped) |
 
 ---
 
@@ -124,48 +130,47 @@ Each `results/Heston/SBTS/seed_i_metrics.json` is the sole source for that seed'
 
 ---
 
-## Sanity check results (small\_test.py, 2026-07-17)
+## Sanity check results (small\_test.py, 2026-07-27)
 
 ```
-N_train=200, M_simu=20, T=32, h=0.4, K=1, N_pi=200, n_workers=4
+N_train=200, M_simu=20, T=32, h=0.05, K=20, N_pi=50, n_workers=4
   ✓ Shape: (20, 32)
   ✓ No NaN / inf
   ✓ All paths start at S0=100.0
-  ✓ Price range: [83.59, 119.47]
+  ✓ Price range: [85.91, 116.51]
 
 Log-return statistics (generated vs training):
-  ✓ mean  : train=+0.00007   gen=+0.00007
-  ✓ std   : train=+0.01251   gen=+0.00982   (21% below — expected at N_train=200)
-  ✓ skew  : train=-0.02703   gen=-0.01890
-  ✓ kurt  : train=+0.58764   gen=-0.06050
+  ✓ mean  : train=+0.00015   gen=+0.00040
+  ✓ std   : train=+0.01251   gen=+0.01207   (only 4% below — h=0.05 avoids compression)
+  ✓ skew  : train=-0.05768   gen=-0.09626
+  ✓ kurt  : train=+0.31288   gen=+0.80023
 ```
 
-Variance compression at N_train=200 is expected: the kernel estimator underestimates
-the tails on small training sets. It disappears at N_train=8192 (full run),
-confirmed by seed 0: σ_train=0.01265, price range [51.8, 210.6].
+With the corrected small bandwidth (h=0.05) the variance compression seen under the
+paper's h=0.4 is gone even at N_train=200 (std within 4%, vs 21% under h=0.4). On the
+full N_train=8192 run the match tightens further: seed 0 σ_train=0.01265, price range
+[41.1, 143.8].
 
 ---
 
 ## Changing hyperparameters
 
-All hyperparameters are taken verbatim from **paper Appendix C, Table 4** (Heston, K=1 Markovian).
-To experiment, override the constants at the top of `run_all.py` or pass them explicitly
-to `generate_paths()` in `sbts_generate.py`.
+The Heston hyperparameters are **author-specified** (A. Alouadi, 2026-07-27) for this
+length-128 benchmark and supersede the paper's length-100 values. To experiment, override
+the constants at the top of `run_all.py` or pass them explicitly to `generate_paths()`.
 
-| Hyperparameter | Paper default | Where to change | Effect |
-|----------------|---------------|-----------------|--------|
-| `h` | 0.4 | `run_all.py` constant `H_BW` | Kernel bandwidth. Larger h → smoother paths, smaller variance. |
-| `K` | 1 | `run_all.py` constant `K_ORDER` | Markovian order. K=1: weights on last state only. K=2 adds lag-1 state (non-Markovian). |
-| `N_pi` | 200 | `run_all.py` constant `N_PI` | Euler substeps per Δt. More substeps → smoother approximation, slower generation. |
-| `n_workers` | 64 | `SBTS_NWORK` env var | CPU parallelism. Set to number of available cores (max 64 recommended). |
-| `dt` | 1/250 | `sbts_generate.py` `DT` | Observation interval. 1/250 = daily (250 trading days/year). |
+| Hyperparameter | Benchmark value | Where to change | Effect |
+|----------------|-----------------|-----------------|--------|
+| `h` | 0.05 | `run_all.py` constant `H` | Kernel bandwidth. Larger h → smoother paths, smaller variance. The paper's 0.4 over-smoothed this setup. |
+| `K` | 20 | `run_all.py` constant `K` | Markovian order. Larger K → more memory (reproduces vol autocorrelation), slower per path. |
+| `N_pi` | 50 | `run_all.py` constant `N_PI` | Euler substeps per Δt. More substeps → smoother approximation, slower generation (low impact on quality). |
+| `n_workers` | 64 | `SBTS_NWORK` env var | CPU parallelism. Set to number of available cores. |
+| `dt` | 1/250 | `sbts_generate.py` `DT` | Observation interval. 1/250 = daily; kept fixed to match the shared dataset. |
 
-**Example — wider bandwidth:**
+**Example — override on the command line:**
 ```bash
-SBTS_H=0.6 SBTS_NWORK=64 python run_all.py
+SBTS_NWORK=64 SBTS_SEEDS=0,1 python run_all.py
 ```
-
-(requires reading `SBTS_H` in `run_all.py`; add `H_BW = float(os.getenv("SBTS_H", "0.4"))`)
 
 ---
 

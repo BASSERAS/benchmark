@@ -1,9 +1,9 @@
 {
   "seed": 1,
-  "h": 0.4,
-  "K": 1,
-  "N_pi": 200,
+  "h": 0.05,
+  "K": 20,
+  "N_pi": 50,
   "dt": 0.004,
-  "method": "paper_default",
-  "note": "h=0.4 from SBTS paper Appendix C Table 4 (Heston T=100, dt=1/252). SBTS is kernel-based \u2014 no training loss to log."
+  "method": "author_specified",
+  "note": "h=0.05, K=20, N_pi=50 \u2014 confirmed by A. Alouadi (SBTS author) 2026-07-27 for the length-128 Heston benchmark; supersedes the paper's length-100 values (h=0.4 was much too large). dt=1/250 kept to match the shared dataset. SBTS is kernel-based \u2014 no training loss to log."
 }

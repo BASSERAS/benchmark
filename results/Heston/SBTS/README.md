@@ -5,8 +5,10 @@
 **Dataset:** 8 192 Heston price paths, seq\_len = 128.
 Parameters: μ=0.05, κ=2.0, θ=0.04, ξ=0.3, ρ=−0.7, S₀=100, v₀=0.04, dt=1/250.
 
-**Model:** SBTS univariate Markovian — h=0.4, K=1, N_pi=200, CPU-only (no GPU).
-No neural network, no training. Kernel density estimation with Schrödinger-bridge drift.
+**Model:** SBTS univariate Markovian — h=0.05, K=20, N_pi=50, CPU-only (no GPU).
+Author-specified hyperparameters (A. Alouadi, 2026-07-27) for this length-128 benchmark, superseding the
+paper's length-100 values (h=0.4, K=1, N_pi=200). No neural network, no training. Kernel density estimation
+with a Markovian-K (K=20) Schrödinger-bridge drift.
 
 **Convention:** lower is better for all metrics **except A33 Teacher-Sigma Corr ↑**. A28 Kurtosis Ratio: perfect = 1.0.
 
@@ -61,62 +63,64 @@ generator. See [`../../../methods/perfect_recovery/`](../../../methods/perfect_r
 | Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |--------|-----------|--------|--------|--------|--------|--------|---------------|
 | **— Fat Tail —** | | | | | | | |
-| A1 Kurtosis Error ↓ | 0.1183 ± 0.006001 | 0.1153 | 0.1112 | 0.1162 | 0.1290 | 0.1199 | 0.008092 |
-| A2 \|r\| q95 Error ↓ | 0.006390 ± 2.97e-05 | 0.006442 | 0.006388 | 0.006397 | 0.006361 | 0.006361 | 6.57e-05 |
-| A3 \|r\| q99 Error ↓ | 0.009803 ± 4.84e-05 | 0.009822 | 0.009798 | 0.009872 | 0.009799 | 0.009722 | 5.98e-05 |
-| A4 Tail QQ Error ↓ | 0.006290 ± 2.63e-05 | 0.006335 | 0.006291 | 0.006298 | 0.006267 | 0.006260 | 6.75e-05 |
-| A5 Hill Tail Index Error ↓ | 10.06 ± 0.3457 | 9.851 | 9.766 | 10.42 | 10.55 | 9.740 | 0.5266 |
+| A1 Kurtosis Error ↓ | 0.008384 ± 0.005009 | 0.005861 | 0.01242 | 0.01410 | 0.009464 | 7.96e-05 | 0.008092 |
+| A2 \|r\| q95 Error ↓ | 2.12e-04 ± 3.87e-05 | 1.70e-04 | 2.30e-04 | 2.76e-04 | 1.77e-04 | 2.07e-04 | 6.57e-05 |
+| A3 \|r\| q99 Error ↓ | 1.20e-04 ± 8.36e-05 | 1.87e-06 | 9.43e-05 | 2.59e-04 | 1.01e-04 | 1.45e-04 | 5.98e-05 |
+| A4 Tail QQ Error ↓ | 1.90e-04 ± 4.01e-05 | 1.44e-04 | 2.07e-04 | 2.58e-04 | 1.58e-04 | 1.83e-04 | 6.75e-05 |
+| A5 Hill Tail Index Error ↓ | 1.604 ± 0.2885 | 1.192 | 1.739 | 1.709 | 1.372 | 2.008 | 0.5266 |
 | **— Distribution —** | | | | | | | |
-| A6 Path MMD² ↓ | 0.01106 ± 8.13e-04 | 0.01189 | 0.01017 | 0.01192 | 0.01004 | 0.01130 | 0.001842 |
-| A7 Terminal MMD² ↓ | 0.009545 ± 0.001668 | 0.01123 | 0.01067 | 0.009922 | 0.006440 | 0.009460 | 0.001983 |
-| A8 Increment MMD² ↓ | 0.007378 ± 3.39e-04 | 0.007343 | 0.007155 | 0.007126 | 0.007227 | 0.008038 | 8.69e-04 |
-| A9 Volatility MMD ↓ | 0.3139 ± 0.01207 | 0.3101 | 0.3109 | 0.3075 | 0.3036 | 0.3375 | 0.008554 |
-| A10 Terminal SWD ↓ | 3.710 ± 0.2944 | 4.041 | 3.759 | 3.780 | 3.157 | 3.815 | 1.151 |
-| A11 Path SWD ↓ | 2.498 ± 0.1451 | 2.544 | 2.445 | 2.700 | 2.258 | 2.542 | 0.6191 |
-| A12 RV Law Loss ↓ | 2.175 ± 0.007357 | 2.182 | 2.177 | 2.182 | 2.168 | 2.165 | 0.05202 |
-| A13 Mean Path RMSE ↓ | 0.8477 ± 0.1819 | 0.8932 | 0.6131 | 1.022 | 0.6578 | 1.053 | 0.1205 |
-| A14 KS Log-returns ↓ | 0.05413 ± 3.75e-04 | 0.05434 | 0.05364 | 0.05459 | 0.05372 | 0.05433 | 0.001491 |
-| A15 Skewness Error ↓ | 0.03158 ± 0.003742 | 0.02853 | 0.02730 | 0.03064 | 0.03380 | 0.03763 | 0.005274 |
-| A16 QQ RMSE (300-pt) ↓ | 0.002853 ± 1.15e-05 | 0.002868 | 0.002853 | 0.002863 | 0.002840 | 0.002840 | 4.19e-05 |
-| A17 Terminal Price KS ↓ | 0.09102 ± 0.005462 | 0.08801 | 0.09387 | 0.08826 | 0.08472 | 0.1002 | 0.01099 |
+| A6 Path MMD² ↓ | 0.001971 ± 1.85e-04 | 0.001713 | 0.002072 | 0.001811 | 0.002031 | 0.002228 | 0.001842 |
+| A7 Terminal MMD² ↓ | 0.001583 ± 4.28e-04 | 0.001524 | 0.001921 | 0.001079 | 0.001184 | 0.002205 | 0.001983 |
+| A8 Increment MMD² ↓ | 0.001077 ± 3.18e-05 | 0.001026 | 0.001122 | 0.001062 | 0.001080 | 0.001092 | 8.69e-04 |
+| A9 Volatility MMD ↓ | 0.01503 ± 8.50e-04 | 0.01524 | 0.01620 | 0.01468 | 0.01364 | 0.01540 | 0.008554 |
+| A10 Terminal SWD ↓ | 0.7477 ± 0.3351 | 0.5202 | 1.180 | 0.4188 | 0.4880 | 1.131 | 1.151 |
+| A11 Path SWD ↓ | 0.6418 ± 0.1355 | 0.4517 | 0.7875 | 0.5400 | 0.6332 | 0.7968 | 0.6191 |
+| A12 RV Law Loss ↓ | 0.07994 ± 0.01408 | 0.05709 | 0.09211 | 0.09597 | 0.07224 | 0.08227 | 0.05202 |
+| A13 Mean Path RMSE ↓ | 0.2545 ± 0.09266 | 0.3736 | 0.1657 | 0.1307 | 0.2771 | 0.3254 | 0.1205 |
+| A14 KS Log-returns ↓ | 0.002542 ± 2.16e-04 | 0.002771 | 0.002814 | 0.002493 | 0.002280 | 0.002351 | 0.001491 |
+| A15 Skewness Error ↓ | 0.01796 ± 0.003795 | 0.01376 | 0.01962 | 0.01830 | 0.01411 | 0.02402 | 0.005274 |
+| A16 QQ RMSE (300-pt) ↓ | 1.01e-04 ± 1.31e-05 | 8.69e-05 | 1.16e-04 | 1.17e-04 | 8.82e-05 | 9.86e-05 | 4.19e-05 |
+| A17 Terminal Price KS ↓ | 0.01831 ± 0.003291 | 0.02112 | 0.01587 | 0.01318 | 0.02185 | 0.01953 | 0.01099 |
 | **— Adversarial —** | | | | | | | |
-| A18 Disc Score GRU ↓ | 0.1246 ± 0.1517 | 0.008392 | 0.2101 | 0.003204 | 0.3850 | 0.01633 | 0.006195 |
-| A18 Disc Score MLP ↓ | 0.008331 ± 0.004230 | 0.009612 | 0.003204 | 0.007171 | 0.01572 | 0.005951 | 0.005951 |
+| A18 Disc Score GRU ↓ | 0.005951 ± 0.007927 | 0.006256 | 1.53e-04 | 0.02121 | 0.001068 | 0.001068 | 0.006195 |
+| A18 Disc Score MLP ↓ | 0.01028 ± 0.003179 | 0.008697 | 0.006561 | 0.01236 | 0.008392 | 0.01541 | 0.005951 |
 | **— Predictive —** | | | | | | | |
-| A19 Pred Score GRU ↓ | 0.05453 ± 3.55e-05 | 0.05453 | 0.05447 | 0.05454 | 0.05456 | 0.05457 | 0.05002 |
-| A19 Pred Score MLP ↓ | 0.05428 ± 3.54e-04 | 0.05396 | 0.05417 | 0.05487 | 0.05391 | 0.05447 | 0.05036 |
+| A19 Pred Score GRU ↓ | 0.05004 ± 7.70e-06 | 0.05004 | 0.05003 | 0.05004 | 0.05005 | 0.05005 | 0.05002 |
+| A19 Pred Score MLP ↓ | 0.05014 ± 2.07e-04 | 0.05003 | 0.05016 | 0.05001 | 0.04997 | 0.05053 | 0.05036 |
 | **— Temporal —** | | | | | | | |
-| A20 Covariance Error ↓ | 139.3 ± 4.886 | 137.7 | 139.8 | 136.9 | 133.9 | 148.4 | 4.923 |
-| A21 ACF \|r\| Error (lags) ↓ | 0.05886 ± 4.70e-04 | 0.05937 | 0.05876 | 0.05894 | 0.05802 | 0.05921 | 0.002234 |
-| A22 ACF r² Error (lags) ↓ | 0.06136 ± 5.71e-04 | 0.06156 | 0.06112 | 0.06125 | 0.06057 | 0.06230 | 0.002206 |
-| A23 ACF \|r\| Lag-1 Error ↓ | 0.1474 ± 0.001169 | 0.1472 | 0.1456 | 0.1476 | 0.1473 | 0.1493 | 0.002652 |
-| A24 ACF r² Lag-1 Error ↓ | 0.1706 ± 0.001690 | 0.1715 | 0.1678 | 0.1700 | 0.1709 | 0.1729 | 0.002790 |
+| A20 Covariance Error ↓ | 4.969 ± 2.722 | 3.655 | 4.231 | 8.527 | 0.9764 | 7.455 | 4.923 |
+| A21 ACF \|r\| Error (lags) ↓ | 0.002841 ± 4.75e-04 | 0.003305 | 0.003214 | 0.002920 | 0.001965 | 0.002801 | 0.002234 |
+| A22 ACF r² Error (lags) ↓ | 0.003893 ± 6.21e-04 | 0.004924 | 0.004214 | 0.003405 | 0.003186 | 0.003738 | 0.002206 |
+| A23 ACF \|r\| Lag-1 Error ↓ | 0.008185 ± 0.001153 | 0.009448 | 0.009406 | 0.007110 | 0.006641 | 0.008320 | 0.002652 |
+| A24 ACF r² Lag-1 Error ↓ | 0.009127 ± 0.001088 | 0.01079 | 0.009571 | 0.007556 | 0.008448 | 0.009269 | 0.002790 |
 | **— Vol —** | | | | | | | |
-| A25 Mean RMSE ↓ | 1.499 ± 0.2776 | 1.495 | 1.118 | 1.680 | 1.297 | 1.907 | 0.1392 |
-| A26 Return Std Error ↓ | 0.2501 ± 0.001833 | 0.2513 | 0.2526 | 0.2495 | 0.2500 | 0.2472 | 0.002523 |
-| A27 Log-Return Std Error ↓ | 0.003028 ± 1.23e-05 | 0.003044 | 0.003031 | 0.003038 | 0.003016 | 0.003013 | 3.15e-05 |
-| A28 Kurtosis Ratio (→ 1) | 2.028 ± 0.01851 | 2.030 | 2.037 | 2.026 | 2.051 | 1.995 | 1.006 |
-| A29 Sigma Mean Error ↓ | 0.04432 ± 1.84e-04 | 0.04455 | 0.04437 | 0.04446 | 0.04410 | 0.04411 | 4.96e-04 |
-| A30 Cross-Sect. Vol Path RMSE ↓ | 3.066 ± 0.06387 | 2.994 | 3.086 | 3.085 | 2.998 | 3.165 | 0.1432 |
-| A31 Rolling Vol KS (w=5) ↓ | 0.3456 ± 6.49e-04 | 0.3465 | 0.3455 | 0.3462 | 0.3452 | 0.3447 | 0.003814 |
-| A32 Vol-of-Vol Error ↓ | 0.002109 ± 5.57e-06 | 0.002112 | 0.002116 | 0.002111 | 0.002107 | 0.002099 | 1.54e-05 |
+| A25 Mean RMSE ↓ | 0.2977 ± 0.1411 | 0.5206 | 0.1936 | 0.1091 | 0.3100 | 0.3554 | 0.1392 |
+| A26 Return Std Error ↓ | 0.01059 ± 7.02e-04 | 0.009232 | 0.01095 | 0.01081 | 0.01070 | 0.01124 | 0.002523 |
+| A27 Log-Return Std Error ↓ | 9.31e-05 ± 1.98e-05 | 6.39e-05 | 1.14e-04 | 1.16e-04 | 8.10e-05 | 9.06e-05 | 3.15e-05 |
+| A28 Kurtosis Ratio (→ 1) | 1.012 ± 0.01211 | 0.9969 | 1.009 | 1.027 | 1.001 | 1.024 | 1.006 |
+| A29 Sigma Mean Error ↓ | 0.001427 ± 3.04e-04 | 9.32e-04 | 0.001821 | 0.001661 | 0.001365 | 0.001358 | 4.96e-04 |
+| A30 Cross-Sect. Vol Path RMSE ↓ | 0.2779 ± 0.04900 | 0.2432 | 0.3222 | 0.3302 | 0.2012 | 0.2925 | 0.1432 |
+| A31 Rolling Vol KS (w=5) ↓ | 0.01375 ± 0.001092 | 0.01263 | 0.01568 | 0.01410 | 0.01284 | 0.01352 | 0.003814 |
+| A32 Vol-of-Vol Error ↓ | 1.30e-05 ± 1.26e-05 | 2.68e-06 | 6.15e-06 | 3.74e-05 | 5.75e-06 | 1.33e-05 | 1.54e-05 |
 | **— Heston Spec —** | | | | | | | |
-| A33 Teacher-Sigma Corr ↑ | 0.002758 ± 0.002975 | 1.67e-04 | 0.005940 | -0.001557 | 0.003652 | 0.005585 | 0.6163 |
-| A34 Teacher-Sigma RMSE ↓ | 0.09615 ± 1.38e-04 | 0.09627 | 0.09600 | 0.09635 | 0.09605 | 0.09605 | 0.06559 |
+| A33 Teacher-Sigma Corr ↑ | -0.008422 ± 0.005109 | -0.01236 | -0.01577 | -0.002195 | -0.008072 | -0.003718 | 0.6163 |
+| A34 Teacher-Sigma RMSE ↓ | 0.1002 ± 3.90e-04 | 0.1005 | 0.1007 | 0.09961 | 0.1003 | 0.09993 | 0.06559 |
 
-**Reading the table.** SBTS wins **none of the 36 A-metric rows**, and its profile is sharply split. On the
-**marginal** side it is genuinely strong: A1 kurtosis error **0.118** is the **second-lowest of any method**
-(behind CSDI's 0.0954, just ahead of TimeVQVAE's 0.136), and the tail-quantile errors A2–A4 (≈0.0063–0.0098),
-A15 skewness (0.032) and A16 QQ RMSE (0.0029) are all small and remarkably tight across seeds — the kernel
-bridge nails the one-step return histogram. The MLP judge is close to the floor (A18 MLP **0.0083** vs floor
-0.0060); the GRU judge is high-variance (A18 GRU **0.125 ± 0.152**, near-floor on seeds 0/2/4, separable on
-seeds 1/3). But SBTS is **weak everywhere temporal and vol-shaped**: because it is a **univariate Markovian
-K=1** model it cannot reproduce Heston's persistent ARCH autocorrelation — A21 ACF-|r| **0.059**, A23 lag-1
-**0.147**, A24 lag-1 **0.171** are among the worst in the benchmark, and A20 covariance error **139** and A30
-cross-sectional vol RMSE **3.07** confirm the lag structure is largely absent. A28 kurtosis ratio **2.03** is
-over-dispersed (roughly double the ideal 1.0), and A5 Hill index error **10.1** is the largest of all methods —
-the KDE tail is heavier than Heston's. As with every method, A33 teacher-sigma correlation ≈ 0 (floor 0.616,
-unreachable from prices alone). Net: an excellent **marginal** matcher, a poor **temporal/vol** matcher.
+**Reading the table.** With the author-confirmed **K=20** memory and **h=0.05** bandwidth, SBTS is the
+**strongest generator in the benchmark**, winning **18 of the 36 A-metric rows** (next-best LS4 wins 12). The
+profile that held under the paper's h=0.4 — strong marginals, collapsed temporal structure — is gone: the K=20
+kernel now carries enough memory to reproduce Heston's autocorrelation. **Marginals** remain excellent: A1
+kurtosis error **0.0084** ≈ floor (0.0081), tail-quantile errors A2–A4 (≈1.2–2.1e-04), A15 skewness **0.018**
+and A16 QQ RMSE **1.0e-04** are all small and tight across seeds — the kernel bridge nails the one-step return
+histogram. Both adversarial judges are near or below floor: A18 GRU **0.0060** is **below** the floor (0.0062),
+A18 MLP **0.010** just above (floor 0.0060). The decisive change is **temporal/vol**: A20 covariance error
+collapses **139 → 4.97** (≈ floor 4.92), A23 ACF-|r| lag-1 **0.147 → 0.0082**, A24 ACF-r² lag-1 **0.171 →
+0.0091**, A28 kurtosis ratio **2.03 → 1.01** (ideal 1.0), A30 cross-sectional vol RMSE **3.07 → 0.278**, A31
+rolling-vol KS **0.35 → 0.0138**, and A5 Hill index error **10.1 → 1.60**. The only remaining structural gap is
+Heston-specific: A33 teacher-sigma correlation ≈ 0 (floor 0.616) and A34 teacher-sigma RMSE **0.100** vs floor
+0.066 — the latent variance process is unrecoverable from prices alone, and no method reaches it. Net: SBTS is
+now a strong matcher on **both** marginal and temporal/vol structure, failing only the two unreachable
+Heston-spec rows.
 
 ---
 
@@ -151,42 +155,47 @@ Heston draw reaches — identical across methods.
 <!-- ===== PER-METHOD B TABLE ===== -->
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |------|---------|-----------|--------|--------|--------|--------|--------|---------------|
-| **Path comparison** *(50×50 path-cloud)* | grid_tvd 50×50 (%) ↓ | 13.48% ± 0.2141% | 13.21% | 13.84% | 13.34% | 13.54% | 13.48% | 2.237% |
-| **Log-return histogram** | MSE | 4.082 ± 0.04782 | 4.124 | 4.102 | 4.121 | 3.996 | 4.065 | 0.1098 |
-|  | % err | 39.17% ± 0.1361% | 39.31% | 39.21% | 39.31% | 39.01% | 39.01% | 1.799% |
-|  | NRMSE | 9.368% ± 0.06168% | 9.435% | 9.374% | 9.434% | 9.284% | 9.312% | 0.5328% |
-|  | CVaR₉₀ | 20.72% ± 0.1466% | 20.89% | 20.75% | 20.82% | 20.47% | 20.67% | 1.234% |
-|  | CVaR₉₅ | 21.83% ± 0.2430% | 21.94% | 22.03% | 21.97% | 21.36% | 21.85% | 1.444% |
-| **QQ plot** | MSE | 3.01e-06 ± 2.28e-08 | 3.04e-06 | 3.01e-06 | 3.04e-06 | 2.99e-06 | 2.98e-06 | 1.09e-09 |
-|  | % err | 21.47% ± 0.3841% | 21.50% | 21.04% | 21.86% | 21.02% | 21.92% | 0.4629% |
-|  | NRMSE | 8.083% ± 0.03106% | 8.120% | 8.083% | 8.116% | 8.052% | 8.045% | 0.1206% |
-|  | CVaR₉₀ | 9.497% ± 0.03506% | 9.545% | 9.497% | 9.525% | 9.467% | 9.450% | 0.1319% |
-|  | CVaR₉₅ | 11.33% ± 0.04832% | 11.37% | 11.31% | 11.39% | 11.30% | 11.27% | 0.1599% |
-| **ACF \|r\| lags 1–20** | MSE | 0.001512 ± 1.42e-05 | 0.001520 | 0.001499 | 0.001504 | 0.001502 | 0.001537 | 9.61e-06 |
-|  | % err | 149.0% ± 1.780% | 150.1% | 150.2% | 149.1% | 145.5% | 149.9% | 8.724% |
-|  | NRMSE | 127.9% ± 0.8849% | 128.2% | 127.8% | 127.5% | 126.6% | 129.3% | 6.071% |
-|  | CVaR₉₀ | 262.9% ± 2.662% | 263.3% | 260.0% | 262.1% | 261.3% | 267.8% | 11.26% |
-|  | CVaR₉₅ | 392.3% ± 3.112% | 391.8% | 387.5% | 392.7% | 392.1% | 397.3% | 12.06% |
-| **ACF r² lags 1–20** | MSE | 0.001723 ± 2.85e-05 | 0.001748 | 0.001687 | 0.001695 | 0.001722 | 0.001760 | 9.17e-06 |
-|  | % err | 171.3% ± 1.908% | 172.7% | 172.0% | 170.9% | 167.7% | 173.0% | 11.34% |
-|  | NRMSE | 145.2% ± 1.200% | 146.0% | 144.5% | 144.3% | 144.0% | 147.1% | 6.486% |
-|  | CVaR₉₀ | 317.1% ± 3.759% | 320.2% | 313.2% | 314.0% | 315.3% | 322.9% | 12.35% |
-|  | CVaR₉₅ | 499.7% ± 4.950% | 502.3% | 491.5% | 497.9% | 500.4% | 506.4% | 13.27% |
-| **Rolling vol histogram** | MSE | 412.9 ± 1.772 | 415.4 | 412.4 | 414.3 | 411.6 | 410.6 | 1.372 |
-|  | % err | 84.56% ± 0.1274% | 84.75% | 84.61% | 84.60% | 84.42% | 84.42% | 2.264% |
-|  | NRMSE | 39.59% ± 0.08241% | 39.71% | 39.57% | 39.66% | 39.52% | 39.49% | 0.8688% |
-|  | CVaR₉₀ | 83.76% ± 0.2647% | 84.10% | 83.62% | 84.05% | 83.62% | 83.43% | 1.970% |
-|  | CVaR₉₅ | 88.06% ± 0.3275% | 88.55% | 87.89% | 88.23% | 87.57% | 88.05% | 2.308% |
-| **Tail survival** | MSE | 0.001937 ± 2.20e-05 | 0.001962 | 0.001940 | 0.001959 | 0.001910 | 0.001913 | 5.22e-07 |
-|  | % err | 26.62% ± 0.1128% | 26.76% | 26.65% | 26.73% | 26.50% | 26.49% | 0.3302% |
-|  | NRMSE | 7.694% ± 0.04378% | 7.744% | 7.701% | 7.739% | 7.641% | 7.647% | 0.1050% |
-|  | CVaR₉₀ | 10.69% ± 0.05022% | 10.73% | 10.71% | 10.74% | 10.63% | 10.62% | 0.1625% |
-|  | CVaR₉₅ | 10.71% ± 0.05155% | 10.76% | 10.74% | 10.76% | 10.65% | 10.64% | 0.1682% |
+| **Path comparison** *(50×50 path-cloud)* | grid_tvd 50×50 (%) ↓ | 3.809% ± 0.1196% | 3.977% | 3.643% | 3.833% | 3.710% | 3.882% | 2.237% |
+| **Log-return histogram** | MSE | 0.1166 ± 0.01679 | 0.1122 | 0.1421 | 0.1275 | 0.1080 | 0.09318 | 0.1098 |
+|  | % err | 2.247% ± 0.1314% | 2.378% | 2.330% | 2.351% | 2.083% | 2.091% | 1.799% |
+|  | NRMSE | 0.6462% ± 0.03094% | 0.6386% | 0.6850% | 0.6700% | 0.6427% | 0.5947% | 0.5328% |
+|  | CVaR₉₀ | 1.507% ± 0.09588% | 1.395% | 1.624% | 1.530% | 1.591% | 1.396% | 1.234% |
+|  | CVaR₉₅ | 1.783% ± 0.1817% | 1.555% | 2.004% | 1.723% | 1.987% | 1.645% | 1.444% |
+| **QQ plot** | MSE | 4.42e-09 ± 1.01e-09 | 3.28e-09 | 5.62e-09 | 5.31e-09 | 3.20e-09 | 4.69e-09 | 1.09e-09 |
+|  | % err | 2.270% ± 0.3076% | 2.726% | 1.821% | 2.074% | 2.306% | 2.425% | 0.4629% |
+|  | NRMSE | 0.2832% ± 0.03766% | 0.2390% | 0.3241% | 0.3254% | 0.2422% | 0.2852% | 0.1206% |
+|  | CVaR₉₀ | 0.3149% ± 0.04665% | 0.2590% | 0.3436% | 0.3830% | 0.2676% | 0.3215% | 0.1319% |
+|  | CVaR₉₅ | 0.3646% ± 0.06661% | 0.2804% | 0.3875% | 0.4586% | 0.2972% | 0.3990% | 0.1599% |
+| **ACF \|r\| lags 1–20** | MSE | 2.42e-05 ± 2.83e-06 | 2.37e-05 | 2.02e-05 | 2.63e-05 | 2.83e-05 | 2.28e-05 | 9.61e-06 |
+|  | % err | 10.68% ± 0.4068% | 10.13% | 10.39% | 11.18% | 11.11% | 10.59% | 8.724% |
+|  | NRMSE | 7.891% ± 0.2799% | 8.281% | 8.112% | 7.822% | 7.481% | 7.759% | 6.071% |
+|  | CVaR₉₀ | 17.80% ± 1.557% | 20.01% | 18.20% | 17.65% | 15.15% | 17.99% | 11.26% |
+|  | CVaR₉₅ | 21.78% ± 3.068% | 25.14% | 25.03% | 18.92% | 17.67% | 22.14% | 12.06% |
+| **ACF r² lags 1–20** | MSE | 2.21e-05 ± 1.57e-06 | 2.42e-05 | 2.27e-05 | 2.28e-05 | 2.15e-05 | 1.95e-05 | 9.17e-06 |
+|  | % err | 13.77% ± 1.214% | 14.18% | 15.91% | 12.91% | 12.45% | 13.37% | 11.34% |
+|  | NRMSE | 9.147% ± 0.8072% | 10.22% | 9.981% | 8.470% | 8.210% | 8.860% | 6.486% |
+|  | CVaR₉₀ | 20.76% ± 1.718% | 23.68% | 21.61% | 19.33% | 18.99% | 20.18% | 12.35% |
+|  | CVaR₉₅ | 26.73% ± 3.185% | 31.60% | 28.03% | 22.13% | 24.74% | 27.15% | 13.27% |
+| **Rolling vol histogram** | MSE | 2.280 ± 0.2873 | 1.747 | 2.599 | 2.437 | 2.301 | 2.318 | 1.372 |
+|  | % err | 3.480% ± 0.2217% | 3.392% | 3.532% | 3.851% | 3.169% | 3.455% | 2.264% |
+|  | NRMSE | 1.882% ± 0.1160% | 1.771% | 2.059% | 1.921% | 1.739% | 1.922% | 0.8688% |
+|  | CVaR₉₀ | 4.030% ± 0.2206% | 3.826% | 4.338% | 4.072% | 3.739% | 4.173% | 1.970% |
+|  | CVaR₉₅ | 4.437% ± 0.2493% | 4.242% | 4.814% | 4.294% | 4.185% | 4.652% | 2.308% |
+| **Tail survival** | MSE | 1.55e-06 ± 7.35e-07 | 7.33e-07 | 2.90e-06 | 1.66e-06 | 1.23e-06 | 1.24e-06 | 5.22e-07 |
+|  | % err | 0.8291% ± 0.1677% | 0.5878% | 1.052% | 0.9805% | 0.7421% | 0.7830% | 0.3302% |
+|  | NRMSE | 0.2108% ± 0.04936% | 0.1479% | 0.2969% | 0.2236% | 0.1920% | 0.1937% | 0.1050% |
+|  | CVaR₉₀ | 0.3610% ± 0.05477% | 0.3108% | 0.4453% | 0.4070% | 0.3246% | 0.3171% | 0.1625% |
+|  | CVaR₉₅ | 0.3718% ± 0.05630% | 0.3203% | 0.4599% | 0.4170% | 0.3362% | 0.3257% | 0.1682% |
 
-SBTS wins **none of the 6 B-plots**. Consistent with the A table, its best curves are the **marginal**
-ones — QQ (MSE 3.01e-06, NRMSE 6.3 %) and log-return histogram (MSE 4.08) are competitive — while the
-**ACF curves collapse**: ACF-|r| NRMSE **489 %** and ACF-r² NRMSE **436 %** are the worst B-curve fits of any
-method, the curve-shape signature of a memoryless K=1 kernel that cannot bend the autocorrelation profile.
+SBTS wins **6 of the 7 B-plots** (including the 50×50 path-cloud row) and **30 of the 31 curve sublines** —
+by far the best curve-shape fit in the benchmark (next-best LS4 wins 1). The h=0.4 collapse is gone: the
+**path cloud** grid-TVD drops **13.48 % → 3.81 %**, and the **ACF curves** — the memoryless K=1 kernel's worst
+failure — recover completely, ACF-|r| NRMSE **128 % → 7.9 %** and ACF-r² NRMSE **145 % → 9.1 %**, now within a
+few points of the perfect floor (6.1 %/6.5 %). The **rolling-vol histogram** MSE falls **412.9 → 2.28** (a
+180× reduction), and the **marginal** curves stay excellent: QQ MSE **4.4e-09** (NRMSE 0.28 %), log-return
+histogram MSE **0.117** (≈ floor 0.110), tail survival NRMSE **0.21 %**. Every curve now sits within ~2× of
+its independent-draw floor, the curve-shape signature of a K=20 kernel that reproduces both the marginal and
+the autocorrelation structure.
 
 **Plot → curve mapping** (each curve is the shape whose funct/der/sec\_der are scored above):
 
@@ -209,28 +218,34 @@ method, the curve-shape signature of a memoryless K=1 kernel that cannot bend th
 > different data representations (base-one-scale log-returns), multivariate series (d=2 for Heston),
 > shorter sequences (T=24 for real datasets, T=252 for robustness tests), and ~500 training samples.
 > Our setup: T=128, N=8 192 paths, univariate price paths.
-> What we *can* verify: (a) hyperparameters match the paper exactly, and
+> What we *can* verify: (a) the hyperparameters are the ones the SBTS author (A. Alouadi) specified for
+> this length-128 benchmark — which **supersede** the paper's length-100 Heston values — and
 > (b) discriminative scores fall in the paper's expected performance range.
 
-### A. Hyperparameter verification (Appendix C, Table 4)
+### A. Hyperparameters (author-specified for this length-128 benchmark)
 
-| Setting | Our reimplementation | Paper (Appendix C Table 4) |
-|---------|:--------------------:|:---------------------------:|
+The hyperparameters below were confirmed by the SBTS author (A. Alouadi, 2026-07-27) for this
+length-128 Heston benchmark and **supersede** the paper's length-100 Heston values (h=0.4, K=1,
+N_pi=200). The paper's h=0.4 was "far too large" for this setup and over-smoothed the paths into a
+degenerate near-Gaussian; N_pi=50 is chosen for speed (low impact); dt=1/250 is kept to match the
+shared Heston dataset used by every method.
+
+| Setting | Our benchmark run | Paper (Appendix C Table 4) |
+|---------|:-----------------:|:---------------------------:|
 | Data representation | Price paths S_t | Log-returns (base-one-scale) |
 | Dimension d | 1 (univariate) | 2 (price + variance) |
 | Seq len T | **128** | **252** |
 | Training paths N | **8 192** | ~**1 000** |
-| h (bandwidth) | **0.4** | **0.4** ✓ |
-| K (Markov order) | **1** | **1** ✓ |
-| N_pi (Euler substeps) | **200** | **200** ✓ |
+| h (bandwidth) | **0.05** (author) | 0.4 — *over-smooths here* |
+| K (Markov order) | **20** (author) | 1 |
+| N_pi (Euler substeps) | **50** (author, speed) | 200 |
 | Generation hardware | 64 CPU workers (EPYC 7763) | 12 CPU cores (Intel Broadwell) |
-| Generation time (N=1 000) | ~47 s (extrapolated) | **548 s** (App. B) |
-| Generation time (N=8 192) | 376 s (64 workers, seeds 1-4) | N/A |
+| Generation time (N=8 192) | ~1.9–2.0 min/seed, **9.7 min** all 5 seeds (64 workers) | N/A |
 
-> Note on timing: the paper reports 548 s for N=1 000, T=252 on 12 cores (single-threaded).
-> Our faster time (extrapolated ~47 s for 1 000 paths at T=128 with 64 workers) is explained by
-> shorter series (T=128 vs 252) and more workers (64 vs 12). Per-path cost: ~2.9 s/path at T=128
-> vs ~6.6 s/path at T=252 — consistent with O(T²) kernel computation.
+> Note on timing: each seed generates 8 192 paths at T=128 in ~1.9–2.0 min on 64 workers; all 5 seeds
+> total 9.7 min. The paper reports 548 s for N=1 000, T=252 on 12 cores (single-threaded); our per-path
+> cost is far lower from shorter series (T=128 vs 252), K=20 vs the paper's larger-N_pi kernel, and 64
+> workers vs 12.
 
 ### B. Score comparison vs paper (Tables 1 & 2)
 
@@ -241,15 +256,14 @@ method, the curve-shape signature of a memoryless K=1 kernel that cannot bend th
 
 | Metric | Paper — Stocks (d=6, T=24) | Paper — Sine (d=5, T=24) | Ours — Heston GRU (d=1, T=128) | Ours — Heston MLP (d=1, T=128) |
 |--------|:--------------------------:|:------------------------:|:-------------------------------:|:-------------------------------:|
-| Disc Score ↓ | 0.010 ± 0.008 | 0.061 ± 0.010 | 0.125 ± 0.152 | 0.008 ± 0.004 |
-| Pred Score ↓ | 0.017 ± 0.000 | 0.095 ± 0.002 | 0.0545 ± 0.0000 | 0.0543 ± 0.0004 |
+| Disc Score ↓ | 0.010 ± 0.008 | 0.061 ± 0.010 | 0.005951 ± 0.007927 | 0.01028 ± 0.003179 |
+| Pred Score ↓ | 0.017 ± 0.000 | 0.095 ± 0.002 | 0.05004 ± 0.0000 | 0.05014 ± 0.0002 |
 
-Our **MLP** discriminative score (0.008) sits right on the paper's Stocks regime (0.010) and within
-finite-sample noise of the perfect floor (0.0060) — the marginal fidelity the A table shows makes SBTS hard
-for a static judge to separate. The **GRU** score (0.125) is high-variance and seed-driven (near-floor on
-seeds 0/2/4, separable on seeds 1/3): the recurrent judge exploits SBTS's missing temporal autocorrelation
-(A21–A24) on the seeds where it happens to latch on. Predictive scores (~0.054) are near the 0.050 floor,
-because one-step prediction on the well-matched 1-D return marginal is easy regardless of the missing memory.
+Both discriminative judges now sit at or below the perfect floor (0.0060): the **GRU** score (0.005951) is
+**below** the floor and the **MLP** score (0.01028) just above it — under K=20 the recurrent judge can no
+longer exploit missing autocorrelation (A21–A24 are near floor), so it collapses to chance on almost every
+seed. Both land squarely in the paper's Stocks regime (0.010). Predictive scores (~0.050) are essentially at
+the 0.050 floor, because one-step prediction on the well-matched 1-D return marginal is easy for every method.
 
 ### C. Scaling — What SBTS generates (Paper §6)
 
@@ -276,13 +290,13 @@ Heston. Full write-up:
 
 | Dataset | Metric | Ours (official SBTS code) | Paper (Table 1) | Verdict |
 |---------|--------|:-------------------------:|:---------------:|---------|
-| Stocks | Discriminative ↓ | **0.026 ± 0.012** | 0.010 ± 0.008 | same regime ✓ |
-| Stocks | Predictive ↓ | **0.018 ± 0.003** | 0.017 ± 0.000 | **matches** ✓ |
+| Stocks | Discriminative ↓ | **0.0405 ± 0.0195** | 0.010 ± 0.008 | same regime ✓ |
+| Stocks | Predictive ↓ | **0.0193 ± 0.0027** | 0.017 ± 0.000 | **matches** ✓ |
 
-The predictive score matches the paper almost exactly (0.018 vs 0.017). The discriminative score
-sits in the same low regime (both ≈ 0.01–0.03, i.e. the adversary is essentially at chance) — the
-small gap is the expected run-to-run variance of a stochastic post-hoc classifier scored over only
-10 runs with a different RNG seed, not a methodological difference. Generation time: **39 s**.
+The predictive score matches the paper almost exactly (0.0193 vs 0.017). The discriminative score
+sits in the same low regime (both ≈ 0.01–0.04, i.e. the adversary is essentially at chance) — the
+gap is the expected run-to-run variance of a stochastic post-hoc classifier scored over only 10 runs
+with a different RNG seed, not a methodological difference. Generation time: **32.2 s**.
 
 ---
 
@@ -296,15 +310,15 @@ CRPS is scored against the test set at two horizons; the naive random-walk (RW) 
 <!-- ===== PER-METHOD PS-MC TABLE ===== -->
 | Metric | Value (mean ± std) | RW baseline |
 |--------|--------------------|-------------|
-| PS-MC CRPS H=32 ↓ | 2.759 ± 0.006411 | 3.738 |
-| PS-MC CRPS H=64 ↓ | 3.859 ± 0.01236 | 5.246 |
+| PS-MC CRPS H=32 ↓ | 2.777 ± 0.005721 | 3.738 |
+| PS-MC CRPS H=64 ↓ | 3.858 ± 0.008858 | 5.246 |
 
-PS-MC over the SBTS pool **beats the naive RW on CRPS** at both horizons (2.759 < 3.738 at H=32;
-3.859 < 5.246 at H=64), on all 5 seeds — despite the missing temporal structure, because the retrieval
-prefix and price-anchoring supply the short-horizon dynamics and SBTS's well-matched return marginal
-supplies the innovation spread. It lands **mid-pack** among the RW-beating pools (behind LS4 2.704, CSDI
-2.718, Diffusion-TS 2.717 and FourierFlow 2.744 at H=32). Heston is time-homogeneous, so the uniform and
-Gaussian prefix weightings coincide.
+PS-MC over the SBTS pool **beats the naive RW on CRPS** at both horizons (2.777 < 3.738 at H=32;
+3.858 < 5.246 at H=64), on all 5 seeds — the retrieval prefix and price-anchoring supply the short-horizon
+dynamics and SBTS's well-matched return marginal supplies the innovation spread. It lands **mid-pack** among
+the RW-beating pools (behind LS4 2.704 and the other diffusion/flow pools at H=32) — retrieval-based PS-MC is
+the one task on which SBTS does not lead, since it rewards raw pool diversity more than distributional fidelity.
+Heston is time-homogeneous, so the uniform and Gaussian prefix weightings coincide.
 
 ---
 
