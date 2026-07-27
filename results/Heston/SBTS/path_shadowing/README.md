@@ -59,16 +59,16 @@ Metrics: CRPS, MAE, RMSE.
 
 | Metric | Horizon | Uniform | Gaussian (adaptive η̃) | Naive RW baseline |
 |--------|---------|---------|----------------------|-------------------|
-| **CRPS** | H=32 | **2.761 ± 0.004** | 2.762 ± 0.004 | 3.732 |
-| MAE    | H=32 | 3.746 ± 0.003 | 3.746 ± 0.003 | 3.732 |
-| RMSE   | H=32 | 5.112 ± 0.007 | 5.112 ± 0.007 | 5.068 |
-| **CRPS** | H=64 | **3.900 ± 0.008** | 3.900 ± 0.008 | 5.301 |
-| MAE    | H=64 | 5.288 ± 0.004 | 5.288 ± 0.004 | 5.301 |
-| RMSE   | H=64 | 7.227 ± 0.007 | 7.227 ± 0.007 | 7.181 |
+| **CRPS** | H=32 | **2.777 ± 0.006** | 2.778 ± 0.006 | 3.738 |
+| MAE    | H=32 | 3.762 ± 0.007 | 3.763 ± 0.007 | 3.738 |
+| RMSE   | H=32 | 5.089 ± 0.005 | 5.089 ± 0.006 | 5.040 |
+| **CRPS** | H=64 | **3.858 ± 0.009** | 3.859 ± 0.009 | 5.246 |
+| MAE    | H=64 | 5.254 ± 0.007 | 5.255 ± 0.007 | 5.246 |
+| RMSE   | H=64 | 7.119 ± 0.006 | 7.120 ± 0.006 | 7.066 |
 
 PS-MC **beats the naive random walk on CRPS** at both horizons:
-2.761 < 3.732 at H=32 and 3.900 < 5.301 at H=64.
-Gaussian and Uniform weighting are essentially tied (difference < 0.001).
+2.777 < 3.738 at H=32 and 3.858 < 5.246 at H=64.
+Gaussian and Uniform weighting are essentially tied (difference < 0.002).
 
 ---
 
@@ -76,12 +76,12 @@ Gaussian and Uniform weighting are essentially tied (difference < 0.001).
 
 | Metric | Horizon | SBTS PS-MC | TimeGAN PS-MC | Naive RW |
 |--------|---------|:----------:|:-------------:|:--------:|
-| CRPS | H=32 | **2.761 ± 0.004** | 3.087 ± 0.340 | 3.732 |
-| CRPS | H=64 | **3.900 ± 0.008** | 4.372 ± 0.431 | 5.301 |
+| CRPS | H=32 | **2.777 ± 0.006** | 3.087 ± 0.340 | 3.738 |
+| CRPS | H=64 | **3.858 ± 0.009** | 4.372 ± 0.431 | 5.246 |
 
 **SBTS outperforms TimeGAN on PS-MC at both horizons.**
 The kernel method faithfully reproduces the training distribution, providing a richer and
-more diverse retrieval pool than a GAN — smaller variance across seeds (±0.004 vs ±0.340)
+more diverse retrieval pool than a GAN — smaller variance across seeds (±0.006 vs ±0.340)
 and decisively lower CRPS.
 
 ---
