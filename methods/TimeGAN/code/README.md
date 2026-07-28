@@ -1,4 +1,4 @@
-# TimeGAN Code — Sources & Modifications
+# TimeGAN Code, Sources & Modifications
 
 ## Original work
 
@@ -85,7 +85,7 @@ without documenting the change and why.
 | `joint_steps` | 10 000 | `train_seed.py --joint_steps` | Phase-3 adversarial joint training steps |
 | `lr` | 1e-3 | `timegan_torch.py` | Adam learning rate for all components |
 
-**Example — double the joint training steps:**
+**Example, double the joint training steps:**
 ```bash
 CUDA_VISIBLE_DEVICES=0 python train_seed.py --seed 0 --joint_steps 20000
 ```
@@ -121,7 +121,7 @@ CUDA_VISIBLE_DEVICES=0 taskset -c 0-7 OMP_NUM_THREADS=8 \
     python train_seed.py --seed 5
 ```
 
-To run all seeds (0–4) in the standard parallel configuration:
+To run all seeds (0-4) in the standard parallel configuration:
 
 ```bash
 python train.py --gpu0 0 --gpu1 3
@@ -137,7 +137,7 @@ Outputs land in:
 
 ## Reproduce the Heston metrics (exact run path)
 
-After the 5 seeds are trained, the committed A1–A34 + B numbers come from the shared scorer:
+After the 5 seeds are trained, the committed A1-A34 + B numbers come from the shared scorer:
 
 ```bash
 cd /home/tbasseras/benchmark
@@ -149,7 +149,7 @@ CUDA_VISIBLE_DEVICES=0 \
 
 | Committed number | Interpreter + env | Command | Input file(s) scored | Output file |
 |------------------|-------------------|---------|----------------------|-------------|
-| Heston A1–A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method TimeGAN --dataset Heston` | `methods/TimeGAN/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real Heston `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/TimeGAN/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
+| Heston A1-A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method TimeGAN --dataset Heston` | `methods/TimeGAN/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real Heston `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/TimeGAN/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
 | TimeGAN synthetic paths, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0/3` | `train_seed.py --seed i` (or `train.py --gpu0 0 --gpu1 3`) | real Heston `dataset/Heston/heston_S_8192x128.npy`, min-max→[0,1] internally | `generated_paths/seed_i/generated_paths_8192x128.npy` + `weights/seed_i_model.pt` |
 
 Each `results/Heston/TimeGAN/seed_i_metrics.json` is the sole source for that seed's column in every README A-table; mean±std rows aggregate the 5 files.

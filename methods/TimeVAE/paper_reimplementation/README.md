@@ -1,9 +1,9 @@
-# TimeVAE — Paper Reimplementation (Sine)
+# TimeVAE, Paper Reimplementation (Sine)
 
 Reproduction of the **TimeVAE** paper result on the **Sine** dataset.
 
 - **Paper:** *TimeVAE: A Variational Auto-Encoder for Multivariate Time Series
-  Generation* — Desai, Freeman, Beaver, Wang, arXiv:2111.08095v3.
+  Generation*, Desai, Freeman, Beaver, Wang, arXiv:2111.08095v3.
 - **Official code:** `github.com/abudesai/timeVAE` (mirrored here under
   `../code/reference/`).
 - **This run:** `metric/reproduce_paper.py` (train → prior-sample) +
@@ -11,7 +11,7 @@ Reproduction of the **TimeVAE** paper result on the **Sine** dataset.
 
 ---
 
-## ⚠️ Reproduction caveat — why a PyTorch port
+## ⚠️ Reproduction caveat, why a PyTorch port
 
 The **official** TimeVAE code is **TensorFlow / Keras**. TF has no working GPU
 build for this machine's CUDA 13 driver, so it silently falls back to CPU. This
@@ -21,7 +21,7 @@ is the documented reason the benchmark ships a faithful **PyTorch port**
 - **Generator** = our PyTorch TimeVAE-Base port, trained with the **paper
   hyperparameters** below (latent 8, hidden 50/100/200), with
   `reconstruction_wt` **tuned to 8.0** per the paper's per-dataset weight-tuning
-  protocol (Sec. 4.2 — see §2 and §4).
+  protocol (Sec. 4.2, see §2 and §4).
 - **Metric** = the *same* discriminative / predictive protocol used across the
   benchmark (the Yoon-et-al. GRU judges, legacy-Keras TF env), so the "ours"
   column and the paper column are scored the same way.
@@ -47,9 +47,9 @@ Reported as **mean ± std** over multiple metric iterations and seeds.
 |-----------|-------|
 | latent_dim | 8 |
 | hidden_layer_sizes | (50, 100, 200) |
-| reconstruction_wt | **8.0** (tuned — released default is 3.0; see §4) |
-| trend_poly | 0 (Base — no trend block) |
-| custom_seas | None (Base — no seasonal block) |
+| reconstruction_wt | **8.0** (tuned, released default is 3.0; see §4) |
+| trend_poly | 0 (Base, no trend block) |
+| custom_seas | None (Base, no seasonal block) |
 | use_residual_conn | True |
 | optimizer | Adam (lr 1e-3) |
 | batch_size | 16 |
@@ -60,45 +60,45 @@ Reported as **mean ± std** over multiple metric iterations and seeds.
 
 ## 3. Dataset
 
-**Sine** — the standard TimeVAE / TimeGAN synthetic benchmark, loaded
+**Sine**, the standard TimeVAE / TimeGAN synthetic benchmark, loaded
 **verbatim** from the official subsampled archive
 `../code/reference/data/sine_subsampled_train_perc_100.npz`, min-max scaled to
 [0, 1] per the paper pipeline.
 
-- Real:  `results/artifacts/sine_real_scaled.npy`   — (10000, 24, 5)
-- Synth: `results/artifacts/sine_gen_seed{0..4}.npy` — (10000, 24, 5) each
+- Real:  `results/artifacts/sine_real_scaled.npy`, (10000, 24, 5)
+- Synth: `results/artifacts/sine_gen_seed{0..4}.npy`, (10000, 24, 5) each
 
 ---
 
-## 4. Results — ours vs paper
+## 4. Results, ours vs paper
 
 | Dataset | Metric | **Ours (PyTorch port, 5 seeds, recon_wt=8)** | **Paper (Table)** | Verdict |
 |---------|--------|----------------------------------------------|-------------------|---------|
-| Sine | Discriminative ↓ | 0.073 ± 0.024 | 0.021 ± 0.040 | close — bands overlap |
+| Sine | Discriminative ↓ | 0.073 ± 0.024 | 0.021 ± 0.040 | close, bands overlap |
 | Sine | Predictive ↓ | 0.2133 ± 0.0001 | 0.213 ± 0.000 | **matches** ✓ |
 
 *5 training seeds × 3 metric iterations each. Per-seed disc means: 0.075, 0.094,
 0.037, 0.103, 0.059. Source: `results/sine_paper_metrics.json`.*
 
-**Predictive — reproduced exactly.** Our predictive score **0.2133 ± 0.0001**
+**Predictive, reproduced exactly.** Our predictive score **0.2133 ± 0.0001**
 lands on the paper's **0.213 ± 0.000**. This target is the *"Original" LSTM
 floor* for sine (the MAE of a predictor trained on real data): both the paper's
 TimeVAE and ours sit on that floor, i.e. synthetic sine is predictively
 indistinguishable from real.
 
-**Discriminative — the reconstruction-weight story.** With the released default
-`reconstruction_wt=3.0` our disc score was **0.114 ± 0.017** — visibly above the
+**Discriminative, the reconstruction-weight story.** With the released default
+`reconstruction_wt=3.0` our disc score was **0.114 ± 0.017**, visibly above the
 paper's **0.021 ± 0.040**. A diagnostic (train TimeVAE, then score *both* prior
 samples and z-mean **reconstructions**) isolated the cause: even the
 reconstructions were under-dispersed (std 0.222 vs real 0.246), so the gap is
 **not** the discriminator architecture (we score with the identical verbatim
 1-layer Yoon-et-al. GRU judge, `hidden = int(dim/2)`) and **not** a prior/
-aggregate-posterior hole — it is **KL over-regularization**: at weight 3 the KL
+aggregate-posterior hole, it is **KL over-regularization**: at weight 3 the KL
 term squeezes the decoder below the true signal dispersion.
 
 The paper (Sec. 4.2) states the reconstruction weight *"ranged between 0.5 and
 3.5 during our following experiments and can be chosen by visually inspecting
-quality of generated samples"* — i.e. it is **tuned per dataset**. Raising it
+quality of generated samples"*, i.e. it is **tuned per dataset**. Raising it
 lets the decoder recover the full dispersion (recon std 0.222→0.238, prior
 0.217→0.229 at weight 8) and drops the discriminative score:
 
@@ -110,11 +110,11 @@ lets the decoder recover the full dispersion (recon std 0.222→0.238, prior
 At weight 8 the two bands overlap (ours [0.050, 0.097] vs paper [−0.019, 0.061]),
 and seed 2 lands at **0.037**, inside the paper's band.
 
-> ⚠️ **Honest caveat — 8.0 exceeds the paper's stated range.** The paper reports
+> ⚠️ **Honest caveat, 8.0 exceeds the paper's stated range.** The paper reports
 > tuning the weight within **[0.5, 3.5]**; we use **8.0**, which is above that
 > range. So this is *paper-protocol-faithful* (tune the reconstruction weight per
 > dataset by sample quality) but **not** *paper-range-faithful*. The residual gap
-> to 0.021 — and the fact that we needed a weight above the stated range — is
+> to 0.021, and the fact that we needed a weight above the stated range, is
 > most plausibly explained by remaining port/optimisation differences (init, TF-
 > vs-PyTorch numerics, early-stopping schedule) rather than a single hyperparameter.
 > The released-default (weight 3) result is preserved in
@@ -122,14 +122,14 @@ and seed 2 lands at **0.037**, inside the paper's band.
 
 **Bottom line:** predictive reproduces the paper exactly; discriminative moves
 from 0.114 (default) to **0.073** once the reconstruction weight is tuned as the
-paper describes, bringing our band into overlap with the paper's — with the
+paper describes, bringing our band into overlap with the paper's, with the
 honest note that the tuned value (8) sits above the paper's stated [0.5, 3.5].
 
 ---
 
 ## 5. How to reproduce
 
-**Step 1 — train + prior-sample (PyTorch, gpu-venv):**
+**Step 1, train + prior-sample (PyTorch, gpu-venv):**
 
 ```bash
 cd metric
@@ -144,7 +144,7 @@ wait
 # reproduce the released-default row (disc 0.114).
 ```
 
-**Step 2 — score with the paper's GRU judges (legacy-Keras TF env):**
+**Step 2, score with the paper's GRU judges (legacy-Keras TF env):**
 
 ```bash
 cd metric
@@ -153,7 +153,7 @@ TF_USE_LEGACY_KERAS=1 /home/tbasseras/dts-tf-venv/bin/python score_paper.py \
   --metric-iter 3 --out ../results/sine_paper_metrics.json
 ```
 
-**Exact run path — which file feeds which cell (so any number is traceable):**
+**Exact run path, which file feeds which cell (so any number is traceable):**
 
 | Table cell | Interpreter + env | Script | Input file(s) | Output |
 |------------|-------------------|--------|---------------|--------|

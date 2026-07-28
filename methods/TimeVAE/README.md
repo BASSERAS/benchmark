@@ -1,6 +1,6 @@
 # TimeVAE on Heston
 
-PyTorch reimplementation of **TimeVAE** (Desai, Freeman, Beaver & Wang, 2021 —
+PyTorch reimplementation of **TimeVAE** (Desai, Freeman, Beaver & Wang, 2021,
 *TimeVAE: A Variational Auto-Encoder for Multivariate Time Series Generation*, arXiv:2111.08095v3)
 trained on 8 192 Heston stochastic-volatility price paths (seq\_len = 128).
 
@@ -10,19 +10,19 @@ MinMax normalisation chain applied to fit the price-scale Heston data into the m
 
 ---
 
-## Metrics A1–A34 + B — mean ± std across 5 seeds
+## Metrics A1-A34 + B, mean ± std across 5 seeds
 
 > All metrics on **log-returns** $r_t = \log(S_{t+1}/S_t)$ unless noted. A26 uses price increments $\Delta S_t$.
 
 | Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |--------|-----------|--------|--------|--------|--------|--------|---------------|
-| **— Fat Tail —** | | | | | | | |
+| **, Fat Tail, ** | | | | | | | |
 | A1 Kurtosis Error ↓ | 2.257 ± 0.5719 | 1.367 | 2.662 | 1.791 | 2.668 | 2.799 | 0.008092 |
 | A2 \|r\| q95 Error ↓ | 0.02227 ± 1.22e-04 | 0.02204 | 0.02234 | 0.02223 | 0.02238 | 0.02234 | 6.57e-05 |
 | A3 \|r\| q99 Error ↓ | 0.03082 ± 1.05e-04 | 0.03062 | 0.03087 | 0.03084 | 0.03094 | 0.03082 | 5.98e-05 |
 | A4 Tail QQ Error ↓ | 0.02191 ± 1.17e-04 | 0.02170 | 0.02198 | 0.02187 | 0.02202 | 0.02198 | 6.75e-05 |
 | A5 Hill Tail Index Error ↓ | 1.831 ± 0.6794 | 1.491 | 0.6971 | 1.975 | 2.544 | 2.445 | 0.5266 |
-| **— Distribution —** | | | | | | | |
+| **, Distribution, ** | | | | | | | |
 | A6 Path MMD² ↓ | 0.01914 ± 0.001334 | 0.02143 | 0.01928 | 0.01931 | 0.01751 | 0.01817 | 0.001842 |
 | A7 Terminal MMD² ↓ | 0.004951 ± 0.001715 | 0.007400 | 0.005300 | 0.005501 | 0.002120 | 0.004436 | 0.001983 |
 | A8 Increment MMD² ↓ | 0.2130 ± 0.001204 | 0.2145 | 0.2134 | 0.2124 | 0.2109 | 0.2135 | 8.69e-04 |
@@ -35,19 +35,19 @@ MinMax normalisation chain applied to fit the price-scale Heston data into the m
 | A15 Skewness Error ↓ | 0.5479 ± 0.09837 | 0.4631 | 0.6806 | 0.4099 | 0.6083 | 0.5778 | 0.005274 |
 | A16 QQ RMSE (300-pt) ↓ | 0.01057 ± 8.40e-05 | 0.01043 | 0.01063 | 0.01053 | 0.01064 | 0.01063 | 4.19e-05 |
 | A17 Terminal Price KS ↓ | 0.05127 ± 0.007848 | 0.06628 | 0.04895 | 0.04907 | 0.04895 | 0.04309 | 0.01099 |
-| **— Adversarial —** | | | | | | | |
+| **, Adversarial, ** | | | | | | | |
 | A18 Disc Score GRU ↓ | 0.4272 ± 0.08815 | 0.3258 | 0.3129 | 0.5000 | 0.4994 | 0.4979 | 0.006195 |
 | A18 Disc Score MLP ↓ | 0.1358 ± 0.1503 | 0.3206 | 0.01999 | 0.3187 | 0.01846 | 0.001068 | 0.005951 |
-| **— Predictive —** | | | | | | | |
+| **, Predictive, ** | | | | | | | |
 | A19 Pred Score GRU ↓ | 0.05385 ± 7.71e-04 | 0.05289 | 0.05420 | 0.05298 | 0.05444 | 0.05476 | 0.05002 |
 | A19 Pred Score MLP ↓ | 0.05243 ± 1.91e-04 | 0.05267 | 0.05225 | 0.05216 | 0.05253 | 0.05253 | 0.05036 |
-| **— Temporal —** | | | | | | | |
+| **, Temporal, ** | | | | | | | |
 | A20 Covariance Error ↓ | 57.28 ± 1.758 | 58.11 | 57.97 | 59.77 | 55.11 | 55.44 | 4.923 |
 | A21 ACF \|r\| Error (lags) ↓ | 0.3890 ± 0.1057 | 0.2236 | 0.4513 | 0.3049 | 0.4824 | 0.4828 | 0.002234 |
 | A22 ACF r² Error (lags) ↓ | 0.3609 ± 0.08849 | 0.2283 | 0.4159 | 0.2818 | 0.4411 | 0.4374 | 0.002206 |
 | A23 ACF \|r\| Lag-1 Error ↓ | 0.4674 ± 0.1346 | 0.2821 | 0.5252 | 0.3320 | 0.5974 | 0.6002 | 0.002652 |
 | A24 ACF r² Lag-1 Error ↓ | 0.4630 ± 0.1189 | 0.3057 | 0.5208 | 0.3342 | 0.5805 | 0.5738 | 0.002790 |
-| **— Vol —** | | | | | | | |
+| **, Vol, ** | | | | | | | |
 | A25 Mean RMSE ↓ | 0.3883 ± 0.2340 | 0.6172 | 0.2680 | 0.6588 | 0.02275 | 0.3746 | 0.1392 |
 | A26 Return Std Error ↓ | 1.074 ± 0.007809 | 1.061 | 1.079 | 1.069 | 1.081 | 1.079 | 0.002523 |
 | A27 Log-Return Std Error ↓ | 0.01098 ± 7.75e-05 | 0.01084 | 0.01103 | 0.01094 | 0.01105 | 0.01103 | 3.15e-05 |
@@ -56,34 +56,34 @@ MinMax normalisation chain applied to fit the price-scale Heston data into the m
 | A30 Cross-Sect. Vol Path RMSE ↓ | 1.325 ± 0.04564 | 1.331 | 1.349 | 1.392 | 1.292 | 1.260 | 0.1432 |
 | A31 Rolling Vol KS (w=5) ↓ | 0.9869 ± 0.004527 | 0.9783 | 0.9870 | 0.9882 | 0.9911 | 0.9898 | 0.003814 |
 | A32 Vol-of-Vol Error ↓ | 0.004576 ± 5.62e-05 | 0.004471 | 0.004579 | 0.004581 | 0.004629 | 0.004621 | 1.54e-05 |
-| **— Heston Spec —** | | | | | | | |
+| **, Heston Spec, ** | | | | | | | |
 | A33 Teacher-Sigma Corr ↑ | 0.02254 ± 0.003796 | 0.01590 | 0.02234 | 0.02283 | 0.02402 | 0.02760 | 0.6163 |
 | A34 Teacher-Sigma RMSE ↓ | 0.1803 ± 0.001643 | 0.1776 | 0.1813 | 0.1792 | 0.1818 | 0.1816 | 0.06559 |
 
-> **Convention:** ↓ lower is better; ↑ higher is better; — no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
-> **A1**: |kurt_real − kurt_gen| on log-returns. **A2–A3**: 95th/99th quantile error on |log-returns|. **A4**: QQ error restricted to top-5% tail quantiles. **A5**: |Hill tail index_real − Hill tail index_gen|, Hill estimator on |log-returns| above 95th pct.
-> **A6–A11**: path-kernel distances — Gaussian MMD² on full paths / terminal prices / increments / realized-vol, and sliced-Wasserstein on terminal & full paths. Non-zero perfect floor (an independent Heston draw scored against the test set — finite-sample noise).
+> **Convention:** ↓ lower is better; ↑ higher is better;, no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
+> **A1**: |kurt_real − kurt_gen| on log-returns. **A2-A3**: 95th/99th quantile error on |log-returns|. **A4**: QQ error restricted to top-5% tail quantiles. **A5**: |Hill tail index_real − Hill tail index_gen|, Hill estimator on |log-returns| above 95th pct.
+> **A6-A11**: path-kernel distances, Gaussian MMD² on full paths / terminal prices / increments / realized-vol, and sliced-Wasserstein on terminal & full paths. Non-zero perfect floor (an independent Heston draw scored against the test set, finite-sample noise).
 > **A12**: W₁(RV_real, RV_gen), RV_i = Σ_t r²_{i,t}/dt. Ref: Barndorff-Nielsen & Shephard (2002). **A13**: path-level RMSE between real/gen mean trajectories. **A14**: KS statistic on pooled log-returns. **A15**: |skew_real − skew_gen|, Heston true skew ≈ −0.45. **A16**: QQ RMSE over 300 uniform quantile levels. **A17**: KS statistic on terminal prices S_T.
-> **A18**: Discriminative classifier trained on log-returns; score = |accuracy − 0.5|, 0 = indistinguishable (GRU + MLP). **A19**: TSTR predictive MAE; all methods cluster near 0.056–0.059 (irreducible log-return floor) (GRU + MLP).
-> **A20**: covariance-matrix error (%). **A21–A22**: ACF error on |r| and r² across lags 1–20. ARCH signal: |r_t| has positive lag-1 ACF ~0.05 in Heston. **A23–A24**: ACF lag-1 error on |r| and r². Heston true values ≈ +0.052 / +0.050.
-> **A25**: mean-path RMSE. **A26**: return std error, uses price increments $\Delta S_t$. **A27**: log-return std error, uses $r_t = \log(S_{t+1}/S_t)$. **A28**: kurtosis ratio real/gen, perfect = 1.0. **A29**: sigma mean error — annualized per-path vol. **A30**: cross-sectional vol-path RMSE. **A31**: KS statistic on rolling-5 vol histograms. **A32**: |vol-of-vol_real − vol-of-vol_gen|.
+> **A18**: Discriminative classifier trained on log-returns; score = |accuracy − 0.5|, 0 = indistinguishable (GRU + MLP). **A19**: TSTR predictive MAE; all methods cluster near 0.056-0.059 (irreducible log-return floor) (GRU + MLP).
+> **A20**: covariance-matrix error (%). **A21-A22**: ACF error on |r| and r² across lags 1-20. ARCH signal: |r_t| has positive lag-1 ACF ~0.05 in Heston. **A23-A24**: ACF lag-1 error on |r| and r². Heston true values ≈ +0.052 / +0.050.
+> **A25**: mean-path RMSE. **A26**: return std error, uses price increments $\Delta S_t$. **A27**: log-return std error, uses $r_t = \log(S_{t+1}/S_t)$. **A28**: kurtosis ratio real/gen, perfect = 1.0. **A29**: sigma mean error, annualized per-path vol. **A30**: cross-sectional vol-path RMSE. **A31**: KS statistic on rolling-5 vol histograms. **A32**: |vol-of-vol_real − vol-of-vol_gen|.
 > **A33**: Teacher-sigma correlation (Heston-recovered vol vs teacher σ), higher is better, perfect ≈ 0.614. **A34**: Teacher-sigma RMSE, perfect ≈ 0.065.
 
 ---
 
-## B — Curve-Shape Metrics — mean ± std across 5 seeds
+## B, Curve-Shape Metrics, mean ± std across 5 seeds
 
 Each stylised-fact plot yields a **curve** L (a list of values), not a scalar. For the real
-data (L_r) and generated data (L_g) we build three lists — the curve L, its first finite
-difference L' (der), and its second finite difference L'' (sec\_der) — then combine the three
+data (L_r) and generated data (L_g) we build three lists, the curve L, its first finite
+difference L' (der), and its second finite difference L'' (sec\_der), then combine the three
 sub-scores into **one number per plot**:
 
 - **MSE row**: for each list, dᵢ = mean((L_r − L_g)²). Reported mean = the **mean of the three sub-scores** (funct + der + sec\_der)/3; std = the sample std of that per-seed combined score across the 5 seeds. The **MSE row decides the cross-method winner**.
-- **% err row**: for each list, dᵢ = mean(|L_g − L_r| / (|L_r| + 1e-6)) × 100, a proper MAPE — one division (the mean already averages over the curve's points). Reported value = the **function-level MAPE on the curve L itself** — the derivative / 2nd-derivative MAPE is **excluded** because diff(L)/diff2(L) have near-zero true values, so their relative error explodes into meaningless 10⁴-% figures. mean/std = mean and **sample std across the 5 seeds** of that per-seed function MAPE.
-- **NRMSE row**: sqrt(mean((L_g − L_r)²)) / (max|L_r| − min|L_r| + 1e-12) × 100 on the curve L **only (funct-only)** — the ill-posed derivative / 2nd-derivative curves are excluded for the same reason as the % err row.
+- **% err row**: for each list, dᵢ = mean(|L_g − L_r| / (|L_r| + 1e-6)) × 100, a proper MAPE, one division (the mean already averages over the curve's points). Reported value = the **function-level MAPE on the curve L itself**, the derivative / 2nd-derivative MAPE is **excluded** because diff(L)/diff2(L) have near-zero true values, so their relative error explodes into meaningless 10⁴-% figures. mean/std = mean and **sample std across the 5 seeds** of that per-seed function MAPE.
+- **NRMSE row**: sqrt(mean((L_g − L_r)²)) / (max|L_r| − min|L_r| + 1e-12) × 100 on the curve L **only (funct-only)**, the ill-posed derivative / 2nd-derivative curves are excluded for the same reason as the % err row.
 - **CVaR₉₀ / CVaR₉₅ rows**: tail-averaged pointwise curve error (Expected Shortfall) on the curve L **only (funct-only)**. Pointwise error eₜ = |L_g(t) − L_r(t)|; for q ∈ {0.90, 0.95}, CVaR_q = mean(eₜ for eₜ ≥ the q-th percentile of eₜ), then range-normalized like NRMSE (÷ (max|L_r| − min|L_r| + 1e-12) × 100).
 
-All ↓ lower is better. The perfect floor is **non-zero** for all six plots — it is the residual finite-sample error of an independent Heston draw scored against the test set, identical across methods.
+All ↓ lower is better. The perfect floor is **non-zero** for all six plots, it is the residual finite-sample error of an independent Heston draw scored against the test set, identical across methods.
 Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CVaR₉₅** (the per-seed columns hold that seed's combined score).
 
 | Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
@@ -99,12 +99,12 @@ Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CV
 |  | NRMSE | 29.57% ± 0.2260% | 29.17% | 29.71% | 29.46% | 29.76% | 29.73% | 0.1206% |
 |  | CVaR₉₀ | 32.31% ± 0.1596% | 32.02% | 32.41% | 32.27% | 32.47% | 32.40% | 0.1319% |
 |  | CVaR₉₅ | 37.04% ± 0.1567% | 36.77% | 37.14% | 36.98% | 37.21% | 37.10% | 0.1599% |
-| **ACF \|r\| lags 1–20** | MSE | 0.03390 ± 0.01422 | 0.01361 | 0.04073 | 0.02028 | 0.04678 | 0.04810 | 9.61e-06 |
+| **ACF \|r\| lags 1-20** | MSE | 0.03390 ± 0.01422 | 0.01361 | 0.04073 | 0.02028 | 0.04678 | 0.04810 | 9.61e-06 |
 |  | % err | 983.6% ± 273.1% | 577.3% | 1151% | 736.0% | 1218% | 1236% | 8.724% |
 |  | NRMSE | 795.3% ± 212.4% | 476.6% | 910.4% | 609.1% | 982.9% | 997.7% | 6.071% |
 |  | CVaR₉₀ | 1246% ± 313.1% | 796.2% | 1372% | 956.3% | 1544% | 1561% | 11.26% |
 |  | CVaR₉₅ | 1273% ± 322.9% | 824.6% | 1398% | 957.7% | 1590% | 1597% | 12.06% |
-| **ACF r² lags 1–20** | MSE | 0.02694 ± 0.01034 | 0.01224 | 0.03187 | 0.01699 | 0.03645 | 0.03716 | 9.17e-06 |
+| **ACF r² lags 1-20** | MSE | 0.02694 ± 0.01034 | 0.01224 | 0.03187 | 0.01699 | 0.03645 | 0.03716 | 9.17e-06 |
 |  | % err | 1026% ± 265.1% | 637.2% | 1195% | 778.4% | 1254% | 1268% | 11.34% |
 |  | NRMSE | 782.1% ± 188.7% | 505.1% | 881.9% | 609.1% | 952.2% | 962.3% | 6.486% |
 |  | CVaR₉₀ | 1323% ± 304.4% | 898.7% | 1459% | 1022% | 1618% | 1619% | 12.35% |
@@ -120,9 +120,9 @@ Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CV
 |  | CVaR₉₀ | 71.06% ± 0.8527% | 69.55% | 71.61% | 70.68% | 71.82% | 71.63% | 0.1625% |
 |  | CVaR₉₅ | 71.49% ± 0.8603% | 69.96% | 72.05% | 71.13% | 72.26% | 72.07% | 0.1682% |
 
-> **Log-ret histogram**: MSE 968.0 is by far the weakest B panel — TimeVAE collapses the log-return density into a too-narrow central peak (A28 Kurtosis Ratio 0.28 ≪ 1.0, i.e. generated returns are ~3.6× more peaked than Heston), so the histogram bins mismatch strongly in absolute terms.
-> **ACF \|r\|, ACF r²**: the MSE is small (0.034 / 0.027) because the true ACF ≈ 0.05 sits near zero, but the **% error** (function-level MAPE) blows up (984% / 1026%) for exactly that reason — near-zero denominators amplify any deviation. TimeVAE reproduces almost none of the ARCH autocorrelation (A21 0.39, A23 0.47 error vs Diffusion-TS 0.018 / 0.0024). Read MSE for absolute agreement, % error for relative shape.
-> **Rolling vol histogram**: MSE 16019 — TimeVAE fails to reproduce the Heston rolling-volatility distribution (A31 rolling-vol KS 0.987, essentially disjoint supports).
+> **Log-ret histogram**: MSE 968.0 is by far the weakest B panel, TimeVAE collapses the log-return density into a too-narrow central peak (A28 Kurtosis Ratio 0.28 ≪ 1.0, i.e. generated returns are ~3.6× more peaked than Heston), so the histogram bins mismatch strongly in absolute terms.
+> **ACF \|r\|, ACF r²**: the MSE is small (0.034 / 0.027) because the true ACF ≈ 0.05 sits near zero, but the **% error** (function-level MAPE) blows up (984% / 1026%) for exactly that reason, near-zero denominators amplify any deviation. TimeVAE reproduces almost none of the ARCH autocorrelation (A21 0.39, A23 0.47 error vs Diffusion-TS 0.018 / 0.0024). Read MSE for absolute agreement, % error for relative shape.
+> **Rolling vol histogram**: MSE 16019, TimeVAE fails to reproduce the Heston rolling-volatility distribution (A31 rolling-vol KS 0.987, essentially disjoint supports).
 
 ---
 
@@ -150,7 +150,7 @@ definition and the MinMax normalisation chain.
 
 ---
 
-## A18 — Discriminative Classifier Training Loss
+## A18, Discriminative Classifier Training Loss
 
 BCE loss during GRU and MLP classifier training (2 000 steps, logged every 50 steps).
 A value near ln(2) ≈ 0.693 means the classifier cannot distinguish real from fake.
@@ -159,7 +159,7 @@ A value near ln(2) ≈ 0.693 means the classifier cannot distinguish real from f
 
 ---
 
-## A19 — Predictive Score Training Loss (TSTR)
+## A19, Predictive Score Training Loss (TSTR)
 
 MAE loss during GRU and MLP predictor training on *synthetic* data (5 000 steps, logged every 100 steps).
 
@@ -169,13 +169,13 @@ MAE loss during GRU and MLP predictor training on *synthetic* data (5 000 steps,
 
 ## Path Shadowing MC (arXiv:2308.01486)
 
-Given a real path prefix (steps 0–63), embed it as a **65D murex-style feature vector**
+Given a real path prefix (steps 0-63), embed it as a **65D murex-style feature vector**
 (63 step-by-step log-returns + terminal cumulative return + realized volatility, z-scored
 using the generated pool distribution), retrieve K=77 nearest TimeVAE paths by L2 distance
-in that space, then use their price-anchored futures (steps 64–127) as a forecast ensemble.
+in that space, then use their price-anchored futures (steps 64-127) as a forecast ensemble.
 Two variants: flat average (**Uniform**) and distance-weighted (**Gaussian**,
 per-query η = η̃·‖z(x̃)‖ with η̃ = median(dist)/median(‖z‖) calibrated from data). The PS-MC pipeline
-is **model-agnostic** — it consumes only the generated `.npy` paths, identical to the other methods'.
+is **model-agnostic**, it consumes only the generated `.npy` paths, identical to the other methods'.
 
 ### Example ensemble fan-out (seed 0)
 
@@ -195,7 +195,7 @@ is **model-agnostic** — it consumes only the generated `.npy` paths, identical
 
 PS-MC does **not** beat the naive RW on CRPS at either horizon (3.86 > 3.73 at H=32; 5.63 > 5.30 at
 H=64). TimeVAE's prior-generated pool does not contain price-anchored futures that are close enough to
-the real prefixes to form a well-calibrated nearest-neighbour ensemble — consistent with its weak
+the real prefixes to form a well-calibrated nearest-neighbour ensemble, consistent with its weak
 stylised-facts fit (A9 Volatility MMD 3.59, A31 Rolling-Vol KS 0.987). Uniform ≈ Gaussian: Heston is
 time-homogeneous, so the K nearest neighbours are roughly equally predictive.
 

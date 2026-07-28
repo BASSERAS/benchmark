@@ -1,25 +1,25 @@
-# TimesFM — Forecaster Reference (not a generator)
+# TimesFM, Forecaster Reference (not a generator)
 
 **TimesFM is used in this benchmark as a *forecaster reference*, not as a generative method.**
 Every unconditional generator (TimeGAN, COSCI-GAN, GT-GAN, Diffusion-TS, CSDI, TimeVAE, TimeVQVAE, LS4,
 SBTS, Fourier Flow) has its forecasting ability measured *indirectly* through **Path-Shadowing Monte-Carlo**
-(PS-MC): retrieve nearest generated paths to a real prefix and forecast with their futures. TimesFM —
-like Chronos-2 — answers the natural question that raises — *how good is a purpose-built conditional
-forecaster on the same task?* — by forecasting the Heston future **directly**. It sits in the **forecaster
+(PS-MC): retrieve nearest generated paths to a real prefix and forecast with their futures. TimesFM,
+like Chronos-2, answers the natural question that raises, *how good is a purpose-built conditional
+forecaster on the same task?*, by forecasting the Heston future **directly**. It sits in the **forecaster
 category** alongside Chronos-2 and is one of the **"best forecaster" yardsticks** the generator PS-MC rows
 are measured against.
 
-TimesFM (Das, Kong, Sen, Zhou, Google Research, **ICML 2024** — *A decoder-only foundation model for
+TimesFM (Das, Kong, Sen, Zhou, Google Research, **ICML 2024**, *A decoder-only foundation model for
 time-series forecasting*, arXiv:2310.10688v4, `github.com/google-research/timesfm`) is a pretrained
 **decoder-only patched** probabilistic forecaster. This benchmark runs **both released checkpoints** through
-the identical protocol: `google/timesfm-1.0-200m-pytorch` (the **paper model** and **headline reference** —
+the identical protocol: `google/timesfm-1.0-200m-pytorch` (the **paper model** and **headline reference**,
 **~200M params**; 20 layers, model_dims 1280, input-patch 32, output-patch 128, positional embeddings on) and
-`google/timesfm-2.0-500m-pytorch` (newer, **~500M params**; 50 layers, positional embeddings off — not in the
+`google/timesfm-2.0-500m-pytorch` (newer, **~500M params**; 50 layers, positional embeddings off, not in the
 paper). Given a context window each emits a mean plus **9 predictive quantiles** (levels 0.1…0.9) per future
 step.
 
 > **There is no `old/` folder.** Unlike Chronos-2, TimesFM was never run as an unconditional generator in
-> this benchmark — it enters purely as a forecaster reference, so there is no retired generator experiment
+> this benchmark, it enters purely as a forecaster reference, so there is no retired generator experiment
 > to archive. TimesFM appears in the forecaster category only and is **excluded from every A/B/PS-MC
 > generator table and win-count** in the root and results READMEs.
 
@@ -28,12 +28,12 @@ step.
 ## Forecaster-reference protocol
 
 Direct conditional forecast on the Heston **test set** (`dataset/Heston/heston_S_test_8192x128.npy`,
-8 192 paths × 128 steps, price scale) — identical to the Chronos-2 reference protocol so the two
+8 192 paths × 128 steps, price scale), identical to the Chronos-2 reference protocol so the two
 forecasters and the generator PS-MC rows all line up:
 
-1. **Prefix = 64 steps** (steps 0–63) of each real test path — matches the PS-MC query prefix length, so
+1. **Prefix = 64 steps** (steps 0-63) of each real test path, matches the PS-MC query prefix length, so
    the horizons line up exactly with the generator PS-MC rows.
-2. **Single-shot forecast** of the next **64 steps** (steps 64–127) with one
+2. **Single-shot forecast** of the next **64 steps** (steps 64-127) with one
    `tfm.forecast(context, freq=[0]*N)` call **in price space** (TimesFM applies reversible instance-norm on
    the context internally). Single-shot (no autoregressive feedback) is stable.
 3. **Ensemble of K = 77 members** per path by piecewise-linear **inverse-CDF sampling** over the **9**
@@ -47,13 +47,13 @@ forecasters and the generator PS-MC rows all line up:
 Two reference variants ship **per checkpoint** (→ **four rows total**), and the **1.0-200m** and **2.0-500m**
 checkpoints use the identical recipe (only `num_layers` and the positional-embedding flag differ):
 
-- **Zero-shot** — the pretrained checkpoint, no Heston training (a single model → a single point value).
-- **Fine-tuned** — 5 per-seed **full** fine-tunes of that checkpoint on the 8 192 Heston training paths
+- **Zero-shot**, the pretrained checkpoint, no Heston training (a single model → a single point value).
+- **Fine-tuned**, 5 per-seed **full** fine-tunes of that checkpoint on the 8 192 Heston training paths
   (`weights/seed_{i}_model.pt` for 1.0-200m, `weights/timesfm-2.0-500m-pytorch/seed_{i}_model.pt` for 2.0-500m;
   1 000 Adam steps, lr 1e-4, weight-decay 0.01, batch 256), reported as
   **mean ± std across the 5 seeds**. The fine-tune objective is the official TimesFM finetuner loss with
   `use_quantile_loss=True`: **masked MSE on the mean head + the 9-quantile pinball loss**, all masked to the
-  first 64 future steps. Supervising the quantile heads is essential — the eval ensemble is built from them,
+  first 64 future steps. Supervising the quantile heads is essential, the eval ensemble is built from them,
   so fine-tuning the shared backbone on the mean head alone would decalibrate the quantiles.
 
 Horizons **H = 32** and **H = 64** are cut from the same 64-step forecast (`HORIZONS = {h32:(0,32),
@@ -61,7 +61,7 @@ h64:(0,64)}`), exactly as in the generator PS-MC evaluation.
 
 ---
 
-## Reference scores — CRPS / MAE / RMSE (price space, 64-step prefix)
+## Reference scores, CRPS / MAE / RMSE (price space, 64-step prefix)
 
 Lower is better. CRPS is the energy-score CRPS; the **RW baseline** repeats the last prefix value
 (a deterministic random walk, so its CRPS = MAE). 1.0-200m numbers read from
@@ -77,13 +77,13 @@ Lower is better. CRPS is the energy-score CRPS; the **RW baseline** repeats the 
 | 2.0-500m fine-tuned *(5 seeds)* | 3.169 ± 0.312 | 4.440 ± 0.539 | 4.075 ± 0.142 | 5.621 ± 0.237 | 5.479 ± 0.207 | 7.590 ± 0.327 |
 | *RW baseline* | *3.738* | *5.246* | *3.738* | *5.246* | *5.040* | *7.066* |
 
-**All four variants beat the naive random walk on CRPS at both horizons** — a real conditional forecaster adds
+**All four variants beat the naive random walk on CRPS at both horizons**, a real conditional forecaster adds
 value over "tomorrow = today". For **1.0-200m**, fine-tuning helps: it sharpens the per-step scale (CRPS
 3.065 → 2.976 at H=32, 4.347 → 4.046 at H=64). Unlike Chronos-2, the 5 fine-tune seeds show **genuine spread**
 (std ≈ 0.14), because the fine-tuner draws random minibatches (`rng.integers`) seeded per run, so each seed
-sees a different data order — the std is real seed variance, not numerical noise.
+sees a different data order, the std is real seed variance, not numerical noise.
 
-**The smaller 1.0-200m is the stronger checkpoint on Heston** — it beats 2.0-500m at every cell, zero-shot and
+**The smaller 1.0-200m is the stronger checkpoint on Heston**, it beats 2.0-500m at every cell, zero-shot and
 fine-tuned. Full fine-tuning of the ~500M model on only 8 192 short Heston paths is **unstable**: the 5 seeds'
 H=32 CRPS ranges 2.875 → 3.643 (std 0.312), and the fine-tuned mean (3.169) does **not** improve on its own
 zero-shot (3.103) at H=32. This is why **1.0-200m is used as the headline TimesFM reference** everywhere else
@@ -91,7 +91,7 @@ in the benchmark; 2.0-500m is reported here for completeness alongside its ETT p
 
 ### How the forecaster reference compares to Chronos-2 and generator Path-Shadowing MC
 
-Same task, same prefix length, same CRPS, same RW baseline — so all rows are directly comparable:
+Same task, same prefix length, same CRPS, same RW baseline, so all rows are directly comparable:
 
 | CRPS ↓ (price space) | H=32 | H=64 |
 |----------------------|:----:|:----:|
@@ -110,12 +110,12 @@ Same task, same prefix length, same CRPS, same RW baseline — so all rows are d
 
 **The headline finding holds with a second forecaster.** TimesFM (best checkpoint, 1.0-200m) is **comparable
 to but slightly behind Chronos-2** at both horizons and both variants (fine-tuned 2.976 / 4.046 vs Chronos-2
-2.760 / 3.980); the larger 2.0-500m checkpoint is weaker still on this task (3.169 / 4.440 fine-tuned). And —
-crucially — **neither purpose-built foundation forecaster, at either size, beats the best generator's
+2.760 / 3.980); the larger 2.0-500m checkpoint is weaker still on this task (3.169 / 4.440 fine-tuned). And,
+crucially, **neither purpose-built foundation forecaster, at either size, beats the best generator's
 path-shadowing**: LS4 PS-MC (2.704 / 3.763) edges out all of them, and LS4 even reaches the **Perfect oracle
 floor** (2.721 / 3.788)
 while the forecasters do not. Path-Shadowing MC over a well-trained unconditional generator is a
-**competitive conditional forecaster in its own right** — the generator route is not merely a fidelity
+**competitive conditional forecaster in its own right**, the generator route is not merely a fidelity
 check. TimesFM is a second honest external yardstick that makes that claim credible.
 
 ---
@@ -144,7 +144,7 @@ unstable 5-seed fine-tune discussed above):
 
 ---
 
-## Validating the port — paper zero-shot ETT reproduction
+## Validating the port, paper zero-shot ETT reproduction
 
 TimesFM's arXiv:2310.10688v4 headline is **zero-shot** forecasting accuracy. Before using the checkpoint as
 a reference we reproduced its **zero-shot MAE on the ETT long-horizon benchmark** (paper **Table 5**:
@@ -154,7 +154,7 @@ train-statistic z-normalisation), for **both** released checkpoints:
 | Checkpoint | ETT avg MAE (ours) | Paper `TimesFM(ZS)` avg |
 |------------|:------------------:|:-----------------------:|
 | `google/timesfm-1.0-200m-pytorch` *(paper model)* | **0.3409** | 0.36 |
-| `google/timesfm-2.0-500m-pytorch` *(newer)* | 0.3415 | — (not in paper) |
+| `google/timesfm-2.0-500m-pytorch` *(newer)* | 0.3415 |, (not in paper) |
 
 Our 1.0-200m average (0.3409) matches the paper's `TimesFM(ZS)` average (0.36) closely, confirming the port
 loads and runs the pretrained checkpoint faithfully. The full 8-task per-dataset table (both checkpoints,

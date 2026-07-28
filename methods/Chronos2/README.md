@@ -1,22 +1,22 @@
-# Chronos-2 — Forecaster Reference (not a generator)
+# Chronos-2, Forecaster Reference (not a generator)
 
 **Chronos-2 is used in this benchmark as a *forecaster reference*, not as a generative method.**
 Every other entry (TimeGAN, COSCI-GAN, GT-GAN, Diffusion-TS, CSDI, TimeVAE, TimeVQVAE, LS4, SBTS,
 Fourier Flow) is an **unconditional generator** whose forecasting ability is measured *indirectly*
 through **Path-Shadowing Monte-Carlo** (PS-MC): retrieve nearest generated paths to a real prefix and
-forecast with their futures. Chronos-2 answers the natural question that raises — *how good is a
-purpose-built conditional forecaster on the same task?* — by forecasting the Heston future **directly**.
+forecast with their futures. Chronos-2 answers the natural question that raises, *how good is a
+purpose-built conditional forecaster on the same task?*, by forecasting the Heston future **directly**.
 It is the **"best forecaster" yardstick** the generator PS-MC rows are measured against.
 
-Chronos-2 (Ansari, Turkmen, Shchur, et al., Amazon Science, **2025** — *Chronos-2: From Univariate to
+Chronos-2 (Ansari, Turkmen, Shchur, et al., Amazon Science, **2025**, *Chronos-2: From Univariate to
 Universal Forecasting*, arXiv:2510.15821, `github.com/amazon-science/chronos-forecasting`) is a
 pretrained encoder-decoder T5-style **probabilistic conditional forecaster** with group attention
 (checkpoint `amazon/chronos-2`, **~120M params**). Given a context window it emits 21 predictive
 quantiles per future step via `predict_quantiles`.
 
 > **The retired generator experiment lives in [`old/`](old/).** Chronos-2 was previously fine-tuned into
-> an unconditional Heston generator by autoregressive log-space rollout (5 seeds, full A1–A34 + B + PS-MC).
-> That framing was **retired** — a foundation forecaster is not an unconditional generator, and stacking
+> an unconditional Heston generator by autoregressive log-space rollout (5 seeds, full A1-A34 + B + PS-MC).
+> That framing was **retired**, a foundation forecaster is not an unconditional generator, and stacking
 > 112 sampled one-step forecasts over-disperses the marginal law. All of those artifacts (generator code,
 > generated paths, losses, metrics, plots) are archived under [`old/`](old/) with their own README. They
 > are **excluded from every A/B/PS-MC table and win-count** in the root and results READMEs.
@@ -28,11 +28,11 @@ quantiles per future step via `predict_quantiles`.
 Direct conditional forecast on the Heston **test set** (`dataset/Heston/heston_S_test_8192x128.npy`,
 8 192 paths × 128 steps, price scale):
 
-1. **Prefix = 64 steps** (steps 0–63) of each real test path — matches the PS-MC query prefix length, so
+1. **Prefix = 64 steps** (steps 0-63) of each real test path, matches the PS-MC query prefix length, so
    the horizons line up exactly with the generator PS-MC rows.
-2. **Single-shot forecast** of the next **64 steps** (steps 64–127) with one
+2. **Single-shot forecast** of the next **64 steps** (steps 64-127) with one
    `pipeline.predict_quantiles(context, prediction_length=64, quantile_levels=<21 levels>)` call **in
-   price space**. Single-shot (no autoregressive feedback) is stable — unlike the retired generator
+   price space**. Single-shot (no autoregressive feedback) is stable, unlike the retired generator
    rollout, which needed log-space to avoid multiplicative runaway.
 3. **Ensemble of K = 77 members** per path by piecewise-linear **inverse-CDF sampling** over the 21
    quantile levels (matches the PS-MC ensemble size K = 77).
@@ -43,9 +43,9 @@ Direct conditional forecast on the Heston **test set** (`dataset/Heston/heston_S
 
 Two reference variants ship as **two rows**:
 
-- **Zero-shot** — the pretrained `amazon/chronos-2` checkpoint, no Heston training (a single model → a
+- **Zero-shot**, the pretrained `amazon/chronos-2` checkpoint, no Heston training (a single model → a
   single point value).
-- **Fine-tuned** — the 5 per-seed checkpoints from the retired generator experiment
+- **Fine-tuned**, the 5 per-seed checkpoints from the retired generator experiment
   (`weights/seed_{i}_model.pt`, `finetune_mode="full"`, 1 000 steps, lr 1e-4, batch 256), reported as
   **mean ± std across the 5 seeds**.
 
@@ -54,7 +54,7 @@ h64:(0,64)}`), exactly as in the generator PS-MC evaluation.
 
 ---
 
-## Reference scores — CRPS / MAE / RMSE (price space, 64-step prefix)
+## Reference scores, CRPS / MAE / RMSE (price space, 64-step prefix)
 
 Lower is better. CRPS is the energy-score CRPS; the **RW baseline** repeats the last prefix value
 (a deterministic random walk, so its CRPS = MAE). Numbers read from
@@ -66,7 +66,7 @@ Lower is better. CRPS is the energy-score CRPS; the **RW baseline** repeats the 
 | **Chronos-2 fine-tuned** *(5 seeds)* | **2.760 ± 0.0001944** | **3.980 ± 0.0004099** | 3.740 ± 0.0001595 | 5.256 ± 0.0004472 | 5.049 ± 0.0004853 | 7.088 ± 0.0006329 |
 | *RW baseline* | *3.738* | *5.246* | *3.738* | *5.246* | *5.040* | *7.066* |
 
-**Both variants beat the naive random walk on CRPS at both horizons** — a real conditional forecaster
+**Both variants beat the naive random walk on CRPS at both horizons**, a real conditional forecaster
 adds value over "tomorrow = today". Fine-tuning helps: it sharpens the per-step scale (CRPS 2.996 → 2.760
 at H=32, 4.234 → 3.980 at H=64) and its 5 seeds are near-identical (std ≈ 2e-04, deterministic data
 order). The fine-tune checkpoints were trained at `prediction_length = 16`, so their single-shot 64-step
@@ -76,7 +76,7 @@ yet still improve on zero-shot overall.
 
 ### How the forecaster reference compares to generator Path-Shadowing MC
 
-Same task, same prefix length, same CRPS, same RW baseline — so these are directly comparable:
+Same task, same prefix length, same CRPS, same RW baseline, so these are directly comparable:
 
 | CRPS ↓ (price space) | H=32 | H=64 |
 |----------------------|:----:|:----:|
@@ -93,7 +93,7 @@ Same task, same prefix length, same CRPS, same RW baseline — so these are dire
 **does not beat the best generator's path-shadowing** at either horizon: LS4 PS-MC (2.704 / 3.763) edges
 out fine-tuned Chronos-2 (2.760 / 3.980), and LS4 even reaches the **Perfect oracle floor** (2.721 /
 3.788) while the forecaster does not. Path-Shadowing MC over a well-trained unconditional generator is a
-**competitive forecaster in its own right** — the generator route is not merely a fidelity check, it is a
+**competitive forecaster in its own right**, the generator route is not merely a fidelity check, it is a
 genuinely strong conditional-forecasting method. Chronos-2 is the honest external yardstick that makes
 that claim credible.
 
@@ -113,7 +113,7 @@ steps in the fine-tune curve are the `prediction_length = 16` training footprint
 
 ---
 
-## Validating the port — paper zero-shot reproduction
+## Validating the port, paper zero-shot reproduction
 
 Chronos-2's arXiv:2510.15821 evaluation reports **MASE** and **WQL** on standard forecasting benchmarks
 (Chronos-datasets), not on Heston. Before using the checkpoint as a reference we reproduced its

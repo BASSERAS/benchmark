@@ -1,13 +1,13 @@
-# Heston Dataset — seq_len = 128
+# Heston Dataset, seq_len = 128
 
 ## Quick description
 
 Synthetic price/variance paths generated from the **Heston stochastic volatility model**
-(Heston 1993) using an Euler–Maruyama full-truncation scheme. Every path has **128 time steps**
+(Heston 1993) using an Euler-Maruyama full-truncation scheme. Every path has **128 time steps**
 (≈ half a year of daily prices, dt = 1/250) and starts at $S_0 = 100$, $v_0 = 0.04$.
 
-The benchmark uses **three disjoint 8 192-path splits** — all drawn from the *same* SDE and
-parameters, differing only by RNG seed — plus a very large **100 M-path empirical bank** used to
+The benchmark uses **three disjoint 8 192-path splits**, all drawn from the *same* SDE and
+parameters, differing only by RNG seed, plus a very large **100 M-path empirical bank** used to
 build the high-resolution reference ("theory") curves for the diagnostic plots.
 
 ## Stochastic differential equations
@@ -32,7 +32,7 @@ where $v_t^+ = \max(v_t, 0)$ is the full-truncation fix that keeps variance non-
 | $\kappa$ | Mean-reversion speed | 2.0 |
 | $\theta$ | Long-run variance | 0.04 (≈ 20 % vol) |
 | $\xi$ | Vol-of-vol | 0.3 |
-| $\rho$ | Spot–vol correlation | −0.7 |
+| $\rho$ | Spot-vol correlation | −0.7 |
 | $S_0$ | Initial price | 100.0 |
 | $v_0$ | Initial variance | 0.04 |
 | $dt$ | Time step | 1/250 (daily) |
@@ -60,28 +60,28 @@ All six split arrays are **float64, shape (8192, 128)** and are committed to the
 |------|-------|-------|-------------|
 | `heston_S_8192x128.npy` | train (seed 0) | $S_t$ | Price paths |
 | `heston_v_8192x128.npy` | train (seed 0) | $v_t$ | Variance paths |
-| `heston_S_test_8192x128.npy` | test (seed 1) | $S_t$ | Price paths — scoring reference |
-| `heston_v_test_8192x128.npy` | test (seed 1) | $v_t$ | Variance paths — used by the Heston-spec metrics (A33/A34) |
-| `heston_S_disc_8192x128.npy` | disc (seed 2) | $S_t$ | Price paths — A18/A19 classifier real data |
+| `heston_S_test_8192x128.npy` | test (seed 1) | $S_t$ | Price paths, scoring reference |
+| `heston_v_test_8192x128.npy` | test (seed 1) | $v_t$ | Variance paths, used by the Heston-spec metrics (A33/A34) |
+| `heston_S_disc_8192x128.npy` | disc (seed 2) | $S_t$ | Price paths, A18/A19 classifier real data |
 | `heston_v_disc_8192x128.npy` | disc (seed 2) | $v_t$ | Variance paths |
-| `generate_heston.py` | — | — | CPU (numpy, float64) generator for the three 8 192-path splits |
-| `generate_heston_large.py` | — | — | GPU (torch, float32) generator for the 100 M-path empirical bank |
+| `generate_heston.py` |, |, | CPU (numpy, float64) generator for the three 8 192-path splits |
+| `generate_heston_large.py` |, |, | GPU (torch, float32) generator for the 100 M-path empirical bank |
 
-### `large_dataset/` — 100 M-path empirical reference (not committed)
+### `large_dataset/`, 100 M-path empirical reference (not committed)
 
 This directory is a high-resolution empirical bank used **only** to estimate the reference curves for
 the diagnostic panels that have no clean closed form (ACF of |r|, ACF of r², rolling-vol histogram,
-tail survival). It is large (~50 GiB) and therefore **git-ignored** — regenerate it locally with the
+tail survival). It is large (~50 GiB) and therefore **git-ignored**, regenerate it locally with the
 command below.
 
 | File | Shape | dtype | Description |
 |------|-------|-------|-------------|
-| `large_S_shard{0..3}.npy` | (25 000 000, 128) | float32 | Price paths — 4 GPU shards, 100 M total |
-| `large_v_shard{0..3}.npy` | (25 000 000, 128) | float32 | Variance paths — 4 GPU shards |
+| `large_S_shard{0..3}.npy` | (25 000 000, 128) | float32 | Price paths, 4 GPU shards, 100 M total |
+| `large_v_shard{0..3}.npy` | (25 000 000, 128) | float32 | Variance paths, 4 GPU shards |
 | `theory_curves_bundle.npz` | 9 arrays | float64 | Pre-computed reference curves (`qq_grid`, `qq_theory`, `lags`, `acf_abs`, `acf_sq`, `rvol_grid`, `rvol_dens`, `tail_oneminusq`, `tail_surv`) consumed by `metrics/heston_theory.py` and `metrics/plot_diagnostics.py` |
-| `gen_shard{k}.log` | — | — | Per-shard throughput logs |
+| `gen_shard{k}.log` |, |, | Per-shard throughput logs |
 
-Each of the four GPU workers runs one shard with a distinct base seed and shard index (seeds 100–103
+Each of the four GPU workers runs one shard with a distinct base seed and shard index (seeds 100-103
 by the launch convention documented in `generate_heston_large.py`), so the 100 M paths are fully
 independent both of one another and of the three benchmark splits.
 
@@ -102,7 +102,7 @@ for name, seed in [("", 0), ("_test", 1), ("_disc", 2)]:
 PY
 ```
 
-(`python generate_heston.py` on its own writes only the train split — seed 0.)
+(`python generate_heston.py` on its own writes only the train split, seed 0.)
 
 **The 100 M-path empirical bank** (one GPU process per shard, ~45 s/shard on an A100):
 

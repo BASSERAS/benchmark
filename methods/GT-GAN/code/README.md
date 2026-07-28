@@ -1,4 +1,4 @@
-# GT-GAN Code — Sources & Implementation
+# GT-GAN Code, Sources & Implementation
 
 ## Original work
 
@@ -6,10 +6,10 @@
 |-------|---------|
 | **Paper** | *GT-GAN: General Purpose Time Series Synthesis with Generative Adversarial Networks* |
 | **Authors** | Jinsung Jeon, Jeonghak Kim, Haryong Song, Seunghyeon Cho, Noseong Park |
-| **Venue** | NeurIPS 2022 — PDF `../paper_reimplementation/GT-GAN_NeurIPS2022.pdf` |
+| **Venue** | NeurIPS 2022, PDF `../paper_reimplementation/GT-GAN_NeurIPS2022.pdf` |
 | **arXiv** | [2210.02040](https://arxiv.org/abs/2210.02040) |
 | **Original code** | https://github.com/Jinsung-Jeon/GT-GAN |
-| **Original framework** | **PyTorch** (already PyTorch — no framework port needed) |
+| **Original framework** | **PyTorch** (already PyTorch, no framework port needed) |
 | **Method type** | **GAN with a continuous-time autoencoder.** A **Neural-CDE embedder** encodes an irregular/regular series into a latent path, a **Neural-ODE recovery** decodes it back, and a **continuous normalizing-flow (CNF) generator** samples the latent space adversarially against a **Neural-ODE discriminator**. The `gtgan` mode used here is the regular-sampling variant that reproduced the paper's Stocks/Energy Table 1. |
 
 The verbatim reference implementation is kept under [`reference/`](reference/) for transparency
@@ -17,14 +17,14 @@ The verbatim reference implementation is kept under [`reference/`](reference/) f
 Multi_Layer_ODENetwork}`, the CNF builder `train_misc.build_model_tabular_nonlinear`, and the
 CTFP/flow helpers in `ctfp_tools`) are imported **unchanged** by [`train_heston.py`](train_heston.py)
 with the released `gtgan` hyperparameters (`parse_arguments` defaults). The one substantive edit is a
-**seq\_len / effective\_shape de-conflation** in the CTFP forward pass (see Fixes below) — byte-identical
+**seq\_len / effective\_shape de-conflation** in the CTFP forward pass (see Fixes below), byte-identical
 to the reference on the paper's Stocks case.
 
 ---
 
 ## Our implementation
 
-The released code is already **PyTorch**, so — unlike the TF baselines — there is **no architecture
+The released code is already **PyTorch**, so, unlike the TF baselines, there is **no architecture
 port**: [`train_heston.py`](train_heston.py) builds the four GT-GAN sub-networks from the released
 `gtgan` settings and reproduces the upstream two-phase training loop (embed-pretrain → joint
 adversarial), then generates 8192 length-128 paths and writes weights / losses / generated paths /
@@ -42,7 +42,7 @@ clips to ≥ 1e-6.
 | **Generator** | `build_model_tabular_nonlinear` | CNF sampling the 24-dim latent from prior noise | `dims="32-64-64-32"`, `solver=sym12async`, reg coeffs below |
 | **Discriminator** | `Multi_Layer_ODENetwork` | Neural-ODE critic `X̂ → logit` (Euler, `delta_t=0.5`) | `num_layer=1` (`d_layer`), `x_hidden=48`, `last_activation=identity` |
 
-Total **32 957 parameters** (`weights/seed_0_config.json`) — **the smallest model in the benchmark**.
+Total **32 957 parameters** (`weights/seed_0_config.json`), **the smallest model in the benchmark**.
 The CNF generator operates in the **24-dim embedding latent** (`effective_shape = input_size = hidden
 = 24`), *not* the raw 1-dim feature space, so it is unchanged by the feature-dim switch.
 
@@ -58,7 +58,7 @@ Phase 2 — joint adversarial (max_steps = 3 000 steps)
 ```
 
 `loss_g_u` = BCE(D(fake), 1); `loss_g_v` = |Δstd| + |Δmean| moment-matching between fake and real;
-`loss_d` = BCE(D(real),1) + BCE(D(fake),0). **There is no separate supervisor network** — `loss_s` is
+`loss_d` = BCE(D(real),1) + BCE(D(fake),0). **There is no separate supervisor network**, `loss_s` is
 the CTFP supervised-latent likelihood term, not a sub-model. Losses logged every `log_every=100` steps
 as `step, phase, loss_e, loss_d, loss_g_u, loss_g_v, loss_s`.
 
@@ -70,7 +70,7 @@ generated --* (max - min + 1e-7) + min--> price, then clip to >= 1e-6
 ```
 
 A **global min-max** over the whole array (single scalar `data_min`/`data_max`, the paper's
-`normalize` transform applied globally): `data_min = 39.893609`, `data_max = 155.578983` — the
+`normalize` transform applied globally): `data_min = 39.893609`, `data_max = 155.578983`, the
 real-data extremes, stored in each `weights/seed_{i}_config.json` so sampling inverts exactly back to
 price scale.
 
@@ -87,7 +87,7 @@ adaptations are in the training *driver*, to fit the benchmark's single-GPU / np
    dimension in two spots (latent-noise dim when `z=True`; the `transform_values` reshape when
    `z=False`). In the paper's Stocks/Energy setups `seq_len == hidden_size == effective_shape == 24`,
    so this silently worked. *Our change:* substitute `args.effective_shape` in exactly those two spots.
-   **Both substitutions are no-ops when seq\_len == effective\_shape == 24 — byte-identical to the
+   **Both substitutions are no-ops when seq\_len == effective\_shape == 24, byte-identical to the
    reference on the reproduced paper case.** This is the **only** change to reference-derived model code.
 2. **Data I/O.** *Reference:* reads the paper datasets via `time_dataset` / `data_loading`. *Our change:*
    load the Heston `.npy` `(N, T)` directly, global min-max normalize to [0,1] (store `data_min`/
@@ -128,8 +128,8 @@ CTFP/CNF regularization coefficients are the released defaults.
 | `first_epoch` (embed pretrain steps) | 10 000 | paper Stocks |
 | `max_steps` (joint adversarial steps) | 3 000 | paper Stocks |
 | `log_time` (supervised-gen cadence) | 2 | released gtgan |
-| `feat_dim` | **1** | **Heston-specific** — univariate price series |
-| `seq_len` | **128** | **Heston-specific** — the Heston sequence length |
+| `feat_dim` | **1** | **Heston-specific**, univariate price series |
+| `seq_len` | **128** | **Heston-specific**, the Heston sequence length |
 
 Only two knobs are Heston-specific (`feat_dim`, `seq_len`); everything else is the released
 `gtgan`-mode preset kept verbatim.
@@ -152,7 +152,7 @@ GT-GAN CLI flags added in [`train_heston.py`](train_heston.py):
 | `--r_layer` / `--d_layer` | 2 / 1 | Recovery / discriminator ODE depth. |
 | `--log_time` | 2 | Supervised-generator update cadence. |
 | `--frac` | 1.0 | Fraction of training paths (smoke runs). |
-| `--tag` | "" | Run tag (e.g. `smoke`) — prefixes outputs, skips canonical weights. |
+| `--tag` | "" | Run tag (e.g. `smoke`), prefixes outputs, skips canonical weights. |
 
 - **CNF width / solver / regularization** → the `--dims`, `--solver`, `--atol`, `--rtol`,
   `--reconstruction`, `--kinetic_energy`, `--jacobian_norm2`, `--directional_penalty` flags from the
@@ -190,11 +190,11 @@ wait
 ```
 
 Each seed writes:
-- `weights/seed_{s}_model.pt` — embedder/recovery/generator/discriminator `state_dict`s + data_min/max/seed
-- `weights/seed_{s}_config.json` — full hyperparameters + `data_min`/`data_max` + params (32 957)
-- `losses/seed_{s}_losses.csv` — `step, phase, loss_e, loss_d, loss_g_u, loss_g_v, loss_s`
-- `generated_paths/seed_{s}/generated_paths_8192x128.npy` — (8192, 128) price scale
-- `generated_paths/seed_{s}/metadata.json` — seed, shape, min/max, gen/train time, params, gen_has_nan
+- `weights/seed_{s}_model.pt`, embedder/recovery/generator/discriminator `state_dict`s + data_min/max/seed
+- `weights/seed_{s}_config.json`, full hyperparameters + `data_min`/`data_max` + params (32 957)
+- `losses/seed_{s}_losses.csv`, `step, phase, loss_e, loss_d, loss_g_u, loss_g_v, loss_s`
+- `generated_paths/seed_{s}/generated_paths_8192x128.npy`, (8192, 128) price scale
+- `generated_paths/seed_{s}/metadata.json`, seed, shape, min/max, gen/train time, params, gen_has_nan
 
 ---
 
@@ -214,7 +214,7 @@ Start Joint Training ... Finish Joint Training
 Expected sane signals (all five seeds, verified from metadata):
 - 32 957 parameters; `gen_has_nan = false` on every seed;
 - generated mean/std (seed 0: 101.42 / 10.39) close to real (101.33 / 9.97); price range clipped to ≥ 1e-6;
-- **train time 77 260 / 76 054 / 123 402 / 77 414 / 99 826 s** (≈ 21–34 h/seed — ODE-solver bound, by
+- **train time 77 260 / 76 054 / 123 402 / 77 414 / 99 826 s** (≈ 21-34 h/seed, ODE-solver bound, by
   far the slowest method in the benchmark); generation ≈ 4.5 s/seed.
 
 ---
@@ -232,16 +232,16 @@ cd /home/tbasseras/benchmark
 /home/tbasseras/gpu-venv/bin/python metrics/compute_all.py --method GT-GAN --dataset Heston
 ```
 
-**Exact run path — which file produced which committed number:**
+**Exact run path, which file produced which committed number:**
 
 | Committed number | Interpreter + env | Command | Input file(s) scored | Output file |
 |------------------|-------------------|---------|----------------------|-------------|
 | GT-GAN synthetic paths, per seed `i` | `gtgan-venv`, `CUDA_VISIBLE_DEVICES=0/3 taskset -c … OMP_NUM_THREADS=8` | `train_heston.py --seed i` | real `dataset/Heston/heston_S_8192x128.npy`, global min-max internally | `generated_paths/seed_i/generated_paths_8192x128.npy` + `metadata.json` |
-| Heston A1–A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method GT-GAN --dataset Heston` | `methods/GT-GAN/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/GT-GAN/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
+| Heston A1-A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method GT-GAN --dataset Heston` | `methods/GT-GAN/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/GT-GAN/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
 | A18/A19 disc/pred loss curves, per seed `i` | `gpu-venv` | `metrics/compute_all.py --method GT-GAN --dataset Heston` | same generated `.npy` vs real | `results/Heston/GT-GAN/seed_i_{disc,pred}_{gru,mlp}_loss.csv` → `plots/{disc_classifier,pred_score}_loss.png` |
 
 Each `results/Heston/GT-GAN/seed_i_metrics.json` is the sole source for that seed's column in every
 README A-table; the mean±std rows aggregate the 5 files.
 
-The paper reproduction (Stocks discriminative / predictive — the paper's own Table 1 metrics) lives
+The paper reproduction (Stocks discriminative / predictive, the paper's own Table 1 metrics) lives
 separately in [`../paper_reimplementation/`](../paper_reimplementation/).

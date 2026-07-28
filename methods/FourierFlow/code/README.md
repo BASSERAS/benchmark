@@ -1,4 +1,4 @@
-# Fourier Flow Code — Sources & Implementation
+# Fourier Flow Code, Sources & Implementation
 
 ## Original work
 
@@ -40,7 +40,7 @@ A Fourier Flow maps a time series to independent Gaussian latents through the
 
 $$x \xrightarrow{\text{DFT}} X(f) \xrightarrow{\text{affine coupling}} z \sim \mathcal{N}(0, I)$$
 
-- The DFT is a fixed linear (Vandermonde) map, so its **log-Jacobian is 0** — it
+- The DFT is a fixed linear (Vandermonde) map, so its **log-Jacobian is 0**, it
   contributes nothing to the likelihood but moves the signal to a basis where an
   affine coupling flow fits the spectrum well.
 - Each flow layer is a **RealNVP affine coupling** on the (real, imag) spectral
@@ -59,7 +59,7 @@ $$x \xrightarrow{\text{DFT}} X(f) \xrightarrow{\text{affine coupling}} z \sim \m
 > **⚠️ Paper-vs-code discrepancy (documented, kept as-is).** The paper describes
 > the coupling nets as **bidirectional RNNs**. The released `FourierFlow` uses
 > **MLPs** (above); the BiRNN lives in a separate, *unused* `AttentionFilter` /
-> `TimeFlow`. Per the locked task decision we run the **released code as-is** —
+> `TimeFlow`. Per the locked task decision we run the **released code as-is**,
 > the MLP path is what produced the paper's Table 2, and it reproduces it (see
 > `../paper_reimplementation/`). We did not touch the model.
 
@@ -74,8 +74,8 @@ are numerical guards (a normalisation-constant rescale and a gradient rescale).
 | # | Issue | Fix |
 |---|-------|-----|
 | 1 | **ODD `fft_size` required.** `FourierFlow.forward` reshapes the cropped DFT output (`2·crop_size = N+2` values for even N) to size `d+1 = N+1`. This is only consistent for **odd** input length. Even N=128 crashes: `shape '[-1,129]' invalid for size 8192×130`. | Prepend a single 0 "anchor" column → length **T+1 = 129 (odd)**, exactly the released Stocks pipeline (`real_data_loading` does `hstack((0, series))`). Strip the anchor back off after sampling. |
-| 2 | **Degenerate imaginary-DC bin → literal 0/0 NaN.** For any real signal the imaginary-DC spectral component is identically 0, so its across-batch std is **exactly 0**. `normalize=True` then divides `(x−mean)/std = 0/0` → immediate NaN on the very first forward pass. Stocks (odd length 101) never hit this: odd-length FFT roundoff gave its imag-DC a tiny **nonzero** std that `normalize=True` rescaled to unit variance. | **Keep the paper's `normalize=True` regime** and clamp only the degenerate bin: `FourierFlowClamp.fit` sets that bin's `fft_std` from 0 → 1 (it then passes through as a constant 0, carrying no information) while every other bin normalises as in the paper. One bin is clamped for Heston (`n_clamped_bins` recorded in each `seed_*_config.json`). **Necessary but not sufficient** — it removes the first-pass NaN, but the run still diverged later (see #3). |
-| 3 | **Late-training NaN from near-singular spectral covariance.** Even *with* #2, all five un-clipped 1000-epoch runs descended smoothly then went **NaN at epoch ~499** (grad-norm exploding to ~8300). Root cause is a **data property, not a code bug**: every Heston path starts at the *identical* deterministic S₀=100, so `Var(value at t=1)` across samples is ≈0 (**3.6e-15** vs Stocks **6.1e-2**) and the spectral covariance is near-singular (**92/130** bins with std<1e-3 vs Stocks 41/102). A max-likelihood flow matching a near-singular target drives its affine-coupling log-scales → −∞ along the degenerate directions, which eventually overflows. **Proof:** the *unmodified* reference flow (with #2 applied, no clip, 1000 epochs) is stable on Stocks (`first_nan=−1`, max grad-norm 2142) but NaN on Heston (`first_nan=499`, max grad-norm 8304) — same code, only the data differs. Stocks avoids it because sliding-window slicing gives every window a different start value, so no spectral direction is degenerate. | **Clip the gradient norm to 1.0** (`torch.nn.utils.clip_grad_norm_(params, 1.0)` between `loss.backward()` and `optim.step()`). This caps the log-scale blowup **without changing any flow math** — a pure gradient rescale, like the `ExponentialLR` scheduler already in the loop. Verified: **no NaN**, all 5 seeds converge to a positive NLL plateau ~98–121. Configurable via `fit(..., grad_clip=…)`. |
+| 2 | **Degenerate imaginary-DC bin → literal 0/0 NaN.** For any real signal the imaginary-DC spectral component is identically 0, so its across-batch std is **exactly 0**. `normalize=True` then divides `(x−mean)/std = 0/0` → immediate NaN on the very first forward pass. Stocks (odd length 101) never hit this: odd-length FFT roundoff gave its imag-DC a tiny **nonzero** std that `normalize=True` rescaled to unit variance. | **Keep the paper's `normalize=True` regime** and clamp only the degenerate bin: `FourierFlowClamp.fit` sets that bin's `fft_std` from 0 → 1 (it then passes through as a constant 0, carrying no information) while every other bin normalises as in the paper. One bin is clamped for Heston (`n_clamped_bins` recorded in each `seed_*_config.json`). **Necessary but not sufficient**, it removes the first-pass NaN, but the run still diverged later (see #3). |
+| 3 | **Late-training NaN from near-singular spectral covariance.** Even *with* #2, all five un-clipped 1000-epoch runs descended smoothly then went **NaN at epoch ~499** (grad-norm exploding to ~8300). Root cause is a **data property, not a code bug**: every Heston path starts at the *identical* deterministic S₀=100, so `Var(value at t=1)` across samples is ≈0 (**3.6e-15** vs Stocks **6.1e-2**) and the spectral covariance is near-singular (**92/130** bins with std<1e-3 vs Stocks 41/102). A max-likelihood flow matching a near-singular target drives its affine-coupling log-scales → −∞ along the degenerate directions, which eventually overflows. **Proof:** the *unmodified* reference flow (with #2 applied, no clip, 1000 epochs) is stable on Stocks (`first_nan=−1`, max grad-norm 2142) but NaN on Heston (`first_nan=499`, max grad-norm 8304), same code, only the data differs. Stocks avoids it because sliding-window slicing gives every window a different start value, so no spectral direction is degenerate. | **Clip the gradient norm to 1.0** (`torch.nn.utils.clip_grad_norm_(params, 1.0)` between `loss.backward()` and `optim.step()`). This caps the log-scale blowup **without changing any flow math**, a pure gradient rescale, like the `ExponentialLR` scheduler already in the loop. Verified: **no NaN**, all 5 seeds converge to a positive NLL plateau ~98-121. Configurable via `fit(..., grad_clip=…)`. |
 | 4 | **torch 2.13 / numpy 2.4 vs paper's torch 1.3 / numpy 1.18.** | `torch.distributions.Distribution.set_default_validate_args(False)` to match the old-torch default; deprecated `Variable(..., volatile=True)` is tolerated on torch 2.13. No math changed. |
 
 ---
@@ -95,7 +95,7 @@ width/depth/optimiser transfer directly. These are the defaults in
 | `normalize` | **True** (paper regime, both) | Per-bin spectral standardisation, as in the paper. The one degenerate Heston bin is clamped (Fixes #2), not disabled; gradient clipping (Fixes #3) keeps the run stable. |
 | `fft_size` | 129 = T+1 | Odd length required (Fixes #1). Stocks used 101 = 100+1. |
 | `epochs` | 1000 | Released Stocks epoch count; full-batch exact MLE. |
-| `batch_size` | 500 | **Ignored** — `fit()` is full-batch (kept for CLI parity). |
+| `batch_size` | 500 | **Ignored**, `fit()` is full-batch (kept for CLI parity). |
 | `learning_rate` | 1e-3 | Released Stocks LR; Adam + `ExponentialLR(γ=0.999)`. |
 
 The Stocks config's reproduction of Table 2 (F-score 0.9920 vs 0.984, MAE 0.0084
@@ -140,7 +140,7 @@ The wrapper handles the rest automatically:
 1. min-max scales to [0,1] (stores `scale_min`/`scale_max` in the config for
    exact inversion);
 2. prepends the 0 anchor → length **T+1**;
-3. **if T+1 is even**, `FourierFlow.forward` will crash — pad your series to an
+3. **if T+1 is even**, `FourierFlow.forward` will crash, pad your series to an
    **odd** post-anchor length (i.e. even T), or drop the anchor and pass an
    already-odd length. This is a hard constraint of the released code, not a bug
    in the wrapper.
@@ -163,10 +163,10 @@ bash ../train_all.sh
 ```
 
 Each seed writes:
-- `weights/seed_{s}_model.pt` — full `state_dict`
-- `weights/seed_{s}_config.json` — hyperparameters + scaling constants + `fft_size`, `prepend_anchor`
-- `losses/seed_{s}_losses.csv` — per-epoch negative-log-likelihood
-- `generated_paths/seed_{s}/generated_paths_8192x128.npy` — (8192, 128) price scale
+- `weights/seed_{s}_model.pt`, full `state_dict`
+- `weights/seed_{s}_config.json`, hyperparameters + scaling constants + `fft_size`, `prepend_anchor`
+- `losses/seed_{s}_losses.csv`, per-epoch negative-log-likelihood
+- `generated_paths/seed_{s}/generated_paths_8192x128.npy`, (8192, 128) price scale
 - `generated_paths/seed_{s}/metadata.json`
 
 ---
@@ -186,17 +186,17 @@ cd /home/tbasseras/benchmark
   --method FourierFlow --dataset Heston
 ```
 
-**Exact run path — which file produced which committed number:**
+**Exact run path, which file produced which committed number:**
 
 | Committed number | Interpreter + env | Command | Input file(s) scored | Output file |
 |------------------|-------------------|---------|----------------------|-------------|
-| Heston A1–A34 + B, per seed `i` | `gpu-venv`, CPU-only | `metrics/compute_all.py --method FourierFlow --dataset Heston` | `methods/FourierFlow/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real Heston `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/FourierFlow/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
+| Heston A1-A34 + B, per seed `i` | `gpu-venv`, CPU-only | `metrics/compute_all.py --method FourierFlow --dataset Heston` | `methods/FourierFlow/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real Heston `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/FourierFlow/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
 | FF synthetic paths, per seed `i` | `gpu-venv`, CPU-only, 3 cores/seed | `bash ../train_all.sh` (→ `train_heston.py --seed i --normalize 1`) | real Heston `dataset/Heston/heston_S_8192x128.npy` | `generated_paths/seed_i/generated_paths_8192x128.npy` + `seed_i_config.json` (records `n_clamped_bins`) |
 
 Each `results/Heston/FourierFlow/seed_i_metrics.json` is the sole source for that seed's column in every README A-table; mean±std rows aggregate the 5 files.
 
 The paper reproduction (Stocks, F-score + MAE vs Table 2) lives separately in
-`../paper_reimplementation/` — see its README.
+`../paper_reimplementation/`, see its README.
 
 ---
 
@@ -213,14 +213,14 @@ wall-clock) confirms both guards work. Seed 0 header + result:
 
 Expected sane signals (all five seeds, verified):
 - exactly **1 clamped bin** reported (the degenerate imaginary-DC term, Fixes #2);
-- **no NaN / no Inf** anywhere in the loss trace — gradient clipping (Fixes #3)
+- **no NaN / no Inf** anywhere in the loss trace, gradient clipping (Fixes #3)
   removes the epoch-~499 blowup that killed every un-clipped run;
 - NLL loss **decreases smoothly and plateaus at a positive value** (per-seed
-  `loss_last` ∈ **[98, 121]** at 1000 ep) — it does **not** dive into the
+  `loss_last` ∈ **[98, 121]** at 1000 ep), it does **not** dive into the
   negatives;
-- generated price range (≈ 43–149) sits **inside** the real range (39.9–155.6);
-- generated `col0` mean ≈ **99.9–100.8** vs the real deterministic S₀ = 100.
-  Fourier Flow is a *distributional* flow — it spreads the Heston paths'
+- generated price range (≈ 43-149) sits **inside** the real range (39.9-155.6);
+- generated `col0` mean ≈ **99.9-100.8** vs the real deterministic S₀ = 100.
+  Fourier Flow is a *distributional* flow, it spreads the Heston paths'
   deterministic start into a tight distribution around 100. Documented in the
   results README.
 

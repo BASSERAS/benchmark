@@ -1,4 +1,4 @@
-# LS4 Code — Sources & Implementation
+# LS4 Code, Sources & Implementation
 
 ## Original work
 
@@ -6,10 +6,10 @@
 |-------|---------|
 | **Paper** | *Deep Latent State Space Models for Time-Series Generation* |
 | **Authors** | Linqi Zhou, Michael Poli, Winnie Xu, Stefano Massaroli, Stefano Ermon |
-| **Venue** | ICML 2023 (PMLR, pp. 42625–42643) — PDF `../paper_reimplementation/LS4_ICML2023.pdf` |
+| **Venue** | ICML 2023 (PMLR, pp. 42625-42643), PDF `../paper_reimplementation/LS4_ICML2023.pdf` |
 | **arXiv** | [2212.12749](https://arxiv.org/abs/2212.12749) |
 | **Original code** | https://github.com/alexzhou907/ls4 |
-| **Original framework** | **PyTorch** (already PyTorch — no framework port needed) |
+| **Original framework** | **PyTorch** (already PyTorch, no framework port needed) |
 | **Method type** | **VAE-style latent state-space model.** A continuous latent `z` evolves through a **structured state-space (S4)** prior; a matching S4 posterior/decoder reconstructs the observation. Trained end-to-end on the **ELBO** (`total = kld_loss + nll_loss`; `mse_loss` is a reconstruction diagnostic, not part of the objective). Generation samples the S4 prior autoregressively in **STEP mode** and decodes. |
 
 The verbatim reference implementation is kept under [`reference/`](reference/) for transparency
@@ -23,7 +23,7 @@ reference is a **numerical fix to the naive Cauchy kernel** (see Fixes below).
 
 ## Our implementation
 
-The released code is already **PyTorch**, so — unlike the TF baselines — there is **no architecture
+The released code is already **PyTorch**, so, unlike the TF baselines, there is **no architecture
 port**: [`train_heston.py`](train_heston.py) constructs `models.ls4.VAE` from the released
 solar_weekly preset and reproduces the upstream ELBO training loop
 (`loss, log_info = model(data, None, masks, plot=False, sum=False)`), the EMA weight averaging, and
@@ -37,7 +37,7 @@ scale, and writes weights / losses / generated paths / metadata in the benchmark
 LS4's S4 layer builds its convolution kernel from a **Cauchy sum over the diagonal state-space
 poles**. The repo ships three back-ends: a CUDA extension, a `pykeops` path, and a **naive PyTorch
 fallback**. The CUDA/keops back-ends sum over **conjugate pole pairs** (real, folded) whereas the
-released naive fallback summed over the raw pole list — numerically different in **STEP mode**.
+released naive fallback summed over the raw pole list, numerically different in **STEP mode**.
 
 This matters here because `model.generate` **rolls the S4 prior forward one step at a time**
 (`latent.step`, the recurrent SSM form), not via the parallel convolution. On a machine without the
@@ -47,7 +47,7 @@ then drifts: the Solar-Weekly marginal score **plateaus at ≈0.197** instead of
 The fix is a one-site change at [`reference/models/s4.py:795`](reference/models/s4.py) so the naive
 Cauchy kernel sums over conjugate pole **pairs**, matching the compiled back-ends. With the fix, the
 step-mode prior reproduces the convolution-mode prior and the Solar-Weekly marginal reaches
-**≈0.046–0.047** (paper 0.0459). See [`../paper_reimplementation/README.md`](../paper_reimplementation/README.md)
+**≈0.046-0.047** (paper 0.0459). See [`../paper_reimplementation/README.md`](../paper_reimplementation/README.md)
 for the before/after reproduction log. All committed Heston runs use the **cauchy-fixed** model.
 
 ### Normalisation chain
@@ -58,7 +58,7 @@ generated --* sigma + mu--> price
 ```
 
 A **global standardize** over the whole array (single scalar `mu`/`sigma`, not per-channel MinMax):
-`mu = 101.32547381502401`, `sigma = 9.971659995159825` — the real-data mean/std, stored in each
+`mu = 101.32547381502401`, `sigma = 9.971659995159825`, the real-data mean/std, stored in each
 `weights/seed_{i}_config.json` so sampling inverts exactly back to price scale. LS4's Gaussian
 likelihood (`sigma=0.1` observation noise) is well matched to standardized inputs, which is why the
 paper's own preprocessing standardizes the Monash series.
@@ -117,13 +117,13 @@ schedule, and the EMA are all the released solar_weekly settings.
 | `latent_type` | `split` | released config |
 | `backbone` | `autoreg` | released config |
 | `sigma` (obs noise) | 0.1 | released config (Gaussian likelihood) |
-| `in_channels` | 1 | **Heston-specific** — univariate price series |
+| `in_channels` | 1 | **Heston-specific**, univariate price series |
 | `optimizer` | AdamW, lr 1e-3, weight_decay 0 | released config |
 | `lr schedule` | ReduceLROnPlateau (patience 20, factor 0.5) | released config |
 | `EMA` | `lamb=0.99`, `start_step=200` | released config |
 | `batch_size` | 128 | released config |
-| `seq_len` | **128** | **Heston-specific** — the Heston sequence length |
-| `epochs` | **100** | **Heston-specific** — flat-loss convergence (see Sanity check) |
+| `seq_len` | **128** | **Heston-specific**, the Heston sequence length |
+| `epochs` | **100** | **Heston-specific**, flat-loss convergence (see Sanity check) |
 
 Only three knobs are Heston-specific (`in_channels`, `seq_len`, `epochs`); everything else is the
 released solar_weekly preset kept verbatim.
@@ -143,7 +143,7 @@ The model preset is the released YAML `reference/configs/monash/vae_solarweekly_
 | `--batch_size` | 128 | Training batch. |
 | `--gen_num` | 8192 | Paths to generate. |
 | `--frac` | 1.0 | Fraction of training paths (smoke runs). |
-| `--tag` | "" | Run tag (e.g. `smoke`) — prefixes outputs, skips canonical weights. |
+| `--tag` | "" | Run tag (e.g. `smoke`), prefixes outputs, skips canonical weights. |
 
 - **Latent width / S4 depth / state size** → edit `z_dim`, `d_model`, `d_state`, `n_layers` in the
   YAML. **Optimiser / schedule / EMA** → the `optimizer`, `scheduler`, `ema` blocks of the YAML.
@@ -180,11 +180,11 @@ wait
 ```
 
 Each seed writes:
-- `weights/seed_{s}_model.pt` — EMA-averaged `state_dict`
-- `weights/seed_{s}_config.json` — full hyperparameters + `scaler_mu`/`scaler_sigma` + params (2 146 857)
-- `losses/seed_{s}_losses.csv` — per-epoch `epoch, total_loss, kld_loss, nll_loss, mse_loss, lr`
-- `generated_paths/seed_{s}/generated_paths_8192x128.npy` — (8192, 128) price scale
-- `generated_paths/seed_{s}/metadata.json` — seed, shape, min/max, gen/train time, params, epochs\_run
+- `weights/seed_{s}_model.pt`, EMA-averaged `state_dict`
+- `weights/seed_{s}_config.json`, full hyperparameters + `scaler_mu`/`scaler_sigma` + params (2 146 857)
+- `losses/seed_{s}_losses.csv`, per-epoch `epoch, total_loss, kld_loss, nll_loss, mse_loss, lr`
+- `generated_paths/seed_{s}/generated_paths_8192x128.npy`, (8192, 128) price scale
+- `generated_paths/seed_{s}/metadata.json`, seed, shape, min/max, gen/train time, params, epochs\_run
 
 ---
 
@@ -206,7 +206,7 @@ Expected sane signals (all five seeds, verified):
   KLD settles near **0.22**, NLL near **−1.29**, recon MSE diagnostic to **≈0.0019**;
 - ReduceLROnPlateau holds lr at 1e-3 for the whole 100-epoch run (loss still improving, no plateau trigger);
 - no NaN (`first_nan_epoch = null`, `gen_has_nan = false` in every metadata.json);
-- generated mean/std (seed 0: 101.56 / 9.77) close to real (101.33 / 9.97); price range ≈ 47–145;
+- generated mean/std (seed 0: 101.56 / 9.77) close to real (101.33 / 9.97); price range ≈ 47-145;
 - 2 146 857 parameters; 100 epochs; ~973 s/seed train, ~9 s/seed generate.
 
 ---
@@ -224,17 +224,17 @@ cd /home/tbasseras/benchmark
 /home/tbasseras/gpu-venv/bin/python metrics/compute_all.py --method LS4 --dataset Heston
 ```
 
-**Exact run path — which file produced which committed number:**
+**Exact run path, which file produced which committed number:**
 
 | Committed number | Interpreter + env | Command | Input file(s) scored | Output file |
 |------------------|-------------------|---------|----------------------|-------------|
 | LS4 synthetic paths, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0/3 taskset -c … OMP_NUM_THREADS=8` | `train_heston.py --seed i --epochs 100` | real `dataset/Heston/heston_S_8192x128.npy`, global-standardize internally (cauchy-fixed `reference/models/s4.py`) | `generated_paths/seed_i/generated_paths_8192x128.npy` + `metadata.json` |
-| Heston A1–A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method LS4 --dataset Heston` | `methods/LS4/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/LS4/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
+| Heston A1-A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method LS4 --dataset Heston` | `methods/LS4/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/LS4/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
 | A18/A19 disc/pred loss curves, per seed `i` | `gpu-venv` | `metrics/compute_all.py --method LS4 --dataset Heston` | same generated `.npy` vs real | `results/Heston/LS4/seed_i_{disc,pred}_{gru,mlp}_loss.csv` → `plots/{disc_classifier,pred_score}_loss.png` |
 
 Each `results/Heston/LS4/seed_i_metrics.json` is the sole source for that seed's column in every
 README A-table; the mean±std rows aggregate the 5 files.
 
-The paper reproduction (Solar Weekly marginal / class / prediction — the paper's own Table 1 metrics,
+The paper reproduction (Solar Weekly marginal / class / prediction, the paper's own Table 1 metrics,
 including the cauchy-fix reconciliation) lives separately in
-[`../paper_reimplementation/`](../paper_reimplementation/) — see its README.
+[`../paper_reimplementation/`](../paper_reimplementation/), see its README.

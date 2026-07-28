@@ -1,4 +1,4 @@
-# TimeVQVAE Code — Sources & Implementation
+# TimeVQVAE Code, Sources & Implementation
 
 ## Original work
 
@@ -9,7 +9,7 @@
 | **Reference** | AISTATS 2023 (`lee23d`), arXiv:2303.04743 |
 | **Original code** | https://github.com/ML4ITS/TimeVQVAE (paper-era commit `b9650e9d`) |
 | **Original framework** | PyTorch + PyTorch-Lightning 1.9 |
-| **Method type** | **Two-stage vector-quantized generator** — Stage 1 VQ tokenizes the STFT time-frequency map (separate LF / HF branches); Stage 2 a MaskGIT bidirectional-transformer prior samples token maps that are decoded back to signals |
+| **Method type** | **Two-stage vector-quantized generator**, Stage 1 VQ tokenizes the STFT time-frequency map (separate LF / HF branches); Stage 2 a MaskGIT bidirectional-transformer prior samples token maps that are decoded back to signals |
 
 The verbatim reference implementation is kept under [`reference/`](reference/) for transparency
 (`.git` stripped, provenance in `reference/PROVENANCE.txt`). Unlike the TimeVAE port, **nothing is
@@ -22,12 +22,12 @@ the two reference training stages.
 
 ## Our implementation
 
-The released code already runs on PyTorch/GPU, so there is **no re-implementation** — only a thin
+The released code already runs on PyTorch/GPU, so there is **no re-implementation**, only a thin
 data-plumbing wrapper. [`train_heston.py`](train_heston.py):
 
 1. loads the 8192×128 Heston price paths (`--data`);
 2. **global z-normalizes** by the train mean/std (`mean = np.mean(S)`, `std = np.std(S)`,
-   `Xn = (S − mean)/std`) — this is the paper's `data_scaling=True`;
+   `Xn = (S − mean)/std`), this is the paper's `data_scaling=True`;
 3. `os.chdir`s into a **per-seed copy of the reference tree** (`--workdir`) so the reference's
    `get_root_dir()` and its `saved_models/` writes stay isolated between parallel seeds;
 4. runs the reference **Stage 1** (VQ-VAE tokenizer) then **Stage 2** (MaskGIT prior), persisting
@@ -38,7 +38,7 @@ data-plumbing wrapper. [`train_heston.py`](train_heston.py):
    losses / generated paths / metadata in the benchmark's standard layout.
 
 The wrapper trains inside [`/home/tbasseras/tvqvae-venv`](#reproduce) (torch 1.13.1+cu117,
-PyTorch-Lightning 1.9.0) — the paper-era stack the reference requires. Metrics and plotting use the
+PyTorch-Lightning 1.9.0), the paper-era stack the reference requires. Metrics and plotting use the
 shared harness in `/home/tbasseras/gpu-venv`.
 
 ### Normalisation chain
@@ -74,7 +74,7 @@ All values are read back from `weights/seed_{i}_config.json`.
 ## Wrapper adaptations vs the reference (NO model/loss change)
 
 Three adaptations were needed; **none touches the model architecture, the loss formulas, or the
-generation algorithm** — those run verbatim from `reference/`:
+generation algorithm**, those run verbatim from `reference/`:
 
 1. **PyTorch-Lightning 1.9 environment.** *Location:* whole training stack. The reference pins the
    paper-era PL-1.9 API; we run it under a dedicated `tvqvae-venv` (torch 1.13.1+cu117, PL 1.9.0)
@@ -127,17 +127,17 @@ Model hyperparameters live in the reference `configs/config.yaml` inside the per
 | `--data` | Heston `.npy` | Training paths, shape `(N, T)` price scale. |
 | `--workdir` | **required** | Per-seed copy of `reference/` to run inside. |
 | `--config` | `<workdir>/configs/config.yaml` | Model config YAML. |
-| `--stage1_epochs` | 2000 | Stage-1 (VQ tokenizer) epochs — benchmark uses 250. |
-| `--stage2_epochs` | 10000 | Stage-2 (MaskGIT) epochs — benchmark uses 1000. |
+| `--stage1_epochs` | 2000 | Stage-1 (VQ tokenizer) epochs, benchmark uses 250. |
+| `--stage2_epochs` | 10000 | Stage-2 (MaskGIT) epochs, benchmark uses 1000. |
 | `--gen_num` | 8192 | Paths to generate via `unconditional_sample`. |
 | `--frac` | 1.0 | Fraction of training paths (smoke runs). |
-| `--tag` | "" | Run tag — prefixes outputs, skips canonical weights. |
+| `--tag` | "" | Run tag, prefixes outputs, skips canonical weights. |
 
 ---
 
 ## How to use a different dataset
 
-Pass `--data PATH` — a `.npy` of shape `(N, T)`, dtype float, in price/level space. The wrapper adds a
+Pass `--data PATH`, a `.npy` of shape `(N, T)`, dtype float, in price/level space. The wrapper adds a
 channel axis `(N, 1, T)`, global z-normalizes by the train mean/std (stored in metadata for exact
 inversion), runs both reference stages, samples, and de-normalises back to the original scale before
 saving. Any `T` works; the STFT `n_fft` and downsampled widths in `config.yaml` may need adjusting for
@@ -167,12 +167,12 @@ wait
 ```
 
 Each seed writes:
-- `weights/seed_{s}_model.pt` — Stage-1 + MaskGIT `state_dict`
-- `weights/seed_{s}_config.json` — full model config + epochs
-- `losses/seed_{s}_stage1_losses.csv` — per-epoch VQ losses (recon time/timefreq, commit LF/HF, perplexity LF/HF, perceptual)
-- `losses/seed_{s}_stage2_losses.csv` — per-epoch `stage, epoch, loss, prior_loss`
-- `generated_paths/seed_{s}/generated_paths_8192x128.npy` — (8192, 128) price scale
-- `generated_paths/seed_{s}/metadata.json` — seed, shape, znorm mean/std, gen/real mean/std, train time, epochs, last losses, `gen_has_nan`
+- `weights/seed_{s}_model.pt`, Stage-1 + MaskGIT `state_dict`
+- `weights/seed_{s}_config.json`, full model config + epochs
+- `losses/seed_{s}_stage1_losses.csv`, per-epoch VQ losses (recon time/timefreq, commit LF/HF, perplexity LF/HF, perceptual)
+- `losses/seed_{s}_stage2_losses.csv`, per-epoch `stage, epoch, loss, prior_loss`
+- `generated_paths/seed_{s}/generated_paths_8192x128.npy`, (8192, 128) price scale
+- `generated_paths/seed_{s}/metadata.json`, seed, shape, znorm mean/std, gen/real mean/std, train time, epochs, last losses, `gen_has_nan`
 
 ---
 
@@ -190,7 +190,7 @@ generated price mean=102.02 std=9.93   real mean=101.33 std=9.97   gen_has_nan=f
 Expected sane signals (all five seeds, verified):
 - **Stage-1** total loss falls from ~2.6 (epoch 0) to a low plateau (~0.02); LF/HF codebook perplexity
   stays well above 1 (codebook not collapsed);
-- **Stage-2** `prior_loss` (masked-token cross-entropy) falls from ~5.4 toward ~0.86 — no NaN
+- **Stage-2** `prior_loss` (masked-token cross-entropy) falls from ~5.4 toward ~0.86, no NaN
   (`gen_has_nan = false` in every metadata.json);
 - generated mean/std (102.0 / 9.93) close to real (101.33 / 9.97); generated price stays in a sane
   band around 100.
@@ -210,11 +210,11 @@ cd /home/tbasseras/benchmark
 /home/tbasseras/gpu-venv/bin/python metrics/compute_all.py --method TimeVQVAE --dataset Heston
 ```
 
-**Exact run path — which file produced which committed number:**
+**Exact run path, which file produced which committed number:**
 
 | Committed number | Interpreter + env | Command | Input file(s) scored | Output file |
 |------------------|-------------------|---------|----------------------|-------------|
-| Heston A1–A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method TimeVQVAE --dataset Heston` | `methods/TimeVQVAE/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real Heston `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/TimeVQVAE/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
+| Heston A1-A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method TimeVQVAE --dataset Heston` | `methods/TimeVQVAE/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real Heston `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/TimeVQVAE/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
 | TimeVQVAE synthetic paths, per seed `i` | `tvqvae-venv`, `CUDA_VISIBLE_DEVICES=0/3 taskset -c … OMP_NUM_THREADS=8` | `train_heston.py --seed i --workdir <copy of reference> --stage1_epochs 250 --stage2_epochs 1000` | real Heston `dataset/Heston/heston_S_8192x128.npy`, global z-norm internally | `generated_paths/seed_i/generated_paths_8192x128.npy` + `metadata.json` |
 | Stage-1 / Stage-2 loss curves, per seed `i` | `tvqvae-venv` | `train_heston.py --seed i …` (loss logged per epoch) | training tensors | `losses/seed_i_stage{1,2}_losses.csv` → `losses/loss_convergence.png` |
 | A18/A19 disc/pred loss curves, per seed `i` | `gpu-venv` | `metrics/compute_all.py --method TimeVQVAE --dataset Heston` | same generated `.npy` vs real | `results/Heston/TimeVQVAE/seed_i_{disc,pred}_{gru,mlp}_loss.csv` → `plots/{disc_classifier,pred_score}_loss.png` |
@@ -224,5 +224,5 @@ Each `results/Heston/TimeVQVAE/seed_i_metrics.json` is the sole source for that 
 README A-table; the mean±std rows aggregate the 5 files.
 
 The paper reproduction (ECG5000, the paper's own FID / IS metrics vs Table) lives separately in
-[`../paper_reimplementation/`](../paper_reimplementation/) — see its README (FID 0.739±0.084 vs paper
+[`../paper_reimplementation/`](../paper_reimplementation/), see its README (FID 0.739±0.084 vs paper
 0.7; IS 2.019±0.012 vs paper 2.0).

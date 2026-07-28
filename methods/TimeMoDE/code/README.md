@@ -1,11 +1,11 @@
-# TimeMoDE — Heston training code
+# TimeMoDE, Heston training code
 
 Trains **TimeMoDE** (arXiv:2606.15172, *Towards a Unified Generative Model for
 Scarce Time Series with Domain Experts*, Yao/Zheng/Zuo/Zhang, ICML 2026) on the
 benchmark's 8192×128 Heston price paths and writes generated paths back in price
 scale for the shared metric harness.
 
-## The model is the reproduction-gate model — imported, not re-written
+## The model is the reproduction-gate model, imported, not re-written
 
 There is **no official TimeMoDE code**. This benchmark entry is a from-the-paper
 reimplementation that first reproduced the paper's own headline numbers on the
@@ -50,7 +50,7 @@ variance. `model(x, t, dp_exemplar, y) → (eps, aux_loss, proto_loss)`:
    of clean windows (`dp_exemplar`), used only for expert routing.
 3. **6 × DiT-MoDE block (Eq 5):** `x += gate₁·MHSA(AdaLN(x))` then
    `x += gate₂·MoDE(AdaLN(x))`, adaLN-Zero (`SiLU→Linear(d,6d)`).
-   - **MoDE (Eq 10–13):** router `sᵢ ∝ ‖Protoᵢ·DP‖² + (Wz)ᵢ + τ`, Top-2→Softmax
+   - **MoDE (Eq 10-13):** router `sᵢ ∝ ‖Protoᵢ·DP‖² + (Wz)ᵢ + τ`, Top-2→Softmax
      gate, output `Σ G(sᵢ)·Eᵢ(z) + E₀(z)`.
    - **Expert (Eq 11):** stage-aware AdaLN + SwiGLU + residual.
 4. **Final AdaLN + linear** → ε.
@@ -61,7 +61,7 @@ Auxiliary losses summed into the objective (Eq 15,
 
 ## Normalisation (identical to SLC)
 
-The model trains in **[0,1]** (not [-1,1] — matches `run_paper.py`, which trains
+The model trains in **[0,1]** (not [-1,1], matches `run_paper.py`, which trains
 on [0,1] windows and clips fakes to [0,1]):
 
 ```
@@ -80,7 +80,7 @@ seed's config/metadata so the price inversion is fully reproducible.
 | [`train.py`](train.py) | 5-seed orchestrator: 2 seeds at a time on 2 GPUs, 8 cores each (hard limits). |
 
 Model/diffusion live in [`../paper_reimplementation/`](../paper_reimplementation/)
-and are imported — they are **not** duplicated here.
+and are imported, they are **not** duplicated here.
 
 ## Reproduce
 
@@ -112,7 +112,7 @@ CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=8 taskset -c 8-15 \
 
 These are the paper-unspecified choices carried over verbatim from the gate:
 `learn_sigma=False` (loss Eq 3/15 has no VLB term); `w_proto=w_aux=0.01` (Eq 15
-sums the regularisers with no stated weights — small weights keep them
+sums the regularisers with no stated weights, small weights keep them
 subordinate to L_DDPM); Domain-Prompt exemplars = random batch of clean training
 windows per step/sample (single-domain setting); proto loss = `‖PPᵀ − I‖²_F`
 (orthonormality is the intended separability objective). Rationale in

@@ -1,14 +1,14 @@
-# TimesFM — Paper Reimplementation (zero-shot ETT MAE)
+# TimesFM, Paper Reimplementation (zero-shot ETT MAE)
 
-Reproduction of **TimesFM**'s headline claim — strong **zero-shot** forecasting — on the **ETT
+Reproduction of **TimesFM**'s headline claim, strong **zero-shot** forecasting, on the **ETT
 long-horizon benchmark**, reproducing the paper's **Table 5** ("MAE for ETT datasets for prediction
 horizons 96 and 192").
 
-- **Paper:** *A decoder-only foundation model for time-series forecasting* — Abhimanyu Das, Weihao Kong,
+- **Paper:** *A decoder-only foundation model for time-series forecasting*, Abhimanyu Das, Weihao Kong,
   Rajat Sen, Yichen Zhou (Google Research), **ICML 2024**.
   ([`TimesFM_2310.10688v4.pdf`](TimesFM_2310.10688v4.pdf), [arXiv:2310.10688](https://arxiv.org/abs/2310.10688))
 - **Official code:** `github.com/google-research/timesfm` (mirrored under [`../code/reference/`](../code/reference/)).
-- **This run:** [`run_ett_zeroshot.py`](run_ett_zeroshot.py) — a pure-numpy re-implementation of the
+- **This run:** [`run_ett_zeroshot.py`](run_ett_zeroshot.py), a pure-numpy re-implementation of the
   official `timesfm/data_loader.py::TimeSeriesdata` windowing/normalisation, driving `timesfm.TimesFm`
   **zero-shot** (no fine-tuning) over **both** released checkpoints.
 
@@ -29,7 +29,7 @@ dataset (using the statistics of the training portion)."* The point forecast is 
 
 ## 2. Model / inference setup
 
-Zero-shot inference only — the released checkpoint forecasts each series' held-out horizon directly from
+Zero-shot inference only, the released checkpoint forecasts each series' held-out horizon directly from
 its 512-step context, no training. Both released checkpoints are evaluated:
 
 | Parameter | 1.0-200m | 2.0-500m |
@@ -63,7 +63,7 @@ two horizons each (96, 192) → **8 tasks**:
 
 ---
 
-## 4. Results — ours (both checkpoints) vs paper Table 5
+## 4. Results, ours (both checkpoints) vs paper Table 5
 
 **Ours** = zero-shot MAE from
 [`results/ett_zeroshot_timesfm-1.0-200m-pytorch.json`](results/ett_zeroshot_timesfm-1.0-200m-pytorch.json)
@@ -71,7 +71,7 @@ and [`results/ett_zeroshot_timesfm-2.0-500m-pytorch.json`](results/ett_zeroshot_
 **Paper** = the `TimesFM(ZS)` column of the paper's **Table 5** (arXiv:2310.10688v4), which is the 1.0-200m
 model.
 
-| Dataset (horizon) | **Ours — 1.0-200m** | **Ours — 2.0-500m** | **Paper `TimesFM(ZS)`** (1.0-200m) |
+| Dataset (horizon) | **Ours, 1.0-200m** | **Ours, 2.0-500m** | **Paper `TimesFM(ZS)`** (1.0-200m) |
 |-------------------|:-------------------:|:-------------------:|:----------------------------------:|
 | ETTh1 (96)  | 0.4283 | 0.4578 | 0.45 |
 | ETTh1 (192) | 0.4654 | 0.4967 | 0.53 |
@@ -87,7 +87,7 @@ model.
 (**0.36**) closely, and the per-dataset values track the paper column across the board (e.g. ETTm1-96
 0.1772 vs 0.19, ETTh2-96 0.3206 vs 0.35). The newer 2.0-500m checkpoint lands essentially the same on
 average (0.3415), redistributing accuracy across horizons (better on ETTm1-192 / ETTm2-192, slightly worse
-on ETTh1). This GATE confirms the port loads and runs **both** pretrained checkpoints faithfully — the
+on ETTh1). This GATE confirms the port loads and runs **both** pretrained checkpoints faithfully, the
 **same** `tfm.forecast` call is then carried into the Heston forecaster reference (zero-shot + fine-tuned),
 evaluated in [`../../results/Heston/TimesFM/README.md`](../../results/Heston/TimesFM/README.md), using the
 **1.0-200m** checkpoint.
@@ -107,13 +107,13 @@ CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=8 taskset -c 0-7 \
     --model google/timesfm-2.0-500m-pytorch --context 512
 ```
 
-**Exact run path — which file feeds which cell (so any number is traceable):**
+**Exact run path, which file feeds which cell (so any number is traceable):**
 
 | Table cell | Interpreter + env | Script | Input scored | Output JSON |
 |------------|-------------------|--------|--------------|-------------|
-| §4 "Ours — 1.0-200m", all 8 tasks + Avg | `timesfm-v1-venv`, `CUDA_VISIBLE_DEVICES=0` | `run_ett_zeroshot.py --model …1.0-200m…` | ETT-small CSVs, Informer splits, forecast zero-shot | `results/ett_zeroshot_timesfm-1.0-200m-pytorch.json` |
-| §4 "Ours — 2.0-500m", all 8 tasks + Avg | `timesfm-v1-venv`, `CUDA_VISIBLE_DEVICES=0` | `run_ett_zeroshot.py --model …2.0-500m…` | same splits, forecast zero-shot | `results/ett_zeroshot_timesfm-2.0-500m-pytorch.json` |
-| §4 "Paper `TimesFM(ZS)`" | — | — | transcribed from arXiv:2310.10688v4 Table 5, `TimesFM(ZS)` column | — |
+| §4 "Ours, 1.0-200m", all 8 tasks + Avg | `timesfm-v1-venv`, `CUDA_VISIBLE_DEVICES=0` | `run_ett_zeroshot.py --model …1.0-200m…` | ETT-small CSVs, Informer splits, forecast zero-shot | `results/ett_zeroshot_timesfm-1.0-200m-pytorch.json` |
+| §4 "Ours, 2.0-500m", all 8 tasks + Avg | `timesfm-v1-venv`, `CUDA_VISIBLE_DEVICES=0` | `run_ett_zeroshot.py --model …2.0-500m…` | same splits, forecast zero-shot | `results/ett_zeroshot_timesfm-2.0-500m-pytorch.json` |
+| §4 "Paper `TimesFM(ZS)`" |, |, | transcribed from arXiv:2310.10688v4 Table 5, `TimesFM(ZS)` column |, |
 
 Each JSON key (`<dataset>_h<horizon>`, `avg`) is the sole source for its §4 cell.
 

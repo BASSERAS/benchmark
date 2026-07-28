@@ -1,11 +1,11 @@
-# LS4 — Paper Reimplementation (Solar Weekly)
+# LS4, Paper Reimplementation (Solar Weekly)
 
 Reproduction of the **LS4** paper result on the **Solar Weekly** dataset using the
 *official* LS4 code, run verbatim from the authors' Monash training script.
 
-- **Paper:** *Deep Latent State Space Models for Time-Series Generation* — Linqi Zhou,
+- **Paper:** *Deep Latent State Space Models for Time-Series Generation*, Linqi Zhou,
   Michael Poli, Winnie Xu, Stefano Massaroli, Stefano Ermon, **ICML 2023**
-  (PMLR 202, pp. 42625–42643), arXiv:2212.12749.
+  (PMLR 202, pp. 42625-42643), arXiv:2212.12749.
 - **Official code:** `github.com/alexzhou907/ls4` (mirrored here under `../code/reference/`).
 - **This run:** `../code/reference/train_monash.py` with
   `configs/monash/vae_solarweekly_released.yaml`, single A100 (GPU logical 0).
@@ -13,11 +13,11 @@ Reproduction of the **LS4** paper result on the **Solar Weekly** dataset using t
 
 ---
 
-## ⚠️ Reproduction caveat — the Cauchy fix (required to reproduce)
+## ⚠️ Reproduction caveat, the Cauchy fix (required to reproduce)
 
 The official code **as-shipped does not reproduce the paper on this machine**, and the
 reason is subtle rather than cosmetic. LS4's `model.generate` rolls the S4 latent prior
-forward with `latent.step` — the **STEP-mode recurrence** (one timestep at a time), not
+forward with `latent.step`, the **STEP-mode recurrence** (one timestep at a time), not
 the convolutional (scan) path used during training. On a CUDA-13 A100 the fast Cauchy
 kernels (`pykeops` / the bundled CUDA extension) are unavailable, so S4 falls back to the
 **naive Python Cauchy kernel** in `reference/models/s4.py`. That fallback, as written
@@ -25,15 +25,15 @@ upstream, sums the kernel over the *full* pole set instead of over **conjugate p
 pairs**, which is correct for the `keops`/CUDA path but wrong for the naive path used at
 generation time.
 
-**Symptom (measured on disk, naive kernel — `../code/reference/outputs_shipped_train.log`):**
+**Symptom (measured on disk, naive kernel, `../code/reference/outputs_shipped_train.log`):**
 the Solar-Weekly **marginal score plateaus at 0.197 ± 0.003** (epoch 25 400) and never
-descends — ~4× the paper's 0.046 — while the training MSE looks healthy (0.004). The
+descends, ~4× the paper's 0.046, while the training MSE looks healthy (0.004). The
 generator is fine; the *generation-time recurrence* is silently mis-summed.
 
 **Fix (the only change to reference model code):** `reference/models/s4.py:795`, patched so
 the naive Cauchy kernel sums over conjugate pole **pairs**, matching the keops/CUDA result.
 With the fix (`../code/reference/outputs_shipped_fix_train.log`) the marginal score reaches
-**0.047 ± 0.003 (best 0.044)** — i.e. the paper regime. This same fix is carried into the
+**0.047 ± 0.003 (best 0.044)**, i.e. the paper regime. This same fix is carried into the
 Heston generator (documented in `../code/README.md`, fix #1), because Heston generation
 uses the identical `latent.step` recurrence.
 
@@ -82,13 +82,13 @@ Solar-Weekly preset), applied verbatim:
 | `preproc` | `normalize_per_seq` | per-sequence normalisation (upstream default) |
 
 Training wall-clock to the reported checkpoint: **≈ 2 h 45 m** on one A100 (naive Cauchy /
-Vandermonde fallback — no CUDA extension, hence slower than the paper's keops run).
+Vandermonde fallback, no CUDA extension, hence slower than the paper's keops run).
 
 ---
 
 ## 3. Dataset
 
-**Solar Weekly** — the Monash Time Series Forecasting Repository weekly solar-power series,
+**Solar Weekly**, the Monash Time Series Forecasting Repository weekly solar-power series,
 one of the exact generative benchmarks in the LS4 paper. The upstream loader reads the
 `.tsf` directly and windows it internally (`normalize_per_seq`), so no manual re-windowing
 is needed.
@@ -100,7 +100,7 @@ is needed.
 
 ---
 
-## 4. Results — ours vs paper
+## 4. Results, ours vs paper
 
 | Dataset | Metric | **Ours (official LS4 code, Cauchy-fixed)** | Ours (as-shipped, naive Cauchy) | Paper (Table 1) | Verdict |
 |---------|--------|--------------------------------------------|---------------------------------|-----------------|---------|
@@ -108,11 +108,11 @@ is needed.
 | Solar Weekly | Classification ↑ | **0.717 ± 0.097** (best 0.771) | 0.001 ± 0.001 | 0.683 | same regime ✓ |
 | Solar Weekly | Prediction ↓ | **0.113 ± 0.036** (best 0.076) | 0.624 ± 0.078 | 0.141 | **matches** ✓ |
 
-**Reproduced — but only after the Cauchy fix.** With the fix, the marginal score
+**Reproduced, but only after the Cauchy fix.** With the fix, the marginal score
 (0.047 vs paper 0.0459) and prediction score (0.113 vs 0.141) land squarely in the paper
 regime, and the classification score (0.717) meets/slightly exceeds the paper's 0.683. The
 as-shipped naive-Cauchy column is the *broken* run: a marginal score frozen at 0.197 and a
-classification score of ~0 (the classifier trivially separates the degenerate samples) — a
+classification score of ~0 (the classifier trivially separates the degenerate samples), a
 clear signature of the mis-summed generation-time recurrence, **not** a hyperparameter or
 data issue (training MSE was healthy in both runs).
 
@@ -123,7 +123,7 @@ form `... | clf_score:(best, mean +- std) | marginal_score:(...) | predictive_sc
 
 ---
 
-## 5. How to reproduce (EXACT run path — mandatory)
+## 5. How to reproduce (EXACT run path, mandatory)
 
 The metrics are computed **inline by the upstream training script** every 100 epochs (there
 is no separate metric binary for the Monash reproduction), so "reproduce" = re-run training
@@ -138,11 +138,11 @@ CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=8 taskset -c 0-7 \
 ```
 
 **The Cauchy fix must be applied first** (`reference/models/s4.py:795`, conjugate-pair
-Cauchy sum) — without it you reproduce the *broken* 0.197 marginal column, not the paper.
+Cauchy sum), without it you reproduce the *broken* 0.197 marginal column, not the paper.
 To reproduce the broken baseline instead, revert that one line and log to
 `outputs_shipped_train.log`.
 
-**Exact run path — which file feeds which number (so any cell is traceable):**
+**Exact run path, which file feeds which number (so any cell is traceable):**
 
 | Table cell | Interpreter + env | Script + config | Data scored | Log the number is read from |
 |------------|-------------------|-----------------|-------------|-----------------------------|
@@ -158,10 +158,10 @@ computes load → train → evaluate inline (no intermediate hand-editing).
 
 | Path | Content |
 |------|---------|
-| `dataset/solar_weekly_dataset.tsf` | Solar Weekly series (Monash `.tsf`) — the reproduced dataset |
+| `dataset/solar_weekly_dataset.tsf` | Solar Weekly series (Monash `.tsf`), the reproduced dataset |
 | `dataset/nn5_daily_dataset_without_missing_values.tsf` | NN5-Daily series (reference only, not reported) |
 | `LS4_ICML2023.pdf` | the paper (Zhou et al., ICML 2023) |
-| `results/`, `logs/`, `metric/` | empty — the Monash reproduction logs metrics inline in the training log under `../code/reference/outputs_*_train.log`; no separate metric JSON is produced |
+| `results/`, `logs/`, `metric/` | empty, the Monash reproduction logs metrics inline in the training log under `../code/reference/outputs_*_train.log`; no separate metric JSON is produced |
 
 > **Note.** Unlike the Heston phase (which ships committed per-seed metric JSONs under
 > `results/Heston/LS4/`), the paper reproduction is documented from the upstream training

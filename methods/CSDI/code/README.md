@@ -1,4 +1,4 @@
-# CSDI Code — Sources & Implementation
+# CSDI Code, Sources & Implementation
 
 ## Original work
 
@@ -30,7 +30,7 @@ process, denoiser, β-schedule, and loss are the authors' own, untouched.**
 
 The paper (Sec 4.1 / Appendix C) states the `is_unconditional=1` variant "can also be used for data
 generation". In that mode `CSDI_base.set_input_to_diffmodel` feeds the network **only** the noisy
-sequence — `cond_mask` never gates the network input, it only selects which points enter the loss
+sequence, `cond_mask` never gates the network input, it only selects which points enter the loss
 (`target_mask = observed_mask − cond_mask`). The thin subclass `CSDI_Heston` therefore sets
 `observed_mask = 1` and `cond_mask = 0` everywhere:
 
@@ -44,7 +44,7 @@ unchanged. Same pattern as `methods/DiffusionTS` and `methods/FourierFlow`: the 
 bypass the PhysioNet/PM2.5 `Dataset` classes.
 
 > The **conditional** CSDI (the paper's headline imputation task) is run separately in
-> [`../paper_reimplementation/`](../paper_reimplementation/) — both the PhysioNet/PM2.5 Table-2
+> [`../paper_reimplementation/`](../paper_reimplementation/), both the PhysioNet/PM2.5 Table-2
 > reproduction and the Heston imputation-CRPS transfer (`heston_imputation/`).
 
 ### Architecture (released `diff_CSDI`)
@@ -68,17 +68,17 @@ Only **one** non-behavioural change to the reference; the data plumbing is addit
 
 | # | Location | Reference (upstream) | Our fix |
 |---|----------|----------------------|---------|
-| 1 | `reference/diff_models.py` (lines 5–23) | Top-level `from linear_attention_transformer import LinearAttentionTransformer` — a hard import of an **optional** package used only by the `is_linear=True` linear-attention path (unused here; we run `is_linear=False`). | Made the import **lazy** (moved into `get_linear_trans`). The module now loads without installing that dependency; the diffusion math is byte-identical. This is the ONLY reference edit, shared with the paper reproduction. |
+| 1 | `reference/diff_models.py` (lines 5-23) | Top-level `from linear_attention_transformer import LinearAttentionTransformer`, a hard import of an **optional** package used only by the `is_linear=True` linear-attention path (unused here; we run `is_linear=False`). | Made the import **lazy** (moved into `get_linear_trans`). The module now loads without installing that dependency; the diffusion math is byte-identical. This is the ONLY reference edit, shared with the paper reproduction. |
 
 The unconditional wrapper (`CSDI_Heston.process_data` / `forward` / `generate`) lives entirely in
-`train_heston.py` — it does not modify the reference model; it constructs the `observed_mask = 1`,
+`train_heston.py`, it does not modify the reference model; it constructs the `observed_mask = 1`,
 `cond_mask = 0` batch and calls the parent's `get_side_info` / `calc_loss` / `impute` verbatim.
 
 ---
 
 ## Hyperparameters (from the paper's `config/base.yaml`)
 
-Kept **verbatim** from the released `reference/config/base.yaml` — the same config that reproduced Table 2
+Kept **verbatim** from the released `reference/config/base.yaml`, the same config that reproduced Table 2
 (see `../paper_reimplementation/`). Hard-coded in `BASE_CONFIG` in `train_heston.py`.
 
 | Parameter | Value | Source in paper / repo |
@@ -102,7 +102,7 @@ Kept **verbatim** from the released `reference/config/base.yaml` — the same co
 ## How to change hyperparameters
 
 Two override flags are exposed on `train_heston.py`; the rest are edited in `BASE_CONFIG` at the top of
-the file (a plain dict — change the value and rerun).
+the file (a plain dict, change the value and rerun).
 
 | What | How | Default |
 |------|-----|---------|
@@ -139,7 +139,7 @@ The wrapper handles the rest automatically:
 3. de-standardises generated samples back to your original scale (`sample × std + mean`) before saving.
 
 CSDI is feature-agnostic (`target_dim = K`); for a genuinely multivariate series pass `(N, T, K)` and
-set `target_dim=K` in `CSDI_Heston(...)`. Any sequence length `T` works — no odd-length constraint
+set `target_dim=K` in `CSDI_Heston(...)`. Any sequence length `T` works, no odd-length constraint
 (unlike Fourier Flow).
 
 ---
@@ -163,11 +163,11 @@ wait
 ```
 
 Each real seed (no `--tag`) writes:
-- `weights/seed_{s}_model.pt` — `{model state_dict, seed, zscore=[mean,std]}`
-- `weights/seed_{s}_config.json` — hyperparameters + z-score constants
-- `losses/seed_{s}_losses.csv` — `step, loss` (DDPM noise-prediction MSE per mini-batch)
-- `generated_paths/seed_{s}/generated_paths_8192x128.npy` — (8192, 128) price scale
-- `generated_paths/seed_{s}/metadata.json` — params, train/gen time, min_loss, first_nan, z-score
+- `weights/seed_{s}_model.pt`, `{model state_dict, seed, zscore=[mean,std]}`
+- `weights/seed_{s}_config.json`, hyperparameters + z-score constants
+- `losses/seed_{s}_losses.csv`, `step, loss` (DDPM noise-prediction MSE per mini-batch)
+- `generated_paths/seed_{s}/generated_paths_8192x128.npy`, (8192, 128) price scale
+- `generated_paths/seed_{s}/metadata.json`, params, train/gen time, min_loss, first_nan, z-score
 
 ---
 
@@ -193,17 +193,17 @@ cd /home/tbasseras/benchmark
 /home/tbasseras/gpu-venv/bin/python metrics/compute_all.py --method CSDI --dataset Heston
 ```
 
-**Exact run path — which file produced which committed number:**
+**Exact run path, which file produced which committed number:**
 
 | Committed number | Interpreter + env | Command | Input file(s) scored | Output file |
 |------------------|-------------------|---------|----------------------|-------------|
-| Heston A1–A34 + B, per seed `i` | `gpu-venv`, 1 GPU | `metrics/compute_all.py --method CSDI --dataset Heston` | `methods/CSDI/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/CSDI/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
+| Heston A1-A34 + B, per seed `i` | `gpu-venv`, 1 GPU | `metrics/compute_all.py --method CSDI --dataset Heston` | `methods/CSDI/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/CSDI/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
 | CSDI synthetic paths, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES={0,3}`, `taskset -c 0-7`, `OMP_NUM_THREADS=8` | `train_heston.py --seed i` | real Heston `dataset/Heston/heston_S_8192x128.npy` | `generated_paths/seed_i/generated_paths_8192x128.npy` + `weights/seed_i_config.json` |
 | Training-loss curve | `gpu-venv` | `plot_losses.py` | `losses/seed_{0..4}_losses.csv` | `losses/loss_convergence.png` |
 
 Each `results/Heston/CSDI/seed_i_metrics.json` is the sole source for that seed's column in every README
 A-table; mean±std rows aggregate the 5 files. The paper reproduction (PhysioNet + PM2.5 CRPS vs Table 2)
-and the Heston imputation-CRPS transfer live separately in `../paper_reimplementation/` — see its README.
+and the Heston imputation-CRPS transfer live separately in `../paper_reimplementation/`, see its README.
 
 ---
 
@@ -226,7 +226,7 @@ Expected sane signals (all five seeds, verified):
 - **no NaN** anywhere (`first_nan_step: null`, `gen_has_nan: false`);
 - DDPM noise-MSE loss decreases smoothly to ≈ 0.01 (it is a *noise-prediction* MSE, so ~0.01 is a
   well-fit model, not a collapse);
-- generated price range sits inside the real Heston range (~40–156); generated `col0` mean ≈ 100
+- generated price range sits inside the real Heston range (~40-156); generated `col0` mean ≈ 100
   (the flow spreads the deterministic S₀ = 100 into a tight distribution);
 - z-score constants (`mean` 101.325, `std` 9.972) are the canonical dataset statistics, identical
   across seeds.

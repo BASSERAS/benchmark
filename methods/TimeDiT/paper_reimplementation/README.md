@@ -1,4 +1,4 @@
-# TimeDiT — Paper Reproduction (synthetic generation, seq_len = 24)
+# TimeDiT, Paper Reproduction (synthetic generation, seq_len = 24)
 
 **Paper:** Cao, Ye, Zhang, Liu. *TimeDiT: General-purpose Diffusion Transformers for
 Time Series Foundation Model.* arXiv:2409.02322v1 (Sept 2024).
@@ -10,9 +10,9 @@ codebase is *"modified from https://github.com/facebookresearch/DiT"* (Peebles &
 DiT-S backbone (adaLN-Zero conditioning, sinusoidal timestep embedding, transformer
 blocks) with the two time-series-specific changes TimeDiT makes:
 
-1. **Tokenisation over time** — each of the `L` time steps is one token; the `K`
+1. **Tokenisation over time**, each of the `L` time steps is one token; the `K`
    channels are the per-token feature dimension (linearly projected to `d_model`).
-2. **Time Series Mask Unit** — the (partial) observation and its binary mask are
+2. **Time Series Mask Unit**, the (partial) observation and its binary mask are
    concatenated to the noised target. For the *synthetic-generation* task (paper
    Table 6) the reconstruction mask `M^Rec = 0`, i.e. the whole window is generated
    **unconditionally**, conditioned only on the diffusion timestep.
@@ -22,12 +22,12 @@ blocks) with the two time-series-specific changes TimeDiT makes:
 The paper's own headline **synthetic-generation** benchmark (Table 6): unconditional
 generation on **Sine** and **Stocks** at `seq_len = 24`, scored by the Yoon et al.
 post-hoc **discriminative** and **predictive** scores (2-layer LSTM,
-`hidden = max(int(dim/2), 1)`, 2000 / 5000 iters — verified faithful to Appendix D and
+`hidden = max(int(dim/2), 1)`, 2000 / 5000 iters, verified faithful to Appendix D and
 identical to the frozen `yoon_metrics.py` used across this repo).
 
 ### Winning recipe (selected by an honest broad HP search)
 
-Stages 1–4 of the HP search (`hpo_sine.py` → `hpo_stage4.py`, analysed by
+Stages 1-4 of the HP search (`hpo_sine.py` → `hpo_stage4.py`, analysed by
 `analyze_stage4.py`) swept `norm ∈ {znorm, minmax11}`, `schedule ∈ {linear, cosine}`,
 `learn_sigma ∈ {T, F}`, `sampler ∈ {ddpm_fixed, ddpm_learned, ddim}`,
 `lr ∈ {2e-4, 3e-4, 5e-4}`, `ema ∈ {0, 0.999}`, `weight_decay ∈ {0, 1e-4}`,
@@ -51,17 +51,17 @@ below are read back from those files.
 | Stock | Discriminative ↓ | 0.0087 | **0.0698 ± 0.0405** | above paper (see note) |
 | Stock | Predictive ↓     | 0.037  | **0.0388 ± 0.0004** | **matches** (+0.002) |
 
-Per-seed disc — Sine: 0.0435 / 0.0402 / 0.0465;  Stock: 0.0317 / 0.0517 / 0.126.
+Per-seed disc, Sine: 0.0435 / 0.0402 / 0.0465;  Stock: 0.0317 / 0.0517 / 0.126.
 
-## Verdict — reproduction is faithful; discriminative lands above paper
+## Verdict, reproduction is faithful; discriminative lands above paper
 
 **The predictive score reproduces the paper almost exactly on both datasets** (Sine
-0.097 vs 0.093; Stock 0.039 vs 0.037) — the model has learned the temporal dynamics.
+0.097 vs 0.093; Stock 0.039 vs 0.037), the model has learned the temporal dynamics.
 The **discriminative** score lands **above** (worse than) the paper's headline number.
 This is the **documented cross-method pattern in this benchmark**, not a TimeDiT-specific
 failure:
 
-| Method (this repo) | Sine disc — ours | paper |
+| Method (this repo) | Sine disc, ours | paper |
 |--------------------|------------------|-------|
 | TimeVAE   | 0.073   | 0.021 |
 | DiffusionTS (Stocks) | 0.0914 | 0.067 |
@@ -72,7 +72,7 @@ Two effects fully account for the gap, both verified:
 1. **The metric is sample-size sensitive.** `discriminative_score` uses a deliberately
    tiny classifier (`hidden = int(dim/2) = 2` for Sine). On a 4000-path HPO subset the
    *same* winning config scores disc ≈ 0.013; on the full 10 000-path evaluation it
-   scores 0.0434 — the classifier separates better when given more evaluation data. The
+   scores 0.0434, the classifier separates better when given more evaluation data. The
    paper's 0.0086 is a full-scale number, so the honest comparison is **0.0434 vs
    0.0086**, and the HPO subset numbers were only a cheap ranking proxy, never a
    paper-comparable result.
@@ -80,29 +80,29 @@ Two effects fully account for the gap, both verified:
    headline TS-generation numbers are typically the best of many samples/checkpoints.
 
 The gap is a genuine, quantified **sample-fidelity** gap of a from-scratch reimpl of an
-unreleased model — not an inflated judge (the metric is byte-for-byte the repo-standard
+unreleased model, not an inflated judge (the metric is byte-for-byte the repo-standard
 `yoon_metrics.py`) and not a dynamics failure (predictive matches). Reproduction is
 accepted; we proceed to the Heston benchmark with this exact recipe (no Heston tuning).
 
-## Full hyperparameter study — all 69 trials, per-seed scores
+## Full hyperparameter study, all 69 trials, per-seed scores
 
 This is the complete record of the HP search, so that anyone extending this study can
 build on it directly. Every number is read back from the raw shard files
 (`hpo_results_shard0.jsonl`, `hpo_stage2_shard0.jsonl`, `hpo_stage3_shard0.jsonl`,
-`hpo_stage4_shard{0,1}.jsonl`) — none are hand-typed.
+`hpo_stage4_shard{0,1}.jsonl`), none are hand-typed.
 
 **Methodology.** The search ran on **Sine** at `seq_len = 24` with a cheap ranking proxy:
 each trial trains one model, generates a **4000-path** subset, and is scored by the
 frozen `yoon_metrics.discriminative_score` (lower = harder to tell real from fake) plus
 the predictive score. Each trial is repeated over a small set of **disc seeds** (the
 classifier's own init/shuffle seed, *not* a generator seed) and we report
-`disc_mean ± disc_std` over those seeds together with the raw per-seed list. **Stages 1–2
-use 2 disc seeds; stages 3–4 use 3.** The 4000-path disc numbers are a *ranking proxy
-only* — they run ≈3–4× lower than the full-scale 10 000-path evaluation (see the Verdict
+`disc_mean ± disc_std` over those seeds together with the raw per-seed list. **Stages 1-2
+use 2 disc seeds; stages 3-4 use 3.** The 4000-path disc numbers are a *ranking proxy
+only*, they run ≈3-4× lower than the full-scale 10 000-path evaluation (see the Verdict
 note above), so they must never be compared directly to the paper's headline. They are
 valid **for ranking configs against each other**, which is all the search needs.
 
-### Stage 1 — architecture/diffusion sweep (32 trials, ~3000 steps, 2 disc seeds)
+### Stage 1, architecture/diffusion sweep (32 trials, ~3000 steps, 2 disc seeds)
 
 Swept `norm ∈ {znorm, minmax11}`, `schedule ∈ {linear, cosine}`, `lr ∈ {1e-4, 3e-4}`,
 `sampler ∈ {ddpm_fixed, ddpm_learned, ddim_eta0}`, `learn_sigma ∈ {T, F}`. Sorted
@@ -147,14 +147,14 @@ best→worst by `disc_mean`.
 `cosine` schedule and `ddim` sampling are consistently worst; `learn_sigma=True`
 (learned variance / L_vlb) never reaches the top.
 
-### Stage 2 — lr/sampler refinement (12 trials, ~3000 steps, 2 disc seeds)
+### Stage 2, lr/sampler refinement (12 trials, ~3000 steps, 2 disc seeds)
 
 Refined `lr ∈ {3e-4, 4e-4, 5e-4}` × `sampler ∈ {ddpm_fixed, ddim_eta0}` around the Stage-1
-winner (all `znorm/linear/learn_sigma=F`). **Caveat: these trials are under-trained** —
+winner (all `znorm/linear/learn_sigma=F`). **Caveat: these trials are under-trained**,
 at only ~3000 steps some duplicate configs land far apart (note the two `4e-4 ddpm_fixed`
-rows at 0.027 vs 0.064) and the three `ddim_eta0` rows collapse to ~0.45–0.48 (mode
+rows at 0.027 vs 0.064) and the three `ddim_eta0` rows collapse to ~0.45-0.48 (mode
 collapse from too-few steps + no EMA). Stage 2 is kept for completeness but was **not**
-used to pick the winner; Stages 3–4 (6000 steps, 3 seeds) settle it.
+used to pick the winner; Stages 3-4 (6000 steps, 3 seeds) settle it.
 
 | # | lr | sampler | disc mean ± std | disc seeds | pred |
 |---|----|---------|-----------------|------------|------|
@@ -171,16 +171,16 @@ used to pick the winner; Stages 3–4 (6000 steps, 3 seeds) settle it.
 | 11 | 5e-4 | ddim_eta0 | 0.4770 ± 0.0030 | [0.4740, 0.4800] | 0.1499 |
 | 12 | 3e-4 | ddim_eta0 | 0.4840 ± 0.0030 | [0.4810, 0.4870] | 0.1642 |
 
-### Stage 3 — winner confirmation (1 trial, 6000 steps, 3 disc seeds)
+### Stage 3, winner confirmation (1 trial, 6000 steps, 3 disc seeds)
 
 Re-ran the Stage-1 winner (`znorm/linear/ddpm_fixed/learn_sigma=F, lr=3e-4, ema=0`) at
 double the steps and 3 disc seeds to confirm it holds up with more training:
 
     disc = 0.0127 ± 0.0087   per-seed [0.0150, 0.0220, 0.0010]   pred = 0.1005
 
-Stable and low — confirms the config.
+Stable and low, confirms the config.
 
-### Stage 4 — optimizer sweep (24 trials, 6000 steps, 3 disc seeds)
+### Stage 4, optimizer sweep (24 trials, 6000 steps, 3 disc seeds)
 
 Fixed the Stage-3 config and swept `lr ∈ {2e-4, 3e-4, 5e-4}` × `ema ∈ {0, 0.999}` ×
 `weight_decay ∈ {0, 1e-4}` × `batch ∈ {128, 256}`. Sorted best→worst.
@@ -212,7 +212,7 @@ Fixed the Stage-3 config and swept `lr ∈ {2e-4, 3e-4, 5e-4}` × `ema ∈ {0, 0
 | 23 | 2e-4 | 0 | 0 | 256 | 0.1480 ± 0.0226 | [0.1740, 0.1510, 0.1190] | 0.1001 |
 | 24 | 3e-4 | 0 | 1e-4 | 256 | 0.1710 ± 0.0249 | [0.2020, 0.1410, 0.1700] | 0.1005 |
 
-**Read — no-EMA wins decisively.** The **top 7 trials are all `ema=0`**; the best EMA
+**Read, no-EMA wins decisively.** The **top 7 trials are all `ema=0`**; the best EMA
 trial (row 8) is 6× worse than the winner. EMA smooths the sampled paths (its `pred`
 sits lower at ~0.0958, i.e. very smooth) but that same smoothing makes them *easier* for
 the discriminator to flag as fake. `weight_decay=0` also beats `1e-4` at every matched
@@ -221,11 +221,11 @@ exactly the recipe carried to Heston (scaled to 15000 steps for the full dataset
 
 ### How to extend this study
 
-- **Add a config:** append it to the relevant `hpo_*.py` grid and re-run — outputs land
+- **Add a config:** append it to the relevant `hpo_*.py` grid and re-run, outputs land
   as new lines in the `hpo_*_shard*.jsonl` files (append-only, so old trials are never
-  lost). Keep the 4000-path proxy for cheap ranking; only promote the top 1–3 to a
+  lost). Keep the 4000-path proxy for cheap ranking; only promote the top 1-3 to a
   full-scale 10 000-path / multi-seed GATE.
-- **Trust the ranking, not the absolute proxy number.** The 4000-path disc runs ≈3–4×
+- **Trust the ranking, not the absolute proxy number.** The 4000-path disc runs ≈3-4×
   below the full-scale number; use it to order configs, then confirm the winner with
   `reproduce_gate.py`.
 - **The two levers that mattered most** were (i) `learn_sigma=False` (L_simple beats the

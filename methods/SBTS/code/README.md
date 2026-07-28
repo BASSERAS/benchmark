@@ -1,4 +1,4 @@
-# SBTS Code — Sources & Implementation
+# SBTS Code, Sources & Implementation
 
 ## Original work
 
@@ -30,8 +30,8 @@ where `w_i(t)` are kernel weights measuring how close training path `i`
 has been to the current trajectory up to time `t`.
 
 **Markovian order K=20** (author-specified for this length-128 Heston benchmark,
-confirmed by A. Alouadi 2026-07-27): weights depend on the last **K** states —
-`w_i ∝ ∏_{j} K_h(X_i^{t-j} - x_{t-j})` — giving the kernel enough memory to
+confirmed by A. Alouadi 2026-07-27): weights depend on the last **K** states,
+`w_i ∝ ∏_{j} K_h(X_i^{t-j} - x_{t-j})`, giving the kernel enough memory to
 reproduce Heston's volatility autocorrelation over the 128-step horizon.
 
 **Quartic kernel:** `K_h(x) = (h² − x²)²·1_{|x|<h}` (compact support, differentiable).
@@ -49,8 +49,8 @@ to match the shared Heston dataset used by every method.
 
 | Parameter | Value | Meaning |
 |-----------|-------|---------|
-| `h` | 0.05 | Kernel bandwidth (quartic compact-support) — paper's 0.4 was much too large |
-| `K` | 20 | Markovian order — enough memory to reproduce Heston vol autocorrelation |
+| `h` | 0.05 | Kernel bandwidth (quartic compact-support), paper's 0.4 was much too large |
+| `K` | 20 | Markovian order, enough memory to reproduce Heston vol autocorrelation |
 | `N_pi` | 50 | Euler substeps per observation interval (chosen for speed; low impact) |
 | `dt` | 1/250 | Observation interval (shared dataset) |
 
@@ -82,7 +82,7 @@ No GPU is needed: SBTS is a kernel-based method with no learnable parameters.
 | File | Purpose |
 |------|---------|
 | `sbts_generate.py` | Core module: `generate_paths()`, `warmup_jit()`, Numba kernels |
-| `small_test.py` | Sanity test: N_train=200, M_simu=20, T=32 — passes all checks |
+| `small_test.py` | Sanity test: N_train=200, M_simu=20, T=32, passes all checks |
 | `run_all.py` | Full run: 5 seeds × 8 192 paths × 128 steps |
 | `reference/` | Verbatim SBTS repo (alexouadi/SBTS, .git stripped) |
 
@@ -93,7 +93,7 @@ No GPU is needed: SBTS is a kernel-based method with no learnable parameters.
 | Aspect | Reference (`sbts_uni_markovian.py`) | Our implementation |
 |--------|-------------------------------------|-------------------|
 | Backend | NumPy + Joblib | **Numba JIT** (`@nb.jit(nopython=True, cache=True)`) |
-| Parallelisation | Joblib | `multiprocessing.Pool` (fork — inherits JIT) |
+| Parallelisation | Joblib | `multiprocessing.Pool` (fork, inherits JIT) |
 | Data | Generic | Heston price paths only (`dataset/Heston/heston_S_8192x128.npy`) |
 | Output | Scaled log-returns | **Price paths** anchored at S₀=100 |
 | Warmup | None | `warmup_jit()` pre-compiles before Pool fork |
@@ -119,12 +119,12 @@ CUDA_VISIBLE_DEVICES=0 \
     /home/tbasseras/gpu-venv/bin/python metrics/compute_all.py --method SBTS --dataset Heston
 ```
 
-**Exact run path — which file produced which committed number:**
+**Exact run path, which file produced which committed number:**
 
 | Committed number | Interpreter + env | Command | Input file(s) scored | Output file |
 |------------------|-------------------|---------|----------------------|-------------|
-| Heston A1–A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method SBTS --dataset Heston` | `methods/SBTS/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs the real Heston pool `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/SBTS/seed_i_metrics.json` (A-metrics) + `curve_b_aggregate.json` (B curves) |
-| SBTS synthetic paths, per seed `i` | `sbts-venv`, `SBTS_NWORK=64` | `run_all.py` (seed `i`) | canonical Heston SDE params (no input file — simulated) | `methods/SBTS/generated_paths/seed_i/generated_paths_8192x128.npy` |
+| Heston A1-A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method SBTS --dataset Heston` | `methods/SBTS/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs the real Heston pool `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/SBTS/seed_i_metrics.json` (A-metrics) + `curve_b_aggregate.json` (B curves) |
+| SBTS synthetic paths, per seed `i` | `sbts-venv`, `SBTS_NWORK=64` | `run_all.py` (seed `i`) | canonical Heston SDE params (no input file, simulated) | `methods/SBTS/generated_paths/seed_i/generated_paths_8192x128.npy` |
 
 Each `results/Heston/SBTS/seed_i_metrics.json` is the sole source for that seed's column in every README A-table; the mean±std rows are aggregated across those 5 files.
 
@@ -167,7 +167,7 @@ the constants at the top of `run_all.py` or pass them explicitly to `generate_pa
 | `n_workers` | 64 | `SBTS_NWORK` env var | CPU parallelism. Set to number of available cores. |
 | `dt` | 1/250 | `sbts_generate.py` `DT` | Observation interval. 1/250 = daily; kept fixed to match the shared dataset. |
 
-**Example — override on the command line:**
+**Example, override on the command line:**
 ```bash
 SBTS_NWORK=64 SBTS_SEEDS=0,1 python run_all.py
 ```
@@ -185,7 +185,7 @@ To use a different dataset:
 DATA_PATH = "/path/to/your/data.npy"   # was heston_S_8192x128.npy
 OUT_DIR   = "generated_paths/"          # output root
 ```
-3. The scaling step `R̃ = R × √dt / σ(R)` is automatic — no manual adjustment needed.
+3. The scaling step `R̃ = R × √dt / σ(R)` is automatic, no manual adjustment needed.
 4. If your series has a different length T, SBTS adapts automatically (no architecture change).
 
 ---
@@ -205,6 +205,6 @@ To reproduce all 5 seeds from scratch:
 SBTS_NWORK=64 python run_all.py          # runs seeds 0–4 sequentially
 ```
 
-Each seed takes ~6–23 min (depends on worker count). Results land in:
+Each seed takes ~6-23 min (depends on worker count). Results land in:
 - `generated_paths/seed_{i}/generated_paths_8192x128.npy`
-- `losses/seed_{i}_bandwidth.json`  (records h, K, N_pi — no loss since kernel method)
+- `losses/seed_{i}_bandwidth.json`  (records h, K, N_pi, no loss since kernel method)

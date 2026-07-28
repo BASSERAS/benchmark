@@ -1,13 +1,13 @@
-# Diffusion-TS — Paper Reimplementation (Stocks)
+# Diffusion-TS, Paper Reimplementation (Stocks)
 
 Reproduction of the **Diffusion-TS** paper result on the **Stocks** dataset using the
 *official* code, verbatim from the authors' repository.
 
-- **Paper:** *Diffusion-TS: Interpretable Diffusion for General Time Series Generation* —
+- **Paper:** *Diffusion-TS: Interpretable Diffusion for General Time Series Generation*,
   Xinyu Yuan, Yan Qiao, ICLR 2024.
 - **Official code:** `github.com/Y-debug-sys/Diffusion-TS` (mirrored here under
   `../code/reference/`).
-- **This run:** `metric/compute_torch_metrics.py` + `metric/compute_tf_metrics.py` — train →
+- **This run:** `metric/compute_torch_metrics.py` + `metric/compute_tf_metrics.py`, train →
   sample → score with the paper's **own four headline metrics** (Table 1), 5 independent runs.
 
 ---
@@ -33,7 +33,7 @@ Discriminative 0.067, Predictive 0.036**.
 
 ## 2. Method hyperparameters (from the released `Config/stocks.yaml`)
 
-Taken **verbatim** from the released Stocks config (the `stocks` preset — see
+Taken **verbatim** from the released Stocks config (the `stocks` preset, see
 [`../code/README.md`](../code/README.md) for the full arch table):
 
 | Parameter | Value | Meaning |
@@ -53,7 +53,7 @@ Training: released `engine.solver.Trainer`, verbatim. EMA weights used for gener
 
 ## 3. Dataset
 
-**Stocks** (Google daily prices — the standard TimeGAN/Diffusion-TS benchmark), loaded and
+**Stocks** (Google daily prices, the standard TimeGAN/Diffusion-TS benchmark), loaded and
 windowed **verbatim** by the released `Utils.Data_utils` dataset:
 
 - **6 features**, `seq_length = 24`, **3 662 windows** after sliding-window + per-feature
@@ -62,19 +62,19 @@ windowed **verbatim** by the released `Utils.Data_utils` dataset:
 
 ---
 
-## 4. Results — paper's own four metrics
+## 4. Results, paper's own four metrics
 
 Three columns, all scored with the **paper's own four metric functions** (`Utils/context_fid`,
 `Utils/cross_correlation`, `Utils/discriminative_metric`, `Utils/predictive_metric`):
 
-| Metric (paper's own) | **Paper (Table 1, Stocks)** | **Ours — Stocks (paper dataset)** | **Ours — Heston** |
+| Metric (paper's own) | **Paper (Table 1, Stocks)** | **Ours, Stocks (paper dataset)** | **Ours, Heston** |
 |----------------------|:---------------------------:|:---------------------------------:|:-----------------:|
 | Context-FID ↓ | 0.147 ± 0.025 | **0.2024 ± 0.0245** | **0.0307 ± 0.0077** |
-| Correlational ↓ | 0.004 ± 0.001 | **0.0106 ± 0.0000** [1] | **≈ 6×10⁻⁹** [2] (degenerate — real: A21 ACF-abs 0.0201 ± 0.0030) |
-| Discriminative ↓ | 0.067 ± 0.015 | **0.0914 ± 0.0178** | **0.0000** [3] (degenerate — real: A18 GRU 0.262 ± 0.158) |
-| Predictive ↓ | 0.036 ± 0.000 | **0.0371 ± 0.00005** | **0.0653** [4] (degenerate — real: A19 GRU 0.0549 ± 0.0002) |
+| Correlational ↓ | 0.004 ± 0.001 | **0.0106 ± 0.0000** [1] | **≈ 6×10⁻⁹** [2] (degenerate, real: A21 ACF-abs 0.0201 ± 0.0030) |
+| Discriminative ↓ | 0.067 ± 0.015 | **0.0914 ± 0.0178** | **0.0000** [3] (degenerate, real: A18 GRU 0.262 ± 0.158) |
+| Predictive ↓ | 0.036 ± 0.000 | **0.0371 ± 0.00005** | **0.0653** [4] (degenerate, real: A19 GRU 0.0549 ± 0.0002) |
 
-> **Why some cells are (near-)zero with (near-)zero std — these are real artifacts, not placeholders:**
+> **Why some cells are (near-)zero with (near-)zero std, these are real artifacts, not placeholders:**
 >
 > **[1] Stocks Correlational std = 0.0000 is deterministic, not a bug.** `metric/compute_torch_metrics.py`
 > scores **one** saved sample set (`OUTPUT/stock/ddpm_fake_stock.npy`) 5× with `Utils/cross_correlation.CrossCorrelLoss`,
@@ -82,28 +82,28 @@ Three columns, all scored with the **paper's own four metric functions** (`Utils
 > (0.01058272086083889, ci95 = 0.0). The paper's ±0.001 comes from **re-sampling** the generator 5× (5 fresh
 > draws), which we did not do for the correlational column. Same-code, different resampling protocol.
 >
-> **[2] Heston Correlational ≈ 6×10⁻⁹ is the SAME class of univariate degeneracy as [3]/[4] — a different code
+> **[2] Heston Correlational ≈ 6×10⁻⁹ is the SAME class of univariate degeneracy as [3]/[4], a different code
 > path, same "metric is undefined on 1 feature" outcome.** `CrossCorrelLoss` measures **cross-FEATURE**
-> correlation error via `cacf_torch`; our Heston tensor is `(N, T, 1)` — a single feature — so
+> correlation error via `cacf_torch`; our Heston tensor is `(N, T, 1)`, a single feature, so
 > `torch.tril_indices(1, 1) = [[0],[0]]` selects only the feature-with-**itself** term, and `cacf_torch`
 > first **standardizes** each series → the lag-0 self-correlation is **identically 1.0** for *any* real and
 > *any* fake. Empirically (seed 0): `cross_correl_real = 0.99999905`, `cross_correl_fake = 0.99999917` →
 > `|Δ|/10 = 1.19×10⁻⁸` = pure float32 epsilon. The metric is **mathematically incapable of being nonzero** on
-> one feature — it measures nothing here. Per-seed: 1.2×10⁻⁸, 6.0×10⁻⁹, 1.2×10⁻⁸, 0.0, 0.0. Verified by
+> one feature, it measures nothing here. Per-seed: 1.2×10⁻⁸, 6.0×10⁻⁹, 1.2×10⁻⁸, 0.0, 0.0. Verified by
 > reading + running `code/reference/Utils/cross_correlation.py`. **Our comparable score:** the benchmark's own
-> **temporal** correlation metrics (which *are* defined on univariate — they measure lag-autocorrelation, not
+> **temporal** correlation metrics (which *are* defined on univariate, they measure lag-autocorrelation, not
 > cross-feature) rate the same paths at **A21 ACF-abs 0.0201 ± 0.0030**, A22 ACF-sq 0.0168 ± 0.0027,
-> A23 lag-1 ACF-abs 0.0039 ± 0.0022 — genuine, non-degenerate correlation-structure errors.
+> A23 lag-1 ACF-abs 0.0039 ± 0.0022, genuine, non-degenerate correlation-structure errors.
 >
 > **[3] Heston Discriminative = exactly 0 is a metric-code degeneracy on univariate data, NOT a quality signal.**
 > `Utils/discriminative_metric.py` line 74 sets `hidden_dim = int(dim/2)`. For univariate Heston (`dim = 1`)
 > this is `int(1/2) = 0` → `tf1.nn.rnn_cell.GRUCell(num_units=0)` → a **zero-capacity** judge with no hidden
 > state → constant output → **exactly 0.5 accuracy** on the balanced test split → `|0.5 − 0.5| = 0` on **all 5
 > seeds** (0-std is statistically impossible for a working judge; it is a broken 0-unit network). On Stocks
-> (6 features) `int(6/2) = 3` works fine — so this collapse is **univariate-specific**, verified by reading
+> (6 features) `int(6/2) = 3` works fine, so this collapse is **univariate-specific**, verified by reading
 > `code/reference/Utils/discriminative_metric.py`. **Our comparable score:** the benchmark's own discriminative
 > judge (A18, hidden dim floored at `max(8, n_features·8)` so it never degenerates) rates the *same* Heston
-> paths at **GRU 0.262 ± 0.158**, MLP 0.055 ± 0.040 (per-seed GRU [0.370, 0.404, 0.028, 0.116, 0.392]) — i.e.
+> paths at **GRU 0.262 ± 0.158**, MLP 0.055 ± 0.040 (per-seed GRU [0.370, 0.404, 0.028, 0.116, 0.392]), i.e.
 > the paths are *moderately distinguishable*, which the paper metric's 0.0 masks entirely.
 >
 > **[4] Heston Predictive = 0.0653 is the SAME `hidden_dim = int(dim/2) = 0` degeneracy, not a genuine TSTR floor.**
@@ -125,7 +125,7 @@ Per-run on **Stocks** (paper dataset, `results/stocks_comparison.json`):
 | 3 | 0.1905 | 0.01058 | 0.0996 | 0.03705 |
 | 4 | 0.2195 | 0.01058 | 0.1010 | 0.03700 |
 
-Per-seed on **Heston** (same four metric functions, [0,1] MinMax scale, no retrain — the
+Per-seed on **Heston** (same four metric functions, [0,1] MinMax scale, no retrain, the
 5-seed Diffusion-TS pool is reused; `results/heston_paper_metrics.json`):
 
 | seed | Context-FID | Correlational | Discriminative | Predictive |
@@ -136,28 +136,28 @@ Per-seed on **Heston** (same four metric functions, [0,1] MinMax scale, no retra
 | 3 | 0.0318 | 0.0 | 0.0 | 0.06529 |
 | 4 | 0.0372 | 0.0 | 0.0 | 0.06528 |
 
-The per-seed columns are **not** hardcoded — they show the real magnitudes. Correlational is float32 machine
+The per-seed columns are **not** hardcoded, they show the real magnitudes. Correlational is float32 machine
 epsilon on a single feature (note [2]); Discriminative is an exact 0 from the paper judge's `hidden_dim =
 int(dim/2) = 0` zero-capacity collapse on univariate data (note [3]); Predictive 0.0653 is the same
 `int(dim/2) = 0` degeneracy in `predictive_metric.py` (note [4]). The **real** distinguishability of these
 paths is the benchmark's own floored-hidden-dim judges: A18 disc GRU 0.262 ± 0.158, A19 pred GRU 0.0549 ± 0.0002.
 
-**Reproduced (Stocks) — hyperparameters are verbatim-correct; the gap is checkpoint/draw variance.**
+**Reproduced (Stocks), hyperparameters are verbatim-correct; the gap is checkpoint/draw variance.**
 We re-checked every hyperparameter against the authors' released `Config/stocks.yaml`
-(`code/reference/Config/stocks.yaml`) — `n_layer_enc/dec=2`, `d_model=64`, `timesteps=500`,
-`sampling_timesteps=500`, `loss_type=l1`, `train_num_steps=10000`, EMA milestone 10 — all match
+(`code/reference/Config/stocks.yaml`), `n_layer_enc/dec=2`, `d_model=64`, `timesteps=500`,
+`sampling_timesteps=500`, `loss_type=l1`, `train_num_steps=10000`, EMA milestone 10, all match
 (see §2). So the residual gap is **not** a hyperparameter error. Predictive 0.0371 vs 0.036 is a
 bulls-eye, which confirms the training + sampling pipeline is faithful. Context-FID 0.2024 ± 0.0245
 vs paper 0.147 and Discriminative 0.0914 ± 0.0178 vs 0.067 land slightly **above** (worse than) the
 paper because we score **one** DDPM draw from **one** milestone-10 EMA checkpoint per run, whereas the
 paper reports the best over resampling/checkpoint selection. Running the released model +
 `Config/stocks.yaml` verbatim reproduces Table 1's *regime* to within that single-draw / single-checkpoint
-selection noise — the difference is protocol (one draw vs best-of-many), not configuration.
+selection noise, the difference is protocol (one draw vs best-of-many), not configuration.
 
-**Transfers to Heston (read the caveat — the zeros are structural, not computational).** On our
+**Transfers to Heston (read the caveat, the zeros are structural, not computational).** On our
 univariate Heston paths the same four functions give Context-FID 0.0307, Correlational ≈ 6×10⁻⁹,
 Discriminative 0.0000, Predictive 0.0653. These are **not** evidence that Diffusion-TS beats its own
-paper — they are artifacts of the univariate Heston setup, each traced to source:
+paper, they are artifacts of the univariate Heston setup, each traced to source:
 
 - **Correlational ≈ 6×10⁻⁹ (note [2])** is **degenerate** on this single-feature data: the metric computes
   cross-FEATURE correlation error, but with one feature `tril_indices(1,1)` leaves only the standardized
@@ -167,7 +167,7 @@ paper — they are artifacts of the univariate Heston setup, each traced to sour
 - **Discriminative = exactly 0 (note [3])** is a **metric-code degeneracy**, not a quality signal: the judge's
   `hidden_dim = int(dim/2) = 0` on univariate data → a zero-capacity GRU → exactly 0.5 accuracy → |0.5 − 0.5| = 0
   on all 5 seeds. The benchmark's own judge (A18, floored hidden dim) rates the same paths at GRU 0.262 ± 0.158
-  — moderately distinguishable, the real number.
+moderately distinguishable, the real number.
 - **Context-FID 0.031** is lower than Stocks (0.20) because a single smooth price feature is far easier
   to match in TS2Vec embedding space than 6-feature Stocks.
 - **Predictive 0.0653 (note [4])** is the **same `int(dim/2) = 0` degeneracy** in `predictive_metric.py` → a
@@ -200,7 +200,7 @@ TF_USE_LEGACY_KERAS=1 /home/tbasseras/dts-tf-venv/bin/python heston_paper_metric
 Both Heston drivers write into the single `results/heston_paper_metrics.json` (torch fills
 `context_fid` + `correlational`; TF fills `discriminative` + `predictive`).
 
-**Exact run path — which file feeds which cell (so any number is traceable):**
+**Exact run path, which file feeds which cell (so any number is traceable):**
 
 | Table cell | Interpreter + env | Script | Input file scored | Output JSON |
 |------------|-------------------|--------|-------------------|-------------|
@@ -210,7 +210,7 @@ Both Heston drivers write into the single `results/heston_paper_metrics.json` (t
 | Heston Discriminative + Predictive | `dts-tf-venv`, `TF_USE_LEGACY_KERAS=1` | `heston_paper_metrics_tf.py` | same Heston pool | `results/heston_paper_metrics.json` (`discriminative`, `predictive`) |
 
 > **Why Stocks Correlational has `± 0.0000`:** `compute_torch_metrics.py` scores the **single** file
-> `OUTPUT/stock/ddpm_fake_stock.npy` five times — `CrossCorrelLoss` is deterministic on a fixed array, so
+> `OUTPUT/stock/ddpm_fake_stock.npy` five times, `CrossCorrelLoss` is deterministic on a fixed array, so
 > all 5 values are byte-identical (ci95 = 0.0). The paper's ±0.001 comes from re-sampling the generator 5×;
 > that resampling is **not** reproducible from our one saved file (see §16 P8 in `GUIDELINE.md`).
 
@@ -227,6 +227,6 @@ Both Heston drivers write into the single `results/heston_paper_metrics.json` (t
 | `metric/compare_smoke.py` | 3-arch Context-FID smoke comparison (arch selection) |
 | `results/stocks_comparison.json` | paper Table 1 + Ours-Stocks, all 4 metrics, per-run |
 | `results/heston_paper_metrics.json` | Heston 4-metric mean ± std + per-seed + scaler/config |
-| `results/smoke_comparison.json` | Context-FID per arch (mujoco/etth/stocks) — arch pick |
+| `results/smoke_comparison.json` | Context-FID per arch (mujoco/etth/stocks), arch pick |
 | `results/stocks_torch_metrics.json`, `stocks_tf_metrics.json` | raw per-run Stocks scores |
 | `DiffusionTS_ICLR2024_2403.01742v3.pdf` | the paper |

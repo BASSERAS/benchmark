@@ -1,30 +1,30 @@
-# GT-GAN — Paper Reimplementation (Stocks)
+# GT-GAN, Paper Reimplementation (Stocks)
 
 Reproduction of the **GT-GAN** paper result on the **Stocks** dataset using the
 *official* GT-GAN code, verbatim from the authors' `GTGAN_stocks.py` evaluation
 path (trained `gtgan` checkpoint → generate → post-hoc scores).
 
 - **Paper:** *GT-GAN: General Purpose Time Series Generation with Generative
-  Adversarial Networks* — Jinsung Jeon, Jeonghak Kim, Haryong Song, Seunghyeon
+  Adversarial Networks*, Jinsung Jeon, Jeonghak Kim, Haryong Song, Seunghyeon
   Cho, Noseong Park. NeurIPS 2022. ([`GT-GAN_NeurIPS2022.pdf`](GT-GAN_NeurIPS2022.pdf))
 - **Official code:** `github.com/Jinsung-Jeon/GT-GAN` (mirrored here under
   [`../code/reference/`](../code/reference/)).
-- **This run:** `metric/reproduce_stock.py` — the reference eval-only path over
+- **This run:** `metric/reproduce_stock.py`, the reference eval-only path over
   the shipped `stock_model/stock` checkpoint.
 
 ---
 
 ## ⚠️ Reproduction caveat (why a port was needed)
 
-GT-GAN's evaluation is **TensorFlow 1.x** — `metrics/discriminative_metrics.py`
+GT-GAN's evaluation is **TensorFlow 1.x**, `metrics/discriminative_metrics.py`
 and `metrics/predictive_metrics.py` are the TimeGAN post-hoc scores, vendored
-verbatim by the GT-GAN authors — glued onto a **Torch** NeuralCDE embedder + CNF
+verbatim by the GT-GAN authors, glued onto a **Torch** NeuralCDE embedder + CNF
 generator stack. TF1 cannot bind the CUDA-13 driver on this A100 box (the exact
 same caveat documented for TimeGAN). Re-running the reference scorer here is
 therefore not possible without a legacy TF1/CUDA image.
 
 Because of this, the committed **5-seed Stocks numbers below were produced with
-the benchmark's shared PyTorch TSTR port** — the *one identical* discriminative
+the benchmark's shared PyTorch TSTR port**, the *one identical* discriminative
 / predictive implementation applied uniformly across TimeGAN, SBTS and GT-GAN,
 so cross-method comparison is apples-to-apples. `metric/reproduce_stock.py` and
 the two `metric/*_metrics.py` files reproduce the **reference** protocol exactly
@@ -78,7 +78,7 @@ python GTGAN_stocks.py --model1 gtgan --data stock --seq-len 24 \
 | `last_activation_r` | tanh | recovery output activation |
 | `last_activation_d` | identity | discriminator output (logit) |
 | `delta_t` | 0.5 | ODE integration step |
-| `batch_size` | 128 | — |
+| `batch_size` | 128 |, |
 | `seq_len` | 24 | window length |
 | `random_seed` | 7777 | authors' seed |
 
@@ -89,7 +89,7 @@ Generation is eval-only: the trained `generator.pt` (CNF) samples `z`, and
 
 ## 3. Dataset
 
-**Stocks** (Google daily prices, the standard TimeGAN/GT-GAN benchmark) — the
+**Stocks** (Google daily prices, the standard TimeGAN/GT-GAN benchmark), the
 easy single-dataset choice mandated by the task. The official repo ships the raw
 CSV; `TimeDataset_regular` windows it in-loader, so no re-download or re-windowing
 is needed.
@@ -102,13 +102,13 @@ is needed.
 - Trained weights: [`../code/reference/stock_model/stock/`](../code/reference/stock_model/stock/)
   (`generator.pt`, `recovery.pt`).
 
-No preprocessed `.npy` is duplicated here — the reference CSV + in-loader
+No preprocessed `.npy` is duplicated here, the reference CSV + in-loader
 windowing is the single source of truth (unlike SBTS/TimeGAN, whose official
 repos ship pre-windowed tensors that we mirrored).
 
 ---
 
-## 4. Results — ours vs paper
+## 4. Results, ours vs paper
 
 | Dataset | Metric | **Ours (GT-GAN port, 5 seeds)** | **Paper (Table 1)** | Verdict |
 |---------|--------|:-------------------------------:|:-------------------:|---------|
@@ -116,8 +116,8 @@ repos ship pre-windowed tensors that we mirrored).
 | Stocks | Predictive ↓ | **0.018 ± 0.003** | 0.017 ± 0.000 | **matches** ✓ |
 
 **Reproduced.** The predictive score matches the paper to the third decimal
-(0.018 vs 0.017). The discriminative score sits in the same low regime — both
-≈ 0.01–0.03, i.e. an adversary is essentially at chance — and is far below the
+(0.018 vs 0.017). The discriminative score sits in the same low regime, both
+≈ 0.01-0.03, i.e. an adversary is essentially at chance, and is far below the
 paper's own GAN baselines on Stocks (TimeGAN 0.102, RCGAN 0.196, COT-GAN 0.285).
 The ~0.016 gap is the expected run-to-run variance of a stochastic post-hoc
 classifier scored over few runs with a different RNG seed (and a PyTorch vs TF1
@@ -137,7 +137,7 @@ cd metric
 CUDA_VISIBLE_DEVICES=0 python reproduce_stock.py
 ```
 
-**Exact run path — which file feeds which cell (so any number is traceable):**
+**Exact run path, which file feeds which cell (so any number is traceable):**
 
 | Table cell | Interpreter + env | Script | Input file(s) scored | Output JSON |
 |------------|-------------------|--------|----------------------|-------------|

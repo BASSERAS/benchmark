@@ -1,4 +1,4 @@
-# TimeVAE Code — Sources & Implementation
+# TimeVAE Code, Sources & Implementation
 
 ## Original work
 
@@ -9,7 +9,7 @@
 | **Reference** | arXiv:2111.08095v3 (2021) |
 | **Original code** | https://github.com/abudesai/timeVAE |
 | **Original framework** | TensorFlow / Keras (`tensorflow==2.16.1`) |
-| **Method type** | **Variational auto-encoder** — convolutional encoder → Gaussian latent → interpretable decoder (level + optional trend/seasonal + residual conv) |
+| **Method type** | **Variational auto-encoder**, convolutional encoder → Gaussian latent → interpretable decoder (level + optional trend/seasonal + residual conv) |
 
 The verbatim reference implementation is kept under [`reference/`](reference/) for transparency
 (`.git` stripped). The architecture and the custom VAE loss of
@@ -31,7 +31,7 @@ into `[0, 1]`, trains one TimeVAE-Base per seed with the reference schedule (Ada
 generated paths / metadata in the benchmark's standard layout.
 
 The default variant is **TimeVAE-Base**: level model + residual convolution, with the interpretable
-`trend_poly` / `custom_seas` blocks **disabled** — exactly the `config/hyperparameters.yaml` `timeVAE`
+`trend_poly` / `custom_seas` blocks **disabled**, exactly the `config/hyperparameters.yaml` `timeVAE`
 preset (`latent_dim = 8`, `hidden = [50, 100, 200]`, `reconstruction_wt = 3.0`, `batch_size = 16`,
 `use_residual_conn = true`, `trend_poly = 0`, `custom_seas = null`). This is the **same** preset that
 reproduced the paper's sine-data discriminative/predictive table (see
@@ -69,8 +69,8 @@ The `MinMaxScaler` is a **per-`(t, feature)`** min-max (port of `data_utils.MinM
 | **Encoder** | 3× `SameConv1d(k=3, s=2)` → ReLU, filters 50 → 100 → 200; Flatten | `(N, L·200)`, L = ⌈128/2³⌉ = 16 |
 | ↳ latent heads | `Linear(flat, 8)` × 2 → `z_mean`, `z_log_var` | `(N, 8)` each |
 | **Sampling** | reparameterization `z = μ + σ·ε` | `(N, 8)` |
-| **Decoder — level** | `Linear(8, 1)` → ReLU → `Linear(1, 1)`, broadcast over T | `(N, 128, 1)` |
-| **Decoder — residual** | `Linear(8, flat)` → reshape `(N, 16, 200)` → 3× `SameConvTranspose1d(k=3, s=2)` → ReLU → Flatten → `Linear(→128·1)` | `(N, 128, 1)` |
+| **Decoder, level** | `Linear(8, 1)` → ReLU → `Linear(1, 1)`, broadcast over T | `(N, 128, 1)` |
+| **Decoder, residual** | `Linear(8, flat)` → reshape `(N, 16, 200)` → 3× `SameConvTranspose1d(k=3, s=2)` → ReLU → Flatten → `Linear(→128·1)` | `(N, 128, 1)` |
 | **Output** | level + residual (trend / seasonal off) | `(N, 128, 1)` |
 
 Total **247 340 parameters** (`weights/seed_0_config.json`). The interpretable `TrendLayer` /
@@ -134,7 +134,7 @@ TRAIN  = dict(max_epochs=1000, batch_size=16, lr=1e-3,
 - **Latent size / conv widths / recon weight** → edit `PRESET` (e.g. `latent_dim=16`,
   `hidden_layer_sizes=(64, 128, 256)`).
 - **Turn on the interpretable decoder (TimeVAE-full)** → set `trend_poly=2` and/or
-  `custom_seas=[(4, 32)]` (num\_seasons, len\_per\_season) — the `TrendLayer` / `SeasonalLayer` are
+  `custom_seas=[(4, 32)]` (num\_seasons, len\_per\_season), the `TrendLayer` / `SeasonalLayer` are
   already wired into `Decoder.forward`.
 - **Training length / batch / LR** → edit `TRAIN`, or pass CLI flags: `--epochs`, `--batch_size`.
 
@@ -147,16 +147,16 @@ CLI flags on `train_heston.py`:
 | `--batch_size` | 16 | Training batch. |
 | `--gen_num` | 8192 | Prior samples to generate. |
 | `--frac` | 1.0 | Fraction of training paths (smoke runs). |
-| `--tag` | "" | Run tag (e.g. `smoke`) — prefixes outputs, skips canonical weights. |
+| `--tag` | "" | Run tag (e.g. `smoke`), prefixes outputs, skips canonical weights. |
 
 ---
 
 ## How to use a different dataset
 
-`train_heston.py` takes `--data PATH` — a `.npy` of shape `(N, T)`, dtype float, in price/level space.
+`train_heston.py` takes `--data PATH`, a `.npy` of shape `(N, T)`, dtype float, in price/level space.
 The wrapper adds a feature axis `(N, T, 1)`, per-`(t, feature)` MinMax-scales to `[0, 1]` (stores
 `scaler_mini` / `scaler_range` for exact inversion), trains, prior-samples, and de-normalises back to
-the original scale before saving. Any `T` works (the conv stack halves the length 3× — `T` need not be
+the original scale before saving. Any `T` works (the conv stack halves the length 3×, `T` need not be
 a power of 2, the `SameConv1d` handles the ceil-division).
 
 ---
@@ -180,11 +180,11 @@ wait
 ```
 
 Each seed writes:
-- `weights/seed_{s}_model.pt` — VAE encoder/decoder `state_dict` + `scaler_mini` / `scaler_range`
-- `weights/seed_{s}_config.json` — full hyperparameters + params count
-- `losses/seed_{s}_losses.csv` — per-epoch `epoch, total_loss, reconstruction_loss, kl_loss, lr`
-- `generated_paths/seed_{s}/generated_paths_8192x128.npy` — (8192, 128) price scale
-- `generated_paths/seed_{s}/metadata.json` — seed, shape, min/max, train time, params, epochs\_run
+- `weights/seed_{s}_model.pt`, VAE encoder/decoder `state_dict` + `scaler_mini` / `scaler_range`
+- `weights/seed_{s}_config.json`, full hyperparameters + params count
+- `losses/seed_{s}_losses.csv`, per-epoch `epoch, total_loss, reconstruction_loss, kl_loss, lr`
+- `generated_paths/seed_{s}/generated_paths_8192x128.npy`, (8192, 128) price scale
+- `generated_paths/seed_{s}/metadata.json`, seed, shape, min/max, train time, params, epochs\_run
 
 ---
 
@@ -202,9 +202,9 @@ generated price[min=49.09 max=141.83]  real_mean=101.33 gen_mean=100.96  no NaN
 
 Expected sane signals (all five seeds, verified):
 - total loss **decreases smoothly** from ~450 to a plateau of **~83**; `EarlyStopping` fires between
-  epochs **230 and 340** (seed 0 247, seed 1 230, seed 2 340, seed 3 298, seed 4 278) — no NaN
+  epochs **230 and 340** (seed 0 247, seed 1 230, seed 2 340, seed 3 298, seed 4 278), no NaN
   (`first_nan_epoch = null`, `gen_has_nan = false` in every metadata.json);
-- generated price range (≈ 49–142) sits **inside** the real range (39.9–155.6); generated mean/std
+- generated price range (≈ 49-142) sits **inside** the real range (39.9-155.6); generated mean/std
   (100.96 / 8.88) close to real (101.33 / 9.97);
 - 247 340 parameters; prior generation via `decoder(randn(N, 8))`.
 
@@ -223,11 +223,11 @@ cd /home/tbasseras/benchmark
 /home/tbasseras/gpu-venv/bin/python metrics/compute_all.py --method TimeVAE --dataset Heston
 ```
 
-**Exact run path — which file produced which committed number:**
+**Exact run path, which file produced which committed number:**
 
 | Committed number | Interpreter + env | Command | Input file(s) scored | Output file |
 |------------------|-------------------|---------|----------------------|-------------|
-| Heston A1–A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method TimeVAE --dataset Heston` | `methods/TimeVAE/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real Heston `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/TimeVAE/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
+| Heston A1-A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method TimeVAE --dataset Heston` | `methods/TimeVAE/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real Heston `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/TimeVAE/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
 | TimeVAE synthetic paths, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0/3 taskset -c … OMP_NUM_THREADS=8` | `train_heston.py --seed i` (best-total-loss `EarlyStopping` weights used for prior sampling) | real Heston `dataset/Heston/heston_S_8192x128.npy`, per-`(t,feat)` MinMax internally | `generated_paths/seed_i/generated_paths_8192x128.npy` + `metadata.json` |
 | A18/A19 disc/pred loss curves, per seed `i` | `gpu-venv` | `metrics/compute_all.py --method TimeVAE --dataset Heston` | same generated `.npy` vs real | `results/Heston/TimeVAE/seed_i_{disc,pred}_{gru,mlp}_loss.csv` → `plots/{disc_classifier,pred_score}_loss.png` |
 
@@ -235,4 +235,4 @@ Each `results/Heston/TimeVAE/seed_i_metrics.json` is the sole source for that se
 README A-table; the mean±std rows aggregate the 5 files.
 
 The paper reproduction (sine len-24, the paper's own discriminative/predictive metrics vs Table)
-lives separately in [`../paper_reimplementation/`](../paper_reimplementation/) — see its README.
+lives separately in [`../paper_reimplementation/`](../paper_reimplementation/), see its README.

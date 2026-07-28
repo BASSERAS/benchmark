@@ -1,9 +1,9 @@
-# TimeVQVAE — Paper Reimplementation (ECG5000)
+# TimeVQVAE, Paper Reimplementation (ECG5000)
 
 Reproduction of the **TimeVQVAE** paper result on the **ECG5000** (UCR) dataset.
 
 - **Paper:** *Vector Quantized Time Series Generation with a Bidirectional Prior
-  Model* — Lee, Malacarne, Aune, AISTATS 2023 (PMLR 206, `lee23d`).
+  Model*, Lee, Malacarne, Aune, AISTATS 2023 (PMLR 206, `lee23d`).
   Saved here as `TimeVQVAE_AISTATS2023_lee23d.pdf`.
 - **Official code:** `github.com/ML4ITS/TimeVQVAE`, **paper-era commit
   `b9650e9d`** (2023-02-16), mirrored verbatim under `../code/reference/`
@@ -16,14 +16,14 @@ Reproduction of the **TimeVQVAE** paper result on the **ECG5000** (UCR) dataset.
 
 ---
 
-## ⚠️ Reproduction note — environment
+## ⚠️ Reproduction note, environment
 
 The paper code targets **PyTorch Lightning 1.9** (uses the `*_epoch_end` hooks
 removed in PL 2.0). The benchmark's default `gpu-venv` ships PL 2.6.5, so a
 dedicated **PL-1.9 environment** was built: `/home/tbasseras/tvqvae-venv`
 (python 3.10, torch 1.13.1+cu117, PL 1.9.0, numpy 1.23.5, `supervised-fcn`
 1.7.8). This runs on the A100 / CUDA-13 driver via the backward-compatible
-cu117 build. **No model, loss, or metric code was changed** — the only edit to
+cu117 build. **No model, loss, or metric code was changed**, the only edit to
 the reference harness is one `print()` of the already-computed FID/IS to stdout
 (the paper logs them only to wandb, which is disabled here).
 
@@ -45,7 +45,7 @@ Reported as **mean ± std** over **3 runs** (paper §5 / results CSVs).
 
 ---
 
-## 2. Hyperparameters (paper preset — verbatim `config.yaml`)
+## 2. Hyperparameters (paper preset, verbatim `config.yaml`)
 
 | Parameter | Value |
 |-----------|-------|
@@ -68,7 +68,7 @@ These match Appendix C of the paper. Source: `../code/reference/configs/config.y
 
 ## 3. Dataset
 
-**ECG5000** — a standard UCR benchmark used in the paper's per-dataset FID/IS
+**ECG5000**, a standard UCR benchmark used in the paper's per-dataset FID/IS
 table. Loaded verbatim by the reference `DatasetImporterUCR` from
 `../code/reference/datasets/UCRArchive_2018/ECG5000/ECG5000_{TRAIN,TEST}.tsv`
 (500 train / 4500 test, length 140, 5 classes), z-normalised by the train
@@ -76,7 +76,7 @@ mean/var per the paper pipeline.
 
 ---
 
-## 4. Results — ours vs paper
+## 4. Results, ours vs paper
 
 | Dataset | Metric | **Ours (paper-era code, 3 runs)** | **Paper (Table)** | Verdict |
 |---------|--------|-----------------------------------|-------------------|---------|
@@ -87,21 +87,21 @@ mean/var per the paper pipeline.
 0.785, 0.810, 0.620. Per-run IS: 2.006, 2.016, 2.036. Source:
 `results/ecg5000_paper_metrics.json`.*
 
-**FID — reproduced.** Our mean **0.739** sits essentially on the paper's
+**FID, reproduced.** Our mean **0.739** sits essentially on the paper's
 **0.7**; the paper's own reported std is 0.0 (rounded to 1 decimal), and our
 three runs bracket the paper value (run2 = 0.620 is below it). The gap
 (0.04) is well inside single-run variation.
 
-**IS — reproduced exactly.** Our **2.019 ± 0.012** rounds to the paper's
+**IS, reproduced exactly.** Our **2.019 ± 0.012** rounds to the paper's
 **2.0 ± 0.0**. Both real and generated ECG5000 saturate the 5-class FCN at
 IS ≈ 2, i.e. generated samples are as class-diverse/confident as real.
 
 For context, the paper's own baselines on ECG5000 are far worse (FID: GMMN
 26.6, RCGAN 4.5, TimeGAN 35.2, SigCWGAN 55.9), so a FID < 1 is the
-distinctive TimeVQVAE result — which we reproduce.
+distinctive TimeVQVAE result, which we reproduce.
 
 **Bottom line:** both paper metrics reproduce on ECG5000 using the paper-era
-code, the paper hyperparameters, and the paper's FCN evaluator — no divergence
+code, the paper hyperparameters, and the paper's FCN evaluator, no divergence
 from the paper.
 
 ---

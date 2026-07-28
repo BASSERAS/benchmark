@@ -1,4 +1,4 @@
-# Diffusion-TS Code — Sources & Implementation
+# Diffusion-TS Code, Sources & Implementation
 
 ## Original work
 
@@ -30,7 +30,7 @@ metadata in the benchmark's standard layout. **The diffusion process, the
 transformer encoder/decoder, the seasonal-trend decomposition, the Fourier loss,
 and the sampler are the authors' own, untouched.** Because the Heston paths are
 already windowed `(N, T)` arrays, the CSV-based `Utils.Data_utils` dataset is
-bypassed and a bare `TensorDataset` is fed to the verbatim `Trainer` — the same
+bypassed and a bare `TensorDataset` is fed to the verbatim `Trainer`, the same
 pattern used by `methods/FourierFlow`.
 
 ### Method overview (paper §3)
@@ -70,7 +70,7 @@ so sampling inverts exactly back to price scale.
 
 ---
 
-## Architecture choice — why `mujoco` (enc = 3, dec = 3)
+## Architecture choice, why `mujoco` (enc = 3, dec = 3)
 
 The released Diffusion-TS ships **per-dataset** configs that differ **only** in
 encoder/decoder depth and training length; everything else (`d_model=64`,
@@ -81,11 +81,11 @@ closest paper configs via `--arch`:
 | `--arch` | enc | dec | max_epochs | params | Paper origin |
 |----------|:---:|:---:|:----------:|:------:|--------------|
 | `stocks` | 2 | 2 | 10000 | 368 397 | validated Stocks reproduction config |
-| **`mujoco`** | **3** | **3** | **12000** | **544 147** | paper's seq_len≈100 config — closest to Heston's 128 |
+| **`mujoco`** | **3** | **3** | **12000** | **544 147** | paper's seq_len≈100 config, closest to Heston's 128 |
 | `etth`   | 3 | 2 | 18000 | 426 573 | paper's Table-3 long-term-generation config |
 
 To pick between them we ran an **identical 3000-step smoke test** per arch on the
-Heston data and scored each with **Context-FID** (the paper's own headline metric —
+Heston data and scored each with **Context-FID** (the paper's own headline metric,
 lower is better), holding every other hyperparameter fixed. The winner was
 selected purely on this number.
 
@@ -99,7 +99,7 @@ selected purely on this number.
 
 Source: [`../paper_reimplementation/results/smoke_comparison.json`](../paper_reimplementation/results/smoke_comparison.json).
 
-**`mujoco` wins by a wide margin** — its Context-FID (0.74) is 3× better than
+**`mujoco` wins by a wide margin**, its Context-FID (0.74) is 3× better than
 `etth` (2.32) and ~49× better than `stocks` (36.05). The symmetric depth-3
 encoder/decoder gives the seasonal-trend decoder enough capacity to fit Heston's
 volatility-driven curvature that the shallow `stocks` config (enc/dec = 2)
@@ -147,7 +147,7 @@ Identical to the paper's shared config; only depth + step count are arch-specifi
 | `--batch_size` | 128 | Training batch. |
 | `--gen_num` | 8192 | Synthetic paths to sample. |
 | `--frac` | 1.0 | Fraction of training paths (for quick smoke runs). |
-| `--tag` | "" | Run tag (e.g. `smoke`) — prefixes output dirs so smoke runs never collide with canonical ones. |
+| `--tag` | "" | Run tag (e.g. `smoke`), prefixes output dirs so smoke runs never collide with canonical ones. |
 
 ```bash
 # canonical mujoco seed 0
@@ -163,7 +163,7 @@ PYTHONPATH=reference /home/tbasseras/gpu-venv/bin/python train_heston.py \
 
 ## How to use a different dataset
 
-`train_heston.py` takes `--data PATH` — a `.npy` of shape `(N, T)`, dtype float,
+`train_heston.py` takes `--data PATH`, a `.npy` of shape `(N, T)`, dtype float,
 in price/level space. The wrapper min-max scales to `[0,1]` (stores
 `scale_min`/`scale_max` in the config for exact inversion), maps to `[-1,1]`,
 trains, samples, and de-normalises back to the original scale before saving. No
@@ -191,11 +191,11 @@ wait
 ```
 
 Each seed writes:
-- `weights/seed_{s}_model.pt` — model + EMA `state_dict`, arch, minmax
-- `weights/seed_{s}_config.json` — full hyperparameters + scaling constants
-- `losses/seed_{s}_losses.csv` — per-logged-step diffusion loss (`step,loss`)
-- `generated_paths/seed_{s}/generated_paths_8192x128.npy` — (8192, 128) price scale
-- `generated_paths/seed_{s}/metadata.json` — seed, shape, min/max, train time, params
+- `weights/seed_{s}_model.pt`, model + EMA `state_dict`, arch, minmax
+- `weights/seed_{s}_config.json`, full hyperparameters + scaling constants
+- `losses/seed_{s}_losses.csv`, per-logged-step diffusion loss (`step,loss`)
+- `generated_paths/seed_{s}/generated_paths_8192x128.npy`, (8192, 128) price scale
+- `generated_paths/seed_{s}/metadata.json`, seed, shape, min/max, train time, params
 
 ---
 
@@ -211,10 +211,10 @@ generated price[min=41.36 max=142.44]   scale[39.89, 155.58]   no NaN
 ```
 
 Expected sane signals (all five seeds, verified):
-- diffusion loss **decreases smoothly** from ~3.9 to ~0.07 and plateaus — the L1 +
+- diffusion loss **decreases smoothly** from ~3.9 to ~0.07 and plateaus, the L1 +
   Fourier reconstruction loss converges, it does not diverge or NaN
   (`first_nan_step = null`, `gen_has_nan = false` in every metadata.json);
-- generated price range (≈ 41–142) sits **inside** the real range (39.9–155.6);
+- generated price range (≈ 41-142) sits **inside** the real range (39.9-155.6);
 - 544 147 parameters, 500-step DDPM sampling, EMA weights used for generation.
 
 ---
@@ -233,14 +233,14 @@ cd /home/tbasseras/benchmark
   --method DiffusionTS --dataset Heston
 ```
 
-**Exact run path — which file produced which committed number:**
+**Exact run path, which file produced which committed number:**
 
 | Committed number | Interpreter + env | Command | Input file(s) scored | Output file |
 |------------------|-------------------|---------|----------------------|-------------|
-| Heston A1–A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method DiffusionTS --dataset Heston` | `methods/DiffusionTS/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real Heston `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/DiffusionTS/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
+| Heston A1-A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method DiffusionTS --dataset Heston` | `methods/DiffusionTS/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real Heston `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/DiffusionTS/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
 | DiffusionTS synthetic paths, per seed `i` | `gpu-venv`, `PYTHONPATH=reference CUDA_VISIBLE_DEVICES=0/3` | `train_heston.py --arch mujoco --seed i` (EMA milestone-10 checkpoint used for sampling) | real Heston `dataset/Heston/heston_S_8192x128.npy`, [0,1] MinMax internally | `generated_paths/seed_i/generated_paths_8192x128.npy` + `metadata.json` |
 
 Each `results/Heston/DiffusionTS/seed_i_metrics.json` is the sole source for that seed's column in every README A-table; mean±std rows aggregate the 5 files.
 
 The paper reproduction (Stocks len-24, the paper's own 4 metrics vs Table 1)
-lives separately in `../paper_reimplementation/` — see its README.
+lives separately in `../paper_reimplementation/`, see its README.

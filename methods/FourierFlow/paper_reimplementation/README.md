@@ -1,24 +1,24 @@
-# Fourier Flow — Paper Reimplementation (Stocks)
+# Fourier Flow, Paper Reimplementation (Stocks)
 
 Reproduction of the **Fourier Flow** paper result on the **Stocks** dataset using
 the *official* code, verbatim from the authors' repository.
 
-- **Paper:** *Generative Time-series Modeling with Fourier Flows* — Alaa, Chan,
+- **Paper:** *Generative Time-series Modeling with Fourier Flows*, Alaa, Chan,
   van der Schaar, ICLR 2021.
 - **Official code:** `github.com/ahmedmalaa/Fourier-flows` (mirrored here under
   `../code/reference/`).
-- **This run:** `metric/reproduce_stock.py` — train → sample → score, CPU only
+- **This run:** `metric/reproduce_stock.py`, train → sample → score, CPU only
   (Fourier Flow uses `numpy.fft`; no GPU), 5 independent experiments.
 
 ---
 
-## ⚠️ Reproduction caveat — released MLP, not the paper's BiRNN
+## ⚠️ Reproduction caveat, released MLP, not the paper's BiRNN
 
 The paper's Section 3 describes the spectral coupling networks as **bidirectional
 RNNs**. The **released** `FourierFlow` class we reproduce with actually wires the
 couplings as **MLPs** (`SpectralFilter`: `Linear → Sigmoid → Linear → Sigmoid →
 Linear`); the BiRNN lives in a separate, *unused* `AttentionFilter`/`TimeFlow`
-path. Per the locked task decision we run the **released code as-is** — the MLP
+path. Per the locked task decision we run the **released code as-is**, the MLP
 version is what produced Table 2. This is a paper-vs-code discrepancy in the
 authors' own release, not a change we made.
 
@@ -55,7 +55,7 @@ Taken **verbatim** from `FF_model_params["stock"]` / `FF_train_params["stock"]`:
 | `normalize` | True | per-bin spectral standardisation |
 | `fft_size` | T + 1 = 101 | DFT length (odd; see below) |
 | `epochs` | 1000 | full-batch max-likelihood epochs |
-| `batch_size` | 500 | **ignored** — `fit()` is full-batch |
+| `batch_size` | 500 | **ignored**, `fit()` is full-batch |
 | `learning_rate` | 1e-3 | Adam, ExponentialLR γ=0.999 |
 
 **Why `fft_size` is odd (T+1).** `real_data_loading` prepends a 0 to each length-T
@@ -63,7 +63,7 @@ window (`np.hstack((0, series))`), giving length T+1 = 101. This is **required**
 not cosmetic: `FourierFlow.forward` reshapes the cropped DFT output to size
 `d+1`, which is only consistent for **odd** input length. It also gives the
 imaginary-DC bin float jitter so `normalize=True` does not divide by an exactly
-zero std. (The same fact drives the Heston adaptation — see `../code/README.md`.)
+zero std. (The same fact drives the Heston adaptation, see `../code/README.md`.)
 
 Training wall-clock: **~256 s per experiment** (CPU, single process).
 
@@ -71,7 +71,7 @@ Training wall-clock: **~256 s per experiment** (CPU, single process).
 
 ## 3. Dataset
 
-**Stocks** (Google daily prices — the standard TimeGAN/Fourier-Flow benchmark),
+**Stocks** (Google daily prices, the standard TimeGAN/Fourier-Flow benchmark),
 loaded and windowed **verbatim** from the released `run_experiment_2.py`
 (`real_data_loading("stock", 100)`): `loadtxt(stock_data.csv)` → reverse to
 chronological → per-feature min-max → sliding windows of length 100 → random
@@ -84,12 +84,12 @@ sequences**.
 
 ---
 
-## 4. Results — paper's own metrics (F-score + MAE)
+## 4. Results, paper's own metrics (F-score + MAE)
 
 Three columns, all scored with the **paper's own two metric functions** (`metrics/PRcurve.computeF1`
 Sajjadi support-overlap F-score; `metrics/MAE.computeMAE` TSTR LSTM MAE):
 
-| Metric (paper's own) | **Paper (Table 2, Stocks)** | **Ours — Stocks (paper dataset)** | **Ours — Heston** |
+| Metric (paper's own) | **Paper (Table 2, Stocks)** | **Ours, Stocks (paper dataset)** | **Ours, Heston** |
 |----------------------|:---------------------------:|:---------------------------------:|:-----------------:|
 | F-score ↑ | 0.984 | **0.9920 ± 0.0017** | **0.9918 ± 0.0009** |
 | MAE ↓ | 0.009 | **0.0084 ± 0.0007** | **0.0210 ± 0.0132** |
@@ -117,16 +117,16 @@ Per-seed on **Heston** (same metric functions, [0,1] MinMax scale, MAE LSTM `MAX
 
 **Reproduced (Stocks).** Both metrics land on the paper's Table 2 values: F-score
 0.9920 ± 0.0017 vs 0.984 (ours marginally *higher*, i.e. slightly better support
-overlap), and MAE 0.0084 ± 0.0007 vs 0.009 — within the 95 % CI. Running the
+overlap), and MAE 0.0084 ± 0.0007 vs 0.009, within the 95 % CI. Running the
 released MLP `FourierFlow` with the released Stocks hyperparameters therefore matches
 the published result; the paper-vs-code BiRNN/MLP discrepancy (§ caveat) does **not**
 prevent reproduction because Table 2 was itself produced by the released MLP path.
 
 **Transfers to Heston.** Applying the *same* two metric functions to our 5-seed
-Heston paths gives F-score 0.9918 ± 0.0009 (essentially identical to Stocks — near-perfect
+Heston paths gives F-score 0.9918 ± 0.0009 (essentially identical to Stocks, near-perfect
 support coverage) and MAE 0.0210 ± 0.0132. The Heston MAE is higher than Stocks (0.0084)
 because Heston paths are longer (127 vs 100 steps) and more volatile, and seed 0 (MAE 0.047)
-inflates the mean — seeds 1–4 sit tightly at ≈ 0.014. Both metrics stay in the paper's
+inflates the mean, seeds 1-4 sit tightly at ≈ 0.014. Both metrics stay in the paper's
 small-error regime. Recompute with `metric/heston_paper_metrics.py` (see §5).
 
 ---
@@ -147,7 +147,7 @@ copies with `--n-exps 1 --exp-base k` for k = 0..4 and aggregate afterward
 (the driver saves incrementally, so per-`exp_k.json` files can be pooled).
 
 The **Heston** column of §4 is produced by applying the same two metric functions to
-the already-generated Heston paths (no retraining — the 5-seed FF pool is reused):
+the already-generated Heston paths (no retraining, the 5-seed FF pool is reused):
 
 ```bash
 cd metric
@@ -158,7 +158,7 @@ CUDA_VISIBLE_DEVICES="" OMP_NUM_THREADS=8 PYTHONPATH=../../code/reference \
     --out ../results/heston_paper_metrics.json
 ```
 
-**Exact run path — which file feeds which cell (so any number is traceable):**
+**Exact run path, which file feeds which cell (so any number is traceable):**
 
 | Table cell | Interpreter + env | Script | Input file(s) scored | Output JSON |
 |------------|-------------------|--------|----------------------|-------------|

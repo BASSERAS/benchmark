@@ -1,4 +1,4 @@
-# COSCI-GAN Code — Sources & Implementation
+# COSCI-GAN Code, Sources & Implementation
 
 ## Original work
 
@@ -8,21 +8,21 @@
 | **Authors** | Ali Seyfi, Jean-Francois Rajotte, Raymond T. Ng |
 | **Reference** | NeurIPS 2022 (`../paper_reimplementation/COSCI-GAN_NeurIPS2022.pdf`) |
 | **Original code** | https://github.com/aliseyfi75/COSCI-GAN |
-| **Original framework** | **PyTorch** (already PyTorch — no framework port needed) |
-| **Method type** | **3-player GAN** — C univariate "Channel GANs" (LSTM Generator + LSTM Discriminator each), driven by a **shared noise vector**, coupled by one **Central Discriminator** (CD) that sees the concatenation of all channels and enforces inter-channel correlation |
+| **Original framework** | **PyTorch** (already PyTorch, no framework port needed) |
+| **Method type** | **3-player GAN**, C univariate "Channel GANs" (LSTM Generator + LSTM Discriminator each), driven by a **shared noise vector**, coupled by one **Central Discriminator** (CD) that sees the concatenation of all channels and enforces inter-channel correlation |
 
 The verbatim reference implementation is kept under [`reference/`](reference/) for transparency
-(`.git` stripped). The three `nn.Module` classes we use —
-`LSTMGenerator`, `LSTMDiscriminator`, `Discriminator` (the MLP CD) — are imported **verbatim** from
+(`.git` stripped). The three `nn.Module` classes we use,
+`LSTMGenerator`, `LSTMDiscriminator`, `Discriminator` (the MLP CD), are imported **verbatim** from
 [`reference/Main_modules.py`](reference/Main_modules.py); the training loop in
 [`train_heston.py`](train_heston.py) is transcribed **line-for-line** from
-`Main_modules.COSCIGAN` (upstream lines 263–381). Only I/O differs.
+`Main_modules.COSCIGAN` (upstream lines 263-381). Only I/O differs.
 
 ---
 
 ## Our implementation
 
-The released code is already **PyTorch**, so — unlike the TF-based baselines — there is **no
+The released code is already **PyTorch**, so, unlike the TF-based baselines, there is **no
 architecture port**: [`train_heston.py`](train_heston.py) imports the upstream classes directly and
 reproduces the upstream three-player update. It is a data-plumbing + logging wrapper: it loads the
 8192×128 Heston price paths, scalar-MinMax-scales them into `[0, 1]`, trains one COSCI-GAN per seed
@@ -30,7 +30,7 @@ with the paper/demo hyperparameters, then **generates** 8192 length-128 paths
 (`G(randn(N, noise_len))`), inverts the scaler back to price scale, and writes weights / losses /
 generated paths / metadata in the benchmark's standard layout.
 
-### ⚠️ C = 1 (single-channel Heston) — why the Central Discriminator degenerates
+### ⚠️ C = 1 (single-channel Heston), why the Central Discriminator degenerates
 
 COSCI-GAN is a **multivariate** generator. The Heston target here is a **univariate** price series,
 so `n_groups = 1`:
@@ -38,13 +38,13 @@ so `n_groups = 1`:
 - There is exactly **one** Channel GAN (one LSTM generator + one LSTM discriminator).
 - The shared-noise mechanism (all generators share one `z`) is trivial with a single generator.
 - The **Central Discriminator**, fed the concatenation of "all" channels, receives the **same**
-  128-dim vector as the single channel discriminator — it becomes a **redundant second (MLP) critic**
+  128-dim vector as the single channel discriminator, it becomes a **redundant second (MLP) critic**
   on the one channel. There is no cross-channel correlation for it to preserve (that notion is
   undefined at C = 1).
 
 We keep the full three-player machinery **on** (`with_CD = True`), exactly as the paper's code runs
 it, and **document** the degeneracy rather than silently dropping the CD. The equilibrium signature
-is `loss_CD ≈ ln 2 ≈ 0.693` (CD stuck at chance) — observed on all 5 seeds. In this regime COSCI-GAN
+is `loss_CD ≈ ln 2 ≈ 0.693` (CD stuck at chance), observed on all 5 seeds. In this regime COSCI-GAN
 reduces to a single LSTM-GAN regularised by an auxiliary MLP critic; it still produces valid
 univariate paths, which is what the benchmark evaluates. The paper's own multivariate metric
 (Table 4 cross-channel correlation-MAE) is reproduced separately on EEG in
@@ -59,7 +59,7 @@ For each channel *i* (here only *i* = 0), with shared noise *z*, `fake_i = G_i(z
 - **Generator:** $\mathcal{L}_{G_i} = \mathrm{BCE}\big(D_i(\text{fake}_i),\ \mathbf{1}\big) - \gamma \cdot \mathcal{L}_{CD}^{\text{new}}$
 
 where $\mathcal{L}_{CD}^{\text{new}}$ recomputes the CD loss with the generator's *current* forward
-pass (only channel *i* keeps grad; others are detached — verbatim upstream behaviour). At C = 1 the
+pass (only channel *i* keeps grad; others are detached, verbatim upstream behaviour). At C = 1 the
 `cat` operations are no-ops and `real_cat` = the single real channel.
 
 ### Normalisation chain
@@ -97,7 +97,7 @@ to fit the benchmark's single-GPU / npy / multi-seed layout:
 
 1. **Dropped `nn.DataParallel`.** *Location:* model construction. *Reference:* upstream wraps every
    generator / discriminator / CD in `nn.DataParallel(...)`. *Our change:* single-GPU training, so we
-   instantiate the bare modules — this keeps `state_dict` keys clean (no `module.` prefix) for
+   instantiate the bare modules, this keeps `state_dict` keys clean (no `module.` prefix) for
    reload, and is numerically identical on one GPU.
 2. **Data I/O.** *Location:* dataset loading. *Reference:* reads a CSV/pkl from `../Dataset/` with an
    `ID` column and `df.sample(frac=...)`. *Our change:* load the Heston `.npy` `(N, T)` directly, add
@@ -123,7 +123,7 @@ identically to `Main_modules.COSCIGAN`.
 | `gamma` | 5.0 | demo default (CD coupling weight in `loss_G = local − γ·loss_CD`) |
 | `generator_lr` (`glr`) | 1e-3 | demo default |
 | `discriminator_lr` (`dlr`) | 1e-3 | demo default |
-| `central_disc_lr` (`cdlr`) | 1e-4 | demo default — 10× smaller so the CD cannot overpower the channel GAN |
+| `central_disc_lr` (`cdlr`) | 1e-4 | demo default, 10× smaller so the CD cannot overpower the channel GAN |
 | `batch_size` | 32 | demo default |
 | `betas` | (0.5, 0.9) | Adam betas, `Main_modules.COSCIGAN` |
 | `hidden_dim` (LSTM) | 256 | `LSTMGenerator` / `LSTMDiscriminator` default |
@@ -131,9 +131,9 @@ identically to `Main_modules.COSCIGAN`.
 | `alpha` (LeakyReLU, CD) | 0.1 | `Discriminator` default |
 | `criterion` | BCE | demo default |
 | `CD_type` | MLP | demo default (`Discriminator` on the concatenation) |
-| `n_samples` (seq len) | **128** | **Heston-specific** — the Heston sequence length (vs 100 for EEG windows) |
-| `num_epochs` | **120** | **Heston-specific** — chosen so total generator updates are comparable to the paper's EEG run |
-| `n_groups` (channels) | **1** | **Heston-specific** — univariate price series (see C = 1 note) |
+| `n_samples` (seq len) | **128** | **Heston-specific**, the Heston sequence length (vs 100 for EEG windows) |
+| `num_epochs` | **120** | **Heston-specific**, chosen so total generator updates are comparable to the paper's EEG run |
+| `n_groups` (channels) | **1** | **Heston-specific**, univariate price series (see C = 1 note) |
 
 Only three knobs are Heston-specific (`n_samples`, `num_epochs`, `n_groups`); everything else is the
 paper/demo preset kept verbatim.
@@ -157,7 +157,7 @@ CLI flags on `train_heston.py`:
 |------|---------|--------|
 | `--seed` | 0 | Re-seeds torch + numpy (model init + sampling). |
 | `--data` | `dataset/Heston/heston_S_8192x128.npy` | Training `.npy` of shape `(N, T)`, price scale. |
-| `--n_groups` | 1 | Channels (Heston = 1). For a multivariate dataset set > 1 — the CD then does real cross-channel work. |
+| `--n_groups` | 1 | Channels (Heston = 1). For a multivariate dataset set > 1, the CD then does real cross-channel work. |
 | `--n_samples` | 128 | Per-channel sequence length (must satisfy `T = n_samples · n_groups`). |
 | `--noise_len` | 32 | Shared-noise dimension. |
 | `--num_epochs` | 120 | Training epochs. |
@@ -166,7 +166,7 @@ CLI flags on `train_heston.py`:
 | `--glr` / `--dlr` / `--cdlr` | 1e-3 / 1e-3 / 1e-4 | Generator / channel-D / central-D Adam LR. |
 | `--gen_num` | 8192 | Paths to generate. |
 | `--frac` | 1.0 | Fraction of training paths (smoke runs). |
-| `--tag` | "" | Run tag (e.g. `smoke`) — prefixes outputs, skips canonical weights. |
+| `--tag` | "" | Run tag (e.g. `smoke`), prefixes outputs, skips canonical weights. |
 
 - **Wider LSTM / different noise dim** → the LSTM `hidden_dim = 256` lives in the reference classes'
   signatures (`LSTMGenerator`/`LSTMDiscriminator`); pass a smaller net by editing those defaults, or
@@ -204,11 +204,11 @@ wait
 ```
 
 Each seed writes:
-- `weights/seed_{s}_model.pt` — `{G, D, CD}` state_dicts + `scaler_min` / `scaler_max`
-- `weights/seed_{s}_config.json` — full hyperparameters + params count (799 618)
-- `losses/seed_{s}_losses.csv` — per-epoch `epoch, loss_D_0, loss_G_0, loss_CD`
-- `generated_paths/seed_{s}/generated_paths_8192x128.npy` — (8192, 128) price scale
-- `generated_paths/seed_{s}/metadata.json` — seed, shape, min/max, train time, params, epochs\_run
+- `weights/seed_{s}_model.pt`, `{G, D, CD}` state_dicts + `scaler_min` / `scaler_max`
+- `weights/seed_{s}_config.json`, full hyperparameters + params count (799 618)
+- `losses/seed_{s}_losses.csv`, per-epoch `epoch, loss_D_0, loss_G_0, loss_CD`
+- `generated_paths/seed_{s}/generated_paths_8192x128.npy`, (8192, 128) price scale
+- `generated_paths/seed_{s}/metadata.json`, seed, shape, min/max, train time, params, epochs\_run
 
 ---
 
@@ -226,11 +226,11 @@ epoch   0  loss_CD=0.6931  loss_D0=0.69..  loss_G0=-2.8..
 ```
 
 Expected sane signals (all five seeds, verified):
-- **`loss_CD` pinned at ln 2 ≈ 0.693** for the entire run — the C = 1 equilibrium signature (CD at
-  chance); `loss_D_0` hovers ~0.69–0.75 (channel critic near chance), `loss_G_0` ≈ −2.8 (dominated by
+- **`loss_CD` pinned at ln 2 ≈ 0.693** for the entire run, the C = 1 equilibrium signature (CD at
+  chance); `loss_D_0` hovers ~0.69-0.75 (channel critic near chance), `loss_G_0` ≈ −2.8 (dominated by
   the −γ·loss_CD term);
 - no NaN (`first_nan_epoch = null`, `gen_has_nan = false` in every metadata.json);
-- generated mean/std (seed 0: 99.96 / 10.69) close to real (101.33 / 9.97); price range (≈ 29–158)
+- generated mean/std (seed 0: 99.96 / 10.69) close to real (101.33 / 9.97); price range (≈ 29-158)
   brackets the real range;
 - 799 618 parameters; 120 epochs; ~257 s/seed.
 
@@ -249,17 +249,17 @@ cd /home/tbasseras/benchmark
 /home/tbasseras/gpu-venv/bin/python metrics/compute_all.py --method COSCI-GAN --dataset Heston
 ```
 
-**Exact run path — which file produced which committed number:**
+**Exact run path, which file produced which committed number:**
 
 | Committed number | Interpreter + env | Command | Input file(s) scored | Output file |
 |------------------|-------------------|---------|----------------------|-------------|
-| Heston A1–A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method COSCI-GAN --dataset Heston` | `methods/COSCI-GAN/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/COSCI-GAN/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
+| Heston A1-A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method COSCI-GAN --dataset Heston` | `methods/COSCI-GAN/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs real `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/COSCI-GAN/seed_i_metrics.json` (A) + `curve_b_aggregate.json` (B) |
 | COSCI-GAN synthetic paths, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0/3 taskset -c … OMP_NUM_THREADS=8` | `train_heston.py --seed i` | real `dataset/Heston/heston_S_8192x128.npy`, scalar MinMax internally | `generated_paths/seed_i/generated_paths_8192x128.npy` + `metadata.json` |
 | A18/A19 disc/pred loss curves, per seed `i` | `gpu-venv` | `metrics/compute_all.py --method COSCI-GAN --dataset Heston` | same generated `.npy` vs real | `results/Heston/COSCI-GAN/seed_i_{disc,pred}_{gru,mlp}_loss.csv` → `plots/{disc_classifier,pred_score}_loss.png` |
 
 Each `results/Heston/COSCI-GAN/seed_i_metrics.json` is the sole source for that seed's column in every
 README A-table; the mean±std rows aggregate the 5 files.
 
-The paper reproduction (EEG eye-state, the paper's own Table-4 cross-channel correlation-MAE — the
+The paper reproduction (EEG eye-state, the paper's own Table-4 cross-channel correlation-MAE, the
 metric that is undefined at C = 1) lives separately in
-[`../paper_reimplementation/`](../paper_reimplementation/) — see its README.
+[`../paper_reimplementation/`](../paper_reimplementation/), see its README.

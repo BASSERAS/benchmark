@@ -1,6 +1,6 @@
-# Path Shadowing MC — TimeDiT on Heston
+# Path Shadowing MC, TimeDiT on Heston
 
-**Reference:** Morel, Mallat, Bouchaud (2023) — arXiv:2308.01486
+**Reference:** Morel, Mallat, Bouchaud (2023), arXiv:2308.01486
 
 > The PS-MC evaluation is **model-agnostic**: it consumes only the generated
 > `.npy` paths, so the embedding, retrieval and scoring are identical to the
@@ -13,7 +13,7 @@
 
 ## Method
 
-### Step 1 — 65D murex-style prefix embedding
+### Step 1, 65D murex-style prefix embedding
 
 Given a path prefix of `prefix_len = 64` price steps, we embed it as a
 **65-dimensional feature vector** adapted from Murex's internal implementation:
@@ -23,7 +23,7 @@ Given a path prefix of `prefix_len = 64` price steps, we embed it as a
 | Full log-return trajectory | 63 | `r_t = log S_t − log S_{t−1}`, t = 1…63 |
 | Terminal cumulative return | 1 | `R = log S_63 − log S_0` |
 | Realized volatility | 1 | `σ = sqrt(mean(r_t²))` |
-| **Total** | **65** | — |
+| **Total** | **65** |, |
 
 Each dimension is **z-scored** using the mean and std of the generated pool,
 making distances scale-invariant across features:
@@ -35,7 +35,7 @@ z_real = (real_emb - mean) / std
 z_fake = (fake_emb - mean) / std
 ```
 
-### Step 2 — KNN retrieval (NOT combinatorial)
+### Step 2, KNN retrieval (NOT combinatorial)
 
 For every real query path `x̃_past`:
 
@@ -47,14 +47,14 @@ distances, indices = nn.kneighbors(z_real)  # returns K smallest distances
 `K = 77` generated paths with the smallest L2 distance in the z-scored
 65D space are selected. **No subset enumeration, no combinatorial search.**
 
-### Step 3 — Price anchoring
+### Step 3, Price anchoring
 
 Each retrieved fake future is multiplicatively scaled so it starts at the real
 path's last prefix price, removing the price-level offset:
 
 $$\tilde{S}^{(k)}_{\text{anchored}}(u) = S^{(k)}_{\text{fake}}(u) \times \frac{S_{\text{real}}(t)}{S^{(k)}_{\text{fake}}(t)}, \quad u > t$$
 
-### Step 4 — Two weighting variants
+### Step 4, Two weighting variants
 
 **Uniform:** flat weight `1/K` on all K retrieved futures.
 
@@ -70,15 +70,15 @@ Using the paper's raw `η̃ = 0.075` (calibrated on S&P) collapses weights onto
 a single nearest neighbour on Heston data. The adaptive η̃ preserves the
 per-query scaling idea while being dataset-neutral.
 
-### Step 5 — Evaluation
+### Step 5, Evaluation
 
 Forecast = weighted average of the K anchored futures.
-Evaluated at two horizons **H=32** (steps 64–95) and **H=64** (steps 64–127)
+Evaluated at two horizons **H=32** (steps 64-95) and **H=64** (steps 64-127)
 using CRPS (proper scoring rule), MAE, and RMSE.
 
 ---
 
-## Results (mean ± std across 5 seeds) — 65D murex embedding
+## Results (mean ± std across 5 seeds), 65D murex embedding
 
 | Metric | Horizon | Uniform | Gaussian (adaptive η̃) | Naive RW baseline | Perfect floor |
 |--------|---------|---------|----------------------|-------------------|:-------------:|
@@ -90,15 +90,15 @@ using CRPS (proper scoring rule), MAE, and RMSE.
 | RMSE   | H=64 | 7.065 ± 0.01254 | 7.065 ± 0.01256 | 7.066 | 7.052 |
 
 **PS-MC over the TimeDiT pool sits in the top tier, essentially on the perfect floor**
-— CRPS **2.724 < 3.738 at H=32 (−27 %)** and **3.786 < 5.246 at H=64 (−28 %)**,
+CRPS **2.724 < 3.738 at H=32 (−27 %)** and **3.786 < 5.246 at H=64 (−28 %)**,
 within ~0.003 of the finite-sample floor (2.721 / 3.788). It is **not the row winner**:
 **LS4 wins both horizons** (2.704 / 3.763), with Diffusion-TS (2.717) and CSDI (2.718)
-also edging TimeDiT at H=32, so TimeDiT ranks **4th at H=32 and 3rd at H=64** — inside
+also edging TimeDiT at H=32, so TimeDiT ranks **4th at H=32 and 3rd at H=64**, inside
 a tight cluster of strong diffusion/latent methods that all bunch against the floor.
 Unlike the GAN pools, whose PS-MC edge is CRPS-specific, TimeDiT's advantage **extends
 to point error**: MAE **3.731 < 3.738** and **5.207 < 5.246** beat the random walk at
 both horizons, and RMSE **ties** it (5.052 vs 5.040; 7.065 vs 7.066). This is the same
-excellent marginal (A15 skewness 0.01515, A28 kurtosis ratio 0.9925 — see
+excellent marginal (A15 skewness 0.01515, A28 kurtosis ratio 0.9925, see
 [`../README.md`](../README.md)) paying off: the retrieved neighbours are both
 well-calibrated *and* well-located, even if LS4's are fractionally better.
 
@@ -107,7 +107,7 @@ parameters, so all K nearest neighbours are roughly equally good predictors. The
 adaptive Gaussian provides no meaningful gain over uniform.
 
 **Naive RW**: deterministic forecast (last prefix value repeated) → CRPS = MAE. The
-TimeDiT ensemble beats RW on CRPS, MAE **and** matches RMSE — a genuinely better
+TimeDiT ensemble beats RW on CRPS, MAE **and** matches RMSE, a genuinely better
 forecaster, not merely a better-calibrated spread.
 
 ---
@@ -118,8 +118,8 @@ forecaster, not merely a better-calibrated spread.
 |--------|--------|--------|--------|--------|
 | 2.718  | 2.713  | 2.736  | 2.699  | 2.755  |
 
-Extremely tight cross-seed spread (2.699–2.755, std 0.019). **All five seeds sit
-far below the RW floor (3.738) and within ~0.03 of the perfect floor (2.721)** — a
+Extremely tight cross-seed spread (2.699-2.755, std 0.019). **All five seeds sit
+far below the RW floor (3.738) and within ~0.03 of the perfect floor (2.721)**, a
 robust, consistent, near-optimal improvement.
 
 ---
@@ -130,11 +130,11 @@ robust, consistent, near-optimal improvement.
 |-----------|-------|
 | Query set | 8 192 real Heston test paths `heston_S_test_8192x128.npy` |
 | Pool | TimeDiT generated paths per seed (8 192 paths) |
-| Prefix | Steps 0–63 (64 steps) |
+| Prefix | Steps 0-63 (64 steps) |
 | Embedding | 65D murex-style (63 log-returns + terminal return + realized vol), z-scored |
 | K | 77 nearest neighbours (L2 in z-scored embedding space) |
-| η̃ | Adaptive: median(dist) / median(‖z‖) ≈ 9.09 (8.58–9.62 across seeds) |
-| Horizons | H=32 (steps 64–95), H=64 (steps 64–127) |
+| η̃ | Adaptive: median(dist) / median(‖z‖) ≈ 9.09 (8.58-9.62 across seeds) |
+| Horizons | H=32 (steps 64-95), H=64 (steps 64-127) |
 
 ---
 
@@ -144,13 +144,13 @@ robust, consistent, near-optimal improvement.
 
 ![PS-MC Example](plots/ps_mc_example.png)
 
-Blue solid = real prefix (0–63). Blue dashed = real future. Red fan = K=77 retrieved TimeDiT futures (anchored). Bold red = ensemble mean.
+Blue solid = real prefix (0-63). Blue dashed = real future. Red fan = K=77 retrieved TimeDiT futures (anchored). Bold red = ensemble mean.
 
 ### CRPS per forecast step
 
 ![CRPS per step](plots/crps_per_step.png)
 
-PS-MC stays **well below** the RW baseline across the entire forecast horizon — the
+PS-MC stays **well below** the RW baseline across the entire forecast horizon, the
 TimeDiT ensemble's calibrated, well-located spread beats the random walk on CRPS.
 
 ---

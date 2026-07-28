@@ -1,20 +1,20 @@
-# Perfect Recovery — Independent-Draw Floor
+# Perfect Recovery, Independent-Draw Floor
 
 The **perfect-recovery floor** is the score a *perfect* generator would obtain: one whose output
 is distributionally identical to the real Heston process. We realise it honestly by drawing a
-**fresh, independent set of 8192 Heston paths** — same parameters, brand-new random seeds
-(`seed = 1000 + i` for `i = 0…4`) — and scoring that draw against the **test set** with the exact
+**fresh, independent set of 8192 Heston paths**, same parameters, brand-new random seeds
+(`seed = 1000 + i` for `i = 0…4`), and scoring that draw against the **test set** with the exact
 same metric code every method uses (`metrics/compute_perfect_recovery.py`).
 
 Because the two datasets come from the *same law* but *different randomness*, every metric lands on
-its **irreducible finite-sample noise floor** — the value that survives even when the generated
+its **irreducible finite-sample noise floor**, the value that survives even when the generated
 distribution is genuinely perfect. This floor is **non-zero everywhere**: two independent 8192-path
 Heston samples never produce identical histograms, ACFs, quantiles or moments. Any real method's
 score should be read relative to this floor, not relative to 0.
 
 > **This floor is not row-shuffling and not a permutation of the real data.** It is an independent
 > re-simulation of the Heston SDE. A permutation would preserve every column-wise statistic exactly
-> and collapse most metrics to 0 — which would be a misleading target. The independent draw is the
+> and collapse most metrics to 0, which would be a misleading target. The independent draw is the
 > honest lower bound a real generator can hope to reach.
 
 > **It is not method-specific.** The floor depends only on the test set + the Heston law + the
@@ -27,8 +27,8 @@ score should be read relative to this floor, not relative to 0.
 
 | Role | Data | Used for |
 |------|------|----------|
-| **real reference** | test set — 8192 paths, `seed = 1` | A1–A17, A20–A34, all B curves, PS-MC |
-| **judge-real class** | disc set — 8192 paths, `seed = 2` | A18 discriminative "real", A19 predictive-TSTR "real" |
+| **real reference** | test set, 8192 paths, `seed = 1` | A1-A17, A20-A34, all B curves, PS-MC |
+| **judge-real class** | disc set, 8192 paths, `seed = 2` | A18 discriminative "real", A19 predictive-TSTR "real" |
 | **generated** | independent Heston draw, `seed = 1000 + i` | the "fake" side scored against the two sets above |
 
 Generators are trained on `seed = 0` and never scored; the test set (`seed = 1`) is the sole real
@@ -44,30 +44,30 @@ Heston draw for the generated paths.
 
 | Metric group | Why the floor is non-zero |
 |--------------|---------------------------|
-| **A1–A17** (moments, MMD, SWD, KS, tails) | two independent 8192-path samples differ by pure Monte-Carlo sampling noise |
+| **A1-A17** (moments, MMD, SWD, KS, tails) | two independent 8192-path samples differ by pure Monte-Carlo sampling noise |
 | **A18 / A19** (learned disc / predictor) | an independent draw is statistically indistinguishable from the disc set, so the classifier/predictor sit at their intrinsic noise floor (≈ 0.006 / ≈ 0.050) |
-| **A20–A32** (covariance, ACF, vol) | finite-sample ACF and covariance estimates never coincide across two draws |
-| **A28** (kurtosis ratio → 1) | lands at **1.006**, not exactly 1 — finite-sample kurtosis noise |
-| **A33 / A34** (Heston teacher-σ) | **0.616 / 0.0656** — this is the *ceiling* of σ-recovery on this dataset: even the true variance path only correlates 0.62 with the σ estimated from prices, so no method can exceed it |
+| **A20-A32** (covariance, ACF, vol) | finite-sample ACF and covariance estimates never coincide across two draws |
+| **A28** (kurtosis ratio → 1) | lands at **1.006**, not exactly 1, finite-sample kurtosis noise |
+| **A33 / A34** (Heston teacher-σ) | **0.616 / 0.0656**, this is the *ceiling* of σ-recovery on this dataset: even the true variance path only correlates 0.62 with the σ estimated from prices, so no method can exceed it |
 | **B** (curve-shape) | two independent draws never produce identical stylised-fact curves |
 
-So every number below is the sampling/estimator noise you cannot train away — the honest target a
+So every number below is the sampling/estimator noise you cannot train away, the honest target a
 perfect generator would asymptote to.
 
 ---
 
-## Metrics A1–A34 — mean ± std across 5 independent-draw seeds
+## Metrics A1-A34, mean ± std across 5 independent-draw seeds
 
 <!-- ===== PERFECT-RECOVERY A TABLE ===== -->
 | Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 |
 |--------|-----------|--------|--------|--------|--------|--------|
-| **— Fat Tail —** | | | | | | |
+| **, Fat Tail, ** | | | | | | |
 | A1 Kurtosis Error ↓ | 0.008092 ± 0.006811 | 0.01176 | 0.004981 | 5.99e-04 | 0.003541 | 0.01958 |
 | A2 \|r\| q95 Error ↓ | 6.57e-05 ± 5.96e-05 | 1.43e-04 | 9.59e-06 | 1.33e-04 | 2.13e-05 | 2.08e-05 |
 | A3 \|r\| q99 Error ↓ | 5.98e-05 ± 3.25e-05 | 8.50e-05 | 1.36e-05 | 4.87e-05 | 4.55e-05 | 1.06e-04 |
 | A4 Tail QQ Error ↓ | 6.75e-05 ± 3.70e-05 | 1.25e-04 | 2.62e-05 | 9.39e-05 | 5.57e-05 | 3.65e-05 |
 | A5 Hill Tail Index Error ↓ | 0.5266 ± 0.5572 | 0.001467 | 1.605 | 0.3887 | 0.2574 | 0.3800 |
-| **— Distribution —** | | | | | | |
+| **, Distribution, ** | | | | | | |
 | A6 Path MMD² ↓ | 0.001842 ± 2.55e-04 | 0.002264 | 0.001629 | 0.001832 | 0.001948 | 0.001540 |
 | A7 Terminal MMD² ↓ | 0.001983 ± 8.89e-04 | 0.003007 | 0.001493 | 0.001179 | 0.003112 | 0.001122 |
 | A8 Increment MMD² ↓ | 8.69e-04 ± 2.70e-05 | 9.10e-04 | 8.59e-04 | 8.37e-04 | 8.90e-04 | 8.48e-04 |
@@ -80,19 +80,19 @@ perfect generator would asymptote to.
 | A15 Skewness Error ↓ | 0.005274 ± 0.001459 | 0.003912 | 0.006696 | 0.004703 | 0.003752 | 0.007307 |
 | A16 QQ RMSE (300-pt) ↓ | 4.19e-05 ± 1.89e-05 | 7.25e-05 | 2.50e-05 | 5.51e-05 | 3.22e-05 | 2.48e-05 |
 | A17 Terminal Price KS ↓ | 0.01099 ± 0.001563 | 0.01208 | 0.01196 | 0.01184 | 0.007935 | 0.01111 |
-| **— Adversarial —** | | | | | | |
+| **, Adversarial, ** | | | | | | |
 | A18 Disc Score GRU ↓ | 0.006195 ± 0.007171 | 0.01968 | 0.007476 | 0.001984 | 7.63e-04 | 0.001068 |
 | A18 Disc Score MLP ↓ | 0.005951 ± 0.003469 | 0.006866 | 0.004730 | 0.005340 | 0.001068 | 0.01175 |
-| **— Predictive —** | | | | | | |
+| **, Predictive, ** | | | | | | |
 | A19 Pred Score GRU ↓ | 0.05002 ± 1.08e-05 | 0.05002 | 0.05001 | 0.05001 | 0.05004 | 0.05001 |
 | A19 Pred Score MLP ↓ | 0.05036 ± 6.63e-04 | 0.04990 | 0.05042 | 0.04990 | 0.04997 | 0.05163 |
-| **— Temporal —** | | | | | | |
+| **, Temporal, ** | | | | | | |
 | A20 Covariance Error ↓ | 4.923 ± 3.284 | 7.509 | 4.925 | 1.776 | 0.8926 | 9.514 |
 | A21 ACF \|r\| Error (lags) ↓ | 0.002234 ± 6.62e-04 | 0.001668 | 0.002936 | 0.003093 | 0.002010 | 0.001464 |
 | A22 ACF r² Error (lags) ↓ | 0.002206 ± 6.32e-04 | 0.001293 | 0.002934 | 0.002854 | 0.002207 | 0.001745 |
 | A23 ACF \|r\| Lag-1 Error ↓ | 0.002652 ± 0.001035 | 0.002203 | 0.002454 | 0.004686 | 0.002048 | 0.001870 |
 | A24 ACF r² Lag-1 Error ↓ | 0.002790 ± 9.39e-04 | 0.001913 | 0.002253 | 0.004582 | 0.002786 | 0.002417 |
-| **— Vol —** | | | | | | |
+| **, Vol, ** | | | | | | |
 | A25 Mean RMSE ↓ | 0.1392 ± 0.06359 | 0.1726 | 0.01826 | 0.1998 | 0.1379 | 0.1677 |
 | A26 Return Std Error ↓ | 0.002523 ± 0.001767 | 0.005739 | 0.001455 | 0.002377 | 4.96e-04 | 0.002548 |
 | A27 Log-Return Std Error ↓ | 3.15e-05 ± 2.48e-05 | 6.84e-05 | 1.83e-05 | 5.34e-05 | 1.13e-05 | 6.04e-06 |
@@ -101,7 +101,7 @@ perfect generator would asymptote to.
 | A30 Cross-Sect. Vol Path RMSE ↓ | 0.1432 ± 0.03018 | 0.1593 | 0.1481 | 0.1350 | 0.09138 | 0.1822 |
 | A31 Rolling Vol KS (w=5) ↓ | 0.003814 ± 0.001210 | 0.005462 | 0.003457 | 0.004893 | 0.003135 | 0.002124 |
 | A32 Vol-of-Vol Error ↓ | 1.54e-05 ± 9.93e-06 | 1.10e-05 | 1.46e-05 | 2.20e-06 | 3.27e-05 | 1.65e-05 |
-| **— Heston Spec —** | | | | | | |
+| **, Heston Spec, ** | | | | | | |
 | A33 Teacher-Sigma Corr ↑ | 0.6163 ± 0.002371 | 0.6139 | 0.6197 | 0.6157 | 0.6183 | 0.6138 |
 | A34 Teacher-Sigma RMSE ↓ | 0.06559 ± 1.37e-04 | 0.06551 | 0.06542 | 0.06554 | 0.06571 | 0.06579 |
 
@@ -116,16 +116,16 @@ perfect generator would asymptote to.
 
 ---
 
-## B — Curve-Shape Metrics — mean ± std across 5 independent-draw seeds
+## B, Curve-Shape Metrics, mean ± std across 5 independent-draw seeds
 
 Each stylised-fact curve is summarised by five sublines. **MSE** is the mean-of-three over
 {function, 1st derivative, 2nd derivative}; **% err**, **NRMSE**, **CVaR₉₀** and **CVaR₉₅** are **funct-only** (curve L only):
 
-- **MSE** — `mean((L_gen − L_real)²)`, the winner-deciding number (mean of the three sub-curves).
-- **% err** — function-level MAPE, `mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100` on the curve L
+- **MSE**, `mean((L_gen − L_real)²)`, the winner-deciding number (mean of the three sub-curves).
+- **% err**, function-level MAPE, `mean(|L_gen − L_real| / (|L_real| + 1e-6)) × 100` on the curve L
   only; the derivative / 2nd-difference MAPE is excluded as ill-posed (near-zero denominators).
-- **NRMSE** — `sqrt(mean((L_gen − L_real)²)) / (max|L_real| − min|L_real| + 1e-12) × 100` on the curve L only (funct-only).
-- **CVaR₉₀ / CVaR₉₅** — tail-averaged pointwise Expected Shortfall on the curve L only (funct-only): eₜ = |L_gen(t) − L_real(t)|, CVaR_q = mean(eₜ for eₜ ≥ the q-th percentile of eₜ), range-normalized like NRMSE. q ∈ {0.90, 0.95}. These are the non-zero finite-sample floor for the tail-error measure.
+- **NRMSE**, `sqrt(mean((L_gen − L_real)²)) / (max|L_real| − min|L_real| + 1e-12) × 100` on the curve L only (funct-only).
+- **CVaR₉₀ / CVaR₉₅**, tail-averaged pointwise Expected Shortfall on the curve L only (funct-only): eₜ = |L_gen(t) − L_real(t)|, CVaR_q = mean(eₜ for eₜ ≥ the q-th percentile of eₜ), range-normalized like NRMSE. q ∈ {0.90, 0.95}. These are the non-zero finite-sample floor for the tail-error measure.
 
 > **% err, NRMSE and CVaR are funct-only for every plot**: the first and second finite differences of
 > these curves are near-zero, so their relative error is ill-posed and would explode; only **MSE**
@@ -145,12 +145,12 @@ Each stylised-fact curve is summarised by five sublines. **MSE** is the mean-of-
 |  | NRMSE | 0.1206% ± 0.04670% | 0.1996% | 0.07741% | 0.1479% | 0.09494% | 0.08313% |
 |  | CVaR₉₀ | 0.1319% ± 0.04206% | 0.2025% | 0.09134% | 0.1451% | 0.1339% | 0.08669% |
 |  | CVaR₉₅ | 0.1599% ± 0.04416% | 0.2400% | 0.1167% | 0.1643% | 0.1563% | 0.1220% |
-| **ACF \|r\| lags 1–20** | MSE | 9.61e-06 ± 3.40e-06 | 1.16e-05 | 1.43e-05 | 1.07e-05 | 5.22e-06 | 6.23e-06 |
+| **ACF \|r\| lags 1-20** | MSE | 9.61e-06 ± 3.40e-06 | 1.16e-05 | 1.43e-05 | 1.07e-05 | 5.22e-06 | 6.23e-06 |
 |  | % err | 8.724% ± 1.843% | 7.504% | 11.21% | 10.50% | 8.056% | 6.341% |
 |  | NRMSE | 6.071% ± 1.301% | 5.146% | 7.670% | 7.561% | 5.478% | 4.497% |
 |  | CVaR₉₀ | 11.26% ± 1.961% | 10.75% | 13.62% | 13.20% | 10.48% | 8.249% |
 |  | CVaR₉₅ | 12.06% ± 1.837% | 11.49% | 14.94% | 13.36% | 10.50% | 10.02% |
-| **ACF r² lags 1–20** | MSE | 9.17e-06 ± 3.08e-06 | 9.60e-06 | 1.45e-05 | 9.54e-06 | 5.74e-06 | 6.49e-06 |
+| **ACF r² lags 1-20** | MSE | 9.17e-06 ± 3.08e-06 | 9.60e-06 | 1.45e-05 | 9.54e-06 | 5.74e-06 | 6.49e-06 |
 |  | % err | 11.34% ± 2.219% | 9.455% | 15.07% | 12.61% | 10.34% | 9.216% |
 |  | NRMSE | 6.486% ± 1.351% | 5.390% | 8.565% | 7.556% | 5.879% | 5.042% |
 |  | CVaR₉₀ | 12.35% ± 2.511% | 12.78% | 15.61% | 13.63% | 11.72% | 8.027% |
