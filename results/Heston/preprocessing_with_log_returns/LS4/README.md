@@ -219,6 +219,14 @@ all sliced as **nested prefixes** over the sweep {4096, 16384, 65536, 262144, 1 
 > real test set; §1.1 standardizes with each candidate bank's own μ/σ. Both decouple the metric from
 > the generator and keep LS4 / oracle / RW on one comparable scale. **§5.1 eligibility gates: N/A** —
 > fixed 100-epoch training, no checkpoint selection, no per-generator gating.
+> **Comparison arms vs the doc §4** (*source · MP-corrected generator · Heston oracle*): **LS4 is a
+> single fixed-checkpoint standalone candidate law** — there is **no source→MP-corrected pair** (no
+> MP-correction step in this experiment), so §5.1/§5.2 selection & CRN-pairing do not apply. The
+> **Heston oracle** is the §4/§6 ceiling. The **random-walk floor is an extension beyond §4** (kept to
+> separate a retrieval limit from a generator-law mismatch), not a doc-declared arm. **Coverage
+> quantiles** use `np.percentile` **type-7 linear**; a perfectly calibrated K=256 draw yields cov50 ≈
+> 0.50 / cov90 ≈ 0.89 under type-7 (verified by Monte-Carlo), so the 50%-coverage read-out is genuine
+> signal, not an interpolation artefact — see [`../GUIDELINE.md` §9.7](../GUIDELINE.md).
 
 <!-- PS-PDF-TABLE-START -->
 All numbers are at the full **1 000 000-path bank** (log-return scale; lower is better except
@@ -260,7 +268,7 @@ coverage, whose target is the nominal level 0.50 / 0.90). Brackets are **95% boo
 | coverage 90   | 0.799 [0.766, 0.832] | **0.924** [0.900, 0.945] | 0.533 [0.492, 0.576] |
 | width 50 / 90 | 0.0191 / 0.0459 | 0.0222 / 0.0541 | 0.0120 / 0.0287 |
 | lower-miss 90 | 0.0508 | 0.0293 | 0.2891 |
-| upper-miss 90 | **0.1504** [0.1211, 0.1816] | 0.0469 [0.0293, 0.0664] | 0.1777 |
+| upper-miss 90 | **0.1504** | 0.0469 | 0.1777 |
 
 **Reading it.** On **cumulative and one-step return LS4+logret sits *on* the oracle ceiling** — RMSE
 0.0489 vs 0.0491 and CRPS 0.0253 vs 0.0252 for cum, with fully overlapping CIs; step is a three-way
@@ -275,8 +283,8 @@ the diagnosis the RW floor alone could not give.
 
 **Bank-size sweep — CRPS by quantity (LS4 above, Heston oracle below; nested prefixes)**
 
-| bank size | cum LS4 / ORC | step LS4 / ORC | RV LS4 / ORC | uniq-frac | prefix dist (mean) |
-|----------:|:-------------:|:--------------:|:------------:|:---------:|:------------------:|
+| bank size | cum LS4 / ORC | step LS4 / ORC | RV LS4 / ORC | uniq-frac (LS4) | prefix dist (LS4, mean) |
+|----------:|:-------------:|:--------------:|:------------:|:--------------:|:-----------------------:|
 | 4 096     | 0.02544 / 0.02539 | 0.00679 / 0.00677 | 0.01098 / 0.00978 | 0.998 | 1.936 |
 | 16 384    | 0.02542 / 0.02535 | 0.00679 / 0.00676 | 0.01066 / 0.00951 | 0.968 | 1.767 |
 | 65 536    | 0.02536 / 0.02524 | 0.00679 / 0.00675 | 0.01048 / 0.00933 | 0.752 | 1.639 |

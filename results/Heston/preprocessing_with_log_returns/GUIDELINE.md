@@ -610,6 +610,78 @@ prefixes of it; and **all** uncertainty is the query bootstrap (D13). There is d
 model-seed spread** in the PS numbers — the A/B metrics (§8) already carry the 5-seed generator
 dispersion, and mixing a second, bank-sampling source of variance into the PS CIs would muddy them.
 
+### 9.7 Protocol-conformance audit (vs the arXiv:2308.01486 metrics doc; external review 2026-07-28)
+
+An external reviewer checked our reimplementation against the formal metrics doc
+(`path_shadowing_metrics_protocol.pdf`). Verdict: **metrics complete, internally consistent, no bug.**
+What remained was (A) reconciling our comparison arms with the doc's §4 declared laws, (B) verifying
+the 50%-coverage quantile question, and (C) logging the §5.1 selection gates. All three are resolved
+below — keep this record so a future method answers them the same way.
+
+**A · Comparison arms vs §4 declared laws (STRUCTURAL — a labeling/scope decision, not a defect).**
+The doc §4 lists the compared laws as *"specific-entropy source; MP-corrected generator; independent
+Heston oracle."* Our columns are **`<METHOD>` / Heston oracle / RW floor**. Reconciliation:
+
+- **`<METHOD>` (LS4) is a single fixed-checkpoint standalone generator**, evaluated as *the candidate
+  law*. It is **not** part of a source → MP-corrected pipeline, so there is **no source/MP-corrected
+  pair** and the whole §5.1 checkpoint-selection / §5.2 CRN-pairing machinery (built around a
+  source→MP improvement story) **does not apply**. State this in every README so a strict reader is
+  not hunting for a missing MP arm.
+- **Heston oracle** = the §4 / §6 protocol ceiling — **present and matched.**
+- **RW floor** = an **extension beyond §4** (not one of the doc's three laws). Keep it (it is what
+  separates a *retrieval* limit from a *generator-law* mismatch) but **label it as a non-protocol
+  addition**, not a doc-declared arm.
+- **Answer in protocol terms:** LS4 = candidate law (neither "the source with an MP partner" nor "a
+  selected checkpoint"); oracle = ceiling; RW = added floor.
+
+**B · Coverage quantile estimator (VERIFY — resolved: NOT a bug, reviewer's mechanism refuted).**
+Reviewer hypothesis: coverage 50 sits ~0.47 everywhere (incl. the oracle) while coverage 90 is
+well-calibrated (~0.89) — the fingerprint of a quantile-interpolation quirk (nearest-rank vs linear
+shifting the 25/75 band inward), not a model defect. Verification:
+
+1. **Code is correct.** `path_shadowing_pdf.py:208` computes `np.percentile(Y,[5,25,75,95],axis=1)`
+   (**type-7 linear**, NumPy default, explicitly documented at `:229`); `:209` assigns
+   `[q25,q75]`→50% and `[q05,q95]`→90% — the interval mapping is right, no coding error.
+2. **Monte-Carlo settles the mechanism.** A *perfectly calibrated* fresh draw scored against a K=256
+   ensemble (40 000 trials; normal / Student-t₃ / lognormal) gives, **under our exact type-7
+   estimator**: `cov50 = 0.495–0.501` (≈ nominal 0.50) and `cov90 = 0.892–0.895`. Type-6 (Weibull)
+   gives `cov50 = 0.496–0.499`, `cov90 = 0.900–0.901`. **Type-7 does NOT under-cover at the 50%
+   level** — so the reviewer's "25/75 pulled inward → 0.47" mechanism is **empirically wrong for
+   K=256.**
+3. **Therefore the observed shortfall is signal, not artifact.** The **oracle is calibrated** at 50%
+   (its cov50 ≈ 0.47–0.49 sits within the bootstrap CI of the 0.495 perfect-draw target); LS4's
+   marginally lower cov50 (0.467–0.469) is a **genuine mild central over-confidence** of the generator,
+   not a bug. The **one** real estimator effect is at the **90%** level: type-7 yields ~0.892 for a
+   perfect law (vs type-6's ~0.901), so the oracle's observed **cov90 ≈ 0.89 is exactly the perfect-law
+   value under type-7** — an independent confirmation that the retrieval+scoring pipeline is correct.
+4. **No number is subtly wrong; no re-run needed.** Optional purity refinement: pass `method='weibull'`
+   (type-6) to `np.percentile` for fresh-draw coverage calibration — it lifts **90%**-coverage ~0.8 pp
+   toward nominal and leaves the 50% story unchanged. It is **not required** (doc §3.3 says only "25th
+   and 75th percentiles", interpolation unspecified) and would be a cross-method change, so if adopted
+   it must be applied to LS4, oracle **and** RW together and re-run for all — otherwise leave type-7 and
+   footnote it.
+
+**C · §5.1 selection gates (UNREPORTED → recorded as N/A; this is F18).** We do **no** checkpoint
+selection: fixed 100-epoch training, exactly **one** checkpoint per seed, no source→candidate step. The
+five §5.1 eligibility gates — (i) RV CRPS strictly improves over source, (ii) `|cov90−0.90|` strictly
+improves, (iii) cum-return CRPS worsens ≤ ½ bootstrap SE, (iv) declared stylized-fact errors worsen ≤
+½ bootstrap SE, (v) path sliced-Wasserstein ≤ 1.10× source — have **no candidate set to filter** and
+are therefore **not applied**. Record this line verbatim in the README's deviations blockquote so a
+reader does not assume a silent filter ran.
+
+**D · Presentation nits (fix in each README, not the numbers).**
+- **Sweep-table `uniq-frac` / `prefix-dist` are the `<METHOD>` bank's values** (the oracle's differ at
+  the 4th decimal — the diagnostics table shows `0.118 / 0.119`). Either **label the sweep columns
+  "(LS4)"** or split them into `LS4 / ORC` like the CRPS columns.
+- **Miss-rate CIs are uneven** (only RV upper-miss carries `[CI]`). Make it **all-or-none** across the
+  miss-rate rows.
+
+**E · §1.1 standardization (declared deviation, restated so the audit is complete).** Doc §1.1
+standardizes each feature block with the **candidate bank's** `μ/σ`; we use **frozen real-test-set**
+`μ/σ` (A1–A3 / the deviations blockquote). Deliberate: it decouples the embedding from the generator so
+`<METHOD>` / oracle / RW live on **one comparable scale**. This is a **motivated, documented deviation**,
+not a conformance defect.
+
 ---
 
 ## 10. READMEs
