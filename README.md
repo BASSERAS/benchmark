@@ -45,24 +45,14 @@ It measures a broad landscape of generative models on a controlled stochastic
 volatility testbed, and provides the reference numbers against which the paper's
 path-dependent McKean-Vlasov method is assessed.
 
-> **Financial Time Series Generation via Path-Dependent McKean-Vlasov Control**
+> **title pending**
 >
-> Alexandre Alouadi (BNP Paribas and Ecole Polytechnique), Grégoire Loeper (BNP
-> Paribas and Monash University), Célian Marsala (BNP Paribas and ENSAE Paris),
-> Othmane Mazhar (LPSM, Université Paris Cité and Sorbonne University), Huyên
-> Pham (Ecole Polytechnique, CMAP).
+> Samer El Boustany, Huyen Pham, Alexandre Alouadi, Samy Mekkaoui, Yadh Hafsi,
+> Théo Basséras.
 >
 > *7th ACM International Conference on AI in Finance (ICAIF 2026), Milan.*
 
-**Abstract.** Financial scenario generation requires models that can match the
-properties that matter for risk analysis, such as path distributions, heavy
-tails, volatility clustering, and dependence across assets. We formulate this
-task as a path-dependent McKean-Vlasov optimal control problem for simulation of
-time series. The method learns stochastic dynamics from discrepancies between
-observed and generated paths, and these discrepancies can be chosen to emphasize
-specific stylized facts. Experiments on stochastic volatility and multivariate
-benchmarks show that the framework can be specialized to reproduce key empirical
-properties while retaining a principled mathematical formulation.
+**Abstract.** abstract pending.
 
 The McKean-Vlasov method is the paper's contribution and is scored inside this
 same harness; the twelve methods below are the competing generative families it
@@ -772,9 +762,9 @@ documents above, email tbasseras@murex.com.
 If you use this benchmark, please cite the accompanying paper:
 
 ```bibtex
-@inproceedings{alouadi2026mckean,
-  title     = {Financial Time Series Generation via Path-Dependent McKean-Vlasov Control},
-  author    = {Alouadi, Alexandre and Loeper, Gr\'egoire and Marsala, C\'elian and Mazhar, Othmane and Pham, Huy\^en},
+@inproceedings{elboustany2026benchmark,
+  title     = {title pending},
+  author    = {El Boustany, Samer and Pham, Huyen and Alouadi, Alexandre and Mekkaoui, Samy and Hafsi, Yadh and Bass\'eras, Th\'eo},
   booktitle = {Proceedings of the 7th ACM International Conference on AI in Finance (ICAIF)},
   year      = {2026},
   address   = {Milan, Italy}
