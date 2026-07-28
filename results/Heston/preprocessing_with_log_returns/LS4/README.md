@@ -444,6 +444,90 @@ separation that the elevated A6/A17 predict.
 | ![](plots/seed_0_pca.png) | ![](plots/seed_1_pca.png) | ![](plots/seed_2_pca.png) | ![](plots/seed_3_pca.png) | ![](plots/seed_4_pca.png) |
 | ![](plots/seed_0_tsne.png) | ![](plots/seed_1_tsne.png) | ![](plots/seed_2_tsne.png) | ![](plots/seed_3_tsne.png) | ![](plots/seed_4_tsne.png) |
 
+## Head-to-head control — preprocessing vs **none**, same 4096-path budget (seed 0)
+
+The section above compares against the *original main-benchmark* LS4, which was trained on **8 192**
+paths. That confounds two variables (preprocessing **and** 2× data). To isolate the preprocessing
+**alone**, a matched **no-preprocessing baseline** was trained inside this folder
+([`baseline_no_preproc/`](baseline_no_preproc/)): the **identical** LS4 pipeline — same released preset,
+same **4096** train paths, **same 100 epochs**, same seed 0, same optimizer/EMA — with **only the scaler
+changed**: a plain global standardize `(S−μ)/σ` on the raw price panel, decoded directly back to price
+(no log-return, no cumsum, no exp). This is the only clean A/B for the preprocessing's effect (GUIDELINE
+§7.1). Both columns are **seed 0** at **4096 paths**; Δ% is relative to no-preproc, and for lower-better
+metrics **negative Δ% = preprocessing wins**.
+
+**Verdict: mixed, but preprocessing wins where it matters for a financial generator.** The log-return
+parametrization **recovers the volatility-clustering and fat-tail stylised facts that the raw-price model
+structurally cannot** — at the cost of a looser marginal return-dispersion calibration and an easier-to-
+spot discriminator signal. Net **19 metric-rows to 16**; the wins are concentrated in the
+dependence/tail block (the defining Heston/financial facts), the losses in marginal-moment calibration.
+
+### A-metrics (seed 0, 4096 both sides; ↓ lower-better unless noted)
+
+| A-metric | logret (with) | raw (no-preproc) | Δ% | Winner |
+|----------|-------------:|-----------------:|----:|:------:|
+| A1 kurtosis error ↓ | 0.2192 | 0.3555 | −38.4% | **logret** |
+| A5 Hill tail-index error ↓ | 1.4589 | 2.8470 | −48.8% | **logret** |
+| A6 path MMD² ↓ | 0.001755 | 0.001653 | +6.2% | raw |
+| A7 terminal MMD² ↓ | 0.002002 | 0.002230 | −10.2% | **logret** |
+| A8 increment MMD² ↓ | 0.001267 | 9.13e-04 | +38.8% | raw |
+| A9 volatility MMD ↓ | 0.02954 | 0.02725 | +8.4% | raw |
+| A10 terminal SWD ↓ | 1.1683 | 1.1457 | +2.0% | raw |
+| A11 path SWD ↓ | 0.6499 | 0.6458 | +0.6% | raw |
+| A12 RV-law loss ↓ | 0.7275 | 0.3913 | +85.9% | raw |
+| A13 mean-path RMSE ↓ | 0.2399 | 0.3879 | −38.1% | **logret** |
+| A14 KS logreturns ↓ | 0.01586 | 0.01584 | +0.1% | raw |
+| A17 terminal KS ↓ | 0.02515 | 0.03955 | −36.4% | **logret** |
+| A18 disc score GRU ↓ | 0.01373 | 3.05e-04 | +4401% | raw |
+| A19 pred score GRU (TSTR) ↓ | 0.05638 | 0.05640 | −0.0% | **logret** |
+| A20 coverage error ↓ | 25.806 | 35.925 | −28.2% | **logret** |
+| A21 ACF \|r\| ↓ | 0.008474 | 0.02507 | −66.2% | **logret** |
+| A22 ACF r² ↓ | 0.007978 | 0.01765 | −54.8% | **logret** |
+| A25 mean RMSE ↓ | 0.4485 | 0.8123 | −44.8% | **logret** |
+| A26 return-std error ↓ | 0.07036 | 0.003182 | +2111% | raw |
+| A27 logreturn-std error ↓ | 8.83e-04 | 7.56e-05 | +1068% | raw |
+| A28 kurtosis ratio (→1) | 0.9922 (\|Δ\|0.008) | 0.8331 (\|Δ\|0.167) | — | **logret** |
+| A30 vol-path RMSE ↓ | 0.5304 | 0.6732 | −21.2% | **logret** |
+| A31 rolling-vol KS ↓ | 0.05572 | 0.05339 | +4.4% | raw |
+| A32 vol-of-vol error ↓ | 5.47e-04 | 4.64e-04 | +17.8% | raw |
+| A33 teacher-σ corr ↑ | 0.01184 | 1.0e-04 | — | **logret** |
+| A34 teacher-σ RMSE ↓ | 0.0955 | 0.0939 | +1.7% | raw |
+
+### B curve-shape (seed 0; funct MSE, %err, + grid_tvd; ↓ lower-better)
+
+| B-metric | logret (with) | raw (no-preproc) | Δ% | Winner |
+|----------|-------------:|-----------------:|----:|:------:|
+| B log-ret hist MSE ↓ | 0.8953 | 1.3493 | −33.6% | **logret** |
+| B log-ret hist %err ↓ | 12.969 | 7.388 | +75.5% | raw |
+| B QQ MSE ↓ | 8.57e-07 | 2.27e-07 | +278% | raw |
+| B QQ %err ↓ | 9.855 | 8.648 | +14.0% | raw |
+| B ACF \|r\| MSE ↓ | 4.72e-05 | 3.85e-04 | −87.7% | **logret** |
+| B ACF \|r\| %err ↓ | 20.777 | 64.459 | −67.8% | **logret** |
+| B ACF r² MSE ↓ | 4.06e-05 | 1.91e-04 | −78.7% | **logret** |
+| B ACF r² %err ↓ | 23.353 | 52.899 | −55.9% | **logret** |
+| grid_tvd (path cloud) ↓ | 3.66% | 4.15% | −11.7% | **logret** |
+
+**Reading it straight (no cherry-picking):**
+- **Preprocessing wins the stylised facts.** Volatility clustering (A21 −66%, A22 −55%, B ACF\|r\| MSE
+  −88%, B ACF r² MSE −79%) and fat tails (A1 −38%, A5 −49%, A28 ratio 0.99 vs 0.83) improve **sharply**.
+  A raw-price VAE never sees returns, so it cannot reproduce their autocorrelation — this is the
+  preprocessing doing exactly its job.
+- **The raw baseline wins marginal dispersion.** Global-standardizing prices matches the terminal price
+  scale directly, so **A26/A27 return-std** are near-perfect (0.003 vs 0.070) and the **GRU discriminator**
+  is 45× less able to flag raw paths (A18 3e-4 vs 0.014). Preprocessing buys structure by loosening the
+  marginal-moment fit.
+- **Why this differs from the "it hurts" verdict above.** That comparison used the **5-seed mean** vs the
+  **8192-path** original; with-preproc's **seed instability** (seeds 1 & 4 degenerate) drags its multi-seed
+  mean below a better-resourced price model. Here, at **matched 4096 budget on the stable seed 0**, the
+  preprocessing is ahead on the facts that define the problem. **Both are true:** preprocessing helps the
+  dynamics per-seed but is not yet seed-robust, and it does not out-perform a 2×-data price model.
+
+**Bottom line — which is best?** For a **Heston / financial-path generator**, the volatility-clustering
+and heavy-tail stylised facts are the point, and preprocessing recovers them decisively while a raw-price
+model cannot — so **log-return preprocessing is the better choice on the matched control**, with two
+caveats to fix before it is unambiguously better: (1) the **seed robustness** (seeds 1/4), and (2) the
+**marginal return-std / discriminator regression**.
+
 → Experiment overview & pipeline: [`../README.md`](../README.md) ·
 Recipe for adding methods: [`../GUIDELINE.md`](../GUIDELINE.md) ·
 Original price-input LS4: [`../../LS4/README.md`](../../LS4/README.md)

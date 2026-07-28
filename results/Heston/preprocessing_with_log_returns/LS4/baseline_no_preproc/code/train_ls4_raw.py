@@ -68,7 +68,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--data", default=DEFAULT_DATA)
-    ap.add_argument("--epochs", type=int, default=400)
+    ap.add_argument("--epochs", type=int, default=100,
+                    help="canonical LS4 = 100 (GUIDELINE M1); MUST match the with-preproc runs")
     ap.add_argument("--batch_size", type=int, default=128)
     ap.add_argument("--gen_num", type=int, default=4096)
     ap.add_argument("--gen_batch", type=int, default=1024,
