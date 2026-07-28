@@ -867,16 +867,43 @@ no-preproc baseline. Required, in order:
 3. **Sub-header `### B curve-shape (seed 0; funct MSE, %err, + grid_tvd; ↓ lower-better)`** — same
    5-column shape; rows = the six curve MSE **and** %err pairs (log-ret hist, QQ, ACF|r|, ACFr²) plus
    the `grid_tvd (path cloud)` row.
-4. **Reading list** — 3 bullets: (a) preprocessing wins the **stylised facts** (name the ACF/tail Δ%);
+4. **Side-by-side stylised-facts diagnostic (required, directly below the B-curve table).** A **2-column
+   image table** giving the visual A/B of the same eight panels, `<variant>` (with) vs raw (no-preproc):
+
+   ```
+   | log-return preprocessing (with) | raw price, no preprocessing |
+   |:-------------------------------:|:---------------------------:|
+   | ![with](plots/heston_diagnostics.png) | ![raw](baseline_no_preproc/plots/heston_diagnostics.png) |
+   ```
+
+   Both panels use the **same real test set at seed 0, 4096 paths** — only the input transform differs,
+   so the ACF-of-|r| / ACF-of-r² and rolling-vol panels are the visual counterpart to the ACF/vol Δ%
+   rows. The raw baseline's `heston_diagnostics.png` is **not produced by the baseline metrics runner**;
+   generate it once (CPU, no retrain) from the already-saved baseline paths:
+
+   ```python
+   # from benchmark/ root, ~5 s, CPU
+   import sys, numpy as np; sys.path.insert(0, "metrics")
+   from plot_diagnostics import plot_diagnostics
+   R = "results/Heston/preprocessing_with_log_returns/<METHOD>/baseline_no_preproc"
+   S_real = np.load("dataset/Heston/preprocessing_with_log_returns/heston_S_test_4096x128.npy")
+   S_gen  = np.load(f"{R}/generated_paths/seed_0/generated_paths_4096x128.npy")
+   plot_diagnostics(S_real, S_gen, method="<METHOD> raw (no-preproc)", seed=0,
+                    out_path=f"{R}/plots/heston_diagnostics.png")
+   ```
+
+   Use `metrics/plot_diagnostics.plot_diagnostics(S_real, S_gen, method, seed, out_path)` — the **shared**
+   8-panel generator (identical across methods, price space, S0 ≈ 100). Never hand-roll a second plotter.
+5. **Reading list** — 3 bullets: (a) preprocessing wins the **stylised facts** (name the ACF/tail Δ%);
    (b) the raw baseline wins **marginal dispersion** (A26/A27 std, A18 discriminator); (c) **why this
    differs from any "5-seed mean vs 8192-path original" verdict** — the matched 4096/seed-0 control
    isolates the one variable (M4).
-5. **The 4096-path caveat** — both sides at 4 096 (not the main benchmark's 8 192): internally valid
+6. **The 4096-path caveat** — both sides at 4 096 (not the main benchmark's 8 192): internally valid
    (same budget) but not the main-benchmark *absolute* level.
-6. **Bottom-line paragraph** — which scaler wins and **why** (tie to §0.1: does the model have a fixed
+7. **Bottom-line paragraph** — which scaler wins and **why** (tie to §0.1: does the model have a fixed
    output-noise floor that unit-variance input rescues?), plus the caveats to fix. Latent projections,
    if kept, are a `### Latent projections (per seed)` subsection here (PCA/t-SNE image grid).
-7. **Footer links** — `../README.md` (overview) · `../GUIDELINE.md` (recipe) · `../../<METHOD>/README.md`
+8. **Footer links** — `../README.md` (overview) · `../GUIDELINE.md` (recipe) · `../../<METHOD>/README.md`
    (original price-input run).
 
 Follow GitHub math rules: no `\;`/`\,` in `$$`, no trailing comma on intermediate `$$` lines, no bare
@@ -928,6 +955,7 @@ same depth (mirror the level of detail LS4 received):
 - [ ] **Generation *and* evaluation logged** (`logs/gen_seed0.log`, `logs/pdf_run.log`) — never flew blind (M2).
 - [ ] **No-preproc baseline (§7.1) trained** — cloned `train_<method>_raw.py` (global standardize, ONLY the scaler differs), **default epochs fixed to 100 (M8)**, seed 0, A/B metrics computed (no bank).
 - [ ] **Head-to-head "Results" section** written below the README template block: A + B 3-column with-vs-no-preproc Δ tables, 4096 caveat, verdict declaring the winner (§10).
+- [ ] **Side-by-side stylised-facts diagnostic** placed directly below the B-curve table — raw baseline `heston_diagnostics.png` generated via `metrics/plot_diagnostics.plot_diagnostics` (CPU, no retrain), 2-column with-vs-raw image table (§10.0.1 §B item 4).
 - [ ] Per-method README written (mirror the main benchmark's).
 - [ ] **All metric tables cross-checked against `pdf_summary.json` / `seed_N_metrics.json`** — every quantity has its full metric set, none dropped (M9).
 - [ ] 1M bank left **disk-only/regenerable, not committed**; no size guard silently stripped (M10).
