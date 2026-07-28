@@ -1,0 +1,16 @@
+{
+  "seed": 1,
+  "eta": 6.762497425079346,
+  "h32_MAE_uniform": 4.136135059334274,
+  "h32_RMSE_uniform": 5.636897433561543,
+  "h32_CRPS_uniform": 3.3280088315962075,
+  "h32_MAE_gaussian": 4.136569242129164,
+  "h32_RMSE_gaussian": 5.637482703545778,
+  "h32_CRPS_gaussian": 3.3284836764999,
+  "h64_MAE_uniform": 5.878233241355047,
+  "h64_RMSE_uniform": 8.042704151724571,
+  "h64_CRPS_uniform": 4.848966268715344,
+  "h64_MAE_gaussian": 5.878696792102096,
+  "h64_RMSE_gaussian": 8.043254888844759,
+  "h64_CRPS_gaussian": 4.849544367305384
+}

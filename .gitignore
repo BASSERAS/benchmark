@@ -19,6 +19,7 @@ methods/GT-GAN/**/smoke_*
 methods/Chronos2/weights/*.pt
 methods/TimesFM/weights/*.pt
 methods/TimesFM/weights/**/*.pt
+methods/TimeMoDE/weights/*.pt
 *.pdf
 # ...but keep the reference paper PDF committed for each method
 !methods/**/paper_reimplementation/*.pdf

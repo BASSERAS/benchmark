@@ -31,7 +31,7 @@ DATASET    = "Heston"
 # (family label, [ (disk_dir, display_name), ... ])
 FAMILIES = [
     ("GAN",                [("TimeGAN", "TimeGAN"),   ("COSCI-GAN", "COSCI-GAN"), ("GT-GAN", "GT-GAN")]),
-    ("Diffusion",          [("DiffusionTS", "Diffusion-TS"), ("CSDI", "CSDI")]),
+    ("Diffusion",          [("DiffusionTS", "Diffusion-TS"), ("CSDI", "CSDI"), ("TimeMoDE", "TimeMoDE")]),
     ("VAE",                [("TimeVAE", "TimeVAE"), ("TimeVQVAE", "TimeVQVAE"), ("LS4", "LS4")]),
     ("Schrödinger Bridge", [("SBTS", "SBTS")]),
     ("Fourier Flow",       [("FourierFlow", "Fourier Flow")]),
