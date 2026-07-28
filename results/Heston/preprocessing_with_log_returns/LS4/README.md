@@ -515,6 +515,15 @@ dependence/tail block (the defining Heston/financial facts), the losses in margi
 | B ACF r² %err ↓ | 23.353 | 52.899 | −55.9% | **logret** |
 | grid_tvd (path cloud) ↓ | 3.66% | 4.15% | −11.7% | **logret** |
 
+**Visual comparison — 8-panel stylised-facts diagnostic, Real vs generated, seed 0 (both 4096 paths).**
+Same real test set on each side; the only difference is the input transform. The ACF-of-|r| /
+ACF-of-r² and rolling-vol panels are where the with-preproc model visibly tracks the real curves and
+the raw-price model flatlines — the visual counterpart to the ACF/vol Δ% rows above.
+
+| log-return preprocessing (with) | raw price, no preprocessing |
+|:-------------------------------:|:---------------------------:|
+| ![with-preproc diagnostics](plots/heston_diagnostics.png) | ![no-preproc diagnostics](baseline_no_preproc/plots/heston_diagnostics.png) |
+
 **Reading it straight (no cherry-picking):**
 - **Preprocessing wins the stylised facts.** Volatility clustering (A21 −66%, A22 −55%, B ACF\|r\| MSE
   −88%, B ACF r² MSE −79%) and fat tails (A1 −38%, A5 −49%, A28 ratio 0.99 vs 0.83) improve **sharply**.
