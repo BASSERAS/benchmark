@@ -59,13 +59,16 @@ These were made building LS4 and cost real time. Each has a one-line guard.
 
 | # | Mistake | What happened | Guard (do this) |
 |---|---------|---------------|-----------------|
-| M1 | **Epoch count left to the default.** | The train script's `--epochs` **defaults to 400**. Relaunching seed 0 as `python train_..._logret.py --seed 0` (no `--epochs`) silently ran **400** epochs while the canonical baseline is **100**. That (a) confounds the gate — you change *two* variables (preprocessing **and** 4× training) instead of one — and (b) wasted ~20 min before it was caught. | **Always pass `--epochs` explicitly, matching the original method.** Verify the canonical count from the original loss CSV: `wc -l methods/<METHOD>/losses/seed_0_losses.csv` (rows − 1 header = epochs; LS4 = **100**). The *only* intended differences vs the main benchmark are the §3 preprocessing and 4096 paths — **nothing else**, epochs included. |
+| M1 | **Epoch count left to the default.** | The train script's `--epochs` **defaults to 400**. Relaunching seed 0 as `python train_..._logret.py --seed 0` (no `--epochs`) silently ran **400** epochs while the canonical baseline is **100**. That (a) confounds the gate — you change *two* variables (preprocessing **and** 4× training) instead of one — and (b) wasted ~20 min before it was caught. | **Fix the trap at its source, not just at the call site.** Two guards, both required: (1) **set the script's `--epochs` default to the canonical count** (LS4 = 100) so a bare launch cannot run 400 — a passed flag protects one launch, a fixed default protects every future one; (2) still **pass `--epochs 100` explicitly** as a second belt. Verify the canonical count: `wc -l methods/<METHOD>/losses/seed_0_losses.csv` (rows − 1 header; LS4 = **100**). The *only* intended differences vs the main benchmark are the §3 preprocessing and 4096 paths — **nothing else**, epochs included. **See M8: this exact trap re-fired when the baseline script was cloned.** |
 | M2 | **Training piped through `\| tail -50`.** | `python train.py ... 2>&1 \| tail -50` buffers **all** output until the process exits, and the loss CSV / weights are only written at the end. Result: **zero live progress**, no way to estimate ETA or notice a stall for the whole run. | **Never pipe training through `tail`/`head`.** Launch with `run_in_background` (or redirect to a log file) so the per-epoch `[ep N] ...` lines (printed with `flush=True`) stream live. Sample two epoch lines to get s/epoch → ETA. |
 | M3 | **Assuming the GPU was busy at 44%.** | A single LS4 process uses only ~44% of an A100 (2.1M params — too small to saturate it). Treating that as "GPU in use" left ~half the card idle. | **Pack independent seeds onto one GPU** (pin to separate CPU cores: seed 0 → `taskset -c 0-7`, seed 1 → `-c 8-15`). Two LS4 seeds together reach ~95% util at ~6.6 GB — full GPU, one card, no one else's allocation touched. |
 | M4 | **Comparability drift in general.** | The root purpose is "change *only* the preprocessing." Any silent divergence (epochs, batch size, preset, sample count beyond the intended 4096) invalidates the gate comparison. | Diff your `seed_N_config.json` against the original method's hyperparameters **before** training seed 0. If a field differs and it isn't the §3 scaler or the 4096 count, fix it. |
 | M5 | **Env vars placed *after* `taskset`.** | Launching with `taskset -c 0-3 OMP_NUM_THREADS=4 python train.py` fails instantly: `taskset` treats `OMP_NUM_THREADS=4` as the **command to exec** → `taskset: failed to execute OMP_NUM_THREADS=4: No such file or directory`, exit code **127**. The three seeds "launched" but every one died in <1 s; only caught because `nvidia-smi` showed GPU 0 back at **0 %**. | **Env assignments must come *before* `taskset`** (they are shell prefixes, `taskset` is the command): `CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 taskset -c 0-3 $PY train.py …`. After launching, **always** verify with `nvidia-smi -i 0` and `pgrep -af train`: expect one PID per seed and GPU memory within seconds. |
 | M6 | **Backgrounded launcher let the children die on exit.** | Starting the training loop from a wrapper shell that itself exits (e.g. a `run_in_background` one-liner that spawns `python … &` then returns) sends **SIGHUP** to the children when the parent shell reaps — the jobs vanish and GPU 0 drops to 0 % moments later. | **Detach each job from the launching shell.** Use `setsid` + redirect stdin from `/dev/null` + `disown`: `… taskset -c 0-3 $PY train.py --seed $s --epochs 100 > logs/seed_$s.log 2>&1 < /dev/null &` inside a `for` loop, then `disown -a`. Confirm survival after the launcher returns: `pgrep -af train_…` must still list the PIDs and `nvidia-smi` must show memory. |
 | **M7** | **Path-shadowing done with the *simplified* reference eval instead of the paper protocol.** | `methods/<METHOD>/path_shadowing/` (`path_shadowing.py` + `run_eval.py`) is a **reduced** eval: a 65D **murex** embedding, **K=77**, raw prefix-price L2, a single **8192**-path bank, and **CRPS/MAE/RMSE only** at H=32/64. It is **NOT** the arXiv:2308.01486 protocol. Reusing it (as an earlier draft of §0.3/§9.2 wrongly said to) silently answers a *different, easier* question and makes the numbers non-comparable to the paper. | **This experiment uses the STRICT paper protocol — never the reference subset.** Use `<METHOD>/path_shadowing/path_shadowing_pdf.py`: the **4-block weighted, dimension-normalized, frozen-reference-standardized** embedding (recent-returns w1.0 · cumulative-path w0.5 · rolling-vol w2.0 · dependence-ACF w1.0; `z̃ = √(w/d)·(z−μ_ref)/σ_ref` with `μ_ref,σ_ref` frozen on the **real test set**), a **single shared 1M bank** whose **nested prefixes** give the **bank-size sweep** {4096, 16384, 65536, 262144, 1 000 000}, the **three forecast quantities** (cumulative return, one-step return, horizon RV), and the **full metric set** (predictive-mean RMSE, CRPS, coverage 50/90, band width 50/90, lower/upper-90 miss) with **2000-resample paired bootstrap 95% CIs over the queries**. See §9 (and §9.6 for every ambiguity choice). The old `path_shadowing_mc.py` (CRPS-only, K=256 murex) is **superseded** — kept only as the 1M-bank builder via `gen_banks.py`. |
+| **M8** | **M1 re-fired when the train script was cloned for the no-preproc baseline.** | `baseline_no_preproc/code/train_ls4_raw.py` was copied from `train_ls4_logret.py`, which **still carried `--epochs` default 400**. Launched as `train_ls4_raw.py --seed 0` (no flag) → ran **400** epochs again, exactly the M1 trap, on the *control* run that most needs to match the with-preproc runs' **100**. Caught by Theo ("why 400 epochs… u remade the mistake"). Killed, script default fixed to 100, cleaned, relaunched at 100. | **When cloning a train script, immediately edit its `--epochs` default to the canonical count** (LS4 → `default=100`) before the first launch — a cloned default carries the old bug forward. A guard that lives only in the *call site* (passing `--epochs`) does not survive a copy-paste; a guard baked into the *default* does. This is why M1's guard now demands both. Verify with `grep -n 'epochs' code/train_*.py` after cloning. |
+| **M9** | **README metric table transcribed incompletely from the JSON.** | The §8 one-step-return PS table in `LS4/README.md` was missing **coverage 50** and **width 50** rows — the values existed in `pdf_summary.json` but were never copied into the table, so a reader auditing "all 8 metrics present" would find only 6 for that quantity. | **Transcribe metric tables programmatically, never by hand.** For every quantity (cum/step/rv), assert the rendered table has all 8 rows (rmse, crps, coverage50/90, width50/90, lower/upper_miss90) by cross-checking against `pdf_summary.json` keys before committing. A quick check: count metric rows per quantity block == 8. |
+| **M10** | **Treated GitHub's 100 MiB push limit as a removable local setting.** | Repeated attempts to push the 489 MiB `bank/generated_bank_seed0_1000000x128.npy` by "removing the gitignore rule" / `--force`. The 100 MiB cap is a **GitHub server-side hard rejection**, not a gitignore/config/size setting; `--force` rewrites history, not file size. Only **Git LFS** pushes files >100 MiB. | **The 1M bank stays disk-only and regenerable — do not commit it.** It is deterministic from seed 0 (`gen_banks.py --seed 0`), so the repo tracks the *builder*, not the artifact (§0.3, §1 tree marks it gitignored). If a large binary genuinely must be pushed, that requires **explicit user setup of Git LFS** (1 GiB free quota) — never silently strip a size guard. |
 
 ---
 
@@ -130,6 +133,11 @@ results/Heston/preprocessing_with_log_returns/
     │   ├── logs/  gen_seed0.log, pdf_run.log       # generation + eval logged (M2/M7)
     │   ├── plots/ pdf_crps_vs_banksize.png, pdf_coverage_calibration.png
     │   └── pdf_summary.json                        # all metrics + 95% bootstrap CIs (single run)
+    ├── baseline_no_preproc/      # §7.1 head-to-head control — ONLY the scaler differs
+    │   ├── code/train_<method>_raw.py   # clone of the logret script; global standardize; --epochs default 100 (M8)
+    │   ├── logs/train_seed0.log
+    │   ├── weights/  losses/  generated_paths/seed_0/
+    │   └── seed_0_metrics.json          # A/B only, seed 0 — NO path-shadowing
     ├── seed_{N}_metrics.json      # one per seed (from compute_metrics_logret.py)
     ├── metrics_summary.csv        # all seeds
     └── gate_seed0_compare.md      # the §7 gate artifact
@@ -368,6 +376,52 @@ for s in 0 1 2 3 4; do printf "seed %s: " $s; grep -E '^\[ep' logs/seed_$s.log |
 The LS4 first attempt is the reference failure: collapse → root-caused to the sigma/noise-floor
 mismatch → fixed with §3.3 → re-gated.
 
+### 7.1 The no-preprocessing baseline (the head-to-head control)
+
+The gate (§7) checks the *preprocessed* variant against the *original* main-benchmark LS4. But the
+experiment's headline question — **"does the log-return preprocessing actually help this method?"** —
+needs a **matched control trained inside this folder**, changing **only the scaler**. That control is
+the **no-preprocessing baseline**, and it is what the §9-below "Results" verdict compares against.
+
+**What it is.** The identical pipeline as `train_<method>_logret.py` with **one** substitution: the
+§3 log-return transform is replaced by a plain **global standardize** `(S−μ)/σ` on the raw price panel
+(μ, σ scalar over all entries), and the inverse is the direct `X·σ+μ` back to price — **no**
+log-return, **no** cumsum, **no** exp. Everything else is byte-for-byte identical: same reference
+`VAE` + released preset, same 4096 train paths, **same 100 epochs**, same seed 0, same optimizer/EMA,
+same prior-sample → 4096 generated paths, same metric runner.
+
+**Why it is the right control (not the §7 gate).** The §7 gate answers "did preprocessing break the
+model vs the main benchmark?" (a *comparability* check across folders, confounded by the main
+benchmark's own training run). The baseline answers "**preprocessing vs no-preprocessing, all else
+equal, in this folder**" — the only clean A/B for the preprocessing's *effect*. Isolating a single
+variable is the whole point (M4); the baseline is that isolation made concrete.
+
+**Location & script.** `<METHOD>/baseline_no_preproc/` mirrors the per-method layout:
+```
+<METHOD>/baseline_no_preproc/
+├── code/train_<method>_raw.py        # clone of train_<method>_logret.py; ONLY the scaler differs
+├── logs/train_seed0.log
+├── weights/seed_0*  losses/seed_0*  generated_paths/seed_0/
+└── seed_0_metrics.json               # A/B only — NOT path-shadowing
+```
+The script sets `variant="… + NO preprocessing (global standardize)"`, `scaler="global_standardize"`,
+meta `preproc="none_global_standardize"`.
+
+**How to run it (M1/M8 apply with full force).** The baseline is the run that *most* needs to match
+the with-preproc epoch count, and its script is a **clone** — so its `--epochs` default **must be
+edited to 100 at the source** (M8), then launched explicitly:
+```bash
+CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=8 taskset -c 0-7 \
+  $PY code/train_<method>_raw.py --seed 0 --epochs 100 > logs/train_seed0.log 2>&1 < /dev/null &
+```
+Verify the log header reads `epochs=100` before walking away.
+
+**Scope.** **A/B metrics only, seed 0** — the baseline is a control for the *preprocessing effect*, not
+a full 5-seed / path-shadowing deliverable. Do **not** build a 1M bank for it. Its numbers feed exactly
+one place: the "Results — does the variant help?" table (§10, below the per-method template block),
+where the **with-preproc seed 0** and **no-preproc seed 0** A/B metrics sit side by side with a signed
+Δ and a one-line verdict declaring the winner.
+
 ---
 
 ## 8. Metrics & figures
@@ -589,11 +643,48 @@ dispersion, and mixing a second, bank-sampling source of variance into the PS CI
      **content is strictly the paper protocol** — **never** the old murex K=77 CRPS-only H=32/64 table (M7).
   9. `## File layout` — folder tree.
   10. `## Reproduce` — bash commands.
-  - **Then, below the template block:** `## Preprocessing (the <variant> transform)` (§3 forward +
-    inverse + §3.3 wrapper) and `## Results — does <variant> help <METHOD>?` (Δ comparison vs the
-    original + the 4096-path caveat + verdict). Latent projections, if kept, sit here as a subsection.
+  - **Then, below the template block, two sections in this order:**
+    - `## Preprocessing (the <variant> transform)` — §3 forward + inverse + §3.3 wrapper, with the
+      round-trip assertion and the frozen `sigma` value.
+    - `## Results — does <variant> help <METHOD>?` — the **head-to-head verdict** built from §7.1's
+      no-preproc baseline. Structure (all required):
+      1. **One-line thesis** stating the winner up front (e.g. "log-return preprocessing **helps** LS4:
+         it improves N of M headline metrics, ties on K, regresses on none").
+      2. **A-metric comparison table**, seed 0, **3 columns**: `with-preproc | no-preproc | signed Δ%`
+         (Δ relative to no-preproc; sign oriented so **negative = with-preproc better** on lower-better
+         metrics — state the orientation in a footnote). Include at least the dispersion/shape headline
+         rows (`A26_std_error`, `A6/A7 mmd2`, `A28_kurtosis_ratio`, `A30_vol_path_rmse`) + a bolded
+         **winner** cell per row.
+      3. **B-curve comparison table**, same 3-column shape, the six curve-shape MSE/%err rows +
+         `grid_tvd`.
+      4. **The 4096-path caveat** — both sides trained on 4096 (not the main benchmark's full count), so
+         the comparison is internally valid (same budget both sides) but its *absolute* level is not the
+         main-benchmark level.
+      5. **Verdict paragraph** — which scaler wins and *why* (tie back to §0.1: does this model have a
+         fixed output-noise floor that unit-variance input rescues?). Latent projections, if kept, sit
+         here as a subsection.
 - Follow GitHub math rules: no `\;`/`\,` in `$$`, no trailing comma on intermediate lines, no bare
   `*` in superscripts.
+
+### 10.1 The end-of-run report (what to hand back in chat for a new method)
+
+When a method is finished, deliver a report with **this** structure so every method is reported at the
+same depth (mirror the level of detail LS4 received):
+1. **Headline verdict** (1–2 sentences): does the preprocessing help this method, and the single most
+   telling metric supporting it.
+2. **Gate outcome** (§7): pass / flagged / failed-then-fixed, with the root cause if it collapsed
+   (§0.1 pattern: input std vs output-noise floor).
+3. **A/B metrics** — 5-seed mean±std headline table, plus the **with- vs no-preproc seed-0** head-to-head
+   (§7.1) with the winner called per block.
+4. **Path shadowing** (§9, strict protocol): the cum/step/RV story across the bank-size sweep vs the
+   **Heston-oracle ceiling** and **RW floor** — is the generator on the oracle, and where does it
+   under-cover? Full 8-metric set, bootstrap CIs. **Never** the murex reference eval (M7).
+5. **Artifacts & repro** — the exact paths written (weights, generated paths, `pdf_summary.json`, plots)
+   and the one-command repro; note the 1M bank is **disk-only/regenerable, not committed** (M10).
+6. **Mistakes ledger delta** — if any new trap fired, it must already be a new `M<n>` row in §0.2
+   *before* the report is considered complete (this session added M8–M10).
+7. **Commit** — conventional message + `Co-Authored-By`, only the two `preprocessing_with_log_returns/`
+   folders touched (no `methods/`, no `results/Heston/LS4/`).
 
 ---
 
@@ -603,7 +694,7 @@ dispersion, and mixing a second, bank-sampling source of variance into the PS CI
 - [ ] `train_<method>_logret.py` applies §3 forward + inverse; round-trip asserted to ~1e-13.
 - [ ] Decided on the §3.3 unit-variance wrapper (default: include it; the gate confirms).
 - [ ] `sigma = 0.01263163` reported; matches SBTS estimator.
-- [ ] **`--epochs` passed explicitly and matches the original** (`wc -l methods/<METHOD>/losses/seed_0_losses.csv`; LS4 = 100). Never rely on the 400 default. **(M1)**
+- [ ] **`--epochs` default edited to the canonical count in the script *and* passed explicitly** (`wc -l methods/<METHOD>/losses/seed_0_losses.csv`; LS4 = 100). Never rely on the 400 default; fix it at source so a cloned script can't re-fire it. **(M1, M8)**
 - [ ] **`seed_N_config.json` diffed against the original hyperparameters** — only the §3 scaler and 4096 count differ. **(M4)**
 - [ ] Training launched **without a `tail` pipe** (background/log file) so `[ep N]` lines stream live for ETA. **(M2)**
 - [ ] Seeds **packed on one GPU** on separate cores to reach ~full util (not one process at ~44%). **(M3)**
@@ -619,6 +710,11 @@ dispersion, and mixing a second, bank-sampling source of variance into the PS CI
       bootstrap CIs; `pdf_summary.json` + plots produced. Every §9.6 decision honoured. **Did NOT
       reuse the reference murex eval (M7).**
 - [ ] **Generation *and* evaluation logged** (`logs/gen_seed0.log`, `logs/pdf_run.log`) — never flew blind (M2).
+- [ ] **No-preproc baseline (§7.1) trained** — cloned `train_<method>_raw.py` (global standardize, ONLY the scaler differs), **default epochs fixed to 100 (M8)**, seed 0, A/B metrics computed (no bank).
+- [ ] **Head-to-head "Results" section** written below the README template block: A + B 3-column with-vs-no-preproc Δ tables, 4096 caveat, verdict declaring the winner (§10).
 - [ ] Per-method README written (mirror the main benchmark's).
+- [ ] **All metric tables cross-checked against `pdf_summary.json` / `seed_N_metrics.json`** — every quantity has its full metric set, none dropped (M9).
+- [ ] 1M bank left **disk-only/regenerable, not committed**; no size guard silently stripped (M10).
+- [ ] **End-of-run report** delivered in the §10.1 structure; new traps recorded as `M<n>` in §0.2 first.
 - [ ] Everything lives under the two `preprocessing_with_log_returns/` folders; no reference file
       touched.
