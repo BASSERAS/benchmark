@@ -1,0 +1,66 @@
+{
+  "dataset": "sine",
+  "variant": "pretrain_finetune",
+  "init": "pretrain",
+  "seq_len": 24,
+  "channels": 5,
+  "k_max": 40,
+  "n_train": 409,
+  "n_gen": 512,
+  "steps": 300,
+  "smoke": true,
+  "model_size": "S",
+  "schedule": "linear",
+  "ckpt": "smoke_pretrain.pt",
+  "params_M": 32.539088,
+  "train_time_sec": 74.19503664970398,
+  "primary_sample_var": "learned",
+  "by_sample_var": {
+    "learned": {
+      "discriminative_mean": 0.4644012944983819,
+      "discriminative_std": 0.02639078710404544,
+      "predictive_mean": 0.11418713380893071,
+      "predictive_std": 0.00428539718662296,
+      "discriminative_per_seed": [
+        0.4271844660194175,
+        0.48058252427184467,
+        0.4854368932038835
+      ],
+      "predictive_per_seed": [
+        0.11061513423919678,
+        0.11173313856124878,
+        0.12021312862634659
+      ]
+    },
+    "fixed": {
+      "discriminative_mean": 0.470873786407767,
+      "discriminative_std": 0.018163385372689026,
+      "predictive_mean": 0.12069294850031535,
+      "predictive_std": 0.006115551886334241,
+      "discriminative_per_seed": [
+        0.45145631067961167,
+        0.49514563106796117,
+        0.46601941747572817
+      ],
+      "predictive_per_seed": [
+        0.11678886413574219,
+        0.11596153676509857,
+        0.12932844460010529
+      ]
+    }
+  },
+  "discriminative_mean": 0.4644012944983819,
+  "discriminative_std": 0.02639078710404544,
+  "predictive_mean": 0.11418713380893071,
+  "predictive_std": 0.00428539718662296,
+  "discriminative_per_seed": [
+    0.4271844660194175,
+    0.48058252427184467,
+    0.4854368932038835
+  ],
+  "predictive_per_seed": [
+    0.11061513423919678,
+    0.11173313856124878,
+    0.12021312862634659
+  ]
+}

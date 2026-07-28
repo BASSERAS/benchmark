@@ -1,0 +1,21 @@
+{
+  "method": "TimeDiT",
+  "seed": 0,
+  "shape": [
+    8192,
+    128
+  ],
+  "min_val": 71.41049382954452,
+  "max_val": 131.24045380050347,
+  "gen_time_sec": 2933.1,
+  "train_time_sec": 4784.0,
+  "gpu": "A100-SXM4-80GB",
+  "date": "2026-07-28",
+  "scale_min": 39.893609418078476,
+  "scale_max": 155.57898269218714,
+  "params": 32463745,
+  "steps": 15000,
+  "min_loss": 0.04225115850567818,
+  "first_nan_step": null,
+  "gen_has_nan": false
+}

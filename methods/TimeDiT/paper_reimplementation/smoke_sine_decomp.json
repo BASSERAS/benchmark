@@ -1,0 +1,56 @@
+{
+  "dataset": "sine",
+  "variant": "decomp",
+  "seq_len": 24,
+  "channels": 5,
+  "n_train": 409,
+  "n_gen": 512,
+  "steps": 300,
+  "smoke": true,
+  "model_size": "S",
+  "schedule": "cosine",
+  "min_snr_gamma": 5.0,
+  "n_poly": 4,
+  "n_freq": 8,
+  "params_M": 32.475678,
+  "train_time_sec": 40.09918284416199,
+  "roughness_real": 0.0011172243393957615,
+  "roughness_fake": 0.004058858845382929,
+  "roughness_ratio": 3.6329846196737297,
+  "discriminative_mean": 0.44336569579288027,
+  "discriminative_std": 0.0423812325362744,
+  "predictive_mean": 0.13470936318238577,
+  "predictive_std": 0.007997101190090073,
+  "discriminative_per_seed": [
+    0.383495145631068,
+    0.47572815533980584,
+    0.470873786407767
+  ],
+  "predictive_per_seed": [
+    0.1287223994731903,
+    0.12939335405826569,
+    0.1460123360157013
+  ],
+  "loss_log": [
+    {
+      "step": 0,
+      "loss": 0.6936052441596985,
+      "mse": 0.34348201751708984
+    },
+    {
+      "step": 100,
+      "loss": 0.02527019940316677,
+      "mse": 0.034423135221004486
+    },
+    {
+      "step": 200,
+      "loss": 0.020292533561587334,
+      "mse": 0.0259737316519022
+    },
+    {
+      "step": 299,
+      "loss": 0.01747850328683853,
+      "mse": 0.02991608902812004
+    }
+  ]
+}

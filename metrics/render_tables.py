@@ -9,7 +9,7 @@ read from disk here and pasted verbatim into the READMEs.
 
 Family super-columns (fixed order):
   GAN                 : TimeGAN, COSCI-GAN
-  Diffusion           : Diffusion-TS, CSDI
+  Diffusion           : Diffusion-TS, CSDI, TimeMoDE, TimeDiT
   VAE                 : TimeVAE, TimeVQVAE, LS4
   Schrödinger Bridge  : SBTS
   Fourier Flow        : Fourier Flow
@@ -31,7 +31,7 @@ DATASET    = "Heston"
 # (family label, [ (disk_dir, display_name), ... ])
 FAMILIES = [
     ("GAN",                [("TimeGAN", "TimeGAN"),   ("COSCI-GAN", "COSCI-GAN"), ("GT-GAN", "GT-GAN")]),
-    ("Diffusion",          [("DiffusionTS", "Diffusion-TS"), ("CSDI", "CSDI"), ("TimeMoDE", "TimeMoDE")]),
+    ("Diffusion",          [("DiffusionTS", "Diffusion-TS"), ("CSDI", "CSDI"), ("TimeMoDE", "TimeMoDE"), ("TimeDiT", "TimeDiT")]),
     ("VAE",                [("TimeVAE", "TimeVAE"), ("TimeVQVAE", "TimeVQVAE"), ("LS4", "LS4")]),
     ("Schrödinger Bridge", [("SBTS", "SBTS")]),
     ("Fourier Flow",       [("FourierFlow", "Fourier Flow")]),

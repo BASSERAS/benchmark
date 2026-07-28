@@ -1,0 +1,66 @@
+{
+  "dataset": "stock",
+  "variant": "pretrain_finetune",
+  "init": "scratch",
+  "seq_len": 24,
+  "channels": 6,
+  "k_max": 40,
+  "n_train": 2929,
+  "n_gen": 3662,
+  "steps": 15000,
+  "smoke": false,
+  "model_size": "S",
+  "schedule": "linear",
+  "ckpt": null,
+  "params_M": 32.539088,
+  "train_time_sec": 2005.647762298584,
+  "primary_sample_var": "learned",
+  "by_sample_var": {
+    "learned": {
+      "discriminative_mean": 0.3808549340609368,
+      "discriminative_std": 0.06148326565381053,
+      "predictive_mean": 0.049779098480939865,
+      "predictive_std": 0.0007016348421470382,
+      "discriminative_per_seed": [
+        0.3506139154160982,
+        0.4665757162346521,
+        0.32537517053206
+      ],
+      "predictive_per_seed": [
+        0.050616804510354996,
+        0.04982081428170204,
+        0.04889967665076256
+      ]
+    },
+    "fixed": {
+      "discriminative_mean": 0.38017280582082763,
+      "discriminative_std": 0.07032283051105692,
+      "predictive_mean": 0.0502504346271356,
+      "predictive_std": 0.0004968591855267502,
+      "discriminative_per_seed": [
+        0.3458390177353342,
+        0.47817189631650747,
+        0.31650750341064116
+      ],
+      "predictive_per_seed": [
+        0.05022279918193817,
+        0.050872307270765305,
+        0.04965619742870331
+      ]
+    }
+  },
+  "discriminative_mean": 0.3808549340609368,
+  "discriminative_std": 0.06148326565381053,
+  "predictive_mean": 0.049779098480939865,
+  "predictive_std": 0.0007016348421470382,
+  "discriminative_per_seed": [
+    0.3506139154160982,
+    0.4665757162346521,
+    0.32537517053206
+  ],
+  "predictive_per_seed": [
+    0.050616804510354996,
+    0.04982081428170204,
+    0.04889967665076256
+  ]
+}

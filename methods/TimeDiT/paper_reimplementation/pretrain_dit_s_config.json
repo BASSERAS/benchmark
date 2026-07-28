@@ -1,0 +1,19 @@
+{
+  "steps": 30000,
+  "k_max": 40,
+  "seq_len": 24,
+  "T": 1000,
+  "schedule": "linear",
+  "ema_decay": 0.9999,
+  "model_size": "S",
+  "n_blocks": 4,
+  "n_windows": 74794,
+  "params_M": 32.539088,
+  "train_time_sec": 4072.8877696990967,
+  "corpus": [
+    "etth1",
+    "etth2",
+    "ettm1",
+    "ettm2"
+  ]
+}

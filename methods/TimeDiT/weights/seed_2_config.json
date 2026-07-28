@@ -1,0 +1,26 @@
+{
+  "method": "TimeDiT",
+  "seed": 2,
+  "model_size": "S",
+  "hidden_size": 384,
+  "depth": 12,
+  "num_heads": 6,
+  "learn_sigma": false,
+  "schedule": "linear",
+  "T": 1000,
+  "sampler": "ddpm_fixed",
+  "lr": 0.0003,
+  "weight_decay": 0.0,
+  "ema": 0.0,
+  "batch_size": 256,
+  "n_steps": 15000,
+  "n_train": 8192,
+  "seq_len": 128,
+  "feature_size": 1,
+  "dataset": "Heston",
+  "paper_hyperparams": true,
+  "minmax": [
+    39.893609418078476,
+    155.57898269218714
+  ]
+}
