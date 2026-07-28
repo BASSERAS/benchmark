@@ -549,12 +549,33 @@ dispersion, and mixing a second, bank-sampling source of variance into the PS CI
 - **Experiment README** ([`README.md`](README.md)): overview, the §3 preprocessing (forward +
   inverse + dummy col), the §3.4 sigma estimation with the value table, the datasets table, and
   the methods table. Already written.
-- **Per-method README** (`<METHOD>/README.md`): mirror `results/Heston/<method>/README.md` — the
-  A1–A34 table across 5 seeds (+ a "Perfect" floor row), `heston_diagnostics.png`, the B-curve
-  table (MSE/%err/NRMSE/CVaR90/CVaR95), disc/pred loss plots, and the **STRICT path-shadowing
-  tables** (§9): per-quantity (cum/step/RV) metrics across the **bank-size sweep** with CRPS +
-  coverage/width + bootstrap CIs vs the RW baseline, plus the two `pdf_*.png` plots — **not** the
-  old CRPS-only H=32/64 table (M7). Note the preprocessing variant + any §3.3 wrapper used.
+- **Per-method README** (`<METHOD>/README.md`): mirror `methods/<METHOD>/README.md` **in this exact
+  section order** (Theo's rule — the top block must be structurally identical to the canonical
+  per-method report so the variant and the original are directly comparable). The preprocessing +
+  head-to-head verdict go **below** this block, not above it:
+  1. **Title** `# <METHOD> on Heston — <variant>` + a one-line intro pointing to the original run.
+  2. `## Metrics A1-A34 + B, mean ± std across 5 seeds` — 7-col table (Mean ± Std · Seed 0–4 ·
+     Perfect floor), rows grouped by category with `| **, <Category>, ** | … |` separator rows in the
+     exact order **Fat Tail → Distribution → Adversarial → Predictive → Temporal → Vol → Heston Spec**
+     (A1–A5, A6–A17, A18, A19, A20–A24, A25–A32, A33–A34), plus the convention + per-metric footnotes.
+     The Perfect-floor column is dataset-derived and **identical across methods** — reuse it verbatim.
+  3. `## B, Curve-Shape Metrics, mean ± std across 5 seeds` — grid_tvd top row, then **5 sub-rows per
+     plot**: MSE (mean-of-3 funct+der+sec_der), % err, NRMSE, CVaR₉₀, CVaR₉₅ (funct-only). Per-seed +
+     Perfect floor. Six plots: log-ret hist · QQ · ACF|r| · ACFr² · rolling-vol hist · tail survival.
+  4. `## Stylised Facts Diagnostic` — `plots/heston_diagnostics.png`.
+  5. `## <METHOD> Training Loss (5 seeds)` — `losses/loss_convergence.png`.
+  6. `## A18, Discriminative Classifier Training Loss` — `plots/disc_classifier_loss.png`.
+  7. `## A19, Predictive Score Training Loss (TSTR)` — `plots/pred_score_loss.png`.
+  8. `## Path Shadowing — strict paper protocol (arXiv:2308.01486)` — the **STRICT** §9 tables
+     (per-quantity cum/step/RV across the bank-size sweep, CRPS + coverage/width + bootstrap CIs vs the
+     RW baseline, `pdf_*.png`). **K = 256** (paper §4). This slot mirrors the template's "Path Shadowing
+     MC" position but its **content is strictly the paper protocol** — **never** the old murex K=77
+     CRPS-only H=32/64 table (M7).
+  9. `## File layout` — folder tree.
+  10. `## Reproduce` — bash commands.
+  - **Then, below the template block:** `## Preprocessing (the <variant> transform)` (§3 forward +
+    inverse + §3.3 wrapper) and `## Results — does <variant> help <METHOD>?` (Δ comparison vs the
+    original + the 4096-path caveat + verdict). Latent projections, if kept, sit here as a subsection.
 - Follow GitHub math rules: no `\;`/`\,` in `$$`, no trailing comma on intermediate lines, no bare
   `*` in superscripts.
 
