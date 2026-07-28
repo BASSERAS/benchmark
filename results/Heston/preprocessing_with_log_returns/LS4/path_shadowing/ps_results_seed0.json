@@ -1,0 +1,22 @@
+{
+  "eta": 7.915283203125,
+  "K": 256,
+  "prefix": 64,
+  "bank_size": 1000000,
+  "n_query": 512,
+  "h32_MAE_uniform": 3.597031827634359,
+  "h32_RMSE_uniform": 4.908285405330498,
+  "h32_CRPS_uniform": 2.610587000985106,
+  "h32_MAE_gaussian": 3.597006417611941,
+  "h32_RMSE_gaussian": 4.90809465037172,
+  "h32_CRPS_gaussian": 2.6104930298224645,
+  "h64_MAE_uniform": 5.0748002621775115,
+  "h64_RMSE_uniform": 6.898996426533931,
+  "h64_CRPS_uniform": 3.6565470629029733,
+  "h64_MAE_gaussian": 5.074812327328178,
+  "h64_RMSE_gaussian": 6.899144180526004,
+  "h64_CRPS_gaussian": 3.656514528115622,
+  "seed": 0,
+  "build_sec": 417.7,
+  "eval_sec": 62.1
+}

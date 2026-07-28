@@ -1,0 +1,93 @@
+{
+  "baseline": {
+    "MAE_h32": 3.6255426514171702,
+    "RMSE_h32": 4.920047912714192,
+    "CRPS_h32": 3.6255426514171702,
+    "MAE_h64": 5.137751469837106,
+    "RMSE_h64": 6.923027893211164,
+    "CRPS_h64": 5.137751469837106
+  },
+  "protocol": {
+    "bank_size": 20000,
+    "K": 256,
+    "prefix": 64,
+    "horizons": [
+      32,
+      64
+    ],
+    "n_query": 512,
+    "query_file": "heston_S_ps_512x128.npy"
+  },
+  "h32_MAE_uniform": {
+    "mean": 3.6111588168504642,
+    "std": 0.0
+  },
+  "h32_RMSE_uniform": {
+    "mean": 4.912576124705045,
+    "std": 0.0
+  },
+  "h32_CRPS_uniform": {
+    "mean": 2.6263444941178022,
+    "std": 0.0
+  },
+  "h32_MAE_gaussian": {
+    "mean": 3.6112022981826946,
+    "std": 0.0
+  },
+  "h32_RMSE_gaussian": {
+    "mean": 4.91264039519775,
+    "std": 0.0
+  },
+  "h32_CRPS_gaussian": {
+    "mean": 2.626438556586436,
+    "std": 0.0
+  },
+  "h64_MAE_uniform": {
+    "mean": 5.101696005536173,
+    "std": 0.0
+  },
+  "h64_RMSE_uniform": {
+    "mean": 6.911966921888719,
+    "std": 0.0
+  },
+  "h64_CRPS_uniform": {
+    "mean": 3.6855944288708997,
+    "std": 0.0
+  },
+  "h64_MAE_gaussian": {
+    "mean": 5.1019514460883775,
+    "std": 0.0
+  },
+  "h64_RMSE_gaussian": {
+    "mean": 6.9123999038143875,
+    "std": 0.0
+  },
+  "h64_CRPS_gaussian": {
+    "mean": 3.685831645291728,
+    "std": 0.0
+  },
+  "per_seed": [
+    {
+      "eta": 8.764398574829102,
+      "K": 256,
+      "prefix": 64,
+      "bank_size": 20000,
+      "n_query": 512,
+      "h32_MAE_uniform": 3.6111588168504642,
+      "h32_RMSE_uniform": 4.912576124705045,
+      "h32_CRPS_uniform": 2.6263444941178022,
+      "h32_MAE_gaussian": 3.6112022981826946,
+      "h32_RMSE_gaussian": 4.91264039519775,
+      "h32_CRPS_gaussian": 2.626438556586436,
+      "h64_MAE_uniform": 5.101696005536173,
+      "h64_RMSE_uniform": 6.911966921888719,
+      "h64_CRPS_uniform": 3.6855944288708997,
+      "h64_MAE_gaussian": 5.1019514460883775,
+      "h64_RMSE_gaussian": 6.9123999038143875,
+      "h64_CRPS_gaussian": 3.685831645291728,
+      "seed": 0,
+      "build_sec": 13.2,
+      "eval_sec": 55.9
+    }
+  ]
+}

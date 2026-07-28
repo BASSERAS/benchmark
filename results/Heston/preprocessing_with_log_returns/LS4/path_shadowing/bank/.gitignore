@@ -1,0 +1,9 @@
+# The 1M-path banks are 489 MB each (float32, 1e6 x 128) — over GitHub's 100 MB
+# hard file limit, so they are NOT committed. They are fully reproducible and are
+# the *input*, not the deliverable (the deliverable is ../pdf_summary.json + plots).
+#
+# Regenerate all five (see ../../../GUIDELINE.md §9.5):
+#   PY=/home/tbasseras/gpu-venv/bin/python
+#   for s in 0 1 2 3 4; do CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=8 \
+#     taskset -c 0-7 $PY ../gen_banks.py --seed $s > ../logs/gen_seed${s}.log 2>&1; done
+*.npy
