@@ -190,62 +190,69 @@ the visible real/fake separation that the elevated A6/A17 predict.
 > [`../GUIDELINE.md` §9 + M7](../GUIDELINE.md).
 
 Each real ps-split prefix (65 points → 64 log-returns) is embedded with the **4-block weighted,
-bank-standardized** feature vector — recent returns (last 32, w1.0) · cumulative path (downsampled
-24, w0.5) · rolling vol (windows 5/10/20 last/mean/std, w2.0) · dependence (ACF of `|r|` & `r²` at
-lags 1,2,5,10, w1.0), with `z̃ = √w·(z−μ_bank)/σ_bank`. Retrieve **K = 256** nearest LS4+logret bank
-paths; their futures give the predictive ensemble for three return-based quantities (**cumulative
-return, one-step return, horizon RV**). Split `s = 64`, horizon `H = 32`, **512** independent query
-paths (seed 3). **Banks = 1 000 000 generated paths per seed** (`path_shadowing/bank/generated_bank_seed{0..4}_1000000x128.npy`,
-~0.5 GB each), evaluated as **nested prefixes** over the bank-size sweep
-{4096, 16384, 65536, 262144, 1 000 000}. Metrics per quantity: predictive-mean RMSE, CRPS (energy),
-coverage 50/90, band width 50/90, lower/upper-90 miss — with **2000-resample bootstrap 95% CIs**.
+frozen-reference-standardized** feature vector — recent returns (last 32, w1.0) · cumulative path
+(downsampled 24, w0.5) · rolling vol (windows 5/10/20 last/mean/std, w2.0) · dependence (ACF of
+`|r|` & `r²` at lags 1,2,5,10, w1.0). Each block is **dimension-normalized** (per-feature weight
+`w_block/d`) and standardized against **frozen μ/σ computed once on the real Heston test set**
+(`heston_S_test_4096x128`, model-independent, held fixed across the whole sweep):
+`z̃ = √(w/d)·(z−μ_ref)/σ_ref`. Retrieve **K = 256** nearest LS4+logret bank paths; their futures give
+the predictive ensemble for three return-based quantities (**cumulative return, one-step return,
+horizon RV**). Split `s = 64`, horizon `H = 32`, **512** independent query paths (seed 3).
+**One shared 1 000 000-path bank** built from the seed-0 generator
+(`path_shadowing/bank/generated_bank_seed0_1000000x128.npy`, ~0.5 GB, gitignored + regenerable),
+evaluated as **nested prefixes** over the bank-size sweep {4096, 16384, 65536, 262144, 1 000 000}.
+Metrics per quantity: predictive-mean RMSE, CRPS (energy), coverage 50/90, band width 50/90,
+lower/upper-90 miss — each with a **2000-resample paired bootstrap 95% CI over the 512 query paths**
+(single fixed resample-index matrix, `boot_seed=20230814`, shared across all bank sizes/quantities).
 
 <!-- PS-PDF-TABLE-START -->
-All numbers are **mean ± std across the 5 seeds** at the full **1 000 000-path bank** (log-return
-scale; lower CRPS/RMSE better). Nominal coverage in parentheses. The RW baseline resamples each
-query's own prefix returns.
+All numbers are at the full **1 000 000-path bank** (log-return scale; lower CRPS/RMSE better).
+Brackets are **95% bootstrap CIs over the 512 query paths**; nominal coverage in parentheses. The RW
+baseline resamples each query's own prefix returns.
 
 **Headline — 1M bank, LS4+logret vs random-walk baseline**
 
-| Quantity | RMSE (LS4) | RMSE (RW) | CRPS (LS4) | CRPS (RW) | cov90 (0.90) | width90 (LS4/RW) |
-|----------|-----------:|----------:|-----------:|----------:|:------------:|:----------------:|
-| **cumulative return** | **0.0697 ± 0.0012** | 0.0836 | **0.03785 ± 0.00075** | 0.04668 | 0.842 ± 0.029 (0.818) | 0.190 / 0.223 |
-| one-step return       | **0.01234 ± 0.00006** | 0.01248 | **0.006762 ± 0.000043** | 0.006885 | 0.859 ± 0.020 (0.893) | 0.0349 / 0.0395 |
-| horizon RV            | **0.01814 ± 0.00100** | 0.01876 | **0.01032 ± 0.00064** | 0.01168 | 0.855 ± 0.034 (**0.533**) | 0.0512 / 0.0287 |
+| Quantity | RMSE (LS4) | RMSE (RW) | CRPS (LS4) | CRPS (RW) | cov90 LS4 (0.90) | width90 (LS4/RW) |
+|----------|-----------:|----------:|-----------:|----------:|:----------------:|:----------------:|
+| **cumulative return** | **0.0691** [0.0638, 0.0745] | 0.0836 | **0.03745** [0.03467, 0.04029] | 0.04668 | 0.879 [0.852, 0.906] (0.818) | 0.197 / 0.223 |
+| one-step return       | **0.01234** [0.01148, 0.01321] | 0.01248 | **0.006748** [0.006283, 0.007252] | 0.006885 | 0.869 [0.840, 0.900] (0.893) | 0.0359 / 0.0395 |
+| horizon RV            | **0.01819** [0.01703, 0.01943] | 0.01876 | **0.010319** [0.009626, 0.011096] | 0.011677 | 0.799 [0.766, 0.832] (**0.533**) | 0.0459 / 0.0287 |
 
 LS4+logret **beats the random walk on every quantity and metric**. The margin is largest on
-cumulative return (CRPS −19%, RMSE −17%) and realized vol (CRPS −12%); one-step return is nearly a
-coin-flip (−2%), as expected since a single Heston increment is almost pure noise. RV is where PS-MC
-clearly earns its keep: the RW's RV band is badly miscalibrated (coverage **0.53** vs nominal 0.90),
-while the shadowed ensemble reaches 0.855.
+cumulative return (CRPS −19.8%, RMSE −17.3%) and realized vol (CRPS −11.6%); one-step return is
+nearly a coin-flip (−2.0%), as expected since a single Heston increment is almost pure noise. RV is
+where PS-MC clearly earns its keep: the RW's RV band is badly miscalibrated (coverage **0.53** vs
+nominal 0.90), while the shadowed ensemble reaches 0.799.
 
-**Bank-size sweep — CRPS mean ± std (nested prefixes of the one 1M bank)**
+**Bank-size sweep — cum CRPS [95% CI], plus one-step/RV CRPS (nested prefixes of the one 1M bank)**
 
 | bank size | cum CRPS | one-step CRPS | RV CRPS | unique-cand frac | prefix dist (mean) |
 |----------:|---------:|--------------:|--------:|:----------------:|:------------------:|
-| 4 096     | 0.03784 ± 0.00038 | 0.006810 ± 0.000034 | 0.01124 ± 0.00072 | 0.993 | 8.56 |
-| 16 384    | 0.03791 ± 0.00043 | 0.006785 ± 0.000021 | 0.01092 ± 0.00072 | 0.938 | 7.99 |
-| 65 536    | 0.03784 ± 0.00059 | 0.006769 ± 0.000019 | 0.01065 ± 0.00065 | 0.705 | 7.53 |
-| 262 144   | 0.03790 ± 0.00064 | 0.006776 ± 0.000027 | 0.01046 ± 0.00065 | 0.342 | 7.14 |
-| 1 000 000 | 0.03785 ± 0.00075 | 0.006762 ± 0.000043 | 0.01032 ± 0.00064 | 0.116 | 6.80 |
+| 4 096     | 0.03770 [0.0349, 0.0406] | 0.006785 | 0.010977 | 0.998 | 1.936 |
+| 16 384    | 0.03763 [0.0348, 0.0405] | 0.006772 | 0.010659 | 0.968 | 1.767 |
+| 65 536    | 0.03757 [0.0348, 0.0404] | 0.006773 | 0.010482 | 0.752 | 1.639 |
+| 262 144   | 0.03756 [0.0348, 0.0404] | 0.006804 | 0.010380 | 0.356 | 1.537 |
+| 1 000 000 | 0.03745 [0.0347, 0.0403] | 0.006748 | 0.010319 | 0.118 | 1.454 |
 
-**The sweep is flat for cumulative and one-step return** — growing the bank 244× (4k→1M) leaves their
-CRPS unchanged. Only **realized vol** improves monotonically (0.01124→0.01032, −8%). Meanwhile the
-mean prefix distance keeps shrinking (8.56→6.80) and the unique-candidate fraction collapses
-(0.99→0.12): a bigger bank does supply geometrically closer shadows, but for return-level forecasts
-LS4's generated distribution saturates the useful shadowing content by ~4k paths. The 1M bank is
-required by the protocol and pays off only for the vol quantity.
+**The sweep is flat for cumulative and one-step return** — growing the bank 244× (4k→1M) moves their
+CRPS by <1% (well within the bootstrap CI). Only **realized vol** improves monotonically
+(0.010977→0.010319, −6.0%). Meanwhile the mean prefix distance keeps shrinking (1.936→1.454) and the
+unique-candidate fraction collapses (0.998→0.118): a bigger bank does supply geometrically closer
+shadows, but for return-level forecasts LS4's generated distribution saturates the useful shadowing
+content by ~4k paths. The 1M bank is required by the protocol and pays off only for the vol quantity.
+(Prefix distances are on the dimension-normalized embedding scale, hence smaller than a raw
+sum-of-squares embedding.)
 
-**Diagnostics (1M bank, 5-seed mean)**
+**Diagnostics (1M bank)**
 
 | terminal RMSE | prefix dist mean / median / p95 | unique-cand frac | RV mean bias |
 |:-------------:|:-------------------------------:|:----------------:|:------------:|
-| 0.0697 | 6.80 / 6.62 / 9.53 | 0.116 | −0.0062 |
+| 0.0691 | 1.454 / 1.407 / 2.021 | 0.118 | −0.0059 |
 
-Coverage sits **mildly below nominal** (~0.84–0.86 at the 90% level) across quantities → the ensemble
-is slightly over-confident; RV is under-predicted by ~0.6% (negative bias). Per-seed **2000-resample
-bootstrap 95% CIs** on RMSE and CRPS are in `path_shadowing/pdf_results_seed{i}.json`; the ±std above
-is the 5-seed dispersion.
+Coverage is **near-nominal on cumulative return** (0.879 @ 90%) but **below nominal on RV** (0.799)
+→ the ensemble is slightly over-confident on the vol quantity; RV is under-predicted by ~0.6%
+(negative bias). Full **2000-resample bootstrap 95% CIs** on every metric are in
+`path_shadowing/pdf_summary.json`.
 <!-- PS-PDF-TABLE-END -->
 
 Driver: [`path_shadowing/path_shadowing_pdf.py`](path_shadowing/path_shadowing_pdf.py)
@@ -266,9 +273,9 @@ Plots: ![](path_shadowing/plots/pdf_crps_vs_banksize.png)
 | `plots/heston_diagnostics.png` | 8-panel stylised-facts diagnostic (seed 0) |
 | `plots/seed_{i}_pca.png` / `_tsne.png` | 2-D real-vs-fake projections per seed |
 | `path_shadowing/path_shadowing_pdf.py` | **strict paper-protocol** evaluator (4-block embedding, bank-size sweep, cum/step/RV, coverage/width, bootstrap CIs) |
-| `path_shadowing/gen_banks.py` | 1M-bank builder (per seed) |
-| `path_shadowing/bank/` | `generated_bank_seed{0..4}_1000000x128.npy` (~0.5 GB each) |
-| `path_shadowing/{pdf_results_seed{i},pdf_summary}.json` · `logs/` · `plots/pdf_*.png` | per-seed + aggregate metrics, run logs, sweep + calibration plots |
+| `path_shadowing/gen_banks.py` | 1M-bank builder (seed-0 generator) |
+| `path_shadowing/bank/` | `generated_bank_seed0_1000000x128.npy` (~0.5 GB, gitignored + regenerable) |
+| `path_shadowing/pdf_summary.json` · `logs/pdf_run.log` · `plots/pdf_*.png` | all metrics + 95% bootstrap CIs, run log, sweep + calibration plots |
 
 → Experiment overview & pipeline: [`../README.md`](../README.md) ·
 Recipe for adding methods: [`../GUIDELINE.md`](../GUIDELINE.md) ·

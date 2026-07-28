@@ -65,7 +65,7 @@ These were made building LS4 and cost real time. Each has a one-line guard.
 | M4 | **Comparability drift in general.** | The root purpose is "change *only* the preprocessing." Any silent divergence (epochs, batch size, preset, sample count beyond the intended 4096) invalidates the gate comparison. | Diff your `seed_N_config.json` against the original method's hyperparameters **before** training seed 0. If a field differs and it isn't the §3 scaler or the 4096 count, fix it. |
 | M5 | **Env vars placed *after* `taskset`.** | Launching with `taskset -c 0-3 OMP_NUM_THREADS=4 python train.py` fails instantly: `taskset` treats `OMP_NUM_THREADS=4` as the **command to exec** → `taskset: failed to execute OMP_NUM_THREADS=4: No such file or directory`, exit code **127**. The three seeds "launched" but every one died in <1 s; only caught because `nvidia-smi` showed GPU 0 back at **0 %**. | **Env assignments must come *before* `taskset`** (they are shell prefixes, `taskset` is the command): `CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 taskset -c 0-3 $PY train.py …`. After launching, **always** verify with `nvidia-smi -i 0` and `pgrep -af train`: expect one PID per seed and GPU memory within seconds. |
 | M6 | **Backgrounded launcher let the children die on exit.** | Starting the training loop from a wrapper shell that itself exits (e.g. a `run_in_background` one-liner that spawns `python … &` then returns) sends **SIGHUP** to the children when the parent shell reaps — the jobs vanish and GPU 0 drops to 0 % moments later. | **Detach each job from the launching shell.** Use `setsid` + redirect stdin from `/dev/null` + `disown`: `… taskset -c 0-3 $PY train.py --seed $s --epochs 100 > logs/seed_$s.log 2>&1 < /dev/null &` inside a `for` loop, then `disown -a`. Confirm survival after the launcher returns: `pgrep -af train_…` must still list the PIDs and `nvidia-smi` must show memory. |
-| **M7** | **Path-shadowing done with the *simplified* reference eval instead of the paper protocol.** | `methods/<METHOD>/path_shadowing/` (`path_shadowing.py` + `run_eval.py`) is a **reduced** eval: a 65D **murex** embedding, **K=77**, raw prefix-price L2, a single **8192**-path bank, and **CRPS/MAE/RMSE only** at H=32/64. It is **NOT** the arXiv:2308.01486 protocol. Reusing it (as an earlier draft of §0.3/§9.2 wrongly said to) silently answers a *different, easier* question and makes the numbers non-comparable to the paper. | **This experiment uses the STRICT paper protocol — never the reference subset.** Use `<METHOD>/path_shadowing/path_shadowing_pdf.py`: the **4-block weighted, bank-standardized** embedding (recent-returns w1.0 · cumulative-path w0.5 · rolling-vol w2.0 · dependence-ACF w1.0; `z̃ = √w·(z−μ_bank)/σ_bank`), the **bank-size sweep** {4096, 16384, 65536, 262144, 1 000 000} as **nested prefixes of the one 1M bank**, the **three forecast quantities** (cumulative return, one-step return, horizon RV), and the **full metric set** (predictive-mean RMSE, CRPS, coverage 50/90, band width 50/90, lower/upper-90 miss) with **2000-resample bootstrap 95% CIs**. See §9. The old `path_shadowing_mc.py` (CRPS-only, K=256 murex) is **superseded** — kept only as the 1M-bank builder via `gen_banks.py`. |
+| **M7** | **Path-shadowing done with the *simplified* reference eval instead of the paper protocol.** | `methods/<METHOD>/path_shadowing/` (`path_shadowing.py` + `run_eval.py`) is a **reduced** eval: a 65D **murex** embedding, **K=77**, raw prefix-price L2, a single **8192**-path bank, and **CRPS/MAE/RMSE only** at H=32/64. It is **NOT** the arXiv:2308.01486 protocol. Reusing it (as an earlier draft of §0.3/§9.2 wrongly said to) silently answers a *different, easier* question and makes the numbers non-comparable to the paper. | **This experiment uses the STRICT paper protocol — never the reference subset.** Use `<METHOD>/path_shadowing/path_shadowing_pdf.py`: the **4-block weighted, dimension-normalized, frozen-reference-standardized** embedding (recent-returns w1.0 · cumulative-path w0.5 · rolling-vol w2.0 · dependence-ACF w1.0; `z̃ = √(w/d)·(z−μ_ref)/σ_ref` with `μ_ref,σ_ref` frozen on the **real test set**), a **single shared 1M bank** whose **nested prefixes** give the **bank-size sweep** {4096, 16384, 65536, 262144, 1 000 000}, the **three forecast quantities** (cumulative return, one-step return, horizon RV), and the **full metric set** (predictive-mean RMSE, CRPS, coverage 50/90, band width 50/90, lower/upper-90 miss) with **2000-resample paired bootstrap 95% CIs over the queries**. See §9 (and §9.6 for every ambiguity choice). The old `path_shadowing_mc.py` (CRPS-only, K=256 murex) is **superseded** — kept only as the 1M-bank builder via `gen_banks.py`. |
 
 ---
 
@@ -81,8 +81,8 @@ Copy/adapt from these — **read them, never edit them** (§4). All paths are re
 | The original training entry-point (to mirror hyperparameters) | `methods/<METHOD>/code/train_heston.py` | Diff your config against this (M4). |
 | **Canonical epoch count** | `wc -l methods/<METHOD>/losses/seed_0_losses.csv` → rows − 1 header | **LS4 = 100.** Pass `--epochs 100` explicitly (M1). |
 | The metric implementations | `methods/<METHOD>/` metric code imported by `compute_metrics_logret.py` as `C` | Redirect its `DATA_DIR`/`GENERATED_DIR` to the 4096 preprocessing files; don't fork the metric math. |
-| The 1M-bank builder (reuse verbatim) | `LS4/path_shadowing/path_shadowing_mc.py` → `build_bank`, `load_gen_model`; driven by `gen_banks.py` | Prior-sample the trained model + §3 inverse → persist `bank/generated_bank_seed{i}_1000000x128.npy`. **This is the *only* thing to reuse from the old PS code.** |
-| **The path-shadowing evaluator** | `<METHOD>/path_shadowing/path_shadowing_pdf.py` (**strict arXiv:2308.01486 protocol** — see §9) | **Do NOT import `methods/<METHOD>/path_shadowing/path_shadowing.py`** — that is the *simplified* reference eval (65D murex, K=77, prefix-price L2, CRPS/MAE/RMSE only). It answers a different, easier question. **(M7)** The paper protocol is self-contained in `path_shadowing_pdf.py` (4-block weighted bank-standardized embedding + bank-size sweep + cum/step/RV quantities + coverage/width + bootstrap CIs). |
+| The 1M-bank builder (reuse verbatim) | `LS4/path_shadowing/path_shadowing_mc.py` → `build_bank`, `load_gen_model`; driven by `gen_banks.py --seed 0` | Prior-sample the trained seed-0 model + §3 inverse → persist the **one** `bank/generated_bank_seed0_1000000x128.npy`. **This is the *only* thing to reuse from the old PS code.** |
+| **The path-shadowing evaluator** | `<METHOD>/path_shadowing/path_shadowing_pdf.py` (**strict arXiv:2308.01486 protocol** — see §9) | **Do NOT import `methods/<METHOD>/path_shadowing/path_shadowing.py`** — that is the *simplified* reference eval (65D murex, K=77, prefix-price L2, CRPS/MAE/RMSE only). It answers a different, easier question. **(M7)** The paper protocol is self-contained in `path_shadowing_pdf.py` (4-block weighted, dim-normalized, frozen-reference-standardized embedding + single-bank nested-prefix sweep + cum/step/RV quantities + coverage/width + bootstrap CIs). |
 | The 4096 datasets + 512 ps queries | `dataset/Heston/preprocessing_with_log_returns/heston_S_{4096x128,test_4096x128,disc_4096x128,ps_512x128}.npy` | ps split = seed 3, strictly independent (§9.3). |
 | The checkpoint schema (to rebuild the generator for the bank) | `LS4/weights/seed_{i}_model.pt` → dict `{model, ema_model, sbts_sigma, x_mu, x_sd, seed}` | Rebuild EMA: wrap `VAE` in `torch.optim.swa_utils.AveragedModel`, `load_state_dict(ckpt["ema_model"])`, use `.module`, then `.eval(); .setup_rnn()`. Invert with the **frozen** `sigma,x_mu,x_sd` from the checkpoint (never re-estimate). |
 
@@ -126,10 +126,10 @@ results/Heston/preprocessing_with_log_returns/
     │   ├── gen_banks.py               # 1M-bank builder (reuses path_shadowing_mc.build_bank)
     │   ├── path_shadowing_pdf.py      # §9 STRICT paper protocol evaluator (the deliverable)
     │   ├── path_shadowing_mc.py       # SUPERSEDED CRPS-only driver — kept only for build_bank
-    │   ├── bank/  generated_bank_seed{0..4}_1000000x128.npy
-    │   ├── logs/  gen_seed{i}.log, pdf_run.log     # generation + eval logged (M2/M7)
+    │   ├── bank/  generated_bank_seed0_1000000x128.npy   # ONE shared 1M bank (gitignored, regenerable)
+    │   ├── logs/  gen_seed0.log, pdf_run.log       # generation + eval logged (M2/M7)
     │   ├── plots/ pdf_crps_vs_banksize.png, pdf_coverage_calibration.png
-    │   └── pdf_results_seed{i}.json + pdf_summary.json
+    │   └── pdf_summary.json                        # all metrics + 95% bootstrap CIs (single run)
     ├── seed_{N}_metrics.json      # one per seed (from compute_metrics_logret.py)
     ├── metrics_summary.csv        # all seeds
     └── gate_seed0_compare.md      # the §7 gate artifact
@@ -401,11 +401,12 @@ mismatch → fixed with §3.3 → re-gated.
 | split `s` | **64** | prefix = points 0..64 (**65 points / 64 increments**), known history |
 | horizon `H` | **32** | forecast points 65..96, anchored at point 64 |
 | queries | **512** | held-out real paths from the **ps** split (seed 3), independent of bank |
-| embedding | **4-block weighted, bank-standardized** | see §9.2 — recent · cumulative · rolling-vol · dependence |
+| bank design | **one shared 1M bank** (seed-0 generator) | the sweep is nested prefixes of this **single** bank; uncertainty comes from the query bootstrap, **not** from a model-seed spread |
+| embedding | **4-block weighted, dim-normalized, frozen-reference-standardized** | see §9.2 — recent · cumulative · rolling-vol · dependence |
 | alignment | **additive-in-log = multiplicative-in-price** | automatic for return quantities (they cancel the anchor) |
 | forecast quantities | **cumulative return · one-step return · horizon RV** | scored independently |
 | metrics | **predictive-mean RMSE · CRPS (energy) · coverage 50/90 · band width 50/90 · lower/upper-90 miss** | per quantity |
-| uncertainty | **2000 path-level bootstrap** | 95% percentile CIs on RMSE + CRPS |
+| uncertainty | **2000-resample paired bootstrap over the 512 queries** | 95% percentile CI on **every** metric; one fixed resample-index matrix (`boot_seed=20230814`) shared across the whole sweep so differences are comparable |
 
 ### 9.2 The 4-block weighted embedding (the heart of the protocol — §3 of the PDF)
 Each prefix (65 log-prices → 64 log-returns `r`) maps to a **D≈73** feature vector, four blocks:
@@ -417,53 +418,129 @@ Each prefix (65 log-prices → 64 log-returns `r`) maps to a **D≈73** feature 
 | rolling vol | rolling-RMS over windows **5/10/20** → **last / mean / std** (9 feats) | **2.0** |
 | dependence | **ACF** of `|r|` and `r²` at lags **1,2,5,10** (8 feats) | **1.0** |
 
-**Bank-standardize, then weight:** `z̃ = √w · (z − μ_bank) / σ_bank`, where `μ_bank, σ_bank` are
-computed **on the current bank-size prefix** (re-estimated for every point of the sweep, not on the
-query). Retrieval = Euclidean KNN (K=256) in this `z̃` space (`sklearn` brute, `n_jobs≤16`).
+**Dimension-normalize, standardize against a frozen reference, then take the KNN.** Per-feature
+weight is `w_block / d`: a block of dimension `d` contributes total mass `w_block`, so a wide block
+(rolling-vol, 9 feats) does **not** dominate a narrow one purely by feature count. The standardization
+`μ_ref, σ_ref` are computed **once on the real Heston test set** (`heston_S_test_4096x128` prefix
+features — model-independent) and held **fixed across the entire bank-size sweep** (and, being real
+data, comparable across methods). Embedding:
+
+```
+z̃ = √(w_block / d) · (z − μ_ref) / σ_ref
+```
+
+Retrieval = **exact** Euclidean KNN (K=256) in this `z̃` space (`sklearn` brute, `n_jobs≤16`,
+lowest-index tie-break). Every one of these choices resolves a paper ambiguity — see the decision
+log in **§9.6**.
 
 ### 9.3 Pipeline
-1. **Build the 1M bank per seed** with `gen_banks.py` (reuses `path_shadowing_mc.build_bank`): prior-
-   sample → §3 inverse → `bank/generated_bank_seed{i}_1000000x128.npy` (float32, ~0.5 GB). **Log it**
-   (`> logs/gen_seed{i}.log`) so paths/s + ETA stream live (M2).
-2. Load the 512 ps queries; build their 4-block features once.
-3. For each **bank size** (nested prefix `B[:bs]`): build bank features, standardize both bank and
-   query by **that** bank's `μ,σ`, retrieve K=256.
-4. From the K neighbours' futures compute the **three quantities** (cum, one-step, RV); the query's
+1. **Build ONE 1M bank** with `gen_banks.py --seed 0` (reuses `path_shadowing_mc.build_bank`): prior-
+   sample → §3 inverse → `bank/generated_bank_seed0_1000000x128.npy` (float32, ~0.5 GB). **Log it**
+   (`> logs/gen_seed0.log`) so paths/s + ETA stream live (M2). This single bank backs the whole sweep.
+2. Compute the **frozen** `μ_ref, σ_ref` once from the real test set (`heston_S_test_4096x128`); load
+   the 512 ps queries and build their 4-block features once.
+3. Build **one fixed paired-bootstrap index matrix** `(2000, 512)` from `boot_seed=20230814`.
+4. For each **bank size** (nested prefix `B[:bs]` of the one bank): build bank features, standardize
+   **both** bank and query by the **frozen** `μ_ref, σ_ref` (never re-estimated), retrieve K=256.
+5. From the K neighbours' futures compute the **three quantities** (cum, one-step, RV); the query's
    own future gives the realized target.
-5. Score every quantity: predictive-mean RMSE, CRPS, coverage 50/90, band width 50/90, lower/upper-90
-   miss. Add **diagnostics** (terminal RMSE, prefix-distance mean/median/p95, unique-candidate
-   fraction, RV mean bias) and **2000-resample bootstrap 95% CIs** on RMSE + CRPS.
-6. Also score a **random-walk baseline** (resample each query's own prefix returns) for context.
-7. Write `pdf_results_seed{i}.json` per seed, aggregate `pdf_summary.json` (mean ± std across seeds
-   per bank size), and `plots/pdf_crps_vs_banksize.png` + `plots/pdf_coverage_calibration.png`.
+6. Score every quantity: predictive-mean RMSE, CRPS, coverage 50/90, band width 50/90, lower/upper-90
+   miss — **each with a 95% CI** from the shared bootstrap index. Add **diagnostics** (terminal RMSE,
+   prefix-distance mean/median/p95, unique-candidate fraction, RV mean bias).
+7. Also score a **random-walk baseline** (resample each query's own prefix returns) for context.
+8. Write a single `pdf_summary.json` (`by_bank_size` → per-quantity metrics with CIs, plus
+   `rw_baseline` and `protocol`) and `plots/pdf_crps_vs_banksize.png` + `plots/pdf_coverage_calibration.png`.
 
 ### 9.4 Why the ps split is separate
 The 512 queries (seed 3) must be **strictly independent** of the train split **and** of the 1M bank,
 or every metric is optimistically biased (the bank could contain near-copies of a query). Seed 3
 guarantees no overlap.
 
-### 9.5 Build the 5 banks, then run the sweep — **always log** (so we can follow generation live)
+### 9.5 Build the one bank, then run the sweep — **always log** (so we can follow generation live)
 ```bash
 cd results/Heston/preprocessing_with_log_returns/<METHOD>/path_shadowing
 PY=/home/tbasseras/gpu-venv/bin/python
 mkdir -p logs bank
 
-# (a) generate the five 1M banks — pack 2 seeds/GPU, LOG each (M2/M3/M5/M6)
-for s in 1 2; do base=$(((s-1)*8)); CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=8 \
-  taskset -c ${base}-$((base+7)) $PY gen_banks.py --seed $s > logs/gen_seed${s}.log 2>&1 < /dev/null & done; wait
-for s in 3 4; do base=$(((s-3)*8)); CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=8 \
-  taskset -c ${base}-$((base+7)) $PY gen_banks.py --seed $s > logs/gen_seed${s}.log 2>&1 < /dev/null & done; wait
-# seed 0 bank already built by the smoke/eval; follow live: tail -f logs/gen_seed*.log
+# (a) generate the ONE 1M bank (seed-0 generator) — LOG it (M2/M3/M5/M6)
+CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=8 taskset -c 0-7 \
+  $PY gen_banks.py --seed 0 > logs/gen_seed0.log 2>&1 < /dev/null &
+tail -f logs/gen_seed0.log   # paths/s + ETA stream live
 
-# (b) run the STRICT protocol across all seeds — LOG it too (pdf_run.log)
-OMP_NUM_THREADS=16 taskset -c 0-15 $PY path_shadowing_pdf.py --seeds 0,1,2,3,4 \
+# (b) run the STRICT protocol (no --seeds; single shared bank) — LOG it too
+OMP_NUM_THREADS=16 taskset -c 0-15 $PY path_shadowing_pdf.py \
   > logs/pdf_run.log 2>&1 < /dev/null &
-tail -f logs/pdf_run.log     # per (seed,bank_size) line: CRPS, coverage, uniq-frac, elapsed
+tail -f logs/pdf_run.log     # per bank_size line: CRPS, coverage, uniq-frac, elapsed
 ```
-Each seed writes `pdf_results_seed{i}.json`; the run writes `pdf_summary.json`. A 1M bank is ~0.5 GB
-float32 each (~2.5 GB for five); delete banks after scoring if disk is tight — the **JSON metrics are
-the deliverable**, not the banks. **Everything (generation *and* evaluation) must go through a log
-file** so progress, ETA, and stalls are visible — never fly blind (M2).
+The run writes a single `pdf_summary.json` (all metrics + 95% bootstrap CIs) + the two plots. The 1M
+bank is ~0.5 GB float32; it is **gitignored** (over GitHub's 100 MB limit) and **regenerable** — the
+**JSON metrics + plots are the deliverable**, not the bank. **Everything (generation *and* evaluation)
+must go through a log file** so progress, ETA, and stalls are visible — never fly blind (M2).
+
+### 9.6 Decision log — every paper ambiguity, and what we chose (READ before touching the driver)
+
+arXiv:2308.01486 under-specifies ~20 knobs. Each was resolved by the **most logical / least
+model-dependent** choice and **frozen in `path_shadowing_pdf.py`** so all methods are comparable.
+Do **not** silently change any of these — a different choice = a different, non-comparable benchmark.
+
+**A — Standardization of the embedding (the critical group — it defines the retrieval geometry)**
+
+| # | Ambiguity | Choice | Why |
+|---|-----------|--------|-----|
+| A1/A15 | Where do `μ,σ` come from? | **Frozen on the real Heston test set** (`heston_S_test_4096x128` prefix features), computed once. | Must be **model-independent**: if `μ,σ` came from each method's own bank, every method would warp its own metric space and scores would be incomparable. Real test data is the neutral shared reference. |
+| A2/A16 | Re-estimated per bank size? | **No — one fixed `μ_ref,σ_ref` across the entire sweep.** | If re-estimated per prefix, distances at 4k vs 1M live in different spaces and the sweep curve is meaningless. Freezing makes the sweep a clean "more candidates, same ruler" experiment. |
+| A3/A17 | Per-feature or one global scalar? | **Per-feature** (each of the 73 dims gets its own `μ,σ`). | Blocks live on wildly different scales (log-returns ~1e-2, ACF ~O(1)); a single scalar lets the largest-scale block dominate the L2 distance. |
+
+**B — Feature construction**
+
+| # | Ambiguity | Choice | Why |
+|---|-----------|--------|-----|
+| B4 | Cumulative-path downsample | `np.linspace(0, 64, 24).round().astype(int)` — 24 evenly-spaced, endpoint-inclusive indices of the cum-log-return. | Deterministic, covers the whole prefix incl. both ends, fixed length 24. |
+| B5 | "Recent returns" order | **Chronological last 32** log-returns (`r[:, -32:]`), not reversed. | Preserves temporal order so the L2 compares like-aligned lags. |
+| B6 | Rolling vol | **Causal trailing RMS**, windows 5/10/20, **valid windows only** (no padding) → last / mean / std (9 feats). | Trailing = uses only known prefix; valid-only avoids edge artifacts; last/mean/std summarize level+trend+dispersion of local vol. |
+| B7 | ACF estimator | **Biased** (denominator = Σr², i.e. N not N−lag), demeaned on the **prefix only**, on series `|r|` and `r²`, lags 1,2,5,10. | Biased ACF is the standard stylized-fact estimator, bounded in [−1,1], stable at short lengths. Prefix-only demeaning avoids leaking the future. |
+| B8 | Weight × dimensionality confound | **Per-block dimension normalization:** per-feature weight `w_block/d`, multiplier `√(w_block/d)`. | Without it a block's influence ∝ `w_block × d`, so recent-returns (32 feats, w1.0) would swamp rolling-vol (9 feats, w2.0) despite vol's 2× intended weight. Normalizing makes each block contribute exactly its `w_block` mass. |
+
+**C — Distance & neighbour selection**
+
+| # | Ambiguity | Choice | Why |
+|---|-----------|--------|-----|
+| C9/C18 | Distance metric | **Exact Euclidean L2** in `z̃` space (`sklearn` brute, not ANN). | 1M×73 is tractable exactly (~21 s), so there is zero approximation error to argue about. |
+| C10/C19 | Tie-break on equal distance | **Lowest index** (`sklearn` default). | Ties are measure-zero on continuous features; the rule is only for determinism. |
+| C11/C20 | Ensemble weighting | **K=256, equal weight**, futures taken in **return space**. | The paper's predictive ensemble is uniform over the K nearest; no distance kernel. Return space makes the log-additive shift cancel (endpoint alignment is automatic). |
+
+**D — Shared fixtures & scoring**
+
+| # | Ambiguity | Choice | Why |
+|---|-----------|--------|-----|
+| D12 | Query set | `heston_S_ps_512x128` (**ps** split, seed 3), disjoint from train **and** bank. | Independence is mandatory — otherwise the bank can contain near-copies of a query and every metric is optimistically biased (§9.4). |
+| D13 | Bootstrap | **Paired percentile bootstrap**, 2000 resamples over the 512 queries, **one fixed index matrix** (`boot_seed=20230814`) reused across every bank size/quantity/metric. CI = [2.5, 97.5] percentiles. | Pairing (shared resample indices) makes sweep/quantity **differences** share their resampling noise → directly comparable. Percentile (not BCa/normal) is the simplest defensible interval. |
+| D14 | Split/horizon geometry | `s=64` (65 pts / 64 incr), `H=32` (points 65..96 anchored at 64), `SEQ_LEN=128`. | Fixed by the benchmark panel; anchor at the split point. |
+
+**Ranked reproducibility list (the knobs most able to move the numbers, high → low):**
+
+1. **KNN feature-space freezing (biggest).** Frozen real-test `μ_ref,σ_ref` + dimension-normalized
+   weights, fixed across the sweep and across methods (A1/A2/A3/B8). This alone defines who is a
+   "neighbour"; get it wrong and nothing downstream is comparable.
+2. **Quantile estimator for the bands.** `np.percentile` **linear / type-7** interpolation for the
+   [5,25,75,95] edges → coverage/width. (No `method=` kwarg is passed, so this is the NumPy default.)
+3. **Sliced-Wasserstein projection params/seed → N/A.** This protocol does **not** use
+   sliced-Wasserstein; the distributional score is **scalar-quantity CRPS via the energy-score /
+   Gini identity** (`term1 − ½·E|Y−Y'|`), which is **exact** for the empirical ensemble — no random
+   projections, no projection seed. Documented here so a future method does not "helpfully" add one.
+4. **All RNG seeds.** Bank generator `torch.manual_seed(1000 + seed)` (seed 0 → 1000); bootstrap
+   `boot_seed=20230814`; RW baseline `default_rng(0)`. Query randomness is fixed by the dataset
+   (seed 3). No other RNG touches the metrics.
+5. **Bootstrap CI method.** Percentile, 2000 resamples, paired (see D13).
+6. **Log-price vs price.** **Everything is computed in LOG space** — returns, the three quantities,
+   and the embedding. Banks/queries are stored as **price** and `np.log`'d on load. The forecast
+   quantities are returns, so the price-anchor shift cancels (additive-in-log = multiplicative-in-price).
+
+**One design decision above the paper: number of banks.** We use **ONE shared 1M bank** (seed-0
+generator), not one-per-model-seed. The paper describes a single bank; the bank-size sweep is nested
+prefixes of it; and **all** uncertainty is the query bootstrap (D13). There is deliberately **no
+model-seed spread** in the PS numbers — the A/B metrics (§8) already carry the 5-seed generator
+dispersion, and mixing a second, bank-sampling source of variance into the PS CIs would muddy them.
 
 ---
 
@@ -499,10 +576,12 @@ file** so progress, ETA, and stalls are visible — never fly blind (M2).
 - [ ] Trained **seed 0**; ran metrics; ran `gate_compare.py`.
 - [ ] **GATE passed** (or fix approved by user). Old-vs-new figures inspected.
 - [ ] Trained seeds 1–4 (§6.2, 2 GPUs max); full `metrics_summary.csv`.
-- [ ] Built the five 1M path-shadowing banks (§9.5, logged). **STRICT paper protocol** run via
-      `path_shadowing_pdf.py` — 4-block embedding + bank-size sweep + cum/step/RV + coverage/width +
-      bootstrap CIs; `pdf_summary.json` + plots produced. **Did NOT reuse the reference murex eval (M7).**
-- [ ] **Generation *and* evaluation logged** (`logs/gen_seed*.log`, `logs/pdf_run.log`) — never flew blind (M2).
+- [ ] Built the **one** shared 1M path-shadowing bank (`gen_banks.py --seed 0`, §9.5, logged).
+      **STRICT paper protocol** run via `path_shadowing_pdf.py` — 4-block dim-normalized
+      frozen-reference embedding + single-bank nested-prefix sweep + cum/step/RV + coverage/width +
+      bootstrap CIs; `pdf_summary.json` + plots produced. Every §9.6 decision honoured. **Did NOT
+      reuse the reference murex eval (M7).**
+- [ ] **Generation *and* evaluation logged** (`logs/gen_seed0.log`, `logs/pdf_run.log`) — never flew blind (M2).
 - [ ] Per-method README written (mirror the main benchmark's).
 - [ ] Everything lives under the two `preprocessing_with_log_returns/` folders; no reference file
       touched.
