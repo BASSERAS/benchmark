@@ -200,12 +200,8 @@ def _crps_scalar(Y, y):
     return term1 - term2
 
 
-def per_path_metrics(Y, y):
-    """
-    Y : (Nq, K) predictive samples, y : (Nq,) realized target.
-    Returns dict of per-path vectors (bootstrap inputs). Quantiles via
-    np.percentile linear/type-7 interpolation.
-    """
+def _per_path_core(Y, y):
+    """Scalar-quantity per-path vectors. Y (Nq,K), y (Nq,) -> dict of (Nq,)."""
     pred_mean = Y.mean(axis=1)
     se = (pred_mean - y) ** 2
     crps = _crps_scalar(Y, y)
@@ -219,6 +215,33 @@ def per_path_metrics(Y, y):
         "lower_miss90": (y < lo90).astype(np.float64),
         "upper_miss90": (y > hi90).astype(np.float64),
     }
+
+
+def per_path_metrics(Y, y):
+    """
+    Per-path (per-query) vectors used as bootstrap inputs.
+
+    Scalar quantity (rv):  Y (Nq,K), y (Nq,).
+    Trajectory quantity (cum, step):  Y (Nq,K,H), y (Nq,H) — the per-(query,horizon)
+    metric is computed at every offset u=1..H and averaged over u, so each returned
+    vector is per-query (Nq,). RMSE via 'se' then sqrt(mean_q) == RMSE over (q,u)
+    per §3.1; coverage/width/miss are averaged over all future times per §3.3.
+    Quantiles via np.percentile linear/type-7 interpolation.
+    """
+    if Y.ndim == 3:
+        Hd = Y.shape[2]
+        acc = None
+        for h in range(Hd):
+            d = _per_path_core(Y[:, :, h], y[:, h])
+            if acc is None:
+                acc = {k: v.astype(np.float64) for k, v in d.items()}
+            else:
+                for k in acc:
+                    acc[k] += d[k]
+        for k in acc:
+            acc[k] /= Hd
+        return acc
+    return _per_path_core(Y, y)
 
 
 def _agg(per, kind):
@@ -244,26 +267,38 @@ def metrics_with_ci(Y, y, boot_idx):
 # ----------------------------------------------------------------------------- quantities
 def forecast_quantities(logpaths):
     """
-    logpaths : (M, SEQ_LEN) log-prices. Return-based quantities anchored at S_IDX:
-      cum  : cumulative log-return over horizon   logS[S_IDX+H]-logS[S_IDX]
-      step : one-step return                      logS[S_IDX+1]-logS[S_IDX]
-      rv   : horizon realized-vol  sqrt(sum r^2 over the H forward steps)
+    logpaths : (M, SEQ_LEN) log-prices. Return-based quantities anchored at S_IDX.
+    Faithful to arXiv:2308.01486 §2/§3.1/§3.3 — cum and step are H-dimensional
+    trajectories over the horizon offsets u=1..H (NOT single terminal scalars):
+      cum  : cumulative log-return trajectory   logS[S_IDX+u]-logS[S_IDX], u=1..H  -> (M,H)
+      step : one-step return trajectory          logS[S_IDX+u]-logS[S_IDX+u-1], u=1..H -> (M,H)
+      rv   : horizon realized-vol scalar         sqrt(sum r^2 over the H forward steps) -> (M,)
+    RMSE/CRPS/coverage/width for cum & step are therefore aggregated over u=1..H
+    (per_path_metrics averages per-query across horizons before the bootstrap).
     """
-    anchor = logpaths[:, S_IDX]
-    cum = logpaths[:, S_IDX + H] - anchor
-    step = logpaths[:, S_IDX + 1] - anchor
-    fwd = np.diff(logpaths[:, S_IDX:S_IDX + H + 1], axis=1)      # (M, H)
-    rv = np.sqrt((fwd * fwd).sum(axis=1))
+    fwd = np.diff(logpaths[:, S_IDX:S_IDX + H + 1], axis=1)      # (M, H) forward increments
+    cum = np.cumsum(fwd, axis=1)                                 # (M, H) trajectory
+    step = fwd                                                   # (M, H) one-step-return trajectory
+    rv = np.sqrt((fwd * fwd).sum(axis=1))                        # (M,)
     return {"cum": cum, "step": step, "rv": rv}
 
 
 # ----------------------------------------------------------------------------- per-bank-size
-def eval_bank(qlogS, q_quant, q_prefix_feat, sqrtw, mu, sd, boot_idx):
-    """Evaluate the single shared 1M bank over the nested bank-size sweep."""
-    bank_path = os.path.join(BANK_DIR, f"generated_bank_seed{BANK_SEED}_1000000x{SEQ_LEN}.npy")
-    B = np.load(bank_path, mmap_mode="r")                       # (1M,128) price
+def eval_bank(qlogS, q_quant, q_prefix_feat, sqrtw, mu, sd, boot_idx,
+              bank=None, bank_seed=BANK_SEED):
+    """Evaluate a bank over the nested bank-size sweep.
+
+    bank : optional in-memory (>=1M, SEQ_LEN) price array (used for the Heston
+    oracle). If None, the single shared 1M LS4 bank is mmap-loaded from disk.
+    All banks are sliced as nested prefixes B[:bs] and standardized with the
+    SAME frozen mu/sd, so LS4 / oracle numbers are directly comparable."""
+    if bank is None:
+        bank_path = os.path.join(BANK_DIR, f"generated_bank_seed{BANK_SEED}_1000000x{SEQ_LEN}.npy")
+        B = np.load(bank_path, mmap_mode="r")                   # (1M,128) price
+    else:
+        B = bank
     q_std = (sqrtw * (q_prefix_feat - mu) / sd).astype(np.float32)
-    out = {"bank_seed": int(BANK_SEED), "by_bank_size": {}}
+    out = {"bank_seed": int(bank_seed), "by_bank_size": {}}
 
     for bs in BANK_SIZES:
         t0 = time.time()
@@ -277,11 +312,12 @@ def eval_bank(qlogS, q_quant, q_prefix_feat, sqrtw, mu, sd, boot_idx):
 
         entry = {"bank_size": int(bs), "quantities": {}, "diagnostics": {}}
         for qn in ("cum", "step", "rv"):
-            Y = b_quant[qn][idx]                                # (Nq,K) predictive
+            Y = b_quant[qn][idx]                                # (Nq,K[,H]) predictive
             entry["quantities"][qn] = metrics_with_ci(Y, q_quant[qn], boot_idx)
 
-        pred_cum_mean = b_quant["cum"][idx].mean(axis=1)
-        term_rmse = float(np.sqrt(((pred_cum_mean - q_quant["cum"]) ** 2).mean()))
+        # Genuine terminal (h=H) RMSE — distinct from the horizon-averaged cum.rmse.
+        pred_term_mean = b_quant["cum"][idx][:, :, -1].mean(axis=1)
+        term_rmse = float(np.sqrt(((pred_term_mean - q_quant["cum"][:, -1]) ** 2).mean()))
         uniq = np.unique(idx).size / float(bs)
         rv_bias = float(b_quant["rv"][idx].mean() - q_quant["rv"].mean())
         entry["diagnostics"] = {
@@ -309,16 +345,58 @@ def rw_baseline(qlogS, q_quant, boot_idx):
     rng = np.random.default_rng(0)
     Nq = qlogS.shape[0]
     K_rw = K
-    cum_s = np.empty((Nq, K_rw)); step_s = np.empty((Nq, K_rw)); rv_s = np.empty((Nq, K_rw))
+    cum_s = np.empty((Nq, K_rw, H)); step_s = np.empty((Nq, K_rw, H)); rv_s = np.empty((Nq, K_rw))
     for i in range(Nq):
         draws = r[i][rng.integers(0, r.shape[1], size=(K_rw, H))]   # (K_rw,H)
-        cum_s[i] = draws.sum(axis=1)
-        step_s[i] = draws[:, 0]
+        cum_s[i] = np.cumsum(draws, axis=1)                        # (K_rw,H) trajectory
+        step_s[i] = draws                                          # (K_rw,H) one-step returns
         rv_s[i] = np.sqrt((draws * draws).sum(axis=1))
     res = {}
     for qn, Y in (("cum", cum_s), ("step", step_s), ("rv", rv_s)):
         res[qn] = metrics_with_ci(Y, q_quant[qn], boot_idx)
     return res
+
+
+# ----------------------------------------------------------------------------- oracle
+# Heston SDE parameters — identical to dataset/Heston/generate_heston.py (the exact
+# law that generated the real test/query paths). The oracle draws a fresh 1M-path
+# bank from THIS true law (independent seed) and runs the same retrieval, giving the
+# protocol *ceiling* (§6): the best a path-shadowing predictor can do when the bank
+# is the true DGP. LS4's gap to the oracle = generator law-mismatch; the oracle's own
+# residual error = irreducible retrieval limit at finite bank size.
+HESTON = dict(MU=0.05, KAPPA=2.0, THETA=0.04, XI=0.3, RHO=-0.7,
+              S0=100.0, V0=0.04, DT=1.0 / 250.0)
+ORACLE_SEED = 777                # independent of test seed and of the LS4 bank seed
+
+
+def generate_heston_bank(n, seed):
+    """Vectorised full-truncation Euler-Maruyama, float64, CPU. Returns (n,SEQ_LEN) prices."""
+    p = HESTON
+    rng = np.random.default_rng(seed)
+    T = SEQ_LEN
+    z1 = rng.normal(size=(n, T - 1)); z2 = rng.normal(size=(n, T - 1))
+    z_s = z1
+    z_v = p["RHO"] * z1 + np.sqrt(1.0 - p["RHO"] ** 2) * z2
+    sdt = np.sqrt(p["DT"])
+    S = np.empty((n, T), dtype=np.float64); v = np.empty((n, T), dtype=np.float64)
+    S[:, 0] = p["S0"]; v[:, 0] = p["V0"]
+    for t in range(1, T):
+        vp = np.maximum(v[:, t - 1], 0.0)
+        v[:, t] = np.maximum(v[:, t - 1] + p["KAPPA"] * (p["THETA"] - vp) * p["DT"]
+                             + p["XI"] * np.sqrt(vp) * sdt * z_v[:, t - 1], 0.0)
+        S[:, t] = S[:, t - 1] + p["MU"] * S[:, t - 1] * p["DT"] \
+            + np.sqrt(vp) * S[:, t - 1] * sdt * z_s[:, t - 1]
+    return S
+
+
+def oracle_baseline(qlogS, q_quant, q_prefix_feat, sqrtw, mu, sd, boot_idx):
+    """Heston-oracle ceiling: retrieve from a fresh 1M true-Heston bank (same sweep)."""
+    t0 = time.time()
+    B = generate_heston_bank(BANK_SIZES[-1], ORACLE_SEED)       # (1M,128) true-law prices
+    print(f"[pdf] oracle bank generated {B.shape} in {time.time()-t0:.1f}s "
+          f"(Heston seed={ORACLE_SEED})", flush=True)
+    return eval_bank(qlogS, q_quant, q_prefix_feat, sqrtw, mu, sd, boot_idx,
+                     bank=B, bank_seed=ORACLE_SEED)
 
 
 # ----------------------------------------------------------------------------- plots
@@ -331,14 +409,19 @@ def make_plots(summary):
 
     # CRPS vs bank size (all quantities), with 95% bootstrap CI band
     fig, ax = plt.subplots(figsize=(7, 5))
+    orc = summary.get("heston_oracle", {}).get("by_bank_size")
     for qn, c in (("cum", "C0"), ("step", "C1"), ("rv", "C2")):
         m = [summary["by_bank_size"][str(b)]["quantities"][qn]["crps"]["value"] for b in bss]
         lo = [summary["by_bank_size"][str(b)]["quantities"][qn]["crps"]["ci"][0] for b in bss]
         hi = [summary["by_bank_size"][str(b)]["quantities"][qn]["crps"]["ci"][1] for b in bss]
-        ax.plot(bss, m, marker="o", label=qn, color=c)
+        ax.plot(bss, m, marker="o", label=f"{qn} (LS4)", color=c)
         ax.fill_between(bss, lo, hi, color=c, alpha=0.2)
+        if orc:
+            mo = [orc[str(b)]["quantities"][qn]["crps"]["value"] for b in bss]
+            ax.plot(bss, mo, marker="s", ls="--", color=c, alpha=0.7,
+                    label=f"{qn} (Heston oracle)")
     ax.set_xscale("log"); ax.set_xlabel("bank size"); ax.set_ylabel("CRPS")
-    ax.set_title("LS4+logret Path-Shadowing CRPS vs bank size (one 1M bank, 95% CI)")
+    ax.set_title("LS4+logret vs Heston-oracle Path-Shadowing CRPS (one 1M bank, 95% CI)")
     ax.legend(); ax.grid(alpha=0.3)
     fig.tight_layout(); fig.savefig(os.path.join(PLOT_DIR, "pdf_crps_vs_banksize.png"), dpi=130)
     plt.close(fig)
@@ -382,8 +465,14 @@ def main():
     print(f"[pdf] RW baseline CRPS cum={rw['cum']['crps']['value']:.5f} "
           f"step={rw['step']['crps']['value']:.5f} rv={rw['rv']['crps']['value']:.5f}", flush=True)
 
+    oracle = oracle_baseline(qlogS, q_quant, q_prefix_feat, sqrtw, mu, sd, boot_idx)
+    ob = oracle["by_bank_size"][str(BANK_SIZES[-1])]["quantities"]
+    print(f"[pdf] Heston oracle CRPS cum={ob['cum']['crps']['value']:.5f} "
+          f"step={ob['step']['crps']['value']:.5f} rv={ob['rv']['crps']['value']:.5f}", flush=True)
+
     summary = eval_bank(qlogS, q_quant, q_prefix_feat, sqrtw, mu, sd, boot_idx)
     summary["rw_baseline"] = rw
+    summary["heston_oracle"] = oracle
     summary["protocol"] = {
         "design": "one_shared_1M_bank",
         "S_IDX": S_IDX, "H": H, "K": K, "bank_sizes": BANK_SIZES,
@@ -391,6 +480,23 @@ def main():
         "boot_seed": BOOT_SEED, "block_weights": BLOCK_W,
         "block_dim_normalized": True, "frozen_reference": os.path.basename(REF_STATS),
         "feature_dim": int(q_prefix_feat.shape[1]),
+        "forecast_quantities": {
+            "cum": "H-dim cumulative log-return trajectory u=1..H",
+            "step": "H-dim one-step-return trajectory u=1..H",
+            "rv": "scalar horizon realized-vol",
+            "aggregation": "cum/step metrics averaged over u=1..H per §3.1/§3.3",
+        },
+        "heston_oracle": {"seed": ORACLE_SEED, "params": HESTON,
+                          "role": "protocol ceiling (§6): retrieval from the true DGP"},
+        "deviations_from_literal_1_1": [
+            "per-block dimension normalization: per-feature weight w_block/d, "
+            "multiplier sqrt(w_block/d) — §1.1 uses sqrt(w_b) with no /d",
+            "frozen-reference standardization: mu/sigma computed once on the real "
+            "test set and held fixed across the sweep — §1.1 standardizes with the "
+            "candidate bank's own mu/sigma",
+        ],
+        "eligibility_gates_5_1": "N/A — fixed 100-epoch training, no checkpoint "
+                                 "selection; no per-generator gating applied",
     }
     with open(os.path.join(HERE, "pdf_summary.json"), "w") as f:
         json.dump(summary, f, indent=2)

@@ -517,6 +517,20 @@ Do **not** silently change any of these — a different choice = a different, no
 | D13 | Bootstrap | **Paired percentile bootstrap**, 2000 resamples over the 512 queries, **one fixed index matrix** (`boot_seed=20230814`) reused across every bank size/quantity/metric. CI = [2.5, 97.5] percentiles. | Pairing (shared resample indices) makes sweep/quantity **differences** share their resampling noise → directly comparable. Percentile (not BCa/normal) is the simplest defensible interval. |
 | D14 | Split/horizon geometry | `s=64` (65 pts / 64 incr), `H=32` (points 65..96 anchored at 64), `SEQ_LEN=128`. | Fixed by the benchmark panel; anchor at the split point. |
 
+**E — Forecast-quantity dimensionality (fixed 2026-07-28; was a real bug before)**
+
+| # | Ambiguity | Choice | Why |
+|---|-----------|--------|-----|
+| E15 | Are cum / one-step returns scalars or trajectories? | **H-dimensional trajectories over offsets u=1…H.** `cum_u = logS[s+u]−logS[s]`, `step_u = logS[s+u]−logS[s+u−1]`; RMSE/CRPS/coverage/width are computed at every u and **averaged over u=1…H** before the query bootstrap. RV stays the scalar `√Σr²`. | §2/§3.1/§3.3 define cum & step as h-indexed running trajectories aggregated over all future times — **not** a single terminal point. The earlier build scored cum only at h=H and step only at h=1, which (a) answered an easier single-horizon question and (b) made the "terminal RMSE" diagnostic **identical** to cum RMSE by construction (the M-tagged identity bug). Trajectory scoring fixes both; terminal (h=H) RMSE is now a genuinely distinct diagnostic. |
+| E16 | How does the query bootstrap interact with the horizon average? | Per-query metric = **mean over u** of the per-(query,u) value; the 2000-resample bootstrap then resamples **queries** (not (query,u) pairs). RMSE aggregates as `√(mean_q mean_u se)`. | Keeps the bootstrap unit = the 512 independent query paths (D13); horizons within a query are not independent so they are averaged, not resampled. |
+
+**F — Heston oracle (protocol ceiling, §6)**
+
+| # | Ambiguity | Choice | Why |
+|---|-----------|--------|-----|
+| F17 | Is there an upper-bound reference besides the RW floor? | **Yes — a Heston oracle.** A fresh **1M-path bank drawn from the true Heston law** (identical SDE params as `dataset/Heston/generate_heston.py`; independent seed **777**), run through the *same* retrieval+forecast+frozen-standardization pipeline over the full sweep. Reported as a third column beside LS4 and RW in the README, and stored under `heston_oracle` in `pdf_summary.json`. | §6 calls the true-DGP retrieval the protocol **ceiling**. Without it, RW (floor) alone cannot separate a method's *retrieval limit* from its *generator law-mismatch*: LS4's gap **to the oracle** = law-mismatch; the oracle's own residual = irreducible finite-bank retrieval error. This is what exposed LS4's RV upper-tail under-coverage (0.799 vs the oracle's 0.924) as a law-mismatch, not a bank-size artefact. |
+| F18 | §5.1 eligibility gates (path SW ≤1.10×, stylized-fact error caps)? | **N/A — not applied.** Fixed 100-epoch training, no checkpoint selection, no per-generator gating. Recorded here as the audit trail. | The gates in §5.1 filter *candidate checkpoints*; this experiment has exactly one checkpoint per seed, so there is nothing to gate. Documented so a reader does not assume a silent filter. |
+
 **Ranked reproducibility list (the knobs most able to move the numbers, high → low):**
 
 1. **KNN feature-space freezing (biggest).** Frozen real-test `μ_ref,σ_ref` + dimension-normalized
@@ -567,10 +581,12 @@ dispersion, and mixing a second, bank-sampling source of variance into the PS CI
   6. `## A18, Discriminative Classifier Training Loss` — `plots/disc_classifier_loss.png`.
   7. `## A19, Predictive Score Training Loss (TSTR)` — `plots/pred_score_loss.png`.
   8. `## Path Shadowing — strict paper protocol (arXiv:2308.01486)` — the **STRICT** §9 tables
-     (per-quantity cum/step/RV across the bank-size sweep, CRPS + coverage/width + bootstrap CIs vs the
-     RW baseline, `pdf_*.png`). **K = 256** (paper §4). This slot mirrors the template's "Path Shadowing
-     MC" position but its **content is strictly the paper protocol** — **never** the old murex K=77
-     CRPS-only H=32/64 table (M7).
+     (per-quantity cum/step/RV across the bank-size sweep, **full 8-metric set** RMSE + CRPS +
+     coverage 50/90 + width 50/90 + lower/upper-90 miss, bootstrap CIs, `pdf_*.png`). **K = 256**
+     (paper §4). cum/step are **horizon-averaged trajectories** over u=1…H (§9.6 E15), not terminal
+     scalars. Report **three references side by side**: LS4 (under test), **Heston oracle** (ceiling,
+     §9.6 F17), and RW (floor). This slot mirrors the template's "Path Shadowing MC" position but its
+     **content is strictly the paper protocol** — **never** the old murex K=77 CRPS-only H=32/64 table (M7).
   9. `## File layout` — folder tree.
   10. `## Reproduce` — bash commands.
   - **Then, below the template block:** `## Preprocessing (the <variant> transform)` (§3 forward +

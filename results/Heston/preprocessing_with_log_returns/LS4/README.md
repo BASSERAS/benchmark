@@ -192,64 +192,112 @@ frozen-reference-standardized** feature vector — recent returns (last 32, w1.0
 `|r|` & `r²` at lags 1,2,5,10, w1.0). Each block is **dimension-normalized** (per-feature weight
 `w_block/d`) and standardized against **frozen μ/σ computed once on the real Heston test set**
 (`heston_S_test_4096x128`, model-independent, held fixed across the whole sweep):
-`z̃ = √(w/d)·(z−μ_ref)/σ_ref`. Retrieve **K = 256** nearest LS4+logret bank paths; their futures give
-the predictive ensemble for three return-based quantities (**cumulative return, one-step return,
-horizon RV**). Split `s = 64`, horizon `H = 32`, **512** independent query paths (seed 3).
-**One shared 1 000 000-path bank** built from the seed-0 generator
-(`path_shadowing/bank/generated_bank_seed0_1000000x128.npy`, ~0.5 GB, gitignored + regenerable),
-evaluated as **nested prefixes** over the bank-size sweep {4096, 16384, 65536, 262144, 1 000 000}.
-Metrics per quantity: predictive-mean RMSE, CRPS (energy), coverage 50/90, band width 50/90,
-lower/upper-90 miss — each with a **2000-resample paired bootstrap 95% CI over the 512 query paths**
-(single fixed resample-index matrix, `boot_seed=20230814`, shared across all bank sizes/quantities).
+`z̃ = √(w/d)·(z−μ_ref)/σ_ref`. Retrieve **K = 256** nearest bank paths; their futures give the
+predictive ensemble for three return-based quantities. Per arXiv:2308.01486 §2/§3.1/§3.3 the
+**cumulative return** and **one-step return** are evaluated as **H-dimensional trajectories over the
+horizon offsets u = 1…H** (RMSE/CRPS/coverage/width averaged over all future times, not a single
+terminal point); **horizon RV** is the scalar `√Σr²`. Split `s = 64`, horizon `H = 32`, **512**
+independent query paths (seed 3). Metrics per quantity: predictive-mean RMSE, CRPS (energy),
+coverage 50/90, band width 50/90, lower/upper-90 miss — each with a **2000-resample paired bootstrap
+95% CI over the 512 query paths** (single fixed resample-index matrix, `boot_seed=20230814`, shared
+across all bank sizes / quantities / references).
+
+**Three references, one protocol.** The same retrieval+forecast pipeline is run against three banks,
+all sliced as **nested prefixes** over the sweep {4096, 16384, 65536, 262144, 1 000 000}:
+
+- **LS4+logret** — the generator under test. One shared 1M bank from the seed-0 generator
+  (`path_shadowing/bank/generated_bank_seed0_1000000x128.npy`, ~0.5 GB, gitignored + regenerable).
+- **Heston oracle (ceiling, §6)** — a fresh 1M bank drawn from the *true* Heston law (identical SDE
+  parameters as the test set; independent seed 777). This is the best any path-shadowing predictor
+  can achieve. **LS4's gap to the oracle = generator law-mismatch; the oracle's own residual error =
+  irreducible retrieval limit at finite bank size.**
+- **Random-walk (floor)** — resamples each query's own prefix returns (no cross-path information).
+
+> **Deviations from literal §1.1, deliberate (see [`../GUIDELINE.md` §9.6](../GUIDELINE.md)):**
+> (a) per-block **dimension normalization** — per-feature weight `w_block/d`, multiplier `√(w_block/d)`;
+> §1.1 uses `√w_b` with no `/d`. (b) **frozen-reference standardization** — μ/σ fixed once on the
+> real test set; §1.1 standardizes with each candidate bank's own μ/σ. Both decouple the metric from
+> the generator and keep LS4 / oracle / RW on one comparable scale. **§5.1 eligibility gates: N/A** —
+> fixed 100-epoch training, no checkpoint selection, no per-generator gating.
 
 <!-- PS-PDF-TABLE-START -->
-All numbers are at the full **1 000 000-path bank** (log-return scale; lower CRPS/RMSE better).
-Brackets are **95% bootstrap CIs over the 512 query paths**; nominal coverage in parentheses. The RW
-baseline resamples each query's own prefix returns.
+All numbers are at the full **1 000 000-path bank** (log-return scale; lower is better except
+coverage, whose target is the nominal level 0.50 / 0.90). Brackets are **95% bootstrap CIs over the
+512 query paths**. cum/step are **horizon-averaged over u = 1…H**.
 
-**Headline — 1M bank, LS4+logret vs random-walk baseline**
+**Cumulative return (trajectory, u = 1…H)** — LS4 vs Heston-oracle ceiling vs RW floor
 
-| Quantity | RMSE (LS4) | RMSE (RW) | CRPS (LS4) | CRPS (RW) | cov90 LS4 (0.90) | width90 (LS4/RW) |
-|----------|-----------:|----------:|-----------:|----------:|:----------------:|:----------------:|
-| **cumulative return** | **0.0691** [0.0638, 0.0745] | 0.0836 | **0.03745** [0.03467, 0.04029] | 0.04668 | 0.879 [0.852, 0.906] (0.818) | 0.197 / 0.223 |
-| one-step return       | **0.01234** [0.01148, 0.01321] | 0.01248 | **0.006748** [0.006283, 0.007252] | 0.006885 | 0.869 [0.840, 0.900] (0.893) | 0.0359 / 0.0395 |
-| horizon RV            | **0.01819** [0.01703, 0.01943] | 0.01876 | **0.010319** [0.009626, 0.011096] | 0.011677 | 0.799 [0.766, 0.832] (**0.533**) | 0.0459 / 0.0287 |
+| metric | LS4+logret | Heston oracle | RW floor |
+|--------|:----------:|:-------------:|:--------:|
+| RMSE          | **0.0489** [0.0459, 0.0519] | 0.0491 [0.0460, 0.0521] | 0.0567 [0.0533, 0.0599] |
+| CRPS          | **0.0253** [0.0239, 0.0268] | 0.0252 [0.0238, 0.0267] | 0.0295 [0.0278, 0.0311] |
+| coverage 50   | 0.469 [0.445, 0.492] | 0.489 [0.466, 0.513] | 0.472 [0.446, 0.500] |
+| coverage 90   | 0.868 [0.851, 0.886] | 0.894 [0.878, 0.910] | 0.855 [0.836, 0.875] |
+| width 50      | 0.0536 | 0.0572 | 0.0629 |
+| width 90      | 0.1349 | 0.1465 | 0.1520 |
+| lower-miss 90 | 0.0676 | 0.0546 | 0.0833 |
+| upper-miss 90 | 0.0643 | 0.0513 | 0.0613 |
 
-LS4+logret **beats the random walk on every quantity and metric**. The margin is largest on
-cumulative return (CRPS −19.8%, RMSE −17.3%) and realized vol (CRPS −11.6%); one-step return is
-nearly a coin-flip (−2.0%), as expected since a single Heston increment is almost pure noise. RV is
-where PS-MC clearly earns its keep: the RW's RV band is badly miscalibrated (coverage **0.53** vs
-nominal 0.90), while the shadowed ensemble reaches 0.799.
+**One-step return (trajectory, u = 1…H)**
 
-**Bank-size sweep — cum CRPS [95% CI], plus one-step/RV CRPS (nested prefixes of the one 1M bank)**
+| metric | LS4+logret | Heston oracle | RW floor |
+|--------|:----------:|:-------------:|:--------:|
+| RMSE          | 0.0124 [0.0121, 0.0128] | 0.0124 [0.0121, 0.0128] | 0.0125 [0.0122, 0.0129] |
+| CRPS          | 0.0068 [0.0066, 0.0070] | 0.0068 [0.0066, 0.0070] | 0.0069 [0.0067, 0.0071] |
+| coverage 90   | 0.864 [0.856, 0.872] | 0.886 [0.879, 0.894] | 0.887 [0.878, 0.894] |
+| width 90      | 0.0354 | 0.0382 | 0.0397 |
+| lower/upper-miss 90 | 0.0692 / 0.0668 | 0.0573 / 0.0563 | 0.0593 / 0.0541 |
 
-| bank size | cum CRPS | one-step CRPS | RV CRPS | unique-cand frac | prefix dist (mean) |
-|----------:|---------:|--------------:|--------:|:----------------:|:------------------:|
-| 4 096     | 0.03770 [0.0349, 0.0406] | 0.006785 | 0.010977 | 0.998 | 1.936 |
-| 16 384    | 0.03763 [0.0348, 0.0405] | 0.006772 | 0.010659 | 0.968 | 1.767 |
-| 65 536    | 0.03757 [0.0348, 0.0404] | 0.006773 | 0.010482 | 0.752 | 1.639 |
-| 262 144   | 0.03756 [0.0348, 0.0404] | 0.006804 | 0.010380 | 0.356 | 1.537 |
-| 1 000 000 | 0.03745 [0.0347, 0.0403] | 0.006748 | 0.010319 | 0.118 | 1.454 |
+**Horizon realized vol (scalar) — the diagnostic quantity**
 
-**The sweep is flat for cumulative and one-step return** — growing the bank 244× (4k→1M) moves their
-CRPS by <1% (well within the bootstrap CI). Only **realized vol** improves monotonically
-(0.010977→0.010319, −6.0%). Meanwhile the mean prefix distance keeps shrinking (1.936→1.454) and the
-unique-candidate fraction collapses (0.998→0.118): a bigger bank does supply geometrically closer
-shadows, but for return-level forecasts LS4's generated distribution saturates the useful shadowing
-content by ~4k paths. The 1M bank is required by the protocol and pays off only for the vol quantity.
-(Prefix distances are on the dimension-normalized embedding scale, hence smaller than a raw
-sum-of-squares embedding.)
+| metric | LS4+logret | Heston oracle | RW floor |
+|--------|:----------:|:-------------:|:--------:|
+| RMSE          | 0.0182 [0.0170, 0.0194] | **0.0162** [0.0152, 0.0173] | 0.0188 [0.0176, 0.0198] |
+| CRPS          | 0.0103 [0.0096, 0.0111] | **0.0091** [0.0086, 0.0097] | 0.0117 [0.0109, 0.0125] |
+| coverage 50   | 0.410 [0.369, 0.451] | 0.473 [0.428, 0.514] | 0.234 [0.197, 0.272] |
+| coverage 90   | 0.799 [0.766, 0.832] | **0.924** [0.900, 0.945] | 0.533 [0.492, 0.576] |
+| width 50 / 90 | 0.0191 / 0.0459 | 0.0222 / 0.0541 | 0.0120 / 0.0287 |
+| lower-miss 90 | 0.0508 | 0.0293 | 0.2891 |
+| upper-miss 90 | **0.1504** [0.1211, 0.1816] | 0.0469 [0.0293, 0.0664] | 0.1777 |
 
-**Diagnostics (1M bank)**
+**Reading it.** On **cumulative and one-step return LS4+logret sits *on* the oracle ceiling** — RMSE
+0.0489 vs 0.0491 and CRPS 0.0253 vs 0.0252 for cum, with fully overlapping CIs; step is a three-way
+tie. LS4's return-level forecasting is statistically indistinguishable from the true Heston law, and
+both clear the RW floor (cum CRPS −14% vs RW). **RV is where a real gap appears.** LS4's RV CRPS
+(0.0103) is significantly above the oracle's (0.0091) — the CIs [0.0096, 0.0111] and [0.0086, 0.0097]
+barely touch — and its 90% band under-covers (**0.799 vs the oracle's 0.924**) with an
+**upper-miss of 0.150 vs the oracle's 0.047** and a low RV bias (−0.0059 vs −0.0020). The oracle is
+well-calibrated here, so this is **not** a retrieval limit: it is a **generator law-mismatch — LS4
+under-represents the upper tail of realized volatility** (high-vol Heston regimes). This is exactly
+the diagnosis the RW floor alone could not give.
 
-| terminal RMSE | prefix dist mean / median / p95 | unique-cand frac | RV mean bias |
-|:-------------:|:-------------------------------:|:----------------:|:------------:|
-| 0.0691 | 1.454 / 1.407 / 2.021 | 0.118 | −0.0059 |
+**Bank-size sweep — CRPS by quantity (LS4 above, Heston oracle below; nested prefixes)**
 
-Coverage is **near-nominal on cumulative return** (0.879 @ 90%) but **below nominal on RV** (0.799)
-→ the ensemble is slightly over-confident on the vol quantity; RV is under-predicted by ~0.6%
-(negative bias). Full **2000-resample bootstrap 95% CIs** on every metric are in
-`path_shadowing/pdf_summary.json`.
+| bank size | cum LS4 / ORC | step LS4 / ORC | RV LS4 / ORC | uniq-frac | prefix dist (mean) |
+|----------:|:-------------:|:--------------:|:------------:|:---------:|:------------------:|
+| 4 096     | 0.02544 / 0.02539 | 0.00679 / 0.00677 | 0.01098 / 0.00978 | 0.998 | 1.936 |
+| 16 384    | 0.02542 / 0.02535 | 0.00679 / 0.00676 | 0.01066 / 0.00951 | 0.968 | 1.767 |
+| 65 536    | 0.02536 / 0.02524 | 0.00679 / 0.00675 | 0.01048 / 0.00933 | 0.752 | 1.639 |
+| 262 144   | 0.02536 / 0.02524 | 0.00678 / 0.00675 | 0.01038 / 0.00926 | 0.356 | 1.537 |
+| 1 000 000 | 0.02534 / 0.02525 | 0.00678 / 0.00675 | 0.01032 / 0.00914 | 0.118 | 1.454 |
+
+**Cum and step CRPS are flat across a 244× bank increase** (<0.5%, within CI) for both LS4 and the
+oracle — return-level shadowing content saturates by ~4k paths. **Only RV improves monotonically**,
+and the LS4↔oracle RV gap (~0.0012 CRPS) is **constant across the sweep**: a bigger bank does not
+close it, confirming the gap is a law-mismatch, not a finite-bank artefact. The mean prefix distance
+shrinks (1.936→1.454) and the unique-candidate fraction collapses (0.998→0.118) identically for both
+banks (distances on the dimension-normalized embedding scale).
+
+**Diagnostics (1M bank) — LS4 / oracle**
+
+| terminal (h=H) RMSE | prefix dist mean/median/p95 | unique-cand frac | RV mean bias |
+|:-------------------:|:---------------------------:|:----------------:|:------------:|
+| 0.0691 / 0.0694 | 1.454 / 1.407 / 2.021 | 0.118 / 0.119 | −0.0059 / −0.0020 |
+
+Terminal (h=H) RMSE 0.0691 is now a genuine single-horizon diagnostic, **distinct** from the
+horizon-averaged cumulative RMSE 0.0489 (the earlier build reported them as identical because cum was
+mistakenly evaluated only at h=H). Full **2000-resample bootstrap 95% CIs** on every metric for all
+three references are in `path_shadowing/pdf_summary.json`.
 <!-- PS-PDF-TABLE-END -->
 
 Driver: [`path_shadowing/path_shadowing_pdf.py`](path_shadowing/path_shadowing_pdf.py)
