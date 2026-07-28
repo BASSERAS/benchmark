@@ -1,9 +1,12 @@
 # The single shared 1M-path bank is 489 MB (float32, 1e6 x 128) — over GitHub's
-# 100 MB hard file limit, so it is NOT committed. It is fully reproducible and is
-# the *input*, not the deliverable (the deliverable is ../pdf_summary.json + plots).
+# 100 MB hard file limit, so it is committed via **Git LFS** (see ../../../../.gitattributes:
+# this bank/*.npy pattern is filter=lfs). It is fully reproducible and is the *input*,
+# not the deliverable (the deliverable is ../pdf_summary.json + plots).
 #
 # Regenerate the one bank (see ../../../GUIDELINE.md §9.5):
 #   PY=/home/tbasseras/gpu-venv/bin/python
 #   CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=8 taskset -c 0-7 \
 #     $PY ../gen_banks.py --seed 0 > ../logs/gen_seed0.log 2>&1
-*.npy
+#
+# NOTE: free GitHub LFS = 1 GiB storage + 1 GiB/month bandwidth. This 489 MB file
+# uses ~half the storage and each fresh clone/pull burns ~489 MB of the monthly quota.
