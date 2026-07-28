@@ -617,54 +617,198 @@ dispersion, and mixing a second, bank-sampling source of variance into the PS CI
 - **Experiment README** ([`README.md`](README.md)): overview, the §3 preprocessing (forward +
   inverse + dummy col), the §3.4 sigma estimation with the value table, the datasets table, and
   the methods table. Already written.
-- **Per-method README** (`<METHOD>/README.md`): mirror `methods/<METHOD>/README.md` **in this exact
-  section order** (Theo's rule — the top block must be structurally identical to the canonical
-  per-method report so the variant and the original are directly comparable). The preprocessing +
-  head-to-head verdict go **below** this block, not above it:
-  1. **Title** `# <METHOD> on Heston — <variant>` + a one-line intro pointing to the original run.
-  2. `## Metrics A1-A34 + B, mean ± std across 5 seeds` — 7-col table (Mean ± Std · Seed 0–4 ·
-     Perfect floor), rows grouped by category with `| **, <Category>, ** | … |` separator rows in the
-     exact order **Fat Tail → Distribution → Adversarial → Predictive → Temporal → Vol → Heston Spec**
-     (A1–A5, A6–A17, A18, A19, A20–A24, A25–A32, A33–A34), plus the convention + per-metric footnotes.
-     The Perfect-floor column is dataset-derived and **identical across methods** — reuse it verbatim.
-  3. `## B, Curve-Shape Metrics, mean ± std across 5 seeds` — grid_tvd top row, then **5 sub-rows per
-     plot**: MSE (mean-of-3 funct+der+sec_der), % err, NRMSE, CVaR₉₀, CVaR₉₅ (funct-only). Per-seed +
-     Perfect floor. Six plots: log-ret hist · QQ · ACF|r| · ACFr² · rolling-vol hist · tail survival.
-  4. `## Stylised Facts Diagnostic` — `plots/heston_diagnostics.png`.
-  5. `## <METHOD> Training Loss (5 seeds)` — `losses/loss_convergence.png`.
-  6. `## A18, Discriminative Classifier Training Loss` — `plots/disc_classifier_loss.png`.
-  7. `## A19, Predictive Score Training Loss (TSTR)` — `plots/pred_score_loss.png`.
-  8. `## Path Shadowing — strict paper protocol (arXiv:2308.01486)` — the **STRICT** §9 tables
-     (per-quantity cum/step/RV across the bank-size sweep, **full 8-metric set** RMSE + CRPS +
-     coverage 50/90 + width 50/90 + lower/upper-90 miss, bootstrap CIs, `pdf_*.png`). **K = 256**
-     (paper §4). cum/step are **horizon-averaged trajectories** over u=1…H (§9.6 E15), not terminal
-     scalars. Report **three references side by side**: LS4 (under test), **Heston oracle** (ceiling,
-     §9.6 F17), and RW (floor). This slot mirrors the template's "Path Shadowing MC" position but its
-     **content is strictly the paper protocol** — **never** the old murex K=77 CRPS-only H=32/64 table (M7).
-  9. `## File layout` — folder tree.
-  10. `## Reproduce` — bash commands.
-  - **Then, below the template block, two sections in this order:**
-    - `## Preprocessing (the <variant> transform)` — §3 forward + inverse + §3.3 wrapper, with the
-      round-trip assertion and the frozen `sigma` value.
-    - `## Results — does <variant> help <METHOD>?` — the **head-to-head verdict** built from §7.1's
-      no-preproc baseline. Structure (all required):
-      1. **One-line thesis** stating the winner up front (e.g. "log-return preprocessing **helps** LS4:
-         it improves N of M headline metrics, ties on K, regresses on none").
-      2. **A-metric comparison table**, seed 0, **3 columns**: `with-preproc | no-preproc | signed Δ%`
-         (Δ relative to no-preproc; sign oriented so **negative = with-preproc better** on lower-better
-         metrics — state the orientation in a footnote). Include at least the dispersion/shape headline
-         rows (`A26_std_error`, `A6/A7 mmd2`, `A28_kurtosis_ratio`, `A30_vol_path_rmse`) + a bolded
-         **winner** cell per row.
-      3. **B-curve comparison table**, same 3-column shape, the six curve-shape MSE/%err rows +
-         `grid_tvd`.
-      4. **The 4096-path caveat** — both sides trained on 4096 (not the main benchmark's full count), so
-         the comparison is internally valid (same budget both sides) but its *absolute* level is not the
-         main-benchmark level.
-      5. **Verdict paragraph** — which scaler wins and *why* (tie back to §0.1: does this model have a
-         fixed output-noise floor that unit-variance input rescues?). Latent projections, if kept, sit
-         here as a subsection.
-- Follow GitHub math rules: no `\;`/`\,` in `$$`, no trailing comma on intermediate lines, no bare
-  `*` in superscripts.
+
+The **per-method README** (`<METHOD>/README.md`) is the deliverable and must reproduce LS4's README
+depth **exactly** — same sections, same table schemas, same conventions, same footnotes — with only
+`<METHOD>` / `<variant>` / the numeric cells changed. Everything below is the **literal spec**: copy
+each header verbatim, fill the cells from `metrics_summary.csv` / `seed_N_metrics.json` /
+`pdf_summary.json`, never re-order or drop a row. Section order is Theo's rule (top block ≡ canonical
+report so variant and original are directly comparable); the preprocessing + head-to-head verdict go
+**below** this block, never above it.
+
+### 10.0 Per-method README — section-by-section table spec
+
+**§0 · Title + intro (no table).** `# <METHOD> on Heston — <variant>`. One paragraph: what the
+reference model is (author, venue, arXiv id), that it is trained on **4 096** paths (seq_len 128)
+with the `<variant>` transform in place of the model's native input, everything else held fixed
+against the original run at `../../<METHOD>/`. Add the **data-split blockquote** verbatim (it is
+dataset-derived, identical across methods): generator trained on **seed 0**; every A/B metric scores
+generated vs the **test set (seed 1)**; A18 uses a **third real set (seed 2)** as the "real" class;
+no metric scored against training data.
+
+**§1 · `## Metrics A1-A34 + B, mean ± std across 5 seeds`.** Lead with the units blockquote
+(`> All metrics on log-returns $r_t = \log(S_{t+1}/S_t)$ unless noted. A26 uses price increments
+$\Delta S_t$.`). Then an **8-column** table:
+
+| col | header | source |
+|-----|--------|--------|
+| 1 | `Metric` | fixed label incl. arrow (`↓`/`↑`/`→ 1`) |
+| 2 | `Mean ± Std` | 5-seed mean ± sample std |
+| 3–7 | `Seed 0` … `Seed 4` | per-seed value |
+| 8 | `Perfect floor` | **dataset-derived, identical across methods — reuse LS4's column verbatim** |
+
+Rows are grouped by **7 category separator rows** `| **, <Category>, ** | | | | | | | |` in this
+**exact order and range** (37 metric rows total — A18 and A19 each split into a **GRU** and an **MLP**
+row):
+
+| separator | metrics | rows |
+|-----------|---------|------|
+| `**, Fat Tail, **` | A1–A5 | 5 |
+| `**, Distribution, **` | A6–A17 | 12 |
+| `**, Adversarial, **` | A18 | 2 (GRU, MLP) |
+| `**, Predictive, **` | A19 | 2 (GRU, MLP) |
+| `**, Temporal, **` | A20–A24 | 5 |
+| `**, Vol, **` | A25–A32 | 8 |
+| `**, Heston Spec, **` | A33–A34 | 2 (A33 `↑`, A34 `↓`) |
+
+Close with the **convention blockquote** (`↓` lower better · `↑` higher better · A28 Kurtosis Ratio
+perfect = 1.0) followed by the **7-line per-metric footnote block** defining A1…A34 (copy LS4's
+wording verbatim — the definitions are method-independent: A1 kurtosis error, A2/A3 |r| q95/q99, A4
+tail-QQ, A5 Hill; A6–A11 MMD²/SWD family with non-zero floor note, A12 RV W₁, A13 mean-path RMSE, A14
+KS, A15 skew (true ≈ −0.45), A16 QQ-RMSE 300-pt, A17 terminal-price KS; A18 disc |acc−0.5| GRU+MLP,
+A19 TSTR MAE GRU+MLP; A20 covariance %, A21–A22 ACF |r|/r² lags 1-20, A23–A24 ACF lag-1 (true ≈
++0.052/+0.050); A25 mean RMSE, A26 return-std (Δ Sₜ), A27 log-ret std, A28 kurtosis ratio perfect 1.0,
+A29 sigma-mean annualized, A30 cross-sect vol-path RMSE, A31 rolling-5 vol KS, A32 vol-of-vol; A33
+teacher-σ corr perfect ≈ 0.614, A34 teacher-σ RMSE perfect ≈ 0.065).
+
+**§2 · `## B, Curve-Shape Metrics, mean ± std across 5 seeds`.** First a **methodology preamble**:
+each stylised-fact plot yields a *curve* L, not a scalar; from L build the curve, its first finite
+difference L′ (der) and second L″ (sec_der), then collapse to one number per plot via five measures —
+define each one:
+
+- **MSE** — dᵢ = mean((L_r − L_g)²) per list; reported = **mean of the three** (funct+der+sec_der)/3;
+  std = sample std of that combined per-seed score. **The MSE row decides the cross-method winner.**
+- **% err** — mean(|L_g − L_r|/(|L_r|+1e-6))×100, MAPE on **L only (funct)**; der/sec_der excluded
+  (near-zero truths explode relative error).
+- **NRMSE** — sqrt(mean((L_g−L_r)²))/(max|L_r|−min|L_r|+1e-12)×100, funct-only range-normalized RMSE.
+- **CVaR₉₀ / CVaR₉₅** — Expected-Shortfall of pointwise error eₜ=|L_g(t)−L_r(t)|: mean of eₜ above the
+  q-th percentile (q∈{0.90,0.95}), range-normalized like NRMSE, funct-only.
+
+State: all `↓`; the perfect floor is **non-zero** for all six plots (residual finite-sample error of an
+independent Heston draw vs test set, identical across methods). Then a **9-column** table:
+
+`| Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |`
+
+- **Top row = path-cloud:** `| **Path comparison** *(50×50 path-cloud)* | grid_tvd 50×50 (%) ↓ | … |`
+  — a single row (grid_tvd, the 50×50 total-variation of the path cloud, in %).
+- **Then 6 plots × 5 sub-rows each** (first sub-row carries the bolded plot name in col 1, the next
+  four leave col 1 blank): sub-rows in order **MSE · % err · NRMSE · CVaR₉₀ · CVaR₉₅**. Plot order:
+  **Log-return histogram · QQ plot · ACF |r| lags 1-20 · ACF r² lags 1-20 · Rolling vol histogram ·
+  Tail survival**. (1 + 6×5 = **31 rows**.)
+
+Close with the reading blockquote: every curve sits above its floor; **seed-degeneracy dominates the
+std**; ACF %err is inflated by a near-zero denominator so **read the MSE column** for absolute
+agreement.
+
+**§3–§6 · Figure sections (headers only — no tables, keep them, one image each).**
+`## Stylised Facts Diagnostic (Heston vs <METHOD>+<variant>, seed 0)` → `plots/heston_diagnostics.png`
+(8-panel) · `## <METHOD>+<variant> Training Loss (5 seeds)` → `losses/loss_convergence.png` **with the
+loss-column prose** (name every logged column — for a VAE-ELBO model: `total = kld + nll`, goes
+negative at convergence, plus kld/nll/mse/lr and the EMA setting; adapt the prose to the method's
+actual objective) · `## A18, Discriminative Classifier Training Loss` → `plots/disc_classifier_loss.png`
+(BCE, ln2 ≈ 0.693 = indistinguishable) · `## A19, Predictive Score Training Loss (TSTR)` →
+`plots/pred_score_loss.png`.
+
+**§7 · `## Path Shadowing — strict paper protocol (arXiv:2308.01486)`.** This is the largest table
+block. Structure, in order:
+
+1. **Warning blockquote** — this is the **exact paper protocol, NOT** the simplified `methods/<METHOD>`
+   reference eval (65D murex embedding, K=77, prefix-price L2, CRPS/MAE/RMSE only; that is **M7**).
+   State the fixed config: **K = 256** neighbours, 512 held-out prefixes, prefix = 64 increments,
+   horizon 32, bank sizes {4 096 … 1 000 000}, 2 000 bootstrap replicates.
+2. **Embedding paragraph** — the 4-block weighted frozen-reference feature: recent returns (last 32,
+   w1.0) · cumulative path (downsampled 24, w0.5) · rolling vol (win 5/10/20 last/mean/std, w2.0) ·
+   dependence (ACF |r| & r² lags 1,2,5,10, w1.0); each block **dimension-normalized** (`w_block/d`) and
+   standardized against **frozen μ/σ** from `heston_S_test_4096x128`: `z̃ = √(w/d)·(z−μ_ref)/σ_ref`.
+   State cum/step are **H-dim trajectories over u=1…H** (§9.6 E15), RV is the scalar `√Σr²`; s=64,
+   H=32, 512 query paths (seed 3); the 8 metrics; 2000-resample paired bootstrap `boot_seed=20230814`.
+3. **Three-references paragraph** — same pipeline over three nested-prefix banks
+   {4096,16384,65536,262144,1000000}: **`<METHOD>+<variant>`** (seed-0 1M bank under test), **Heston
+   oracle** (ceiling, fresh 1M true-Heston bank, **seed 777** — gap-to-oracle = law-mismatch, oracle's
+   own residual = irreducible finite-bank retrieval limit), **Random-walk** (floor, resamples each
+   query's own prefix returns).
+4. **Deviations blockquote** — (a) per-block dimension normalization `√(w_block/d)` vs §1.1's `√w_b`;
+   (b) frozen-reference standardization vs §1.1's per-bank μ/σ; **§5.1 gates N/A** (fixed-epoch, no
+   checkpoint selection). Both decouple the metric from the generator.
+5. **`<!-- PS-PDF-TABLE-START -->` marker**, then a one-line note (numbers at the **1 000 000** bank,
+   log-return scale, lower better except coverage whose target is the nominal 0.50/0.90; brackets =
+   95% bootstrap CI over 512 queries; cum/step horizon-averaged), then **three 4-column quantity
+   tables**, header `| metric | <METHOD>+<variant> | Heston oracle | RW floor |` (col alignment
+   `|--------|:----------:|:-------------:|:--------:|`), each with the **same 8 metric rows** — bold
+   the winning cell per row:
+
+   | # | quantity table | 8 rows |
+   |---|----------------|--------|
+   | 1 | **Cumulative return (trajectory, u = 1…H)** | RMSE · CRPS · coverage 50 · coverage 90 · width 50 · width 90 · lower-miss 90 · upper-miss 90 |
+   | 2 | **One-step return (trajectory, u = 1…H)** | same 8 (LS4 collapses width & miss onto shared `width 50 / 90` and `lower/upper-miss 90` rows when values are near-degenerate — follow LS4's exact row layout) |
+   | 3 | **Horizon realized vol (scalar) — the diagnostic quantity** | same 8 |
+
+   RMSE/CRPS/coverage rows carry `[CI_low, CI_high]` brackets; width rows are point values.
+6. **Reading paragraph** — where the method sits vs the oracle ceiling and RW floor per quantity;
+   name the one quantity with a genuine gap (for LS4: **RV upper-tail under-coverage = law-mismatch**).
+7. **Bank-size sweep table** — `| bank size | cum LS4 / ORC | step LS4 / ORC | RV LS4 / ORC | uniq-frac
+   | prefix dist (mean) |` (align `|----------:|:...:|`), **5 rows** = the five bank sizes, each cell
+   `method / oracle` CRPS; last two cols = unique-candidate fraction and mean prefix distance. Follow
+   with the sweep-reading paragraph (cum/step flat across the 244× increase = saturates ~4k; only RV
+   improves; the method↔oracle RV gap constant = law-mismatch not finite-bank).
+8. **Diagnostics table (1M bank)** — `| terminal (h=H) RMSE | prefix dist mean/median/p95 | unique-cand
+   frac | RV mean bias |`, one data row, cells `method / oracle`. Note terminal (h=H) RMSE is a genuine
+   single-horizon diagnostic **distinct** from horizon-averaged cum RMSE (the M-tagged identity bug is
+   fixed). Point to `path_shadowing/pdf_summary.json` for all CIs.
+9. **`<!-- PS-PDF-TABLE-END -->` marker**, then the driver/bank-builder links and the two `pdf_*.png`
+   plot embeds.
+
+   > **Never** the old murex K=77 CRPS-only H=32/64 reference eval (M7). This slot's *position* mirrors
+   > the template's "Path Shadowing MC" but its *content* is strictly the paper protocol.
+
+**§8 · `## File layout`** — the folder tree (fenced block): `README.md`, `metrics_summary.csv`,
+`seed_{0..4}_metrics.json`, `generated_paths/`, `weights/`, `losses/`, disc/pred loss csvs, `plots/`,
+`code/` (`train_<method>_<variant>.py` + `compute_metrics_<variant>.py`), and `path_shadowing/`
+(`path_shadowing_pdf.py`, `gen_banks.py`, `bank/` **noting the LFS/disk state**, `pdf_summary.json`, `logs/`, `plots/`).
+
+**§9 · `## Reproduce`** — one fenced bash block: `PY=/home/tbasseras/gpu-venv/bin/python`, the 5-seed
+2-GPU training loop (`for gpu in 0 1 … taskset -c … OMP_NUM_THREADS=8 … --seed $gpu & done; wait`, per
+§8 hardware rules), the metrics runner, then the **strict PS** two-liner (build the ONE 1M bank via
+`gen_banks.py --seed 0`, then `path_shadowing_pdf.py` — **no `--seeds`**).
+
+### 10.0.1 Below the template block — preprocessing + head-to-head (two sections, this order)
+
+**§A · `## Preprocessing (the <variant> transform)`.** State the *only* changed thing. A fenced
+Python block: the forward transform (log-returns → scale by `√DT/sigma` → dummy-0 column → unit-var
+wrapper), the **reported frozen sigma value** (`sigma = 0.01263163`, ddof=0, pooled train seed 0; after
+scaling `R̃.std() = √dt`). Add the **unit-variance-wrapper blockquote** (§0.1: scaled returns std ≈
+0.063 < decoder noise 0.1 collapses the VAE, so apply the model's own `(X−x_mu)/x_sd`, inverted
+symmetrically; reported sigma unchanged) and a **Model/Dataset** line (preset, param count, z_dim,
+d_model, layers, decoder sigma, 100 epochs, optimizer; 4 096 paths, Heston params).
+
+**§B · `## Results — does <variant> help <METHOD>?`.** The head-to-head verdict built from §7.1's
+no-preproc baseline. Required, in order:
+
+1. **One-line thesis** stating the winner up front, with the net row count (e.g. "Net **19 rows to
+   16**; wins concentrated in the dependence/tail block, losses in marginal-moment calibration").
+2. **Sub-header `### A-metrics (seed 0, 4096 both sides; ↓ lower-better unless noted)`** — a **5-column**
+   table `| A-metric | <variant> (with) | raw (no-preproc) | Δ% | Winner |` (align: metric left, two
+   value cols right, Δ% right, Winner center). One row per compared A-metric (LS4 lists ~26: A1,A5–A14,
+   A17–A22,A25–A28,A30–A34). **Δ% relative to no-preproc; negative = with-preproc better on lower-better
+   metrics** (footnote the orientation). `A28`/`A33` (non-lower-better) show `—` in Δ% with the
+   ratio/|Δ| inline. **Bold the winning cell**; winner col = `**<variant>**` or `raw`.
+3. **Sub-header `### B curve-shape (seed 0; funct MSE, %err, + grid_tvd; ↓ lower-better)`** — same
+   5-column shape; rows = the six curve MSE **and** %err pairs (log-ret hist, QQ, ACF|r|, ACFr²) plus
+   the `grid_tvd (path cloud)` row.
+4. **Reading list** — 3 bullets: (a) preprocessing wins the **stylised facts** (name the ACF/tail Δ%);
+   (b) the raw baseline wins **marginal dispersion** (A26/A27 std, A18 discriminator); (c) **why this
+   differs from any "5-seed mean vs 8192-path original" verdict** — the matched 4096/seed-0 control
+   isolates the one variable (M4).
+5. **The 4096-path caveat** — both sides at 4 096 (not the main benchmark's 8 192): internally valid
+   (same budget) but not the main-benchmark *absolute* level.
+6. **Bottom-line paragraph** — which scaler wins and **why** (tie to §0.1: does the model have a fixed
+   output-noise floor that unit-variance input rescues?), plus the caveats to fix. Latent projections,
+   if kept, are a `### Latent projections (per seed)` subsection here (PCA/t-SNE image grid).
+7. **Footer links** — `../README.md` (overview) · `../GUIDELINE.md` (recipe) · `../../<METHOD>/README.md`
+   (original price-input run).
+
+Follow GitHub math rules: no `\;`/`\,` in `$$`, no trailing comma on intermediate `$$` lines, no bare
+`*` in superscripts.
 
 ### 10.1 The end-of-run report (what to hand back in chat for a new method)
 
