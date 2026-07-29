@@ -68,7 +68,7 @@ These were made building LS4 and cost real time. Each has a one-line guard.
 | **M7** | **Path-shadowing done with the *simplified* reference eval instead of the paper protocol.** | `methods/<METHOD>/path_shadowing/` (`path_shadowing.py` + `run_eval.py`) is a **reduced** eval: a 65D **murex** embedding, **K=77**, raw prefix-price L2, a single **8192**-path bank, and **CRPS/MAE/RMSE only** at H=32/64. It is **NOT** the arXiv:2308.01486 protocol. Reusing it (as an earlier draft of §0.3/§9.2 wrongly said to) silently answers a *different, easier* question and makes the numbers non-comparable to the paper. | **This experiment uses the STRICT paper protocol — never the reference subset.** Use `<METHOD>/path_shadowing/path_shadowing_pdf.py`: the **4-block weighted, dimension-normalized, frozen-reference-standardized** embedding (recent-returns w1.0 · cumulative-path w0.5 · rolling-vol w2.0 · dependence-ACF w1.0; `z̃ = √(w/d)·(z−μ_ref)/σ_ref` with `μ_ref,σ_ref` frozen on the **real test set**), a **single shared 1M bank** whose **nested prefixes** give the **bank-size sweep** {4096, 16384, 65536, 262144, 1 000 000}, the **three forecast quantities** (cumulative return, one-step return, horizon RV), and the **full metric set** (predictive-mean RMSE, CRPS, coverage 50/90, band width 50/90, lower/upper-90 miss) with **2000-resample paired bootstrap 95% CIs over the queries**. See §9 (and §9.6 for every ambiguity choice). The old `path_shadowing_mc.py` (CRPS-only, K=256 murex) is **superseded** — kept only as the 1M-bank builder via `gen_banks.py`. |
 | **M8** | **M1 re-fired when the train script was cloned for the no-preproc baseline.** | `baseline_no_preproc/code/train_ls4_raw.py` was copied from `train_ls4_logret.py`, which **still carried `--epochs` default 400**. Launched as `train_ls4_raw.py --seed 0` (no flag) → ran **400** epochs again, exactly the M1 trap, on the *control* run that most needs to match the with-preproc runs' **100**. Caught by Theo ("why 400 epochs… u remade the mistake"). Killed, script default fixed to 100, cleaned, relaunched at 100. | **When cloning a train script, immediately edit its `--epochs` default to the canonical count** (LS4 → `default=100`) before the first launch — a cloned default carries the old bug forward. A guard that lives only in the *call site* (passing `--epochs`) does not survive a copy-paste; a guard baked into the *default* does. This is why M1's guard now demands both. Verify with `grep -n 'epochs' code/train_*.py` after cloning. |
 | **M9** | **README metric table transcribed incompletely from the JSON.** | The §8 one-step-return PS table in `LS4/README.md` was missing **coverage 50** and **width 50** rows — the values existed in `pdf_summary.json` but were never copied into the table, so a reader auditing "all 8 metrics present" would find only 6 for that quantity. | **Transcribe metric tables programmatically, never by hand.** For every quantity (cum/step/rv), assert the rendered table has all 8 rows (rmse, crps, coverage50/90, width50/90, lower/upper_miss90) by cross-checking against `pdf_summary.json` keys before committing. A quick check: count metric rows per quantity block == 8. |
-| **M10** | **Treated GitHub's 100 MiB push limit as a removable local setting.** | Repeated attempts to push the 489 MiB `bank/generated_bank_seed0_1000000x128.npy` by "removing the gitignore rule" / `--force`. The 100 MiB cap is a **GitHub server-side hard rejection**, not a gitignore/config/size setting; `--force` rewrites history, not file size. Only **Git LFS** pushes files >100 MiB. | **The 1M bank stays disk-only and regenerable — do not commit it.** It is deterministic from seed 0 (`gen_banks.py --seed 0`), so the repo tracks the *builder*, not the artifact (§0.3, §1 tree marks it gitignored). If a large binary genuinely must be pushed, that requires **explicit user setup of Git LFS** (1 GiB free quota) — never silently strip a size guard. |
+| **M10** | **Treated GitHub's 100 MiB push limit as a removable local setting.** | Repeated attempts to push the 489 MiB `bank/generated_bank_seed0_1000000x128.npy` by "removing the gitignore rule" / `--force`. The 100 MiB cap is a **GitHub server-side hard rejection**, not a gitignore/config/size setting; `--force` rewrites history, not file size. Only **Git LFS** pushes files >100 MiB. | **The 1M bank IS committed to the repo via Git LFS** (Theo's decision, commit `cfb22f5`). It lives at `<METHOD>/path_shadowing/bank/generated_bank_seed0_1000000x128.npy`, tracked by the root `.gitattributes` pattern `results/Heston/preprocessing_with_log_returns/<METHOD>/path_shadowing/bank/*.npy filter=lfs diff=lfs merge=lfs -text`. **When adding a new method, add that method's `…/bank/*.npy` line to root `.gitattributes` *before* the first `git add` of the bank**, then commit the bank normally — LFS handles it. Never push it as a plain blob, never `--force`, never strip a gitignore rule (that was the original mistake). The bank is still deterministically regenerable via `gen_banks.py --seed 0` (LFS is a convenience mirror, not the source of truth). **Caveat to keep flagging:** free GitHub LFS = 1 GiB storage + 1 GiB/month bandwidth, so ~2 fresh clones/month exhausts the free tier and LFS fetches start 403-ing. |
 
 ---
 
@@ -129,7 +129,7 @@ results/Heston/preprocessing_with_log_returns/
     │   ├── gen_banks.py               # 1M-bank builder (reuses path_shadowing_mc.build_bank)
     │   ├── path_shadowing_pdf.py      # §9 STRICT paper protocol evaluator (the deliverable)
     │   ├── path_shadowing_mc.py       # SUPERSEDED CRPS-only driver — kept only for build_bank
-    │   ├── bank/  generated_bank_seed0_1000000x128.npy   # ONE shared 1M bank (gitignored, regenerable)
+    │   ├── bank/  generated_bank_seed0_1000000x128.npy   # ONE shared 1M bank (committed via Git LFS; also regenerable)
     │   ├── logs/  gen_seed0.log, pdf_run.log       # generation + eval logged (M2/M7)
     │   ├── plots/ pdf_crps_vs_banksize.png, pdf_coverage_calibration.png
     │   └── pdf_summary.json                        # all metrics + 95% bootstrap CIs (single run)
@@ -527,9 +527,12 @@ OMP_NUM_THREADS=16 taskset -c 0-15 $PY path_shadowing_pdf.py \
 tail -f logs/pdf_run.log     # per bank_size line: CRPS, coverage, uniq-frac, elapsed
 ```
 The run writes a single `pdf_summary.json` (all metrics + 95% bootstrap CIs) + the two plots. The 1M
-bank is ~0.5 GB float32; it is **gitignored** (over GitHub's 100 MB limit) and **regenerable** — the
-**JSON metrics + plots are the deliverable**, not the bank. **Everything (generation *and* evaluation)
-must go through a log file** so progress, ETA, and stalls are visible — never fly blind (M2).
+bank is ~0.5 GB float32; it is **committed via Git LFS** (root `.gitattributes` pattern
+`…/<METHOD>/path_shadowing/bank/*.npy filter=lfs`, M10) and is also **regenerable** from
+`gen_banks.py --seed 0`. The **JSON metrics + plots remain the primary deliverable**; the LFS bank is a
+convenience mirror (free LFS = 1 GiB storage + 1 GiB/month bandwidth — see M10 caveat).
+**Everything (generation *and* evaluation) must go through a log file** so progress, ETA, and stalls are
+visible — never fly blind (M2).
 
 ### 9.6 Decision log — every paper ambiguity, and what we chose (READ before touching the driver)
 
@@ -836,7 +839,7 @@ block. Structure, in order:
 **§8 · `## File layout`** — the folder tree (fenced block): `README.md`, `metrics_summary.csv`,
 `seed_{0..4}_metrics.json`, `generated_paths/`, `weights/`, `losses/`, disc/pred loss csvs, `plots/`,
 `code/` (`train_<method>_<variant>.py` + `compute_metrics_<variant>.py`), and `path_shadowing/`
-(`path_shadowing_pdf.py`, `gen_banks.py`, `bank/` **noting the LFS/disk state**, `pdf_summary.json`, `logs/`, `plots/`).
+(`path_shadowing_pdf.py`, `gen_banks.py`, `bank/` **noting it is Git LFS-tracked (M10)**, `pdf_summary.json`, `logs/`, `plots/`).
 
 **§9 · `## Reproduce`** — one fenced bash block: `PY=/home/tbasseras/gpu-venv/bin/python`, the 5-seed
 2-GPU training loop (`for gpu in 0 1 … taskset -c … OMP_NUM_THREADS=8 … --seed $gpu & done; wait`, per
@@ -923,7 +926,8 @@ same depth (mirror the level of detail LS4 received):
    **Heston-oracle ceiling** and **RW floor** — is the generator on the oracle, and where does it
    under-cover? Full 8-metric set, bootstrap CIs. **Never** the murex reference eval (M7).
 5. **Artifacts & repro** — the exact paths written (weights, generated paths, `pdf_summary.json`, plots)
-   and the one-command repro; note the 1M bank is **disk-only/regenerable, not committed** (M10).
+   and the one-command repro; note the 1M bank is **committed via Git LFS** (root `.gitattributes`
+   `…/<METHOD>/path_shadowing/bank/*.npy filter=lfs`) and also regenerable via `gen_banks.py --seed 0` (M10).
 6. **Mistakes ledger delta** — if any new trap fired, it must already be a new `M<n>` row in §0.2
    *before* the report is considered complete (this session added M8–M10).
 7. **Commit** — conventional message + `Co-Authored-By`, only the two `preprocessing_with_log_returns/`
@@ -958,7 +962,7 @@ same depth (mirror the level of detail LS4 received):
 - [ ] **Side-by-side stylised-facts diagnostic** placed directly below the B-curve table — raw baseline `heston_diagnostics.png` generated via `metrics/plot_diagnostics.plot_diagnostics` (CPU, no retrain), 2-column with-vs-raw image table (§10.0.1 §B item 4).
 - [ ] Per-method README written (mirror the main benchmark's).
 - [ ] **All metric tables cross-checked against `pdf_summary.json` / `seed_N_metrics.json`** — every quantity has its full metric set, none dropped (M9).
-- [ ] 1M bank left **disk-only/regenerable, not committed**; no size guard silently stripped (M10).
+- [ ] 1M bank **committed via Git LFS** — method's `…/path_shadowing/bank/*.npy filter=lfs` line added to root `.gitattributes` **before** `git add`, then committed normally; bank still regenerable via `gen_banks.py --seed 0`. No plain-blob push, no `--force`, no gitignore-strip (M10).
 - [ ] **End-of-run report** delivered in the §10.1 structure; new traps recorded as `M<n>` in §0.2 first.
 - [ ] Everything lives under the two `preprocessing_with_log_returns/` folders; no reference file
       touched.
