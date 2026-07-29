@@ -31,6 +31,7 @@
 
 - [The paper](#the-paper)
 - [About the benchmark](#about-the-benchmark)
+- [Repository layout](#repository-layout)
 - [Results on Heston](#results-heston-mean--std-5-seeds)
 - [Methods](#methods)
 - [Governance](#governance)
@@ -72,6 +73,101 @@ still incurs from finite-sample noise, measured by drawing an **independent Hest
 scored (see [`methods/perfect_recovery/`](methods/perfect_recovery/)). The floor is therefore **non-zero**
 and identical in construction across methods, it is the noise a genuine Heston sample cannot avoid, not a
 degenerate zero.
+
+---
+
+## Repository layout
+
+The repository is organised around four top-level directories that mirror the
+life cycle of a benchmark entry: the shared **dataset**, the per-method **code
+and artifacts**, the shared **metric engine**, and the frozen **scored
+results**. The two READMEs (this one and `results/README.md`) are contracts:
+their comparison tables are produced by `metrics/render_tables.py` and are byte
+identical to each other and to the renderer output. `GUIDELINE.md` is the single
+source of truth for the folder tree and the metric protocol.
+
+```
+benchmark/
+|
+|-- README.md                 # this file: paper, results tables, methods, citation
+|-- GUIDELINE.md              # source of truth: folder tree, naming, metric protocol
+|-- CONTRIBUTING.md           # how to add a method (scaffold, reproduce, score, register)
+|-- CODE_OF_CONDUCT.md        # Contributor Covenant
+|-- SECURITY.md               # private vulnerability reporting
+|-- LICENSE                   # MIT (Copyright Murex S.A.S.)
+|-- .gitignore / .gitattributes
+|
+|-- dataset/                  # the shared evaluation data
+|   `-- Heston/               # canonical Heston stochastic-volatility testbed
+|       |-- generate_heston.py            # regenerates the canonical 8192x128 draw
+|       |-- generate_heston_large.py      # optional larger draw
+|       |-- heston_S_8192x128.npy         # train prices (8192 paths, seq_len 128)
+|       |-- heston_v_8192x128.npy         # train variance paths
+|       |-- heston_S_test_8192x128.npy    # held-out test prices (used for scoring)
+|       |-- heston_S_disc_8192x128.npy    # discriminative-score split
+|       |-- preprocessing_with_log_returns/  # log-return preprocessing variant + PS split
+|       `-- README.md                     # dataset generation + parameters
+|
+|-- methods/                  # one folder per benchmark entry (see tree below)
+|   |-- TimeGAN/  COSCI-GAN/  GT-GAN/            # GAN family
+|   |-- DiffusionTS/  CSDI/  TimeMoDE/  TimeDiT/ # Diffusion family
+|   |-- TimeVAE/  TimeVQVAE/  LS4/               # VAE family
+|   |-- SBTS/                                    # Schrodinger Bridge
+|   |-- FourierFlow/                             # Fourier Flow
+|   |-- Chronos2/  TimesFM/                      # pretrained forecaster references
+|   `-- perfect_recovery/                        # the "Perfect floor" baseline
+|
+|-- metrics/                  # the shared scoring engine (never vendored per method)
+|   |-- render_tables.py      # deterministic A/B/PS table renderer + FAMILIES registry
+|   |-- compute_all.py        # runs every metric for one method/seed
+|   |-- metrics.py            # the A1-A34 metric definitions
+|   |-- discriminative_score.py / predictive_score.py  # B post-hoc classifiers
+|   |-- heston_theory.py      # closed-form Heston reference quantities
+|   |-- plot_diagnostics.py / plot_score_losses.py     # diagnostic + loss plots
+|   `-- README.md             # metric protocol, environment, exact commands
+|
+`-- results/                  # frozen scored outputs, mirrors methods/ one-to-one
+    |-- Heston/
+    |   |-- <Method>/         # per-method scores (one dir per method above)
+    |   `-- preprocessing_with_log_returns/  # log-return ablation results
+    `-- README.md             # same comparison tables as this file (byte identical)
+```
+
+### Inside a method folder
+
+Every entry under `methods/<Method>/` follows the same fixed tree, so a reader
+can move between methods without relearning the layout:
+
+```
+methods/<Method>/
+|-- README.md                 # method summary + the exact run path
+|-- paper_reimplementation/   # reproduce the paper on its own data first
+|   |-- <Method>_<venue>.pdf   # the reference paper PDF
+|   |-- <model>.py             # the gate-validated model
+|   |-- run_paper.py           # reproduction entry point
+|   |-- metrics.py             # the paper's own metrics (c-FID, discriminative, predictive)
+|   |-- README.md              # ours-versus-paper table + sign-off
+|   `-- results_*.json         # reproduction scores
+|-- code/                     # the Heston training pipeline
+|   |-- train.py               # launches all 5 canonical seeds
+|   |-- train_seed.py          # trains one seed
+|   |-- plot_losses.py
+|   `-- README.md              # training commands + hardware used
+|-- weights/                  # per-seed configs (large checkpoints are gitignored)
+|   `-- seed_<k>_config.json
+|-- generated_paths/          # generated samples per seed (seed_0 .. seed_4)
+|-- losses/                   # per-seed loss curves (csv) + convergence plot
+`-- path_shadowing/           # path-shadowing forecast harness for this method
+```
+
+`methods/perfect_recovery/` is the exception: instead of a model it holds five
+independent Heston draws (`dataset/seeds/`) scored against the test set, which
+produces the **Perfect floor** column reported in every table.
+
+Each scored method also has a mirror under `results/Heston/<Method>/` holding the
+frozen numbers the tables are rendered from: `seed_<k>_metrics.json`,
+`metrics_summary.csv`, the curve-shape and grid-TVD aggregates, the discriminative
+and predictive loss traces, a `path_shadowing/` summary, and a `plots/` folder.
 
 ---
 
