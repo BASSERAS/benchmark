@@ -1,0 +1,2 @@
+seed,mode,n_generated,n_workers,elapsed_sec
+0,raw,4096,64,38.4

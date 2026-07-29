@@ -1,0 +1,23 @@
+{
+  "method": "SBTS",
+  "preproc": "sbts_volscaled_logreturn",
+  "seed": 2,
+  "n_train": 4096,
+  "n_generated": 4096,
+  "shape": [
+    4096,
+    128
+  ],
+  "hyperparams": {
+    "h": 0.05,
+    "K": 20,
+    "N_pi": 50,
+    "dt": 0.004
+  },
+  "gen_has_nan": false,
+  "gen_min": 50.35961442018871,
+  "gen_max": 147.6258413018468,
+  "elapsed_sec": 28.08,
+  "date": "2026-07-29T06:57:00.860457+00:00",
+  "sigma_logret": 0.012631629629200152
+}

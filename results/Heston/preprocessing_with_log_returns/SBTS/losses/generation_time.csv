@@ -1,0 +1,6 @@
+seed,mode,n_generated,n_workers,elapsed_sec
+0,native,4096,64,26.34
+1,native,4096,64,26.43
+2,native,4096,64,28.08
+3,native,4096,64,26.55
+4,native,4096,64,26.29

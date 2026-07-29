@@ -59,8 +59,9 @@ PERFECT_DIR = os.path.join(HERE, "perfect_recovery", "results")
 # ── shrink the method set to this experiment's two methods ──────────────────
 # family order follows the root table (Diffusion before VAE).
 RT.FAMILIES = [
-    ("Diffusion", [("CSDI", "CSDI")]),
-    ("VAE",       [("LS4", "LS4")]),
+    ("Diffusion",          [("CSDI", "CSDI")]),
+    ("VAE",                [("LS4", "LS4")]),
+    ("Schrödinger Bridge", [("SBTS", "SBTS")]),
 ]
 RT.METHOD_DIRS = [d for _, ms in RT.FAMILIES for d, _ in ms]
 RT.METHOD_NAMES = [n for _, ms in RT.FAMILIES for _, n in ms]
@@ -228,6 +229,7 @@ def render_B_exp():
 PS_MODELS = [
     ("CSDI",       "CSDI/path_shadowing/pdf_summary.json",   "gen"),
     ("LS4",        "LS4/path_shadowing/pdf_summary.json",    "gen"),
+    ("SBTS",       "SBTS/path_shadowing/pdf_summary.json",   "gen"),
     ("Chronos-2",  "forecaster/chronos2_pdf.json",           "fc"),
     ("TimesFM",    "forecaster/timesfm_pdf.json",            "fc"),
 ]

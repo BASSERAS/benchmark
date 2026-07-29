@@ -1,0 +1,26 @@
+{
+  "method": "SBTS",
+  "preproc": "none_raw_price",
+  "seed": 0,
+  "n_train": 4096,
+  "n_generated": 4096,
+  "shape": [
+    4096,
+    128
+  ],
+  "hyperparams": {
+    "h": 0.05,
+    "K": 20,
+    "N_pi": 50,
+    "dt": 0.004
+  },
+  "gen_has_nan": false,
+  "gen_min": 50.46674551954472,
+  "gen_max": 143.7695094330997,
+  "elapsed_sec": 38.4,
+  "date": "2026-07-29T07:07:32.955597+00:00",
+  "raw_standardize": {
+    "x_mu": 101.36596141705022,
+    "x_sd": 9.903058908785086
+  }
+}
