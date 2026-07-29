@@ -1,0 +1,3 @@
+
+# Bank kept ON DISK but NOT tracked in Git/LFS (reproducible via ../gen_banks.py).
+generated_bank_*.npy

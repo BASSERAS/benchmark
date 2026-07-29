@@ -10,3 +10,6 @@
 #
 # NOTE: free GitHub LFS = 1 GiB storage + 1 GiB/month bandwidth. This 489 MB file
 # uses ~half the storage and each fresh clone/pull burns ~489 MB of the monthly quota.
+
+# Bank kept ON DISK but NOT tracked in Git/LFS (reproducible via ../gen_banks.py).
+generated_bank_*.npy
