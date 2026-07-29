@@ -1,0 +1,28 @@
+{
+  "method": "CSDI",
+  "seed": 0,
+  "shape": [
+    4096,
+    128
+  ],
+  "min_val": 51.36492156982422,
+  "max_val": 144.45465087890625,
+  "generated_mean": 101.00295995076885,
+  "generated_std": 9.01113395891721,
+  "real_mean": 101.36596141705022,
+  "real_std": 9.90305890878509,
+  "mu": 101.36596141705022,
+  "sigma": 9.90305890878509,
+  "preproc": "none_global_standardize",
+  "gen_sec": 5.1,
+  "train_time_sec": 913.8,
+  "gpu": "A100-SXM4-80GB",
+  "date": "2026-07-29",
+  "params": 412945,
+  "epochs": 200,
+  "batch_size": 16,
+  "num_steps": 50,
+  "min_loss": 0.00816796813160181,
+  "first_nan_step": null,
+  "gen_has_nan": false
+}

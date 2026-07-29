@@ -130,8 +130,39 @@ for the full split table and file list. Summary:
 
 | Method | Status | Folder | Verdict |
 |--------|--------|--------|---------|
-| LS4 | ✅ done (5 seeds + 1M PS bank) | [`LS4/`](LS4/README.md) | log-returns **hurt** LS4 — 30/34 A-metrics regress, seeds destabilize; only A28 kurtosis-ratio improves |
+| LS4 | ✅ done (5 seeds + 1M PS bank) | [`LS4/`](LS4/README.md) | log-returns **hurt** LS4 — 30/34 A-metrics regress, seeds destabilize; only A28 kurtosis-ratio improves. On the matched 4096/seed-0 control the preprocessing wins the stylised facts **19–16**. |
+| CSDI | ✅ done (5 seeds + 1M PS bank) | [`CSDI/`](CSDI/README.md) | **mirror-opposite of LS4** — log-returns **fix** the vol/tail/adversarial facts (A9 −70%, A31 −48%, A32 −42%, A18-GRU halved) but the `cumsum→exp` reconstruction **drifts the terminal +3.25%**, breaking price-location (A13, A17, A25, grid_tvd). Seed-stable. Matched control: raw wins **19–16** on row-count, log-returns win the facts. |
 
 Each method folder mirrors `results/Heston/<method>/`: `code/`, `losses/`, `weights/`,
 `generated_paths/seed_{0..4}/`, `plots/`, `path_shadowing/`, and a per-method `README.md` with
 the A1–A34 table, B-curve table, diagnostics figure, and Path-Shadowing-MC CRPS table.
+
+---
+
+## Per-method diagnostics — log-return preprocessing vs raw price (side-by-side)
+
+For each method the **same** 8-panel stylised-facts diagnostic is shown twice at the **matched
+4096-path / seed-0 control**: the **log-return preprocessing** run (left) against the **raw-price,
+no-preprocessing** baseline (right, `baseline_no_preproc/`). Same real test set on both sides — the
+only difference is the input transform, so any divergence between the two panels is the preprocessing's
+effect in isolation. Follow each method's `README.md` for the per-metric Δ% head-to-head behind these
+pictures.
+
+### LS4
+
+| log-return preprocessing (with) | raw price, no preprocessing |
+|:-------------------------------:|:---------------------------:|
+| ![LS4 logret diagnostics](LS4/plots/heston_diagnostics.png) | ![LS4 raw diagnostics](LS4/baseline_no_preproc/plots/heston_diagnostics.png) |
+
+Preprocessing recovers the ACF-of-|r| / ACF-of-r² and rolling-vol curves the raw-price VAE flatlines
+(A21 −66%, A22 −55%); the raw model keeps a tighter return-std marginal. Net **19–16 for log-returns**.
+
+### CSDI
+
+| log-return preprocessing (with) | raw price, no preprocessing |
+|:-------------------------------:|:---------------------------:|
+| ![CSDI logret diagnostics](CSDI/plots/heston_diagnostics.png) | ![CSDI raw diagnostics](CSDI/baseline_no_preproc/plots/heston_diagnostics.png) |
+
+Preprocessing tightens the return-histogram / QQ marginal and the vol block (A9 −62%, A31 −42%,
+A32 −48%), but the `cumsum→exp` **terminal drift (+3.25%)** hands the raw model every price-location
+row (A13, A17, A25, grid_tvd). Net **19–16 for raw** on row-count — the mirror of LS4.
