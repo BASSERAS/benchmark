@@ -233,6 +233,21 @@ PS_MODELS = [
 ]
 PS_QUANT = [("cum", "cum (M×H trajectory)"), ("step", "step (M×H)"), ("rv", "rv (M scalar)")]
 
+# (json_key, display label, ranking rule). rule: "min" = lower wins;
+# float = calibration target, closest wins; "diag" = pure diagnostic, no winner
+# (width alone is meaningless without its coverage — a degenerate 0-width interval
+# would "win" by min while being completely uncalibrated).
+PS_METRICS = [
+    ("rmse",         "RMSE ↓",               "min"),
+    ("crps",         "CRPS ↓",               "min"),
+    ("coverage50",   "coverage₅₀ (→0.50)",   0.50),
+    ("coverage90",   "coverage₉₀ (→0.90)",   0.90),
+    ("width50",      "width₅₀ (diag)",       "diag"),
+    ("width90",      "width₉₀ (diag)",       "diag"),
+    ("lower_miss90", "lower miss₉₀ (→0.05)", 0.05),
+    ("upper_miss90", "upper miss₉₀ (→0.05)", 0.05),
+]
+
 
 def _gen_quantities(path):
     """1M-bank quantities dict {cum,step,rv:{metric:{value,ci}}} from a generator
@@ -250,10 +265,21 @@ def _ps_value(path, kind, qn, metric):
     return q[qn][metric]["value"]
 
 
+def _ps_winner_idx(vals, rule):
+    """rule: 'min' -> argmin; float target -> closest; 'diag' -> None (no winner)."""
+    if rule == "min":
+        return int(np.argmin(vals))
+    if rule == "diag":
+        return None
+    return int(np.argmin([abs(v - rule) for v in vals]))
+
+
 def render_PS_strict():
-    """cum/step/rv CRPS (+ cum coverage90) for CSDI, LS4, Chronos-2, TimesFM, with
-    the Heston-oracle and RW-floor columns and a Winner (best model, floors
-    excluded). Mirrors the root PS block's HTML shape."""
+    """Full strict-PDF PS comparison: all 8 metrics × 3 quantities (24 values) for
+    CSDI, LS4, Chronos-2, TimesFM, with the Heston-oracle (= perfect floor, K=256
+    draws from the true SDE) and RW-floor columns and a per-row Winner (best model,
+    floors excluded). Width rows are diagnostics (no winner: width alone is
+    meaningless without its coverage). Mirrors the root PS block's HTML shape."""
     # both generators carry identical oracle / rw rows -> read from the first gen.
     gen_path = os.path.join(HERE, PS_MODELS[0][1])
     full = json.load(open(gen_path))
@@ -261,13 +287,14 @@ def render_PS_strict():
     rw_q = full["rw_baseline"]
 
     model_names = [n for n, _, _ in PS_MODELS]
+    paths_kinds = [(os.path.join(HERE, p), k) for _, p, k in PS_MODELS]
     ncol = 1 + len(PS_MODELS) + 3  # Metric + 4 models + Oracle + RW + Winner
     out = ["<table>", "<thead>",
            "  <tr>",
-           '    <th rowspan="2">Quantity</th>',
+           '    <th rowspan="2">Quantity / metric</th>',
            '    <th colspan="2">Generators (1M bank)</th>',
            '    <th colspan="2">Forecasters (fine-tuned @4096)</th>',
-           '    <th rowspan="2">Heston oracle</th>',
+           '    <th rowspan="2">Heston oracle<br>(perfect floor)</th>',
            '    <th rowspan="2">RW floor</th>',
            '    <th rowspan="2">Winner</th>',
            "  </tr>",
@@ -277,31 +304,20 @@ def render_PS_strict():
 
     wins = {n: 0 for n in model_names}
 
-    def crps_row(qn, label):
-        vals = [_ps_value(os.path.join(HERE, p), kind, qn, "crps")
-                for _, p, kind in PS_MODELS]
-        wi = int(np.argmin(vals))
-        wins[model_names[wi]] += 1
-        cells = "".join(RT.cell(RT.fmt(v), bold=(i == wi)) for i, v in enumerate(vals))
-        ov = RT.fmt(oracle_q[qn]["crps"]["value"])
-        rv = RT.fmt(rw_q[qn]["crps"]["value"])
-        return (f'  <tr><td>{label} CRPS ↓</td>{cells}'
-                f'<td>{ov}</td><td>{rv}</td><td><b>{model_names[wi]}</b></td></tr>')
-
-    out.append('  <tr><td colspan="%d"><b>Predictive CRPS (energy score, lower = better)</b></td></tr>' % ncol)
-    for qn, lab in PS_QUANT:
-        out.append(crps_row(qn, lab))
-
-    # cum coverage90 diagnostic (target 0.90 -> closest wins)
-    out.append('  <tr><td colspan="%d"><b>Calibration (cum 90%% interval coverage, target 0.90)</b></td></tr>' % ncol)
-    cov = [_ps_value(os.path.join(HERE, p), kind, "cum", "coverage90")
-           for _, p, kind in PS_MODELS]
-    wi = int(np.argmin([abs(c - 0.90) for c in cov]))
-    cells = "".join(RT.cell(RT.fmt(c), bold=(i == wi)) for i, c in enumerate(cov))
-    ocov = RT.fmt(oracle_q["cum"]["coverage90"]["value"])
-    rcov = RT.fmt(rw_q["cum"]["coverage90"]["value"])
-    out.append(f'  <tr><td>cum coverage₉₀ (→0.90)</td>{cells}'
-               f'<td>{ocov}</td><td>{rcov}</td><td><b>{model_names[wi]}</b></td></tr>')
+    for qn, qlabel in PS_QUANT:
+        out.append('  <tr><td colspan="%d"><b>%s</b></td></tr>' % (ncol, qlabel))
+        for metric, mlabel, rule in PS_METRICS:
+            vals = [_ps_value(p, k, qn, metric) for p, k in paths_kinds]
+            wi = _ps_winner_idx(vals, rule)
+            if wi is not None:
+                wins[model_names[wi]] += 1
+            cells = "".join(RT.cell(RT.fmt(v), bold=(wi is not None and i == wi))
+                            for i, v in enumerate(vals))
+            ov = RT.fmt(oracle_q[qn][metric]["value"])
+            rv = RT.fmt(rw_q[qn][metric]["value"])
+            win_cell = f"<b>{model_names[wi]}</b>" if wi is not None else "—"
+            out.append(f'  <tr><td>{mlabel}</td>{cells}'
+                       f'<td>{ov}</td><td>{rv}</td><td>{win_cell}</td></tr>')
 
     out += ["</tbody>", "</table>"]
     return "\n".join(out), wins
@@ -330,7 +346,7 @@ def main():
         html, wins = render_PS_strict()
         print("<!-- ===== PS STRICT-PDF CROSS-METHOD TABLE ===== -->")
         print(html)
-        print("\n<!-- PS strict-CRPS win-counts (of 4 quantity rows): " +
+        print("\n<!-- PS strict win-counts (of 18 ranked rows = 6 ranked metrics × 3 quantities; width rows are diagnostic): " +
               ", ".join(f"{k}={v}" for k, v in sorted(wins.items(), key=lambda x: -x[1]) if v) + " -->\n")
 
 

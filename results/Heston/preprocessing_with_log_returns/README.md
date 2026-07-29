@@ -171,8 +171,12 @@ This is the **strict paper protocol** (Blondel–Bouchaud–Morel, arXiv:2308.01
 Monte-Carlo CRPS of the main benchmark. Each of the 512 held-out query paths is forecast over horizon
 **H=32** from its 65-point prefix, producing a K=256-member predictive ensemble of **normalized-return**
 continuations. We score three quantities — **cum** (cumulative-return trajectory, M×H), **step** (per-step
-return, M×H), **rv** (realized vol, M scalar) — with the energy-score **CRPS** and a 2000-resample paired
-bootstrap (seed 20230814). ↓ lower is better; cum coverage₉₀ targets 0.90.
+return, M×H), **rv** (realized vol, M scalar) — on the **full strict-PDF metric set** (8 metrics × 3
+quantities = 24 values) with a 2000-resample paired bootstrap (seed 20230814). Per quantity: **RMSE** and
+energy-score **CRPS** (↓ lower is better); **coverage₅₀/coverage₉₀** (calibration — closest to the 0.50/0.90
+target wins); **width₅₀/width₉₀** (interval sharpness — *diagnostic only*: width alone is meaningless
+without its coverage, so it selects no winner); **lower/upper miss₉₀** (one-sided calibration — closest to
+the ideal 0.05 wins). Winner is decided per row over the 6 ranked metrics (18 ranked rows total).
 
 The two model families reach the same predictive object by **different routes**, and both are scored
 identically so the columns are apples-to-apples:
@@ -190,10 +194,10 @@ The **Heston oracle** (K=256 retrieval over a 1M *ground-truth* Heston bank) is 
 <table>
 <thead>
   <tr>
-    <th rowspan="2">Quantity</th>
+    <th rowspan="2">Quantity / metric</th>
     <th colspan="2">Generators (1M bank)</th>
     <th colspan="2">Forecasters (fine-tuned @4096)</th>
-    <th rowspan="2">Heston oracle</th>
+    <th rowspan="2">Heston oracle<br>(perfect floor)</th>
     <th rowspan="2">RW floor</th>
     <th rowspan="2">Winner</th>
   </tr>
@@ -205,25 +209,58 @@ The **Heston oracle** (K=256 retrieval over a 1M *ground-truth* Heston bank) is 
   </tr>
 </thead>
 <tbody>
-  <tr><td colspan="8"><b>Predictive CRPS (energy score, lower = better)</b></td></tr>
-  <tr><td>cum (M×H trajectory) CRPS ↓</td><td>0.02544</td><td><b>0.02534</b></td><td>0.02624</td><td>0.02722</td><td>0.02525</td><td>0.02946</td><td><b>LS4</b></td></tr>
-  <tr><td>step (M×H) CRPS ↓</td><td><b>0.006767</b></td><td>0.006778</td><td>0.01272</td><td>0.01473</td><td>0.006750</td><td>0.006874</td><td><b>CSDI</b></td></tr>
-  <tr><td>rv (M scalar) CRPS ↓</td><td><b>0.009938</b></td><td>0.01032</td><td>0.1913</td><td>0.2291</td><td>0.009143</td><td>0.01168</td><td><b>CSDI</b></td></tr>
-  <tr><td colspan="8"><b>Calibration (cum 90% interval coverage, target 0.90)</b></td></tr>
-  <tr><td>cum coverage₉₀ (→0.90)</td><td><b>0.8682</b></td><td>0.8682</td><td>0.7905</td><td>0.8177</td><td>0.8941</td><td>0.8553</td><td><b>CSDI</b></td></tr>
+  <tr><td colspan="8"><b>cum (M×H trajectory)</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.04925</td><td><b>0.04894</b></td><td>0.04921</td><td>0.05094</td><td>0.04911</td><td>0.05670</td><td><b>LS4</b></td></tr>
+  <tr><td>CRPS ↓</td><td>0.02544</td><td><b>0.02534</b></td><td>0.02624</td><td>0.02722</td><td>0.02525</td><td>0.02946</td><td><b>LS4</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4624</td><td><b>0.4688</b></td><td>0.4050</td><td>0.4664</td><td>0.4891</td><td>0.4719</td><td><b>LS4</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td><b>0.8682</b></td><td>0.8682</td><td>0.7905</td><td>0.8177</td><td>0.8941</td><td>0.8553</td><td><b>CSDI</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.05285</td><td>0.05359</td><td>0.04454</td><td>0.05477</td><td>0.05719</td><td>0.06286</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.1348</td><td>0.1349</td><td>0.1166</td><td>0.1348</td><td>0.1465</td><td>0.1520</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07599</td><td><b>0.06757</b></td><td>0.09595</td><td>0.09265</td><td>0.05463</td><td>0.08331</td><td><b>LS4</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05579</b></td><td>0.06427</td><td>0.1135</td><td>0.08966</td><td>0.05127</td><td>0.06134</td><td><b>CSDI</b></td></tr>
+  <tr><td colspan="8"><b>step (M×H)</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.01245</td><td><b>0.01245</b></td><td>0.01295</td><td>0.01332</td><td>0.01244</td><td>0.01253</td><td><b>LS4</b></td></tr>
+  <tr><td>CRPS ↓</td><td><b>0.006767</b></td><td>0.006778</td><td>0.01272</td><td>0.01473</td><td>0.006750</td><td>0.006874</td><td><b>CSDI</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4532</td><td><b>0.4672</b></td><td>0.9449</td><td>0.9479</td><td>0.4816</td><td>0.5157</td><td><b>LS4</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td><b>0.8640</b></td><td>0.8640</td><td>0.9970</td><td>0.9949</td><td>0.8864</td><td>0.8866</td><td><b>CSDI</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.01338</td><td>0.01368</td><td>0.06405</td><td>0.07667</td><td>0.01449</td><td>0.01602</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.03550</td><td>0.03538</td><td>0.1609</td><td>0.1801</td><td>0.03815</td><td>0.03968</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07062</td><td><b>0.06921</b></td><td>0.001770</td><td>0.002319</td><td>0.05725</td><td>0.05933</td><td><b>LS4</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.06543</b></td><td>0.06683</td><td>0.001221</td><td>0.002808</td><td>0.05634</td><td>0.05408</td><td><b>CSDI</b></td></tr>
+  <tr><td colspan="8"><b>rv (M scalar)</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.01772</b></td><td>0.01819</td><td>0.2307</td><td>0.2865</td><td>0.01625</td><td>0.01876</td><td><b>CSDI</b></td></tr>
+  <tr><td>CRPS ↓</td><td><b>0.009938</b></td><td>0.01032</td><td>0.1913</td><td>0.2291</td><td>0.009143</td><td>0.01168</td><td><b>CSDI</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td><b>0.4746</b></td><td>0.4102</td><td>0</td><td>0</td><td>0.4727</td><td>0.2344</td><td><b>CSDI</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td><b>0.8633</b></td><td>0.7988</td><td>0</td><td>0.001953</td><td>0.9238</td><td>0.5332</td><td><b>CSDI</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.02115</td><td>0.01914</td><td>0.06861</td><td>0.06689</td><td>0.02217</td><td>0.01202</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.05138</td><td>0.04589</td><td>0.1651</td><td>0.1610</td><td>0.05411</td><td>0.02873</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.01758</td><td><b>0.05078</b></td><td>1.000</td><td>0.9980</td><td>0.02930</td><td>0.2891</td><td><b>LS4</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td>0.1191</td><td>0.1504</td><td><b>0</b></td><td>0</td><td>0.04688</td><td>0.1777</td><td><b>Chronos-2</b></td></tr>
 </tbody>
 </table>
 
-<!-- PS strict-CRPS win-counts (of 4 quantity rows): CSDI=2, LS4=1 -->
+<!-- PS strict win-counts (of 18 ranked rows = 6 ranked metrics × 3 quantities; width rows are diagnostic): CSDI=9, LS4=8, Chronos-2=1 -->
 
-**The generators dominate the forecasters on distributional forecasting.** On the smooth **cum** trajectory
-all four are within ~7% of each other and near the Heston oracle (0.02525) — a partial path's cumulative
-drift is easy. But on **step** and especially **rv**, the fine-tuned forecasters collapse: Chronos-2/TimesFM
-land at rv-CRPS 0.19–0.23 versus the generators' ~0.010 and the oracle's 0.0091 — a **20×** gap. Chronos-2
-and TimesFM forecast a smooth conditional *mean* path; they do not reproduce the per-step return
-distribution or the realized-vol law, which is exactly what path-shadowing over a well-trained generator
-bank recovers. CSDI edges LS4 on step/rv and coverage (both generators under-cover at 0.868 vs target 0.90);
-LS4 edges CSDI on cum. **Net: CSDI 2 — LS4 1** across the four rows, with both far ahead of either forecaster.
+**The generators dominate the forecasters on distributional forecasting, and the full metric set shows
+*where* the forecasters break.** On the smooth **cum** trajectory all four methods are within ~7% on
+CRPS/RMSE and near the Heston oracle — a partial path's cumulative drift is easy, and even a point-forecaster
+tracks it. But move to the **shape** of the distribution and the two families diverge:
+
+- **step** — Chronos-2/TimesFM over-cover wildly (coverage₉₀ 0.995–0.997 vs target 0.90) with **4–5× too wide**
+  intervals (width₉₀ 0.16–0.18 vs the generators' ~0.035). They hedge per-step uncertainty by inflating the
+  band, so almost nothing misses — lower/upper miss₉₀ ≈ 0.001–0.003 vs the ideal 0.05. Point-accurate, badly
+  calibrated.
+- **rv (realized vol)** — total collapse: rv-CRPS **0.19–0.23** vs the generators' ~0.010 and the oracle's
+  0.0091, a **~20× gap**. Their rv intervals sit entirely below the truth (coverage₉₀ ≈ 0, lower miss₉₀ ≈ 1.0):
+  a single-shot conditional-mean forecaster cannot represent the volatility-of-volatility law at all, which is
+  exactly what path-shadowing over a well-trained generator bank recovers. (Chronos-2's lone "win" — rv upper
+  miss₉₀ = 0 — is degenerate: 0% of truth exceeds an interval that the *whole* distribution already sits above.)
+
+Between the generators it is close: **CSDI 9 — LS4 8 — Chronos-2 1** across the 18 ranked rows. CSDI takes the
+calibration/coverage rows and rv; LS4 takes the cum/step central-tendency rows (RMSE, cum CRPS, the 50%
+coverages). Both generators sit right on the Heston oracle across all 24 values and far ahead of either
+forecaster on everything but bare cum drift — the whole point of shadow-forecasting over a distribution-faithful
+generator rather than a mean-reverting point forecaster.
 
 ---
 
