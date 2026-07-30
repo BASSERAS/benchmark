@@ -68,7 +68,7 @@ These were made building LS4 and cost real time. Each has a one-line guard.
 | **M7** | **Path-shadowing done with the *simplified* reference eval instead of the paper protocol.** | `methods/<METHOD>/path_shadowing/` (`path_shadowing.py` + `run_eval.py`) is a **reduced** eval: a 65D **murex** embedding, **K=77**, raw prefix-price L2, a single **8192**-path bank, and **CRPS/MAE/RMSE only** at H=32/64. It is **NOT** the arXiv:2308.01486 protocol. Reusing it (as an earlier draft of §0.3/§9.2 wrongly said to) silently answers a *different, easier* question and makes the numbers non-comparable to the paper. | **This experiment uses the STRICT paper protocol — never the reference subset.** Use `<METHOD>/path_shadowing/path_shadowing_pdf.py`: the **4-block weighted, dimension-normalized, frozen-reference-standardized** embedding (recent-returns w1.0 · cumulative-path w0.5 · rolling-vol w2.0 · dependence-ACF w1.0; `z̃ = √(w/d)·(z−μ_ref)/σ_ref` with `μ_ref,σ_ref` frozen on the **real test set**), a **single shared 1M bank** whose **nested prefixes** give the **bank-size sweep** {4096, 16384, 65536, 262144, 1 000 000}, the **three forecast quantities** (cumulative return, one-step return, horizon RV), and the **full metric set** (predictive-mean RMSE, CRPS, coverage 50/90, band width 50/90, lower/upper-90 miss) with **2000-resample paired bootstrap 95% CIs over the queries**. See §9 (and §9.6 for every ambiguity choice). The old `path_shadowing_mc.py` (CRPS-only, K=256 murex) is **superseded** — kept only as the 1M-bank builder via `gen_banks.py`. |
 | **M8** | **M1 re-fired when the train script was cloned for the no-preproc baseline.** | `baseline_no_preproc/code/train_ls4_raw.py` was copied from `train_ls4_logret.py`, which **still carried `--epochs` default 400**. Launched as `train_ls4_raw.py --seed 0` (no flag) → ran **400** epochs again, exactly the M1 trap, on the *control* run that most needs to match the with-preproc runs' **100**. Caught by Theo ("why 400 epochs… u remade the mistake"). Killed, script default fixed to 100, cleaned, relaunched at 100. | **When cloning a train script, immediately edit its `--epochs` default to the canonical count** (LS4 → `default=100`) before the first launch — a cloned default carries the old bug forward. A guard that lives only in the *call site* (passing `--epochs`) does not survive a copy-paste; a guard baked into the *default* does. This is why M1's guard now demands both. Verify with `grep -n 'epochs' code/train_*.py` after cloning. |
 | **M9** | **README metric table transcribed incompletely from the JSON.** | The §8 one-step-return PS table in `LS4/README.md` was missing **coverage 50** and **width 50** rows — the values existed in `pdf_summary.json` but were never copied into the table, so a reader auditing "all 8 metrics present" would find only 6 for that quantity. | **Transcribe metric tables programmatically, never by hand.** For every quantity (cum/step/rv), assert the rendered table has all 8 rows (rmse, crps, coverage50/90, width50/90, lower/upper_miss90) by cross-checking against `pdf_summary.json` keys before committing. A quick check: count metric rows per quantity block == 8. |
-| **M10** | **Treated GitHub's 100 MiB push limit as a removable local setting.** | Repeated attempts to push the 489 MiB `bank/generated_bank_seed0_1000000x128.npy` by "removing the gitignore rule" / `--force`. The 100 MiB cap is a **GitHub server-side hard rejection**, not a gitignore/config/size setting; `--force` rewrites history, not file size. Only **Git LFS** pushes files >100 MiB. | **The 1M bank IS committed to the repo via Git LFS** (Theo's decision, commit `cfb22f5`). It lives at `<METHOD>/path_shadowing/bank/generated_bank_seed0_1000000x128.npy`, tracked by the root `.gitattributes` pattern `results/Heston/preprocessing_with_log_returns/<METHOD>/path_shadowing/bank/*.npy filter=lfs diff=lfs merge=lfs -text`. **When adding a new method, add that method's `…/bank/*.npy` line to root `.gitattributes` *before* the first `git add` of the bank**, then commit the bank normally — LFS handles it. Never push it as a plain blob, never `--force`, never strip a gitignore rule (that was the original mistake). The bank is still deterministically regenerable via `gen_banks.py --seed 0` (LFS is a convenience mirror, not the source of truth). **Caveat to keep flagging:** free GitHub LFS = 1 GiB storage + 1 GiB/month bandwidth, so ~2 fresh clones/month exhausts the free tier and LFS fetches start 403-ing. |
+| **M10** | **Treated GitHub's 100 MiB push limit as a removable local setting.** | Repeated attempts to push the 489 MiB `bank/generated_bank_seed0_1000000x128.npy` by "removing the gitignore rule" / `--force`. The 100 MiB cap is a **GitHub server-side hard rejection**, not a gitignore/config/size setting; `--force` rewrites history, not file size. Only **Git LFS** pushes files >100 MiB. | **The 1M bank is NOT pushed — it is gitignored, disk-only, and regenerated on demand.** It lives at `<METHOD>/path_shadowing/bank/generated_bank_seed0_1000000x128.npy` and is deterministically rebuilt by `gen_banks.py --seed 0`, which is precisely why shipping it is unnecessary. **When adding a new method: do NOT add a `…/bank/*.npy` line to root `.gitattributes`.** Never push the bank as a plain blob, never `--force`, never strip a gitignore rule (that was the original mistake). *(History: LS4/CSDI/SBTS banks were committed via Git LFS under an earlier decision, commit `cfb22f5`, and their `.gitattributes` lines remain. **Theo reversed that policy on 2026-07-30** — "do not push the 1M samples, save them under `banks`" — because free GitHub LFS gives 1 GiB storage + 1 GiB/month bandwidth, so ~2 fresh clones/month exhausts the tier and LFS fetches start 403-ing. Leave the existing three entries alone; add no new ones.)* |
 
 ---
 
@@ -129,7 +129,7 @@ results/Heston/preprocessing_with_log_returns/
     │   ├── gen_banks.py               # 1M-bank builder (reuses path_shadowing_mc.build_bank)
     │   ├── path_shadowing_pdf.py      # §9 STRICT paper protocol evaluator (the deliverable)
     │   ├── path_shadowing_mc.py       # SUPERSEDED CRPS-only driver — kept only for build_bank
-    │   ├── bank/  generated_bank_seed0_1000000x128.npy   # ONE shared 1M bank (committed via Git LFS; also regenerable)
+    │   ├── bank/  generated_bank_seed0_1000000x128.npy   # ONE shared 1M bank — GITIGNORED, disk-only, regenerable
     │   ├── logs/  gen_seed0.log, pdf_run.log       # generation + eval logged (M2/M7)
     │   ├── plots/ pdf_crps_vs_banksize.png, pdf_coverage_calibration.png
     │   └── pdf_summary.json                        # all metrics + 95% bootstrap CIs (single run)
@@ -527,10 +527,9 @@ OMP_NUM_THREADS=16 taskset -c 0-15 $PY path_shadowing_pdf.py \
 tail -f logs/pdf_run.log     # per bank_size line: CRPS, coverage, uniq-frac, elapsed
 ```
 The run writes a single `pdf_summary.json` (all metrics + 95% bootstrap CIs) + the two plots. The 1M
-bank is ~0.5 GB float32; it is **committed via Git LFS** (root `.gitattributes` pattern
-`…/<METHOD>/path_shadowing/bank/*.npy filter=lfs`, M10) and is also **regenerable** from
-`gen_banks.py --seed 0`. The **JSON metrics + plots remain the primary deliverable**; the LFS bank is a
-convenience mirror (free LFS = 1 GiB storage + 1 GiB/month bandwidth — see M10 caveat).
+bank is ~0.5 GB float32; it is **gitignored and never pushed** — it stays on disk and is
+**deterministically regenerable** from `gen_banks.py --seed 0`, which is what makes shipping it
+unnecessary. The **JSON metrics + plots are the deliverable** (M10).
 **Everything (generation *and* evaluation) must go through a log file** so progress, ETA, and stalls are
 visible — never fly blind (M2).
 
@@ -579,7 +578,8 @@ Do **not** silently change any of these — a different choice = a different, no
 | # | Ambiguity | Choice | Why |
 |---|-----------|--------|-----|
 | E15 | Are cum / one-step returns scalars or trajectories? | **H-dimensional trajectories over offsets u=1…H.** `cum_u = logS[s+u]−logS[s]`, `step_u = logS[s+u]−logS[s+u−1]`; RMSE/CRPS/coverage/width are computed at every u and **averaged over u=1…H** before the query bootstrap. RV stays the scalar `√Σr²`. | §2/§3.1/§3.3 define cum & step as h-indexed running trajectories aggregated over all future times — **not** a single terminal point. The earlier build scored cum only at h=H and step only at h=1, which (a) answered an easier single-horizon question and (b) made the "terminal RMSE" diagnostic **identical** to cum RMSE by construction (the M-tagged identity bug). Trajectory scoring fixes both; terminal (h=H) RMSE is now a genuinely distinct diagnostic. |
-| E16 | How does the query bootstrap interact with the horizon average? | Per-query metric = **mean over u** of the per-(query,u) value; the 2000-resample bootstrap then resamples **queries** (not (query,u) pairs). RMSE aggregates as `√(mean_q mean_u se)`. | Keeps the bootstrap unit = the 512 independent query paths (D13); horizons within a query are not independent so they are averaged, not resampled. |
+| E16 | How does the query bootstrap interact with the horizon average? | Per-query metric = **mean over u** of the per-(query,u) value; the 2000-resample bootstrap then resamples **queries** (not (query,u) pairs). | Keeps the bootstrap unit = the 512 independent query paths (D13); horizons within a query are not independent so they are averaged, not resampled. |
+| E16b | How does RMSE aggregate across queries? | **`RMSE = mean_q(√(mean_u se_{q,u}))`** — root *inside*, then average over queries (the average per-query root error). Implemented in `path_shadowing_pdf.py::_agg` (`np.sqrt(per).mean()`) and mirrored in `_boot_ci` and in the `terminal_rmse` diagnostic (`np.abs(...).mean()`). **Fixed 2026-07-30; this reversed the earlier `√(mean_q mean_u se)` choice.** Two caveats: (a) by Jensen `mean(√·) ≤ √(mean ·)`, so every RMSE cell dropped (e.g. CSDI cum 0.0493 → 0.0414) — old and new numbers must never be mixed in one table; (b) for the **scalar rv** quantity this reduces **exactly to MAE**. | Matches the path-shadowing reproducibility report (Tables 1–5), which is the reference the repo's PS tables are checked against cell-by-cell. **Frozen exception:** `forecaster/pdf_bridge.py` deliberately keeps the *old* `√(mean_q se_q)` for Chronos-2 / TimesFM (`_metrics_frozen_rmse`), because the report never recomputed its forecaster RMSE column — so those two cells reproduce the published values and are **not comparable** to the generator RMSE cells. The READMEs carry that footnote. |
 
 **F — Heston oracle (protocol ceiling, §6)**
 
@@ -839,7 +839,7 @@ block. Structure, in order:
 **§8 · `## File layout`** — the folder tree (fenced block): `README.md`, `metrics_summary.csv`,
 `seed_{0..4}_metrics.json`, `generated_paths/`, `weights/`, `losses/`, disc/pred loss csvs, `plots/`,
 `code/` (`train_<method>_<variant>.py` + `compute_metrics_<variant>.py`), and `path_shadowing/`
-(`path_shadowing_pdf.py`, `gen_banks.py`, `bank/` **noting it is Git LFS-tracked (M10)**, `pdf_summary.json`, `logs/`, `plots/`).
+(`path_shadowing_pdf.py`, `gen_banks.py`, `bank/` **noting it is gitignored / disk-only and regenerable, not pushed (M10)**, `pdf_summary.json`, `logs/`, `plots/`).
 
 **§9 · `## Reproduce`** — one fenced bash block: `PY=/home/tbasseras/gpu-venv/bin/python`, the 5-seed
 2-GPU training loop (`for gpu in 0 1 … taskset -c … OMP_NUM_THREADS=8 … --seed $gpu & done; wait`, per
@@ -926,12 +926,70 @@ same depth (mirror the level of detail LS4 received):
    **Heston-oracle ceiling** and **RW floor** — is the generator on the oracle, and where does it
    under-cover? Full 8-metric set, bootstrap CIs. **Never** the murex reference eval (M7).
 5. **Artifacts & repro** — the exact paths written (weights, generated paths, `pdf_summary.json`, plots)
-   and the one-command repro; note the 1M bank is **committed via Git LFS** (root `.gitattributes`
-   `…/<METHOD>/path_shadowing/bank/*.npy filter=lfs`) and also regenerable via `gen_banks.py --seed 0` (M10).
+   and the one-command repro. **The 1M bank is NOT pushed.** It stays on disk under
+   `<METHOD>/path_shadowing/bank/` and is **gitignored**; it is regenerable via `gen_banks.py --seed 0`
+   (M10), which is what makes shipping it unnecessary. *(Historical note: the LS4/CSDI/SBTS banks were
+   committed via Git LFS before this rule and still have `.gitattributes` entries; that decision was
+   reversed — do not add a new bank to `.gitattributes`.)*
 6. **Mistakes ledger delta** — if any new trap fired, it must already be a new `M<n>` row in §0.2
    *before* the report is considered complete (this session added M8–M10).
 7. **Commit** — conventional message + `Co-Authored-By`, only the two `preprocessing_with_log_returns/`
    folders touched (no `methods/`, no `results/Heston/LS4/`).
+
+
+### 10.2 Experiment README — cross-method display (what a NEW method must add)
+
+The experiment README ([`README.md`](README.md)) holds three cross-method tables — **A1-A34**, **B** and
+**PS** — all emitted by [`build_cross_tables.py`](build_cross_tables.py). **Never hand-type a cell**:
+register the method in the script and paste its stdout. (M-class trap: a hand-typed floor silently drifts
+out of sync with the JSON it claims to quote.)
+
+**Registering a new method.** Add one tuple to the relevant list at the top of `build_cross_tables.py`:
+
+| list | entry | bank-size axis? |
+|------|-------|-----------------|
+| `AB_MODELS` | `("<METHOD>", "<METHOD>/metrics_summary.csv")` | n/a (A + B tables) |
+| `PS_MODELS` | `("<METHOD>", "<METHOD>/path_shadowing/pdf_summary.json", "gen")` | **yes** — retrieval over the bank |
+| `PS_MODELS` | `("<NAME>", "forecaster/<name>_pdf.json", "fc")` | **no** — forecasts directly, retrieves nothing |
+
+Insert the tuple in **model-family position** (Diffusion -> VAE -> Schrodinger Bridge -> forecasters), not
+at the end of the list — column order in the README follows family.
+
+**The PS display is a five-table sweep, not one table.** Section 9.1 evaluates every generator at five
+nested prefixes of the same 1M bank, so the README shows the *same* table once per bank size:
+
+```bash
+python build_cross_tables.py --which PS --all-bank-sizes    # 5 tables + per-size win-counts
+python build_cross_tables.py --which PS                     # 1M table alone
+```
+
+Invariants the renderer enforces — preserve them if you touch it:
+
+1. **Sizes are read from the data, never hardcoded.** `ps_bank_sizes()` reads `by_bank_size` off the first
+   `PS_MODELS` entry, so a Section 9.1 protocol change propagates by itself.
+2. **The oracle moves with the bank.** Each table reads `heston_oracle.by_bank_size[<size>]`, so the ceiling
+   is size-matched 1:1 against the generator column (4 096 vs 4 096, ... , 1M vs 1M). Showing the 1M oracle
+   against a 4 096 generator bank is a protocol violation, not a display choice.
+3. **Forecasters and the RW floor have no bank-size axis**, so their values repeat unchanged in all five
+   tables. Their headers must carry the `<sup>bank-independent</sup>` tag and the intro paragraph must say
+   so — otherwise the repetition reads as a copy-paste bug.
+4. **Winner excludes the oracle and the RW floor**; the two `width` rows are diagnostic and select no
+   winner (width without its coverage is meaningless). 18 ranked rows = 6 ranked metrics x 3 quantities.
+5. **Layout.** The four sub-1M tables go in collapsed `<details>` blocks whose `<summary>` carries the
+   win-count; the **1M table is the expanded headline**, and all prose below it quotes 1M numbers.
+6. A **win-count summary table** (`bank | winners | the sweep-sensitive metric`) follows the five tables.
+
+**Read the sweep before writing the verdict.** Bank size can flip the ranking outright: SBTS wins **14/18**
+rows at 4 096 and **0/18** at 1M, its cum-CRPS degrading monotonically (0.0254 -> 0.0318) straight past the
+RW floor (0.0295) while its coverage90 collapses 0.88 -> 0.66. A small bank returns loose prefix matches, so
+the retrieved ensemble inherits its spread from the *marginal* law — which is exactly the property a
+conditional-variance collapse hides behind. **Only the 1M table answers the intended question**; quoting a
+small-bank win as the headline reports an artefact.
+
+**A method with no PS bank yet** (TimeDiT's case at time of writing) stays **out** of `PS_MODELS` and gets an
+explicit blockquote in the README's PS intro stating why, linking its per-method README. Never a row of
+`-` placeholders, and never a silent omission.
+
 
 ---
 
@@ -962,7 +1020,8 @@ same depth (mirror the level of detail LS4 received):
 - [ ] **Side-by-side stylised-facts diagnostic** placed directly below the B-curve table — raw baseline `heston_diagnostics.png` generated via `metrics/plot_diagnostics.plot_diagnostics` (CPU, no retrain), 2-column with-vs-raw image table (§10.0.1 §B item 4).
 - [ ] Per-method README written (mirror the main benchmark's).
 - [ ] **All metric tables cross-checked against `pdf_summary.json` / `seed_N_metrics.json`** — every quantity has its full metric set, none dropped (M9).
-- [ ] 1M bank **committed via Git LFS** — method's `…/path_shadowing/bank/*.npy filter=lfs` line added to root `.gitattributes` **before** `git add`, then committed normally; bank still regenerable via `gen_banks.py --seed 0`. No plain-blob push, no `--force`, no gitignore-strip (M10).
+- [ ] 1M bank left **on disk and gitignored — NOT pushed** (`<METHOD>/path_shadowing/bank/*.npy`); it is regenerable via `gen_banks.py --seed 0`, which is why shipping it is unnecessary. Do **not** add a new `.gitattributes` LFS line (the LS4/CSDI/SBTS entries are historical; that decision was reversed). No plain-blob push, no `--force` (M10).
+- [ ] **Method registered in [`build_cross_tables.py`](build_cross_tables.py)** — `AB_MODELS` + `PS_MODELS` (in model-family column position, `"gen"` vs `"fc"` kind); the experiment README's A/B/PS tables regenerated from its stdout, **PS emitted with `--all-bank-sizes`** (5 nested-prefix tables, 1M expanded as the headline). No hand-typed cells (§10.2).
 - [ ] **End-of-run report** delivered in the §10.1 structure; new traps recorded as `M<n>` in §0.2 first.
 - [ ] Everything lives under the two `preprocessing_with_log_returns/` folders; no reference file
       touched.

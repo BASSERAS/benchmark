@@ -8,10 +8,18 @@ sublabels, **bold** = best, win-count comments).
 It REUSES the canonical renderer `metrics/render_tables.py` (fmt / ms / A_ROWS /
 CURVE_PLOTS / winner_idx / header_html / render_A / render_B) unchanged, only
 repointing its data loaders at THIS experiment's folders and shrinking the
-method set to the two methods carried through the pipeline:
+method set to the methods carried through the pipeline:
 
-    Diffusion : CSDI      (results/.../preprocessing_with_log_returns/CSDI)
-    VAE       : LS4       (results/.../preprocessing_with_log_returns/LS4)
+    Diffusion          : CSDI    (results/.../preprocessing_with_log_returns/CSDI)
+    Diffusion          : TimeDiT (results/.../preprocessing_with_log_returns/TimeDiT)
+    VAE                : LS4     (results/.../preprocessing_with_log_returns/LS4)
+    Schrödinger Bridge : SBTS    (results/.../preprocessing_with_log_returns/SBTS)
+
+NOTE (TimeDiT / PS): TimeDiT is present in the A and B tables but **not** in
+PS_MODELS below — its strict 1M-bank `path_shadowing/pdf_summary.json` does not
+exist yet (the raw and log-return banks are still generating). Add its entry to
+PS_MODELS once that file lands; the header colspans are computed, not hardcoded,
+so nothing else needs changing.
 
 Perfect floor = the independent-seed (1000+) 4096-path draw in
 `perfect_recovery/results/` (compute_perfect_4096.py), scored against this
@@ -56,10 +64,11 @@ import render_tables as RT                                              # noqa: 
 
 PERFECT_DIR = os.path.join(HERE, "perfect_recovery", "results")
 
-# ── shrink the method set to this experiment's two methods ──────────────────
-# family order follows the root table (Diffusion before VAE).
+# ── shrink the method set to this experiment's methods ──────────────────────
+# family order follows the root table (Diffusion before VAE). TimeDiT is a
+# denoising diffusion transformer (DiT), so it shares CSDI's Diffusion family.
 RT.FAMILIES = [
-    ("Diffusion",          [("CSDI", "CSDI")]),
+    ("Diffusion",          [("CSDI", "CSDI"), ("TimeDiT", "TimeDiT")]),
     ("VAE",                [("LS4", "LS4")]),
     ("Schrödinger Bridge", [("SBTS", "SBTS")]),
 ]
@@ -251,19 +260,28 @@ PS_METRICS = [
 ]
 
 
-def _gen_quantities(path):
-    """1M-bank quantities dict {cum,step,rv:{metric:{value,ci}}} from a generator
-    pdf_summary.json."""
+def ps_bank_sizes():
+    """The GUIDELINE §9.1 nested-prefix sweep, read from the data rather than
+    hardcoded so a protocol change propagates automatically."""
+    d = json.load(open(os.path.join(HERE, PS_MODELS[0][1])))
+    return sorted(d["by_bank_size"], key=int)
+
+
+def _gen_quantities(path, bank_size):
+    """Quantities dict {cum,step,rv:{metric:{value,ci}}} at one nested-prefix bank
+    size, from a generator pdf_summary.json."""
     d = json.load(open(path))
-    return d["by_bank_size"]["1000000"]["quantities"]
+    return d["by_bank_size"][str(bank_size)]["quantities"]
 
 
 def _fc_quantities(path):
+    """Forecasters retrieve nothing, so they have no bank-size axis: the same
+    values are repeated in every bank-size table (flagged by a README footnote)."""
     return json.load(open(path))["quantities"]
 
 
-def _ps_value(path, kind, qn, metric):
-    q = _gen_quantities(path) if kind == "gen" else _fc_quantities(path)
+def _ps_value(path, kind, qn, metric, bank_size):
+    q = _gen_quantities(path, bank_size) if kind == "gen" else _fc_quantities(path)
     return q[qn][metric]["value"]
 
 
@@ -276,28 +294,38 @@ def _ps_winner_idx(vals, rule):
     return int(np.argmin([abs(v - rule) for v in vals]))
 
 
-def render_PS_strict():
-    """Full strict-PDF PS comparison: all 8 metrics × 3 quantities (24 values) for
-    CSDI, LS4, Chronos-2, TimesFM, with the Heston-oracle (= perfect floor, K=256
-    draws from the true SDE) and RW-floor columns and a per-row Winner (best model,
-    floors excluded). Width rows are diagnostics (no winner: width alone is
-    meaningless without its coverage). Mirrors the root PS block's HTML shape."""
-    # both generators carry identical oracle / rw rows -> read from the first gen.
+def render_PS_strict(bank_size=1000000):
+    """Full strict-PDF PS comparison at ONE nested-prefix bank size: all 8 metrics
+    × 3 quantities (24 values) for every entry of PS_MODELS, with the Heston-oracle
+    (= perfect floor, K=256 draws from the true SDE) and RW-floor columns and a
+    per-row Winner (best model, floors excluded). Width rows are diagnostics (no
+    winner: width alone is meaningless without its coverage). Mirrors the root PS
+    block's HTML shape.
+
+    The generator and oracle columns both move with `bank_size` (nested prefixes of
+    the SAME bank, GUIDELINE §9.1); the forecaster columns and the RW floor have no
+    bank-size axis and are therefore identical in every table."""
+    # every generator carries identical oracle / rw rows -> read from the first gen.
     gen_path = os.path.join(HERE, PS_MODELS[0][1])
     full = json.load(open(gen_path))
-    oracle_q = full["heston_oracle"]["by_bank_size"]["1000000"]["quantities"]
+    oracle_q = full["heston_oracle"]["by_bank_size"][str(bank_size)]["quantities"]
     rw_q = full["rw_baseline"]
 
     model_names = [n for n, _, _ in PS_MODELS]
     paths_kinds = [(os.path.join(HERE, p), k) for _, p, k in PS_MODELS]
-    ncol = 1 + len(PS_MODELS) + 3  # Metric + 4 models + Oracle + RW + Winner
+    ncol = 1 + len(PS_MODELS) + 3  # Metric + models + Oracle + RW + Winner
+    # colspans are COMPUTED from PS_MODELS, not hardcoded, so adding a generator
+    # (e.g. TimeDiT once its pdf_summary.json exists) keeps the header aligned.
+    n_gen = sum(1 for _, _, k in PS_MODELS if k == "gen")
+    n_fc = sum(1 for _, _, k in PS_MODELS if k == "fc")
+    bs_label = f"{int(bank_size):,}".replace(",", " ")
     out = ["<table>", "<thead>",
            "  <tr>",
            '    <th rowspan="2">Quantity / metric</th>',
-           '    <th colspan="2">Generators (1M bank)</th>',
-           '    <th colspan="2">Forecasters (fine-tuned @4096)</th>',
-           '    <th rowspan="2">Heston oracle<br>(perfect floor)</th>',
-           '    <th rowspan="2">RW floor</th>',
+           f'    <th colspan="{n_gen}">Generators ({bs_label} bank)</th>',
+           f'    <th colspan="{n_fc}">Forecasters (fine-tuned @4096)<br><sup>bank-independent</sup></th>',
+           f'    <th rowspan="2">Heston oracle<br>(perfect floor, {bs_label})</th>',
+           '    <th rowspan="2">RW floor<br><sup>bank-independent</sup></th>',
            '    <th rowspan="2">Winner</th>',
            "  </tr>",
            "  <tr>"]
@@ -309,7 +337,7 @@ def render_PS_strict():
     for qn, qlabel in PS_QUANT:
         out.append('  <tr><td colspan="%d"><b>%s</b></td></tr>' % (ncol, qlabel))
         for metric, mlabel, rule in PS_METRICS:
-            vals = [_ps_value(p, k, qn, metric) for p, k in paths_kinds]
+            vals = [_ps_value(p, k, qn, metric, bank_size) for p, k in paths_kinds]
             wi = _ps_winner_idx(vals, rule)
             if wi is not None:
                 wins[model_names[wi]] += 1
@@ -328,6 +356,9 @@ def render_PS_strict():
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--which", choices=["A", "B", "PS", "all"], default="all")
+    ap.add_argument("--all-bank-sizes", action="store_true",
+                    help="emit one PS table per nested-prefix bank size (GUIDELINE §9.1) "
+                         "instead of the 1M table alone")
     args = ap.parse_args()
 
     if args.which in ("A", "all"):
@@ -345,11 +376,14 @@ def main():
         print("<!-- B per-subline win-counts (grid_tvd + 6×5, of 31): " +
               ", ".join(f"{k}={v}" for k, v in sorted(subline_wins.items(), key=lambda x: -x[1]) if v) + " -->\n")
     if args.which in ("PS", "all"):
-        html, wins = render_PS_strict()
-        print("<!-- ===== PS STRICT-PDF CROSS-METHOD TABLE ===== -->")
-        print(html)
-        print("\n<!-- PS strict win-counts (of 18 ranked rows = 6 ranked metrics × 3 quantities; width rows are diagnostic): " +
-              ", ".join(f"{k}={v}" for k, v in sorted(wins.items(), key=lambda x: -x[1]) if v) + " -->\n")
+        sizes = ps_bank_sizes() if args.all_bank_sizes else ["1000000"]
+        for bs in sizes:
+            bs_label = f"{int(bs):,}".replace(",", " ")
+            html, wins = render_PS_strict(bs)
+            print(f"<!-- ===== PS STRICT-PDF CROSS-METHOD TABLE — bank {bs_label} ===== -->")
+            print(html)
+            print(f"\n<!-- PS strict win-counts @{bs_label} (of 18 ranked rows = 6 ranked metrics × 3 quantities; width rows are diagnostic): " +
+                  ", ".join(f"{k}={v}" for k, v in sorted(wins.items(), key=lambda x: -x[1]) if v) + " -->\n")
 
 
 if __name__ == "__main__":

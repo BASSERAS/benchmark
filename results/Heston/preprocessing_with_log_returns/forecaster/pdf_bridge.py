@@ -52,6 +52,28 @@ def build_forecaster_Y(ens_price, qlogS):
     return {"cum": cum, "step": step, "rv": rv}
 
 
+def _metrics_frozen_rmse(Y, y, boot_idx):
+    """P.metrics_with_ci, except RMSE stays on the pre-Table-5 sqrt(mean_q(se)) convention.
+
+    The generators switched to mean_q(sqrt(se)) to match the reproducibility report's
+    Tables 1-5, but the report never recomputed its Chronos-2 / TimesFM RMSE column.
+    Pinning it here keeps a re-run reproducing the published cells instead of silently
+    drifting to the generators' convention. See the README footnote on the PS tables.
+    """
+    per = P.per_path_metrics(Y, y)
+    out = {}
+    for mname, (pkey, kind) in P.METRIC_MAP.items():
+        v = per[pkey]
+        if kind == "rmse":
+            stat = np.sqrt(v[boot_idx].mean(axis=1))
+            out[mname] = {"value": float(np.sqrt(v.mean())),
+                          "ci": [float(np.percentile(stat, 2.5)),
+                                 float(np.percentile(stat, 97.5))]}
+        else:
+            out[mname] = {"value": P._agg(v, kind), "ci": P._boot_ci(v, kind, boot_idx)}
+    return out
+
+
 def score_forecaster(ens_price, name, out_path, extra_meta=None):
     """Score a forecaster's (Nq,K,H) price ensemble with the strict PDF metrics and
     write <name>_pdf.json. Uses the SAME boot_idx and q_quant as the generators."""
@@ -66,10 +88,13 @@ def score_forecaster(ens_price, name, out_path, extra_meta=None):
     Y = build_forecaster_Y(ens_price, qlogS)
     quantities = {}
     for qn in ("cum", "step", "rv"):
-        quantities[qn] = P.metrics_with_ci(Y[qn], q_quant[qn], boot_idx)
+        quantities[qn] = _metrics_frozen_rmse(Y[qn], q_quant[qn], boot_idx)
 
     # diagnostics comparable to eval_bank's
     pred_term_mean = Y["cum"][:, :, -1].mean(axis=1)
+    # Deliberately sqrt(mean(se)), NOT the generators' mean(sqrt(se)): the published
+    # forecaster RMSE column (reproducibility report Tables 1-5) was never recomputed
+    # under the new convention, so this path is frozen to match it. See README footnote.
     term_rmse = float(np.sqrt(((pred_term_mean - q_quant["cum"][:, -1]) ** 2).mean()))
     rv_bias = float(Y["rv"].mean() - q_quant["rv"].mean())
 

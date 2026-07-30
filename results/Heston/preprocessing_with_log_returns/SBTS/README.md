@@ -244,13 +244,16 @@ all sliced as **nested prefixes** over the sweep {4096, 16384, 65536, 262144, 1 
 All numbers are at the full **1 000 000-path bank** (log-return scale; lower is better except
 coverage, whose target is the nominal level 0.50 / 0.90). Brackets are **95% bootstrap CIs over the
 512 query paths**. cum/step are **horizon-averaged over u = 1…H**. (The random-walk floor is a fixed
-point estimate — the driver does not bootstrap it.)
+point estimate — the driver does not bootstrap it.) **RMSE is reported as `mean_q(√se_q)`** — the
+average per-query root error, matching the path-shadowing reproducibility report (Tables 1–5). It is
+*not* `√(mean_q se_q)`, which by Jensen is larger; for the scalar **rv** quantity `mean_q(√se_q)`
+reduces exactly to MAE.
 
 **Cumulative return (trajectory, u = 1…H)** — SBTS vs Heston-oracle ceiling vs RW floor
 
 | metric | SBTS | Heston oracle | RW floor |
 |--------|:----------:|:-------------:|:--------:|
-| RMSE          | 0.0552 [0.0517, 0.0587] | **0.0491** [0.0460, 0.0521] | 0.0567 |
+| RMSE          | 0.0467 [0.0441, 0.0494] | **0.0415** [0.0393, 0.0438] | 0.0480 |
 | CRPS          | 0.0318 [0.0298, 0.0338] | **0.0252** [0.0238, 0.0267] | 0.0295 |
 | coverage 50   | 0.300 [0.278, 0.323] | 0.489 [0.466, 0.513] | 0.472 |
 | coverage 90   | 0.657 [0.632, 0.684] | **0.894** [0.878, 0.910] | 0.855 |
@@ -263,7 +266,7 @@ point estimate — the driver does not bootstrap it.)
 
 | metric | SBTS | Heston oracle | RW floor |
 |--------|:----------:|:-------------:|:--------:|
-| RMSE          | 0.0142 [0.0138, 0.0146] | **0.0124** [0.0121, 0.0128] | 0.0125 |
+| RMSE          | 0.0135 [0.0131, 0.0139] | **0.0118** [0.0114, 0.0121] | 0.0119 |
 | CRPS          | 0.00869 [0.00840, 0.00898] | **0.00675** [0.00655, 0.00696] | 0.00687 |
 | coverage 50   | 0.308 [0.294, 0.322] | 0.482 [0.470, 0.493] | 0.516 |
 | coverage 90   | 0.648 [0.630, 0.666] | 0.886 [0.879, 0.894] | 0.887 |
@@ -275,7 +278,7 @@ point estimate — the driver does not bootstrap it.)
 
 | metric | SBTS | Heston oracle | RW floor |
 |--------|:----------:|:-------------:|:--------:|
-| RMSE          | 0.0197 [0.0184, 0.0210] | **0.0162** [0.0152, 0.0173] | 0.0188 |
+| RMSE (= MAE)  | 0.0154 [0.0144, 0.0165] | **0.0129** [0.0121, 0.0138] | 0.0151 |
 | CRPS          | 0.0124 [0.0115, 0.0133] | **0.00914** [0.00861, 0.00974] | 0.0117 |
 | coverage 50   | 0.293 [0.256, 0.332] | 0.473 [0.428, 0.514] | 0.234 |
 | coverage 90   | 0.664 [0.625, 0.705] | **0.924** [0.900, 0.945] | 0.533 |
@@ -321,10 +324,10 @@ large banks.
 
 | terminal (h=H) RMSE | prefix dist mean/median/p95 | unique-cand frac | RV mean bias |
 |:-------------------:|:---------------------------:|:----------------:|:------------:|
-| 0.0783 / 0.0694 | 1.491 / 1.449 / 2.059 | 0.115 / 0.119 | −0.00278 / −0.00198 |
+| 0.0591 / 0.0525 | 1.491 / 1.449 / 2.059 | 0.115 / 0.119 | −0.00278 / −0.00198 |
 
-Terminal (h=H) RMSE 0.0783 is a genuine single-horizon diagnostic, **distinct** from the
-horizon-averaged cumulative RMSE 0.0552. SBTS's RV mean bias (−0.00278) is only ~1.4× the oracle's
+Terminal (h=H) RMSE 0.0591 is a genuine single-horizon diagnostic, **distinct** from the
+horizon-averaged cumulative RMSE 0.0467. SBTS's RV mean bias (−0.00278) is only ~1.4× the oracle's
 (−0.00198) — the bias is *small*; the failure is **dispersion, not location** (the collapsed bands, not a
 shifted mean). Full **2000-resample bootstrap 95% CIs** on every metric for SBTS and the oracle are in
 `path_shadowing/pdf_summary.json`.

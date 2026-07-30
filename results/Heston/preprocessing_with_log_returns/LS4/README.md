@@ -231,13 +231,16 @@ all sliced as **nested prefixes** over the sweep {4096, 16384, 65536, 262144, 1 
 <!-- PS-PDF-TABLE-START -->
 All numbers are at the full **1 000 000-path bank** (log-return scale; lower is better except
 coverage, whose target is the nominal level 0.50 / 0.90). Brackets are **95% bootstrap CIs over the
-512 query paths**. cum/step are **horizon-averaged over u = 1…H**.
+512 query paths**. cum/step are **horizon-averaged over u = 1…H**. **RMSE is reported as
+`mean_q(√se_q)`** — the average per-query root error, matching the path-shadowing reproducibility
+report (Tables 1–5). It is *not* `√(mean_q se_q)`, which by Jensen is larger; for the scalar **rv**
+quantity `mean_q(√se_q)` reduces exactly to MAE.
 
 **Cumulative return (trajectory, u = 1…H)** — LS4 vs Heston-oracle ceiling vs RW floor
 
 | metric | LS4+logret | Heston oracle | RW floor |
 |--------|:----------:|:-------------:|:--------:|
-| RMSE          | **0.0489** [0.0459, 0.0519] | 0.0491 [0.0460, 0.0521] | 0.0567 [0.0533, 0.0599] |
+| RMSE          | **0.0415** [0.0393, 0.0438] | 0.0415 [0.0393, 0.0438] | 0.0480 [0.0453, 0.0505] |
 | CRPS          | **0.0253** [0.0239, 0.0268] | 0.0252 [0.0238, 0.0267] | 0.0295 [0.0278, 0.0311] |
 | coverage 50   | 0.469 [0.445, 0.492] | 0.489 [0.466, 0.513] | 0.472 [0.446, 0.500] |
 | coverage 90   | 0.868 [0.851, 0.886] | 0.894 [0.878, 0.910] | 0.855 [0.836, 0.875] |
@@ -250,7 +253,7 @@ coverage, whose target is the nominal level 0.50 / 0.90). Brackets are **95% boo
 
 | metric | LS4+logret | Heston oracle | RW floor |
 |--------|:----------:|:-------------:|:--------:|
-| RMSE          | 0.0124 [0.0121, 0.0128] | 0.0124 [0.0121, 0.0128] | 0.0125 [0.0122, 0.0129] |
+| RMSE          | **0.0118** [0.0114, 0.0121] | 0.0118 [0.0114, 0.0121] | 0.0119 [0.0115, 0.0122] |
 | CRPS          | 0.0068 [0.0066, 0.0070] | 0.0068 [0.0066, 0.0070] | 0.0069 [0.0067, 0.0071] |
 | coverage 50   | 0.467 [0.455, 0.479] | 0.482 [0.470, 0.493] | 0.516 [0.503, 0.528] |
 | coverage 90   | 0.864 [0.856, 0.872] | 0.886 [0.879, 0.894] | 0.887 [0.878, 0.894] |
@@ -262,7 +265,7 @@ coverage, whose target is the nominal level 0.50 / 0.90). Brackets are **95% boo
 
 | metric | LS4+logret | Heston oracle | RW floor |
 |--------|:----------:|:-------------:|:--------:|
-| RMSE          | 0.0182 [0.0170, 0.0194] | **0.0162** [0.0152, 0.0173] | 0.0188 [0.0176, 0.0198] |
+| RMSE (= MAE)  | 0.0143 [0.0133, 0.0153] | **0.0129** [0.0121, 0.0138] | 0.0151 [0.0141, 0.0160] |
 | CRPS          | 0.0103 [0.0096, 0.0111] | **0.0091** [0.0086, 0.0097] | 0.0117 [0.0109, 0.0125] |
 | coverage 50   | 0.410 [0.369, 0.451] | 0.473 [0.428, 0.514] | 0.234 [0.197, 0.272] |
 | coverage 90   | 0.799 [0.766, 0.832] | **0.924** [0.900, 0.945] | 0.533 [0.492, 0.576] |
@@ -271,7 +274,7 @@ coverage, whose target is the nominal level 0.50 / 0.90). Brackets are **95% boo
 | upper-miss 90 | **0.1504** | 0.0469 | 0.1777 |
 
 **Reading it.** On **cumulative and one-step return LS4+logret sits *on* the oracle ceiling** — RMSE
-0.0489 vs 0.0491 and CRPS 0.0253 vs 0.0252 for cum, with fully overlapping CIs; step is a three-way
+0.0415 vs 0.0415 and CRPS 0.0253 vs 0.0252 for cum, with fully overlapping CIs; step is a three-way
 tie. LS4's return-level forecasting is statistically indistinguishable from the true Heston law, and
 both clear the RW floor (cum CRPS −14% vs RW). **RV is where a real gap appears.** LS4's RV CRPS
 (0.0103) is significantly above the oracle's (0.0091) — the CIs [0.0096, 0.0111] and [0.0086, 0.0097]
@@ -302,10 +305,10 @@ banks (distances on the dimension-normalized embedding scale).
 
 | terminal (h=H) RMSE | prefix dist mean/median/p95 | unique-cand frac | RV mean bias |
 |:-------------------:|:---------------------------:|:----------------:|:------------:|
-| 0.0691 / 0.0694 | 1.454 / 1.407 / 2.021 | 0.118 / 0.119 | −0.0059 / −0.0020 |
+| 0.0524 / 0.0525 | 1.454 / 1.407 / 2.021 | 0.118 / 0.119 | −0.0059 / −0.0020 |
 
-Terminal (h=H) RMSE 0.0691 is now a genuine single-horizon diagnostic, **distinct** from the
-horizon-averaged cumulative RMSE 0.0489 (the earlier build reported them as identical because cum was
+Terminal (h=H) RMSE 0.0524 is now a genuine single-horizon diagnostic, **distinct** from the
+horizon-averaged cumulative RMSE 0.0415 (the earlier build reported them as identical because cum was
 mistakenly evaluated only at h=H). Full **2000-resample bootstrap 95% CIs** on every metric for all
 three references are in `path_shadowing/pdf_summary.json`.
 <!-- PS-PDF-TABLE-END -->

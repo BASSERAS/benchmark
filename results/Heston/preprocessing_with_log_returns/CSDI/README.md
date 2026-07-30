@@ -237,13 +237,16 @@ all sliced as **nested prefixes** over the sweep {4096, 16384, 65536, 262144, 1 
 All numbers are at the full **1 000 000-path bank** (log-return scale; lower is better except
 coverage, whose target is the nominal level 0.50 / 0.90). Brackets are **95% bootstrap CIs over the
 512 query paths**. cum/step are **horizon-averaged over u = 1…H**. (The random-walk floor is a fixed
-point estimate — the driver does not bootstrap it.)
+point estimate — the driver does not bootstrap it.) **RMSE is reported as `mean_q(√se_q)`** — the
+average per-query root error, matching the path-shadowing reproducibility report (Tables 1–5). It is
+*not* `√(mean_q se_q)`, which by Jensen is larger; for the scalar **rv** quantity `mean_q(√se_q)`
+reduces exactly to MAE.
 
 **Cumulative return (trajectory, u = 1…H)** — CSDI vs Heston-oracle ceiling vs RW floor
 
 | metric | CSDI+logret | Heston oracle | RW floor |
 |--------|:----------:|:-------------:|:--------:|
-| RMSE          | 0.0493 [0.0461, 0.0524] | 0.0491 [0.0460, 0.0521] | 0.0567 |
+| RMSE          | **0.0414** [0.0392, 0.0438] | 0.0415 [0.0393, 0.0438] | 0.0480 |
 | CRPS          | 0.0254 [0.0240, 0.0269] | 0.0252 [0.0238, 0.0267] | 0.0295 |
 | coverage 50   | 0.462 [0.439, 0.487] | 0.489 [0.466, 0.513] | 0.472 |
 | coverage 90   | 0.868 [0.850, 0.886] | 0.894 [0.878, 0.910] | 0.855 |
@@ -256,7 +259,7 @@ point estimate — the driver does not bootstrap it.)
 
 | metric | CSDI+logret | Heston oracle | RW floor |
 |--------|:----------:|:-------------:|:--------:|
-| RMSE          | 0.0124 [0.0121, 0.0128] | 0.0124 [0.0121, 0.0128] | 0.0125 |
+| RMSE          | 0.0118 [0.0114, 0.0121] | 0.0118 [0.0114, 0.0121] | 0.0119 |
 | CRPS          | 0.0068 [0.0066, 0.0070] | 0.0068 [0.0066, 0.0070] | 0.0069 |
 | coverage 50   | 0.453 [0.442, 0.465] | 0.482 [0.470, 0.493] | 0.516 |
 | coverage 90   | 0.864 [0.856, 0.872] | 0.886 [0.879, 0.894] | 0.887 |
@@ -268,7 +271,7 @@ point estimate — the driver does not bootstrap it.)
 
 | metric | CSDI+logret | Heston oracle | RW floor |
 |--------|:----------:|:-------------:|:--------:|
-| RMSE          | 0.0177 [0.0166, 0.0190] | **0.0162** [0.0152, 0.0173] | 0.0188 |
+| RMSE (= MAE)  | 0.0137 [0.0128, 0.0147] | **0.0129** [0.0121, 0.0138] | 0.0151 |
 | CRPS          | 0.0099 [0.0093, 0.0106] | **0.0091** [0.0086, 0.0097] | 0.0117 |
 | coverage 50   | 0.475 [0.432, 0.518] | 0.473 [0.428, 0.514] | 0.234 |
 | coverage 90   | 0.863 [0.834, 0.893] | **0.924** [0.900, 0.945] | 0.533 |
@@ -277,8 +280,8 @@ point estimate — the driver does not bootstrap it.)
 | upper-miss 90 | 0.1191 | **0.0469** | 0.1777 |
 
 **Reading it.** On **cumulative and one-step return CSDI+logret sits *on* the oracle ceiling** — cum
-RMSE 0.0493 vs 0.0491 and CRPS 0.0254 vs 0.0252 with fully overlapping CIs; step is a three-way tie
-(RMSE 0.0124 all round). CSDI's return-level forecasting is statistically indistinguishable from the
+RMSE 0.0414 vs 0.0415 and CRPS 0.0254 vs 0.0252 with fully overlapping CIs; step is a three-way tie
+(RMSE 0.0118 / 0.0118 / 0.0119). CSDI's return-level forecasting is statistically indistinguishable from the
 true Heston law, and both clear the RW floor (cum CRPS −14% vs RW). **RV is where the real gap appears
 — but CSDI closes more of it than LS4 did.** CSDI's RV CRPS (0.0099) sits above the oracle's (0.0091)
 with barely-touching CIs, and its 90% RV band under-covers (**0.863 vs the oracle's 0.924**) with an
@@ -312,10 +315,10 @@ scale).
 
 | terminal (h=H) RMSE | prefix dist mean/median/p95 | unique-cand frac | RV mean bias |
 |:-------------------:|:---------------------------:|:----------------:|:------------:|
-| 0.0695 / 0.0694 | 1.458 / 1.407 / 2.080 | 0.119 / 0.119 | −0.0065 / −0.0020 |
+| 0.0521 / 0.0525 | 1.458 / 1.407 / 2.080 | 0.119 / 0.119 | −0.0065 / −0.0020 |
 
-Terminal (h=H) RMSE 0.0695 is a genuine single-horizon diagnostic, **distinct** from the
-horizon-averaged cumulative RMSE 0.0493. The CSDI RV mean bias (−0.0065) is **3× the oracle's
+Terminal (h=H) RMSE 0.0521 is a genuine single-horizon diagnostic, **distinct** from the
+horizon-averaged cumulative RMSE 0.0414. The CSDI RV mean bias (−0.0065) is **3× the oracle's
 (−0.0020)** — the numerical signature of the upper-tail RV under-coverage above. Full **2000-resample
 bootstrap 95% CIs** on every metric for CSDI and the oracle are in `path_shadowing/pdf_summary.json`.
 <!-- PS-PDF-TABLE-END -->

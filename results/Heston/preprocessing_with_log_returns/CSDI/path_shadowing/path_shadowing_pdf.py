@@ -226,8 +226,9 @@ def per_path_metrics(Y, y):
     Scalar quantity (rv):  Y (Nq,K), y (Nq,).
     Trajectory quantity (cum, step):  Y (Nq,K,H), y (Nq,H) — the per-(query,horizon)
     metric is computed at every offset u=1..H and averaged over u, so each returned
-    vector is per-query (Nq,). RMSE via 'se' then sqrt(mean_q) == RMSE over (q,u)
-    per §3.1; coverage/width/miss are averaged over all future times per §3.3.
+    vector is per-query (Nq,). RMSE keeps the per-query squared error here and takes
+    the root in _agg, giving mean_q(sqrt(mean_u se)) per §3.1 / GUIDELINE E16b;
+    coverage/width/miss are averaged over all future times per §3.3.
     Quantiles via np.percentile linear/type-7 interpolation.
     """
     if Y.ndim == 3:
@@ -247,13 +248,16 @@ def per_path_metrics(Y, y):
 
 
 def _agg(per, kind):
-    return float(np.sqrt(per.mean())) if kind == "rmse" else float(per.mean())
+    # RMSE = mean_q(sqrt(per_q)), the average per-path root error, per the
+    # reproducibility report Table 5. NOT sqrt(mean_q(per_q)) — that is larger
+    # (Jensen). Caveat: for the scalar rv quantity this reduces exactly to MAE.
+    return float(np.sqrt(per).mean()) if kind == "rmse" else float(per.mean())
 
 
 def _boot_ci(per, kind, boot_idx):
     """Paired bootstrap 95% percentile CI using a SHARED resample-index matrix."""
     samp = per[boot_idx]                                    # (N_BOOT, Nq)
-    stat = np.sqrt(samp.mean(axis=1)) if kind == "rmse" else samp.mean(axis=1)
+    stat = np.sqrt(samp).mean(axis=1) if kind == "rmse" else samp.mean(axis=1)
     return [float(np.percentile(stat, 2.5)), float(np.percentile(stat, 97.5))]
 
 
@@ -319,7 +323,7 @@ def eval_bank(qlogS, q_quant, q_prefix_feat, sqrtw, mu, sd, boot_idx,
 
         # Genuine terminal (h=H) RMSE — distinct from the horizon-averaged cum.rmse.
         pred_term_mean = b_quant["cum"][idx][:, :, -1].mean(axis=1)
-        term_rmse = float(np.sqrt(((pred_term_mean - q_quant["cum"][:, -1]) ** 2).mean()))
+        term_rmse = float(np.abs(pred_term_mean - q_quant["cum"][:, -1]).mean())
         uniq = np.unique(idx).size / float(bs)
         rv_bias = float(b_quant["rv"][idx].mean() - q_quant["rv"].mean())
         entry["diagnostics"] = {
