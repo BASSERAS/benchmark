@@ -55,7 +55,7 @@ python ../code/reference/scripts/evaluation/evaluate.py \
 | quantile levels | 9 (0.1…0.9) | for WQL |
 
 The prediction path (`predict_quantiles`) is the **same call** used by the Heston generator's
-rollout ([`../code/train_heston.py`](../code/train_heston.py)); this reproduction validates it end-to-end.
+rollout ([`../old/code/train_heston.py`](../old/code/train_heston.py)); this reproduction validates it end-to-end.
 
 ---
 
@@ -102,7 +102,7 @@ rest. The purpose of this GATE is to confirm the inference harness (`predict_qua
 scoring) is wired correctly and the checkpoint loads and forecasts as published, it does. The
 **same** `predict_quantiles` call is then carried into the Heston generator (zero-shot → **fine-tuned**
 because autoregressive rollout of the zero-shot model is unstable on low-vol geometric Heston),
-evaluated in [`../../results/Heston/Chronos2/README.md`](../../results/Heston/Chronos2/README.md).
+evaluated in [`results/Heston/Chronos2/README.md`](../../../results/Heston/Chronos2/README.md).
 
 ---
 

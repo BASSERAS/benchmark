@@ -89,7 +89,7 @@ model.
 average (0.3415), redistributing accuracy across horizons (better on ETTm1-192 / ETTm2-192, slightly worse
 on ETTh1). This GATE confirms the port loads and runs **both** pretrained checkpoints faithfully, the
 **same** `tfm.forecast` call is then carried into the Heston forecaster reference (zero-shot + fine-tuned),
-evaluated in [`../../results/Heston/TimesFM/README.md`](../../results/Heston/TimesFM/README.md), using the
+evaluated in [`results/Heston/TimesFM/README.md`](../../../results/Heston/TimesFM/README.md), using the
 **1.0-200m** checkpoint.
 
 ---

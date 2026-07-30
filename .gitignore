@@ -30,3 +30,8 @@ methods/TimeDiT/paper_reimplementation/pretrain_data/
 # fine-tuned foundation-model forecaster checkpoints — regenerable from the
 # committed seed-0 finetune scripts; too large for the free LFS quota
 results/Heston/preprocessing_with_log_returns/forecaster/weights/*.pt
+# TimeDiT 1M path-shadowing scenario banks — kept on disk only, NOT pushed
+# (Theo's instruction). Regenerable from the committed seed-0 weights via
+# path_shadowing/gen_banks.py; too large for the free LFS quota.
+results/Heston/preprocessing_with_log_returns/TimeDiT/path_shadowing/bank/*.npy
+results/Heston/preprocessing_with_log_returns/TimeDiT/baseline_no_preproc/path_shadowing/bank/*.npy
