@@ -44,6 +44,24 @@ HISTORICAL_OLD_RMSE = {  # quantity -> {method: root-of-mean RMSE @1M bank}
     "rv":   {"CSDI": 0.01772, "LS4": 0.01819, "SBTS": 0.01972},
 }
 
+# ---------------------------------------------------------------------------
+# The forecaster RMSE cells as they stood BEFORE the 2026-07-31 convention fix,
+# i.e. what forecaster/pdf_bridge.py::_metrics_frozen_rmse produced under (A).
+# Quoted, not computed: the fix overwrote chronos2_pdf.json / timesfm_pdf.json,
+# and the pre-fix values are recoverable only from git history
+# (`git show HEAD~1:.../forecaster/chronos2_pdf.json`). The post-fix values in
+# the same table ARE read live from those JSONs, so the ratio column cannot
+# drift away from the shipped numbers.
+# ---------------------------------------------------------------------------
+FORECASTER_PRE_FIX = {  # method -> {quantity: (A) root-last RMSE}
+    "Chronos-2": {"cum": 0.049206019623857795,
+                  "step": 0.01295227380817077,
+                  "rv": 0.23074659175504625},
+    "TimesFM":   {"cum": 0.05093751948245248,
+                  "step": 0.013315990532177139,
+                  "rv": 0.2864952717060515},
+}
+
 # LaTeX-ification of the display labels used by build_cross_tables.
 LATEX_LABEL = {
     "RMSE ↓": r"RMSE $\downarrow$",
@@ -341,8 +359,17 @@ Quantity & Method & (A) root-last & (B) root-inside & ratio $R_A/R_B$ \\
 The ratio is near-constant \emph{within} a quantity and very different
 \emph{between} quantities ($\approx 1.18$ cum, $\approx 1.06$ step,
 $\approx 1.28$ rv). That is the signature predicted above: the gap is set by the
-dispersion of the per-path error distribution of the quantity, essentially
-independently of which generator produced it.
+dispersion of the per-path error distribution of the quantity, and across these
+three \emph{generators} it barely moves.
+
+One caveat, since it turned out to matter in \S5. That stability holds across
+models of the \emph{same kind}; it is not a law. Re-running the two conditional
+forecasters under (B) gave a cum ratio of $1.180$ and a step ratio of $1.056$,
+both in line with the generators --- but an rv ratio of only $1.050$, against the
+generators' $1.28$. Retrieval and direct forecasting produce differently
+dispersed per-path rv errors, and the ratio follows the dispersion. So the ratio
+may be used to \emph{anticipate} the size of a correction, never to substitute
+for recomputing it.
 """)
 
     L.append(r"""
@@ -381,27 +408,75 @@ is not led to convention (A) by \S2.7.
 """)
 
     L.append(r"""
-\section{An open inconsistency in the current tables}
+\section{A mixed-convention defect in the tables --- found and fixed}
 
-\textbf{The RMSE rows of the five tables below mix both conventions.} The four
-generators, the Heston oracle and the RW floor use (B). The two conditional
-forecasters do not: \texttt{forecaster/pdf\_bridge.py} pins them to (A) through
-\texttt{\_metrics\_frozen\_rmse}, deliberately, so that a re-run reproduces the
-report's published Chronos-2 / TimesFM cells rather than silently drifting.
+\textbf{Until 2026-07-31 the RMSE rows of the five tables below mixed both
+conventions.} The four generators, the Heston oracle and the RW floor used (B).
+The two conditional forecasters did not: \texttt{forecaster/pdf\_bridge.py}
+pinned them to (A) through a local \texttt{\_metrics\_frozen\_rmse()}, so that a
+re-run would reproduce the reproducibility report's published Chronos-2 /
+TimesFM cells rather than silently drift away from them.
 
-Because $R_B \le R_A$ always, this \textbf{systematically inflates the
-forecasters' RMSE relative to the generators}. Applying the measured cum ratio
-of $1.18$, Chronos-2's cum RMSE of $0.04921$ would fall to roughly $0.0416$
-under the generators' convention --- against CSDI's $0.04144$. A row that
-currently reads as a $19\%$ deficit is closer to a tie.
+Because $R_B \le R_A$ always, this \textbf{systematically inflated the
+forecasters' RMSE relative to every other column}. The defect was not cosmetic.
+\texttt{build\_cross\_tables.py::\_ps\_winner\_idx} ranks \emph{all} model
+columns, forecasters included, so the Winner column was silently comparing
+inflated cells against un-inflated ones --- while the README footnote next to it
+told the reader those cells were not comparable. A table cannot both rank a
+number and disclaim it.
 
-Two caveats, stated precisely: this is an \emph{estimate} obtained by applying a
-generator-derived ratio, not a recomputation, and the exact value requires
-re-running the forecaster bridge under (B). It affects the RMSE rows only ---
-CRPS, coverage and miss rates are unaffected --- and on the evidence available
-it does not change any Winner cell, since CSDI remains the row minimum either
-way. It does materially change how large the gap \emph{looks}. Recommendation:
-re-run the bridge under (B) and report both, or footnote every RMSE row.
+\textbf{The fix.} \texttt{\_metrics\_frozen\_rmse()} was deleted;
+\texttt{score\_forecaster} now calls the shared \texttt{P.metrics\_with\_ci},
+and the \texttt{terminal\_rmse} diagnostic was moved to
+\texttt{np.abs(...).mean()} to match \texttt{eval\_bank} line 326 exactly. Both
+forecasters were then re-run from their seed-0 recipes. Every non-RMSE leaf of
+\texttt{chronos2\_pdf.json} and \texttt{timesfm\_pdf.json} reproduced
+bit-identically (83 and 85 leaves respectively; CRPS, coverages, widths and miss
+rates all unchanged to the last digit), which confirms the aggregation was the
+only thing that moved.
+""")
+
+    # Built from FORECASTER_PRE_FIX (historical) + the live JSONs, so the shipped
+    # "after" column is by construction the same number the tables in §6 print.
+    L.append(r"""
+\begin{center}\small
+\begin{tabular}{llrrr}
+\hline
+Method & Quantity & before (A) & after (B) & ratio \\
+\hline
+""")
+    for meth in ("Chronos-2", "TimesFM"):
+        path = dict((m, p) for m, p, _ in B.PS_MODELS)[meth]
+        live = B._fc_quantities(os.path.join(EXP, path))
+        for qn in ("cum", "step", "rv"):
+            a = FORECASTER_PRE_FIX[meth][qn]
+            b = live[qn]["rmse"]["value"]
+            L.append(f"{tex_escape(meth)} & {qn} & {a:.5f} & {b:.5f} & "
+                     f"{a / b:.3f} \\\\\n")
+    L.append(r"""\hline
+\end{tabular}
+\end{center}
+""")
+
+    L.append(r"""
+\textbf{What it changes.} Chronos-2's cum RMSE falls from $0.04921$ to
+$0.04168$, against CSDI's $0.04144$: a row that read as a $19\%$ deficit is a
+$0.6\%$ one. The estimate offered before the re-run --- ``roughly $0.0416$'' from
+the generator cum ratio --- was accurate for cum and step, but the rv ratio came
+out at $1.050$ rather than the generators' $1.28$ (see the caveat in \S3), so
+only the recomputation settles it.
+
+\textbf{What it does not change.} Win counts were recomputed at all five bank
+sizes and are identical: TimeDiT (raw) 14 at every bank, with CSDI 2 / SBTS 2 at
+4\,096, CSDI 3 / SBTS 1 at 16\,384, and CSDI 3 / LS4 1 at the top three. CSDI
+remains the row minimum for cum and step RMSE, so \textbf{no Winner cell moved}.
+The tables in \S6 are the post-fix numbers.
+
+\textbf{The cost.} The reproducibility report's published Chronos-2 / TimesFM
+RMSE cells are now \emph{superseded, not reproduced} --- a re-run will no longer
+match them, by design. That is the correct trade: one internally consistent
+table is worth more than fidelity to a column the report itself never
+recomputed. This is recorded in GUIDELINE E16b.
 """)
 
     L.append(r"\clearpage" + "\n" + r"\section{The five cross-method tables}"

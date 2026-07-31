@@ -52,26 +52,23 @@ def build_forecaster_Y(ens_price, qlogS):
     return {"cum": cum, "step": step, "rv": rv}
 
 
-def _metrics_frozen_rmse(Y, y, boot_idx):
-    """P.metrics_with_ci, except RMSE stays on the pre-Table-5 sqrt(mean_q(se)) convention.
-
-    The generators switched to mean_q(sqrt(se)) to match the reproducibility report's
-    Tables 1-5, but the report never recomputed its Chronos-2 / TimesFM RMSE column.
-    Pinning it here keeps a re-run reproducing the published cells instead of silently
-    drifting to the generators' convention. See the README footnote on the PS tables.
-    """
-    per = P.per_path_metrics(Y, y)
-    out = {}
-    for mname, (pkey, kind) in P.METRIC_MAP.items():
-        v = per[pkey]
-        if kind == "rmse":
-            stat = np.sqrt(v[boot_idx].mean(axis=1))
-            out[mname] = {"value": float(np.sqrt(v.mean())),
-                          "ci": [float(np.percentile(stat, 2.5)),
-                                 float(np.percentile(stat, 97.5))]}
-        else:
-            out[mname] = {"value": P._agg(v, kind), "ci": P._boot_ci(v, kind, boot_idx)}
-    return out
+# RMSE aggregation -- the forecaster rows use the SAME convention as every other row.
+#
+# There are two places to take the square root of the per-query squared error se_q:
+#   (A) root-last    sqrt(mean_q(se_q))    <- textbook RMSE
+#   (B) root-inside  mean_q(sqrt(se_q))    <- what path_shadowing_pdf.py:254 does
+# sqrt is concave, so Jensen gives (B) <= (A) ALWAYS. The two are not interchangeable,
+# and mixing them inside one table makes the RMSE column non-comparable across rows.
+#
+# This bridge used to pin the forecasters to (A) via a local _metrics_frozen_rmse(), to
+# keep reproducing the reproducibility report's published Chronos-2 / TimesFM cells.
+# That was the only deviation left in the repo and it penalised the forecasters by a
+# measured 18.0% (cum) / 5.6% (step) / 5.0% (rv) -- and _ps_winner_idx ranks forecasters
+# against generators, so the Winner column was ranking those inflated cells. Removed:
+# score_forecaster
+# now calls P.metrics_with_ci directly, so forecasters are scored by the byte-identical
+# code path as the generators, the Heston oracle and the RW floor. The report's published
+# forecaster RMSE cells are therefore SUPERSEDED, not reproduced -- that is intended.
 
 
 def score_forecaster(ens_price, name, out_path, extra_meta=None):
@@ -88,14 +85,13 @@ def score_forecaster(ens_price, name, out_path, extra_meta=None):
     Y = build_forecaster_Y(ens_price, qlogS)
     quantities = {}
     for qn in ("cum", "step", "rv"):
-        quantities[qn] = _metrics_frozen_rmse(Y[qn], q_quant[qn], boot_idx)
+        quantities[qn] = P.metrics_with_ci(Y[qn], q_quant[qn], boot_idx)
 
     # diagnostics comparable to eval_bank's
     pred_term_mean = Y["cum"][:, :, -1].mean(axis=1)
-    # Deliberately sqrt(mean(se)), NOT the generators' mean(sqrt(se)): the published
-    # forecaster RMSE column (reproducibility report Tables 1-5) was never recomputed
-    # under the new convention, so this path is frozen to match it. See README footnote.
-    term_rmse = float(np.sqrt(((pred_term_mean - q_quant["cum"][:, -1]) ** 2).mean()))
+    # Root-inside, matching the RMSE convention above and eval_bank's terminal_rmse.
+    # Terminal cum is a scalar per query (H=1), so mean_q(sqrt(se_q)) == mean_q(|e_q|).
+    term_rmse = float(np.abs(pred_term_mean - q_quant["cum"][:, -1]).mean())
     rv_bias = float(Y["rv"].mean() - q_quant["rv"].mean())
 
     out = {

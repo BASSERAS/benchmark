@@ -271,7 +271,7 @@ all five tables (flagged *bank-independent* in the header).
 </thead>
 <tbody>
   <tr><td colspan="10"><b>cum (M×H trajectory)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.04131</b></td><td>0.04142</td><td>0.04149</td><td>0.04158</td><td>0.04921</td><td>0.05094</td><td>0.04154</td><td>0.04796</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.04131</b></td><td>0.04142</td><td>0.04149</td><td>0.04158</td><td>0.04168</td><td>0.04276</td><td>0.04154</td><td>0.04796</td><td><b>CSDI</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.02548</td><td><b>0.02531</b></td><td>0.02544</td><td>0.02544</td><td>0.02624</td><td>0.02722</td><td>0.02539</td><td>0.02946</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4571</td><td><b>0.5105</b></td><td>0.4764</td><td>0.4839</td><td>0.4050</td><td>0.4664</td><td>0.4875</td><td>0.4719</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8629</td><td><b>0.8957</b></td><td>0.8691</td><td>0.8805</td><td>0.7905</td><td>0.8177</td><td>0.8919</td><td>0.8553</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -280,7 +280,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07764</td><td><b>0.04840</b></td><td>0.06476</td><td>0.05554</td><td>0.09595</td><td>0.09265</td><td>0.05731</td><td>0.08331</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td>0.05945</td><td><b>0.05591</b></td><td>0.06616</td><td>0.06396</td><td>0.1135</td><td>0.08966</td><td>0.05078</td><td>0.06134</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td colspan="10"><b>step (M×H)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01177</td><td>0.01176</td><td>0.01180</td><td>0.01295</td><td>0.01332</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01177</td><td>0.01176</td><td>0.01180</td><td>0.01227</td><td>0.01267</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.006780</td><td><b>0.006766</b></td><td>0.006794</td><td>0.006812</td><td>0.01272</td><td>0.01473</td><td>0.006765</td><td>0.006874</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4510</td><td>0.4811</td><td>0.4656</td><td><b>0.4813</b></td><td>0.9449</td><td>0.9479</td><td>0.4849</td><td>0.5157</td><td><b>SBTS</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8602</td><td><b>0.8854</b></td><td>0.8591</td><td>0.8782</td><td>0.9970</td><td>0.9949</td><td>0.8869</td><td>0.8866</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -289,7 +289,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07098</td><td><b>0.05573</b></td><td>0.07233</td><td>0.05890</td><td>0.001770</td><td>0.002319</td><td>0.05676</td><td>0.05933</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td>0.06885</td><td><b>0.05884</b></td><td>0.06860</td><td>0.06287</td><td>0.001221</td><td>0.002808</td><td>0.05634</td><td>0.05408</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td colspan="10"><b>rv (M scalar)</b></td></tr>
-  <tr><td>RMSE ↓</td><td>0.01458</td><td><b>0.01364</b></td><td>0.01516</td><td>0.01420</td><td>0.2307</td><td>0.2865</td><td>0.01381</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.01458</td><td><b>0.01364</b></td><td>0.01516</td><td>0.01420</td><td>0.2198</td><td>0.2570</td><td>0.01381</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.01055</td><td><b>0.009653</b></td><td>0.01098</td><td>0.01010</td><td>0.1913</td><td>0.2291</td><td>0.009777</td><td>0.01168</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4609</td><td><b>0.4805</b></td><td>0.4121</td><td>0.4805</td><td>0</td><td>0</td><td>0.5059</td><td>0.2344</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8594</td><td><b>0.8945</b></td><td>0.7812</td><td>0.8652</td><td>0</td><td>0.001953</td><td>0.9141</td><td>0.5332</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -326,7 +326,7 @@ all five tables (flagged *bank-independent* in the header).
 </thead>
 <tbody>
   <tr><td colspan="10"><b>cum (M×H trajectory)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.04142</b></td><td>0.04156</td><td>0.04150</td><td>0.04234</td><td>0.04921</td><td>0.05094</td><td>0.04155</td><td>0.04796</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.04142</b></td><td>0.04156</td><td>0.04150</td><td>0.04234</td><td>0.04168</td><td>0.04276</td><td>0.04155</td><td>0.04796</td><td><b>CSDI</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.02543</td><td><b>0.02534</b></td><td>0.02542</td><td>0.02610</td><td>0.02624</td><td>0.02722</td><td>0.02535</td><td>0.02946</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4604</td><td><b>0.5103</b></td><td>0.4755</td><td>0.4694</td><td>0.4050</td><td>0.4664</td><td>0.4859</td><td>0.4719</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8694</td><td><b>0.8952</b></td><td>0.8685</td><td>0.8644</td><td>0.7905</td><td>0.8177</td><td>0.8884</td><td>0.8553</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -335,7 +335,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07318</td><td><b>0.04651</b></td><td>0.06458</td><td>0.06787</td><td>0.09595</td><td>0.09265</td><td>0.05731</td><td>0.08331</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05743</b></td><td>0.05829</td><td>0.06689</td><td>0.06769</td><td>0.1135</td><td>0.08966</td><td>0.05432</td><td>0.06134</td><td><b>CSDI</b></td></tr>
   <tr><td colspan="10"><b>step (M×H)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01177</td><td>0.01176</td><td>0.01192</td><td>0.01295</td><td>0.01332</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01177</td><td>0.01176</td><td>0.01192</td><td>0.01227</td><td>0.01267</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.006777</td><td><b>0.006768</b></td><td>0.006788</td><td>0.006930</td><td>0.01272</td><td>0.01473</td><td>0.006761</td><td>0.006874</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4493</td><td><b>0.4818</b></td><td>0.4648</td><td>0.4751</td><td>0.9449</td><td>0.9479</td><td>0.4810</td><td>0.5157</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8639</td><td><b>0.8843</b></td><td>0.8630</td><td>0.8624</td><td>0.9970</td><td>0.9949</td><td>0.8862</td><td>0.8866</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -344,7 +344,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07104</td><td><b>0.05719</b></td><td>0.06995</td><td>0.06750</td><td>0.001770</td><td>0.002319</td><td>0.05762</td><td>0.05933</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td>0.06506</td><td><b>0.05847</b></td><td>0.06702</td><td>0.07013</td><td>0.001221</td><td>0.002808</td><td>0.05621</td><td>0.05408</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td colspan="10"><b>rv (M scalar)</b></td></tr>
-  <tr><td>RMSE ↓</td><td>0.01421</td><td><b>0.01341</b></td><td>0.01470</td><td>0.01414</td><td>0.2307</td><td>0.2865</td><td>0.01347</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.01421</td><td><b>0.01341</b></td><td>0.01470</td><td>0.01414</td><td>0.2198</td><td>0.2570</td><td>0.01347</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.01028</td><td><b>0.009484</b></td><td>0.01066</td><td>0.01009</td><td>0.1913</td><td>0.2291</td><td>0.009513</td><td>0.01168</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4570</td><td><b>0.4883</b></td><td>0.4199</td><td>0.4629</td><td>0</td><td>0</td><td>0.4961</td><td>0.2344</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8691</td><td><b>0.8926</b></td><td>0.7871</td><td>0.8574</td><td>0</td><td>0.001953</td><td>0.9141</td><td>0.5332</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -381,7 +381,7 @@ all five tables (flagged *bank-independent* in the header).
 </thead>
 <tbody>
   <tr><td colspan="10"><b>cum (M×H trajectory)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.04130</b></td><td>0.04161</td><td>0.04148</td><td>0.04389</td><td>0.04921</td><td>0.05094</td><td>0.04140</td><td>0.04796</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.04130</b></td><td>0.04161</td><td>0.04148</td><td>0.04389</td><td>0.04168</td><td>0.04276</td><td>0.04140</td><td>0.04796</td><td><b>CSDI</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.02535</td><td><b>0.02533</b></td><td>0.02536</td><td>0.02768</td><td>0.02624</td><td>0.02722</td><td>0.02524</td><td>0.02946</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4670</td><td><b>0.5046</b></td><td>0.4717</td><td>0.4256</td><td>0.4050</td><td>0.4664</td><td>0.4886</td><td>0.4719</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8738</td><td><b>0.8970</b></td><td>0.8685</td><td>0.8198</td><td>0.7905</td><td>0.8177</td><td>0.8887</td><td>0.8553</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -390,7 +390,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07147</td><td><b>0.04761</b></td><td>0.06500</td><td>0.08795</td><td>0.09595</td><td>0.09265</td><td>0.05688</td><td>0.08331</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05469</b></td><td>0.05536</td><td>0.06647</td><td>0.09229</td><td>0.1135</td><td>0.08966</td><td>0.05444</td><td>0.06134</td><td><b>CSDI</b></td></tr>
   <tr><td colspan="10"><b>step (M×H)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01175</b></td><td>0.01177</td><td>0.01177</td><td>0.01228</td><td>0.01295</td><td>0.01332</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.01175</b></td><td>0.01177</td><td>0.01177</td><td>0.01228</td><td>0.01227</td><td>0.01267</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.006770</td><td><b>0.006762</b></td><td>0.006786</td><td>0.007304</td><td>0.01272</td><td>0.01473</td><td>0.006754</td><td>0.006874</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4486</td><td><b>0.4765</b></td><td>0.4667</td><td>0.4406</td><td>0.9449</td><td>0.9479</td><td>0.4820</td><td>0.5157</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8639</td><td><b>0.8810</b></td><td>0.8627</td><td>0.8183</td><td>0.9970</td><td>0.9949</td><td>0.8864</td><td>0.8866</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -399,7 +399,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07001</td><td><b>0.05884</b></td><td>0.07025</td><td>0.08905</td><td>0.001770</td><td>0.002319</td><td>0.05658</td><td>0.05933</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td>0.06610</td><td><b>0.06012</b></td><td>0.06708</td><td>0.09265</td><td>0.001221</td><td>0.002808</td><td>0.05701</td><td>0.05408</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td colspan="10"><b>rv (M scalar)</b></td></tr>
-  <tr><td>RMSE ↓</td><td>0.01393</td><td><b>0.01327</b></td><td>0.01448</td><td>0.01432</td><td>0.2307</td><td>0.2865</td><td>0.01314</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.01393</td><td><b>0.01327</b></td><td>0.01448</td><td>0.01432</td><td>0.2198</td><td>0.2570</td><td>0.01314</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.01007</td><td><b>0.009409</b></td><td>0.01048</td><td>0.01058</td><td>0.1913</td><td>0.2291</td><td>0.009330</td><td>0.01168</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4551</td><td><b>0.4902</b></td><td>0.4141</td><td>0.4258</td><td>0</td><td>0</td><td>0.4980</td><td>0.2344</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8652</td><td><b>0.8945</b></td><td>0.7910</td><td>0.8262</td><td>0</td><td>0.001953</td><td>0.9199</td><td>0.5332</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -436,7 +436,7 @@ all five tables (flagged *bank-independent* in the header).
 </thead>
 <tbody>
   <tr><td colspan="10"><b>cum (M×H trajectory)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.04138</b></td><td>0.04152</td><td>0.04149</td><td>0.04540</td><td>0.04921</td><td>0.05094</td><td>0.04136</td><td>0.04796</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.04138</b></td><td>0.04152</td><td>0.04149</td><td>0.04540</td><td>0.04168</td><td>0.04276</td><td>0.04136</td><td>0.04796</td><td><b>CSDI</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.02541</td><td><b>0.02528</b></td><td>0.02536</td><td>0.02987</td><td>0.02624</td><td>0.02722</td><td>0.02524</td><td>0.02946</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4644</td><td><b>0.5010</b></td><td>0.4723</td><td>0.3552</td><td>0.4050</td><td>0.4664</td><td>0.4904</td><td>0.4719</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8691</td><td><b>0.8972</b></td><td>0.8696</td><td>0.7396</td><td>0.7905</td><td>0.8177</td><td>0.8922</td><td>0.8553</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -445,7 +445,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07501</td><td><b>0.04675</b></td><td>0.06653</td><td>0.1324</td><td>0.09595</td><td>0.09265</td><td>0.05548</td><td>0.08331</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05591</b></td><td>0.05609</td><td>0.06384</td><td>0.1280</td><td>0.1135</td><td>0.08966</td><td>0.05231</td><td>0.06134</td><td><b>CSDI</b></td></tr>
   <tr><td colspan="10"><b>step (M×H)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01177</td><td>0.01177</td><td>0.01290</td><td>0.01295</td><td>0.01332</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01177</td><td>0.01177</td><td>0.01290</td><td>0.01227</td><td>0.01267</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.006771</td><td><b>0.006760</b></td><td>0.006784</td><td>0.008009</td><td>0.01272</td><td>0.01473</td><td>0.006752</td><td>0.006874</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4529</td><td><b>0.4753</b></td><td>0.4653</td><td>0.3699</td><td>0.9449</td><td>0.9479</td><td>0.4825</td><td>0.5157</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8638</td><td><b>0.8822</b></td><td>0.8645</td><td>0.7321</td><td>0.9970</td><td>0.9949</td><td>0.8849</td><td>0.8866</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -454,7 +454,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07080</td><td><b>0.05811</b></td><td>0.06830</td><td>0.1332</td><td>0.001770</td><td>0.002319</td><td>0.05829</td><td>0.05933</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td>0.06543</td><td><b>0.05969</b></td><td>0.06720</td><td>0.1347</td><td>0.001221</td><td>0.002808</td><td>0.05682</td><td>0.05408</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td colspan="10"><b>rv (M scalar)</b></td></tr>
-  <tr><td>RMSE ↓</td><td>0.01379</td><td><b>0.01305</b></td><td>0.01433</td><td>0.01487</td><td>0.2307</td><td>0.2865</td><td>0.01306</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.01379</td><td><b>0.01305</b></td><td>0.01433</td><td>0.01487</td><td>0.2198</td><td>0.2570</td><td>0.01306</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.009987</td><td><b>0.009273</b></td><td>0.01038</td><td>0.01155</td><td>0.1913</td><td>0.2291</td><td>0.009256</td><td>0.01168</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4609</td><td><b>0.4902</b></td><td>0.4277</td><td>0.3496</td><td>0</td><td>0</td><td>0.4922</td><td>0.2344</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8672</td><td><b>0.8926</b></td><td>0.8105</td><td>0.7500</td><td>0</td><td>0.001953</td><td>0.9180</td><td>0.5332</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -490,7 +490,7 @@ all five tables (flagged *bank-independent* in the header).
 </thead>
 <tbody>
   <tr><td colspan="10"><b>cum (M×H trajectory)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.04144</b></td><td>0.04145</td><td>0.04145</td><td>0.04674</td><td>0.04921</td><td>0.05094</td><td>0.04148</td><td>0.04796</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.04144</b></td><td>0.04145</td><td>0.04145</td><td>0.04674</td><td>0.04168</td><td>0.04276</td><td>0.04148</td><td>0.04796</td><td><b>CSDI</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.02544</td><td><b>0.02521</b></td><td>0.02534</td><td>0.03179</td><td>0.02624</td><td>0.02722</td><td>0.02525</td><td>0.02946</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4624</td><td><b>0.5072</b></td><td>0.4688</td><td>0.3001</td><td>0.4050</td><td>0.4664</td><td>0.4891</td><td>0.4719</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8682</td><td><b>0.8983</b></td><td>0.8682</td><td>0.6575</td><td>0.7905</td><td>0.8177</td><td>0.8941</td><td>0.8553</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -499,7 +499,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07599</td><td><b>0.04572</b></td><td>0.06757</td><td>0.1738</td><td>0.09595</td><td>0.09265</td><td>0.05463</td><td>0.08331</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05579</b></td><td>0.05597</td><td>0.06427</td><td>0.1687</td><td>0.1135</td><td>0.08966</td><td>0.05127</td><td>0.06134</td><td><b>CSDI</b></td></tr>
   <tr><td colspan="10"><b>step (M×H)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01178</td><td>0.01176</td><td>0.01350</td><td>0.01295</td><td>0.01332</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01178</td><td>0.01176</td><td>0.01350</td><td>0.01227</td><td>0.01267</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.006767</td><td><b>0.006760</b></td><td>0.006778</td><td>0.008688</td><td>0.01272</td><td>0.01473</td><td>0.006750</td><td>0.006874</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4532</td><td><b>0.4761</b></td><td>0.4672</td><td>0.3082</td><td>0.9449</td><td>0.9479</td><td>0.4816</td><td>0.5157</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8640</td><td><b>0.8806</b></td><td>0.8640</td><td>0.6479</td><td>0.9970</td><td>0.9949</td><td>0.8864</td><td>0.8866</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -508,7 +508,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07062</td><td><b>0.05884</b></td><td>0.06921</td><td>0.1762</td><td>0.001770</td><td>0.002319</td><td>0.05725</td><td>0.05933</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td>0.06543</td><td><b>0.06061</b></td><td>0.06683</td><td>0.1758</td><td>0.001221</td><td>0.002808</td><td>0.05634</td><td>0.05408</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td colspan="10"><b>rv (M scalar)</b></td></tr>
-  <tr><td>RMSE ↓</td><td>0.01373</td><td><b>0.01295</b></td><td>0.01426</td><td>0.01541</td><td>0.2307</td><td>0.2865</td><td>0.01291</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.01373</td><td><b>0.01295</b></td><td>0.01426</td><td>0.01541</td><td>0.2198</td><td>0.2570</td><td>0.01291</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.009938</td><td><b>0.009179</b></td><td>0.01032</td><td>0.01241</td><td>0.1913</td><td>0.2291</td><td>0.009143</td><td>0.01168</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4746</td><td><b>0.4883</b></td><td>0.4102</td><td>0.2930</td><td>0</td><td>0</td><td>0.4727</td><td>0.2344</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8633</td><td><b>0.8945</b></td><td>0.7988</td><td>0.6641</td><td>0</td><td>0.001953</td><td>0.9238</td><td>0.5332</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -521,14 +521,21 @@ all five tables (flagged *bank-independent* in the header).
 
 <!-- PS strict win-counts @1 000 000 (of 18 ranked rows = 6 ranked metrics × 3 quantities; width rows are diagnostic): TimeDiT (raw)=14, CSDI=3, LS4=1 -->
 
-> **RMSE convention.** All five tables report RMSE as **mean_q(√se_q)** — the average per-query root error —
-> matching the path-shadowing reproducibility report (Tables 1–5). This is *not* √(mean_q se_q); by Jensen the
-> latter is larger (e.g. CSDI cum 0.0493 vs 0.0414 at 1M). For the scalar **rv** quantity `mean_q(√se_q)`
-> reduces exactly to MAE. **Two cells per table are an exception:** the **Chronos-2 and TimesFM** RMSE values
-> are carried over on the older √(mean_q se_q) convention, because the report never recomputed its forecaster
-> columns. Under the table's own convention Chronos-2's cum-RMSE would be ≈0.0416 rather than 0.0492 — a
-> near-tie with CSDI — so **do not rank the forecaster RMSE cells against the generator ones**. Every other
-> metric (CRPS, coverages, widths, miss rates) is convention-free and fully comparable across all seven columns.
+> **RMSE convention — one convention, every column.** All five tables report RMSE as **mean_q(√se_q)**, the
+> average per-query root error, matching the path-shadowing reproducibility report (Tables 1–5). This is *not*
+> √(mean_q se_q); √ is concave, so by Jensen mean_q(√se_q) ≤ √(mean_q se_q) always (e.g. CSDI cum 0.0414 vs
+> 0.0493 at 1M). Old and new numbers must never be mixed in one table. For the scalar **rv** quantity
+> `mean_q(√se_q)` reduces **exactly to MAE**.
+>
+> **Fixed 2026-07-31.** Chronos-2 and TimesFM previously carried the older √(mean_q se_q) values, because the
+> reproducibility report never recomputed its forecaster column. That was not benign: the Winner column ranks
+> *all* model columns, so it was comparing forecaster cells inflated by ~18 % (cum) / ~6 % (step) / ~5 % (rv)
+> against un-inflated generator ones. `forecaster/pdf_bridge.py` now calls the shared `metrics_with_ci`, and
+> both forecasters were re-run — every other cell reproduced bit-identically, confirming the RMSE rows are the
+> only change. Chronos-2 cum-RMSE 0.04921 → **0.04168** against CSDI's 0.04144: a 19 % deficit was really a
+> 0.6 % one. **No Winner cell changed at any of the five bank sizes.** The report's published forecaster RMSE
+> cells are therefore superseded, not reproduced. Every other metric (CRPS, coverages, widths, miss rates) is
+> an arithmetic mean, was never affected, and is comparable across all columns.
 
 **TimeDiT (raw) wins the sweep outright, and SBTS collapses through it.** Read the win-counts down the sweep:
 
