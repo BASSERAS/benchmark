@@ -272,6 +272,23 @@ PS_METRICS = [
     ("upper_miss90", "upper miss₉₀ (→0.05)", 0.05),
 ]
 
+# (quantity, json_key) -> display label that overrides the PS_METRICS default.
+#
+# The scorer aggregates as mean_q(√(mean_u se_{q,u})) — root INSIDE (GUIDELINE E16b).
+# For cum and step the horizon has H=32 points, so the inner term is a genuine
+# per-path RMS over the horizon and "RMSE" is a fair name for the average of those.
+# rv is a SCALAR per query (H=1), so mean_u collapses, √se_q reduces to |e_q|, and
+# the row is *exactly* a mean absolute error. Labelling it "RMSE" was misleading, so
+# the rv row is displayed as MAE.
+#
+# Display only: the JSON key stays "rmse" in every pdf_summary.json and in the
+# scorer's METRIC_MAP. Renaming the key would mean editing path_shadowing_pdf.py —
+# the untouched strict reference implementation, five copies — and re-running the
+# whole 5-bank × 5-method sweep to rewrite the artefacts, for zero numerical gain.
+PS_METRIC_LABEL = {
+    ("rv", "rmse"): "MAE ↓",
+}
+
 
 def ps_bank_sizes():
     """The GUIDELINE §9.1 nested-prefix sweep, read from the data rather than
@@ -360,7 +377,8 @@ def render_PS_strict(bank_size=1000000):
             ov = RT.fmt(oracle_q[qn][metric]["value"])
             rv = RT.fmt(rw_q[qn][metric]["value"])
             win_cell = f"<b>{model_names[wi]}</b>" if wi is not None else "—"
-            out.append(f'  <tr><td>{mlabel}</td>{cells}'
+            label = PS_METRIC_LABEL.get((qn, metric), mlabel)
+            out.append(f'  <tr><td>{label}</td>{cells}'
                        f'<td>{ov}</td><td>{rv}</td><td>{win_cell}</td></tr>')
 
     out += ["</tbody>", "</table>"]

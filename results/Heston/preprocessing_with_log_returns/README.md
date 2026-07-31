@@ -289,7 +289,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07098</td><td><b>0.05573</b></td><td>0.07233</td><td>0.05890</td><td>0.001770</td><td>0.002319</td><td>0.05676</td><td>0.05933</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td>0.06885</td><td><b>0.05884</b></td><td>0.06860</td><td>0.06287</td><td>0.001221</td><td>0.002808</td><td>0.05634</td><td>0.05408</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td colspan="10"><b>rv (M scalar)</b></td></tr>
-  <tr><td>RMSE ↓</td><td>0.01458</td><td><b>0.01364</b></td><td>0.01516</td><td>0.01420</td><td>0.2198</td><td>0.2570</td><td>0.01381</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>MAE ↓</td><td>0.01458</td><td><b>0.01364</b></td><td>0.01516</td><td>0.01420</td><td>0.2198</td><td>0.2570</td><td>0.01381</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.01055</td><td><b>0.009653</b></td><td>0.01098</td><td>0.01010</td><td>0.1913</td><td>0.2291</td><td>0.009777</td><td>0.01168</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4609</td><td><b>0.4805</b></td><td>0.4121</td><td>0.4805</td><td>0</td><td>0</td><td>0.5059</td><td>0.2344</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8594</td><td><b>0.8945</b></td><td>0.7812</td><td>0.8652</td><td>0</td><td>0.001953</td><td>0.9141</td><td>0.5332</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -344,7 +344,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07104</td><td><b>0.05719</b></td><td>0.06995</td><td>0.06750</td><td>0.001770</td><td>0.002319</td><td>0.05762</td><td>0.05933</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td>0.06506</td><td><b>0.05847</b></td><td>0.06702</td><td>0.07013</td><td>0.001221</td><td>0.002808</td><td>0.05621</td><td>0.05408</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td colspan="10"><b>rv (M scalar)</b></td></tr>
-  <tr><td>RMSE ↓</td><td>0.01421</td><td><b>0.01341</b></td><td>0.01470</td><td>0.01414</td><td>0.2198</td><td>0.2570</td><td>0.01347</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>MAE ↓</td><td>0.01421</td><td><b>0.01341</b></td><td>0.01470</td><td>0.01414</td><td>0.2198</td><td>0.2570</td><td>0.01347</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.01028</td><td><b>0.009484</b></td><td>0.01066</td><td>0.01009</td><td>0.1913</td><td>0.2291</td><td>0.009513</td><td>0.01168</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4570</td><td><b>0.4883</b></td><td>0.4199</td><td>0.4629</td><td>0</td><td>0</td><td>0.4961</td><td>0.2344</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8691</td><td><b>0.8926</b></td><td>0.7871</td><td>0.8574</td><td>0</td><td>0.001953</td><td>0.9141</td><td>0.5332</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -399,7 +399,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07001</td><td><b>0.05884</b></td><td>0.07025</td><td>0.08905</td><td>0.001770</td><td>0.002319</td><td>0.05658</td><td>0.05933</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td>0.06610</td><td><b>0.06012</b></td><td>0.06708</td><td>0.09265</td><td>0.001221</td><td>0.002808</td><td>0.05701</td><td>0.05408</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td colspan="10"><b>rv (M scalar)</b></td></tr>
-  <tr><td>RMSE ↓</td><td>0.01393</td><td><b>0.01327</b></td><td>0.01448</td><td>0.01432</td><td>0.2198</td><td>0.2570</td><td>0.01314</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>MAE ↓</td><td>0.01393</td><td><b>0.01327</b></td><td>0.01448</td><td>0.01432</td><td>0.2198</td><td>0.2570</td><td>0.01314</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.01007</td><td><b>0.009409</b></td><td>0.01048</td><td>0.01058</td><td>0.1913</td><td>0.2291</td><td>0.009330</td><td>0.01168</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4551</td><td><b>0.4902</b></td><td>0.4141</td><td>0.4258</td><td>0</td><td>0</td><td>0.4980</td><td>0.2344</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8652</td><td><b>0.8945</b></td><td>0.7910</td><td>0.8262</td><td>0</td><td>0.001953</td><td>0.9199</td><td>0.5332</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -454,7 +454,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07080</td><td><b>0.05811</b></td><td>0.06830</td><td>0.1332</td><td>0.001770</td><td>0.002319</td><td>0.05829</td><td>0.05933</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td>0.06543</td><td><b>0.05969</b></td><td>0.06720</td><td>0.1347</td><td>0.001221</td><td>0.002808</td><td>0.05682</td><td>0.05408</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td colspan="10"><b>rv (M scalar)</b></td></tr>
-  <tr><td>RMSE ↓</td><td>0.01379</td><td><b>0.01305</b></td><td>0.01433</td><td>0.01487</td><td>0.2198</td><td>0.2570</td><td>0.01306</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>MAE ↓</td><td>0.01379</td><td><b>0.01305</b></td><td>0.01433</td><td>0.01487</td><td>0.2198</td><td>0.2570</td><td>0.01306</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.009987</td><td><b>0.009273</b></td><td>0.01038</td><td>0.01155</td><td>0.1913</td><td>0.2291</td><td>0.009256</td><td>0.01168</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4609</td><td><b>0.4902</b></td><td>0.4277</td><td>0.3496</td><td>0</td><td>0</td><td>0.4922</td><td>0.2344</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8672</td><td><b>0.8926</b></td><td>0.8105</td><td>0.7500</td><td>0</td><td>0.001953</td><td>0.9180</td><td>0.5332</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -508,7 +508,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07062</td><td><b>0.05884</b></td><td>0.06921</td><td>0.1762</td><td>0.001770</td><td>0.002319</td><td>0.05725</td><td>0.05933</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td>0.06543</td><td><b>0.06061</b></td><td>0.06683</td><td>0.1758</td><td>0.001221</td><td>0.002808</td><td>0.05634</td><td>0.05408</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td colspan="10"><b>rv (M scalar)</b></td></tr>
-  <tr><td>RMSE ↓</td><td>0.01373</td><td><b>0.01295</b></td><td>0.01426</td><td>0.01541</td><td>0.2198</td><td>0.2570</td><td>0.01291</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>MAE ↓</td><td>0.01373</td><td><b>0.01295</b></td><td>0.01426</td><td>0.01541</td><td>0.2198</td><td>0.2570</td><td>0.01291</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.009938</td><td><b>0.009179</b></td><td>0.01032</td><td>0.01241</td><td>0.1913</td><td>0.2291</td><td>0.009143</td><td>0.01168</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4746</td><td><b>0.4883</b></td><td>0.4102</td><td>0.2930</td><td>0</td><td>0</td><td>0.4727</td><td>0.2344</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8633</td><td><b>0.8945</b></td><td>0.7988</td><td>0.6641</td><td>0</td><td>0.001953</td><td>0.9238</td><td>0.5332</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -524,8 +524,17 @@ all five tables (flagged *bank-independent* in the header).
 > **RMSE convention — one convention, every column.** All five tables report RMSE as **mean_q(√se_q)**, the
 > average per-query root error, matching the path-shadowing reproducibility report (Tables 1–5). This is *not*
 > √(mean_q se_q); √ is concave, so by Jensen mean_q(√se_q) ≤ √(mean_q se_q) always (e.g. CSDI cum 0.0414 vs
-> 0.0493 at 1M). Old and new numbers must never be mixed in one table. For the scalar **rv** quantity
-> `mean_q(√se_q)` reduces **exactly to MAE**.
+> 0.0493 at 1M). Old and new numbers must never be mixed in one table.
+>
+> **Why the rv row says MAE.** rv is a *scalar* per query (H=1), so the inner mean collapses, √se_q reduces to
+> |e_q|, and `mean_q(√se_q)` is **exactly a mean absolute error**. The reproducibility report labels it "RMSE";
+> these tables label it **MAE**, because that is what it is. cum and step keep "RMSE" — there H=32, the inner
+> term is a genuine per-path RMS across the horizon and the row averages those, which is a hybrid with no
+> standard name but is certainly not a MAE. This is a **display rename only**: the JSON key stays `rmse` in
+> every `pdf_summary.json` and in the scorer's `METRIC_MAP`, since renaming the key would mean editing the
+> untouched reference `path_shadowing_pdf.py` and re-running the whole 5-bank × 5-method sweep for zero
+> numerical gain. The override lives in `build_cross_tables.PS_METRIC_LABEL` and is read by both the README
+> and the PDF renderer, so the two cannot disagree.
 >
 > **Fixed 2026-07-31.** Chronos-2 and TimesFM previously carried the older √(mean_q se_q) values, because the
 > reproducibility report never recomputed its forecaster column. That was not benign: the Winner column ranks

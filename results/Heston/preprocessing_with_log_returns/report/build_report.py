@@ -65,6 +65,7 @@ FORECASTER_PRE_FIX = {  # method -> {quantity: (A) root-last RMSE}
 # LaTeX-ification of the display labels used by build_cross_tables.
 LATEX_LABEL = {
     "RMSE ↓": r"RMSE $\downarrow$",
+    "MAE ↓": r"MAE $\downarrow$",
     "CRPS ↓": r"CRPS $\downarrow$",
     "coverage₅₀ (→0.50)": r"coverage$_{50}$ ($\to$0.50)",
     "coverage₉₀ (→0.90)": r"coverage$_{90}$ ($\to$0.90)",
@@ -121,7 +122,10 @@ def ps_table(bank_size):
             ov = RT.fmt(oracle_q[qn][metric]["value"])
             rv = RT.fmt(rw_q[qn][metric]["value"])
             win = r"\textbf{%s}" % tex_escape(names[wi]) if wi is not None else "---"
-            rows.append(f"{lbl(mlabel)} & " + " & ".join(cells)
+            # Same per-quantity label override the README uses (rv "RMSE" -> "MAE"),
+            # read from build_cross_tables so the two renderers cannot diverge.
+            mlab = B.PS_METRIC_LABEL.get((qn, metric), mlabel)
+            rows.append(f"{lbl(mlab)} & " + " & ".join(cells)
                         + f" & {ov} & {rv} & {win} " + r"\\")
     rows += [r"\bottomrule", r"\end{tabular}"]
     return "\n".join(rows), wins
@@ -311,18 +315,29 @@ return float(np.sqrt(per).mean()) \\
 uses the matching form, \texttt{np.sqrt(samp).mean(axis=1)}, so the confidence
 intervals are consistent with the point estimate.
 
-\subsection{A naming caveat worth stating plainly}
+\subsection{A naming defect --- and the relabelling that fixes it}
 
 Under convention (B) the reported quantity \textbf{is not a root-mean-square
-error}, even though every table calls it ``RMSE''. For the scalar quantity rv
-the horizon collapses ($H=1$), so $se_q = e_q^2$ and
+error}. For the scalar quantity rv the horizon collapses ($H=1$), so
+$se_q = e_q^2$ and
 \[
 R_B=\frac{1}{m}\sum_q \sqrt{e_q^{2}}=\frac{1}{m}\sum_q |e_q| \;=\; \textbf{MAE exactly.}
 \]
-The rv ``RMSE'' row is a mean absolute error wearing the wrong label. For cum
-and step it is a horizon-RMS averaged across paths --- a hybrid with no standard
-name. This is inherited from the report, not invented here, but it should be
-said out loud in any write-up that quotes the number.
+The rv row is a mean absolute error, and the reproducibility report labels it
+``RMSE''. \textbf{The tables in \S6 label it MAE.} That is a rename of the
+displayed label only: the underlying JSON key stays \texttt{rmse} in every
+\texttt{pdf\_summary.json} and in the scorer's \texttt{METRIC\_MAP}, because
+renaming the key would mean editing \texttt{path\_shadowing\_pdf.py} --- the
+untouched strict reference implementation --- and re-running the entire
+five-bank, five-method sweep to rewrite the artefacts, for no numerical gain.
+The override lives in \texttt{build\_cross\_tables.PS\_METRIC\_LABEL} and is
+read by both renderers, so the README and this document cannot disagree.
+
+cum and step keep the ``RMSE'' label. There $H=32$, the inner term
+$\sqrt{\text{mean}_u se_{q,u}}$ is a genuine per-path RMS across the horizon,
+and the row is the average of those --- a horizon-RMS averaged across paths.
+That is a hybrid with no standard name, but it is not a MAE, and calling it one
+would be a second error rather than a fix.
 """)
 
     rows = []
