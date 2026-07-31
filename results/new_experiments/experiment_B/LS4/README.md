@@ -44,8 +44,17 @@ Produced by `dataset/Heston/new_experiments/protocol/experiments/scripts/evaluat
 **run unchanged** (protocol PDF §7, checklist item 7). Aggregation: mean ± sample std
 (ddof = 1) over 5 seeds; 95 % CI half-width uses t₀.₉₇₅,₄ = 2.776.
 
-`target_*` rows are measured on `test.npy` and are therefore identical across seeds
-(std = 0) — they are the target, not a result.
+**Reading the `target_*` rows.** These are computed from `test.npy` alone by the frozen oracle;
+they never touch the generated bank. Ten of the eleven are *bit-identical* across all five seeds
+— verified, not assumed — so their sample std and 95 % CI half-width are **exactly 0**, and the
+LS4 and perfect-floor columns necessarily carry the same number. A zero here means "this quantity
+was never resampled", not "we measured a variance and it came out small". They are the target the
+other columns aim at, not a result.
+
+The eleventh, `target_low_confidence_fraction`, is **not** constant (8.63 × 10⁻⁵ std), and its
+non-zero CI is left in the table deliberately rather than suppressed — see the measurement note in
+§1.4. This is exactly why no cell in this table is replaced by a dash: had the whole `target_*`
+block been annotated by hand as "constant", that one real deviation would have been erased.
 
 **The oracle gate passed.** PDF §3.2 requires an ExtraTrees regime classifier (500 trees,
 `min_samples_leaf=2`, `max_features=0.7`, `random_state=42`, 77 path features) to reach at
@@ -232,7 +241,9 @@ claim: there is no validation/test gap to explain.
 | Training time | 1424 s per seed on average (≈24 min; range 1328–1539 s) |
 | Generation time | 9.4 s per seed |
 | Hardware | 1 × A100-SXM4-80GB, 8 pinned cores of 2 × AMD EPYC 7763 |
-| Failed / unstable runs | **0** — all 5 seeds ran 100/100 epochs, no NaN in any bank, no seed replaced or dropped |
+| Independent retraining | **5 separate trainings, one per seed** — not one model sampled five times. Evidence: the five `weights/seed_<q>_model.pt` have five distinct MD5s; each `weights/seed_<q>_config.json` records `"experiment": "B"` and `"data": …/experiment_B/train.npy`; the five loss curves are 100 epochs each with distinct final losses. Checkpoint mtimes are sequential ≈25 min apart (09:24, 09:49, 10:15, 10:37, 11:01). Cross-experiment check: all **10** A+B checkpoints are mutually distinct. |
+| Trained on this experiment's own data | **Yes** — `dataset/Heston/new_experiments/experiment_B/train.npy` (MD5 `7713b823…`), a different file from Experiment A's. Independent corroboration: the standardizer fitted on it gives μ = 100.09714689788022, σ = 11.516370009298313, which differ from A's (μ = 100.13621639651069, σ = 11.927961375843996) — the two runs cannot have shared a training set. |
+| Failed / unstable runs | **0** — all 5 seeds ran 100/100 epochs, no NaN in any bank, no seed replaced or dropped. One observation recorded rather than smoothed over: seed 2's *last-epoch* total loss spikes to −0.5683 against its own epoch-92 minimum of −1.1118 (seeds 0/1/3/4 finish at −1.101/−1.071/−0.958/−1.079). This does **not** reach the bank: generation uses the **EMA** weights (`ema_lamb = 0.99`, `train_ls4_experiment.py:154` selects `ema_model.module`), and a single-epoch excursion is damped by the EMA's ≈100-step memory. Seed 2 is also not an outlier in the headline metric — its regime-proportion TVD is 0.258911, mid-pack among 0.245483 / 0.243164 / **0.258911** / 0.335815 / 0.250977, where the worst seed is 3, not 2. Reported here because PDF §1.5 requires unstable behaviour to be surfaced, not because it changed a result. |
 | Oracle gate | **PASS** — 0.909423828125 ≥ 0.90 required (PDF §3.2) |
 | Declared post-hoc transformation (§1.3) | **`S ← 100·S/S[:,:1]`**, applied once to every bank. LS4 generates in standardized *price* space with no `t = 0` anchor, so raw `S₀` deviated by up to 3.5 × 10⁻² — beyond §1.4's "ordinary floating-point tolerance". The repair preserves every log-return to 1e-12, so the path law is untouched. Recorded per seed in `generation_manifest.json → numerical_repair`. |
 | Known non-conformance | **None.** All §1.4 bullets hold: finite, strictly positive, 8192 × 128, `float64`, `S₀ == 100.0` exactly — re-measured from each array on disk by `write_generation_manifest.py`, not asserted. |

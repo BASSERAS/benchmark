@@ -687,13 +687,33 @@ try/except records them as `null`. **No edit to `metrics/compute_all.py`.** Repo
 
 ### Stage 4 — Figures
 
+Three figures are produced here; the metric battery of Stage 3a emits ten more (`seed_<q>_pca.png`,
+`seed_<q>_tsne.png`) on its own. **The authoritative inventory, with exact filenames, generators
+and which section displays each one, is §7.7 — check the names against it, and against `ls`,
+before writing them into a README.**
+
+```bash
+python ../../tools/plot_losses.py            --model-dir . --out losses
+python ../../tools/plot_stylised_facts.py    --model-dir . --experiment <X> --out plots
+python ../../tools/plot_experiment_figures.py --experiment <X> --model-dir . --seed 0 --out plots --label <Method>
+```
+
 - `losses/loss_convergence.png` — 5 seeds overlaid.
-- `plots/diagnostics_seed0.png` — `metrics/plot_diagnostics.py::plot_diagnostics(S_real, S_gen, method, seed, out_path)`.
-  Its Heston-theory third curve is **wrong for these DGPs**; it is drawn inside a try/except and
-  falls back to `TB = None`. If it appears, suppress it or state in the caption that it does
-  not apply.
-- Experiment-specific: A → `future_rv` distributions split by `early_hit`, real vs generated.
-  B → the two 8-bar regime-proportion histograms, target vs generated.
+- `plots/heston_diagnostics.png` — from `plot_stylised_facts.py`, which wraps the
+  benchmark-standard `metrics/plot_diagnostics.py`. That wrapped script's Heston-theory third
+  curve is **wrong for both of these DGPs** (neither is single-regime Heston); it is drawn inside
+  a try/except and falls back to `TB = None`. The wrapper suppresses it — **say so in the README
+  caption**, or a reader will think the curve was forgotten.
+- Experiment-specific, from `plot_experiment_figures.py`:
+  A → `plots/memory_structure_seed0.png`, `future_rv` distributions split by `early_hit`,
+  real vs generated.
+  B → `plots/mixture_structure_seed0.png`, the two 8-bar regime-proportion histograms
+  (target vs generated) plus the three parameter marginals.
+
+Cross-check at least one number printed inside each figure against the evaluator JSON before
+publishing it (§7.7). For B seed 0 the figure prints TVD = 0.245483 and
+`pdf_metrics/seed_0_heston_mixture.json → mixture_fidelity.regime_proportion_tvd` is 0.245483.
+A figure never reconciled with the tables is decoration.
 
 ### Stage 5 — README, then commit
 
@@ -854,111 +874,388 @@ loss columns, last column `lr`.
 
 ## 7. README Specification
 
-Every `results/new_experiments/experiment_<X>/<Method>/README.md` has these **five sections,
-in this order**. The order is not negotiable — the PDF metrics come first because they are
-what the protocol actually asks.
+This section is the contract. A new method's README is *correct* iff it satisfies every rule
+below; anything not specified here is the author's choice. Read §7.0 first — it is the rule that
+generates all the others, and it is the rule that was violated in the first pass.
 
-### § 1 — PDF metrics *(first, and standalone)*
+### 7.0 The generating rule — tables are emitted, never typed
 
-One table with **every** metric defined in the PDF for this experiment, aggregated over the
-5 seeds from `pdf_metrics/seed_N_*.json`.
+> **Every numeric cell in every README table is produced by a tool in
+> `results/new_experiments/tools/`, redirected to a file, and spliced in whole. No cell is
+> ever typed, retyped, reformatted, annotated, or "improved" by hand.**
+
+If a number needs explanation, the explanation goes in **prose above or below the table**, never
+inside the cell. The moment you replace a machine-emitted cell with a word, a symbol, or a dash,
+three things happen at once and you will notice none of them:
+
+1. The table stops being reproducible — the `*Reproduce:*` command printed under it now emits
+   something different from what is displayed, and nobody re-runs it to find out.
+2. Real signal gets erased. This is not hypothetical: see the `—` incident in §7.10 E1.
+3. The two experiments drift apart, because you will hand-edit one and not the other.
+
+**Enforcement.** Every table carries, immediately beneath it, a `*Reproduce:*` line with the
+literal command. Before committing, re-run each one and diff it against the file:
+
+```bash
+cd results/new_experiments/experiment_A/LS4
+python ../../tools/aggregate_pdf_metrics.py --model-dir . --floor-dir ../perfect_floor \
+    --pattern '*_drawdown_memory.json' --label LS4 \
+    --exclude-prefix configuration sources > /tmp/regen.md
+# splice /tmp/regen.md into the README and confirm `git diff` is empty
+```
+
+A non-empty diff means either the numbers changed (re-run the pipeline) or someone hand-edited
+the table (revert the hand edit). Both are things you want to know before pushing.
+
+### 7.1 Section order — non-negotiable
+
+Five sections, in this order. The PDF metrics come **first and standalone** because they are what
+the protocol actually asks; the repo's own battery is context, not verdict.
+
+```markdown
+# <Method> — Experiment <X> (<one-line name of the experiment>)
+
+<3-6 line abstract: what the experiment tests, what the headline result is, and the single
+number a reader should remember. State the conclusion here; do not make them hunt for it.>
+
+| Section | Contents | Question it answers |
+|---|---|---|
+| **1** | PDF metrics — protocol evaluator | Does it satisfy the protocol? |
+| **2** | Benchmark standard battery (A1–A34 + B curve-shape) | How does it score on the repo's usual metrics? |
+
+Section 1 is the one that decides the experiment. Section 2 is context.
+
+**Perfect floor** = the true DGP re-simulated with a fresh seed (5 independent simulations).
+It is the best score any generator can achieve; it is *not* zero, because the evaluator
+compares two finite 8192-path samples.
+
+---
+
+## 1. PDF metrics — protocol evaluator
+### 1.1 PRIMARY panel — the four metrics the protocol designates
+### 1.2 <Headline interpretation table — experiment-specific name>
+### 1.3 Validation vs test
+### 1.4 §5 reporting block
+## 2. Metrics A1–A34 + B, mean ± std across 5 seeds
+### 2.1 A1–A34
+### 2.2 B curve-shape metrics
+## 3. Stylised Facts Diagnostic
+## 4. Losses
+## 5. File layout
+```
+
+### 7.2 § 1 — PDF metrics *(first, and standalone)*
+
+Five blocks, in this order. Blocks 1–4 are tables; block 5 is the §5 reporting block.
+
+**Header prose, before any table.** State: which evaluator script produced this, that it was
+**run unchanged** (PDF §7 item 7), and the aggregation rule (mean ± sample std, ddof = 1, over 5
+seeds; 95 % CI half-width with t₀.₉₇₅,₄ = 2.776).
+
+---
+
+**Block 1 — the full flattened table, verbatim from `aggregate_pdf_metrics.py`.**
+
+Columns: `Metric | <Method> (mean ± std) | 95% CI half-width | Perfect floor (mean ± std)`.
+Every numeric leaf the evaluator emits appears, sorted, including the `target_*` rows.
 
 - Experiment A: the `target_memory` / `generated_memory` pair, all 9 `errors`, all 3 `novelty`.
 - Experiment B: all of `mixture_fidelity` (incl. per-parameter `std_ratio`),
-  `observable_fidelity`, `novelty`, and the `oracle_gate` accuracy.
+  `observable_fidelity`, `novelty`, and `oracle_gate` accuracy.
 
-**Two tables, in this order.**
+> **The `target_*` rows carry `± 0` and a CI of `0`, and you print those zeros.**
+> They are computed from `test.npy` alone and never touch the generated bank, so they are
+> bit-identical across seeds. **Do not** write `(target)` in the mean cell or `—` in the CI cell.
+> Explain the zero in prose instead:
+>
+> *"A zero here means 'this quantity was never resampled', not 'we measured a variance and it
+> came out small'."*
+>
+> Verify the claim, don't assume it — the check is four lines, and in Experiment B it **fails**
+> for one row (`target_low_confidence_fraction`, std 8.63 × 10⁻⁵):
+>
+> ```python
+> rows = [flatten(json.load(open(f))) for f in sorted(glob.glob("pdf_metrics/seed_*.json"))]
+> for k in [k for k in rows[0] if "target" in k]:
+>     vals = [r[k] for r in rows]
+>     print("IDENTICAL" if len(set(map(repr, vals))) == 1 else "** VARIES", k, vals[0])
+> ```
 
-1. The full flattened table emitted verbatim by `aggregate_pdf_metrics.py`:
-   `Metric | <Method> (mean ± std) | 95% CI half-width | Perfect floor (mean ± std)`.
-   Every numeric leaf appears, including the `target_*` rows — those are the target, measured
-   on `test.npy`, so they carry `± 0` by construction. Write `(target)` in their mean cell and
-   `—` in their CI cell rather than printing a meaningless `± 0 | 0`.
-2. The **PRIMARY panel** — the metrics the PDF itself designates, no others, no substitutes.
-   These are fixed by the protocol and are *not* a matter of taste:
+Do not fold the target into a column of block 1. The evaluator emits `target_*` and `generated_*`
+as sibling blocks; flattening them into one row per metric needs a hand-kept key mapping that
+silently rots the first time the evaluator gains a field.
 
-   | Experiment | PDF § | The four primary metrics |
-   |---|---|---|
-   | **A** | §2.3 | `early_hit_rate_error`, `future_rv_hit_gap_error`, `early_history_incremental_r2_error`, `future_rv_wasserstein` |
-   | **B** | §3.4 | regime TVD, **W̄_param**, realized-volatility Wasserstein, leverage-curve RMSE |
+---
 
-   Present them as `Metric | <Method> (mean ± std) | 95% CI | Perfect floor`. Everything else
-   in the evaluator output is **secondary diagnostics** and must be labelled as such.
+**Block 2 — the PRIMARY panel.** The metrics the PDF itself designates. No others, no
+substitutes. Fixed by the protocol, not a matter of taste:
 
-   For Experiment B, `W̄_param` is **not emitted by the evaluator** and must be derived per seed
-   as the unweighted mean of the three `parameters.{theta,xi,rho}.support_normalized_wasserstein`
-   (§11.2). Label it *derived* in the table. Do **not** patch the evaluator to emit it —
-   checklist item 7 forbids touching `protocol/`.
+| Experiment | PDF § | The four primary metrics |
+|---|---|---|
+| **A** | §2.3 | `early_hit_rate_error`, `future_rv_hit_gap_error`, `early_history_incremental_r2_error`, `future_rv_wasserstein` |
+| **B** | §3.4 | regime TVD, **W̄_param**, realized-volatility Wasserstein, leverage-curve RMSE |
 
-   PDF §3.4 also forbids collapsing B's four into an aggregate score after seeing results. It is
-   a panel. Report four numbers.
+Columns: `Primary metric (↓ lower is better) | <Method> (mean ± std) | 95% CI half-width |
+Perfect floor | × floor`. The `× floor` column is the one readers use; compute it as
+`model_mean / floor_mean` and round to two significant figures.
 
-3. A short **headline** table, hand-written, for the raw quantities that explain *why* the
-   primary metrics landed where they did: `Quantity | Target | <Method> | Perfect floor |
-   Verdict`. For A that means the `generated_memory` / `target_memory` pairs
-   (`early_history_incremental_r2`, `future_rv_hit_mean`, `future_rv_no_hit_mean`, …). This is
-   the one a reader actually reads. Interpret it in prose beneath (§2.5 for A, §3.5 for B).
+Everything else in the evaluator output is **secondary diagnostics** and must be labelled so.
 
-   ⚠️ These are **raw diagnostics, not errors** — PDF §5 singles out "standard-deviation ratio,
-   posterior confidence, group means, and novelty" as the exceptions to "lower is better". Mark
-   them, or a reader will try to minimise `std_ratio` (target **1.0**) or
-   `distinct_nearest_training_paths` (a raw count). And `early_history_incremental_r2` is a
-   **two-sided** target: matching 0.2885 is the goal; overshooting is as wrong as undershooting.
-   Only the `*_error` form belongs in the primary panel.
+For Experiment B, `W̄_param` is **not emitted by the evaluator** and must be derived per seed as
+the unweighted mean of the three `parameters.{theta,xi,rho}.support_normalized_wasserstein`
+(§11.2). Label it *derived* and give the formula in the README. **Aggregate per seed first, then
+across seeds** — averaging the three already-aggregated means gives the right centre and a wrong
+std. Do **not** patch the evaluator to emit it; checklist item 7 forbids touching `protocol/`.
 
-4. The **validation-vs-test** table (§11.4), from `pdf_metrics_validation/`. Four to six
-   `errors.*` rows, two columns. This is the artefact that evidences §7 checklist item 2 —
-   that `disc.npy` was used for validation and `test.npy` stayed blind. If validation is
-   materially *better* than test, you have a leak; say so rather than shipping it.
+PDF §3.4 forbids collapsing B's four into an aggregate score after seeing results. It is a
+panel. Report four numbers.
 
-Do not fold the target into a column of table 1. The evaluator emits `target_*` and
-`generated_*` as sibling blocks; flattening them into one row per metric requires a hand-kept
-key mapping that silently rots the first time the evaluator gains a field.
+---
 
-**Header block, before any table.** PDF §5 requires each comparison table to state seven
-things; six are easy and the seventh is always the one forgotten. Copy this checklist:
-exact train/validation/test files · bank size and all five seeds · **whether official code was
-used and its revision** · **whether hyperparameters were defaults or validation-selected** ·
-trainable parameters, training time, generation time, hardware · number and reason for failed
-runs. All seven are machine-readable in `generated_paths/seed_<q>/generation_manifest.json`;
-the README must still say them in prose. See §11.6.
+**Block 3 — the headline interpretation table.** The raw quantities that explain *why* the
+primary metrics landed where they did. This is the table a reader actually reads, so give it a
+descriptive `###` heading naming the finding, not a generic one.
 
-### § 2 — Metrics A1–A34 + B, mean ± std across 5 seeds
+- **Experiment A:** `Quantity | Target | <Method> | Perfect floor | Verdict`, over the
+  `generated_memory` / `target_memory` pairs (`early_history_incremental_r2`,
+  `future_rv_hit_mean`, `future_rv_no_hit_mean`, …).
+- **Experiment B:** the eight-regime table, **sorted by Feller ratio 2κθ/ξ²**, not by label
+  index. Columns `Label | theta | xi | rho | Feller | Target | <Method> (mean ± std) |
+  Perfect floor`. Sorting by label hides the result; sorting by Feller makes the failure
+  monotone and self-evident. Find the ordering variable before you write the table.
 
-From `metrics_summary.csv` via `make_metrics_tables.py --table A` and `--table B`, with the
-perfect-floor column beside it. A33/A34 → `n/a`, with the one-line reason. Never delete the rows.
+Interpret it in prose beneath (§2.5 for A, §3.5 for B).
+
+> ⚠️ These are **raw diagnostics, not errors.** PDF §5 singles out "standard-deviation ratio,
+> posterior confidence, group means, and novelty" as the exceptions to "lower is better". Mark
+> them, or a reader will try to minimise `std_ratio` (target **1.0**) or
+> `distinct_nearest_training_paths` (a raw count). And `early_history_incremental_r2` is a
+> **two-sided** target: matching 0.2885 is the goal, overshooting is as wrong as undershooting.
+> Only the `*_error` form belongs in the primary panel.
+
+---
+
+**Block 4 — validation vs test** (§11.4), from `pdf_metrics_validation/`. Four to six `errors.*`
+rows, two columns. This is the artefact that evidences §7 checklist item 2 — that `disc.npy` was
+used for validation and `test.npy` stayed blind. Generate it with the same tool via `--subdir`:
+
+```bash
+python ../../tools/aggregate_pdf_metrics.py --model-dir . --subdir pdf_metrics_validation ...
+```
+
+If validation is materially *better* than test, you have a leak. Say so rather than shipping it.
+
+---
+
+**Block 5 — the §5 reporting block.** PDF §5 requires each comparison table to state seven
+things; six are easy and the seventh is always the one forgotten. Present as a two-column
+`Requirement | Value` table. **Required rows, all of them:**
+
+| Row | What it must contain |
+|---|---|
+| Train / validation / test files | Exact paths **and MD5s** |
+| Generated bank size | `8192 × 128 float64, per seed` |
+| Model seeds | `0, 1, 2, 3, 4`, and whether training seed = generation seed |
+| **Independent retraining** | That there are **5 separate trainings, one per seed** — with the evidence, not the assertion: 5 distinct checkpoint MD5s, per-seed `config.json` recording `experiment` and `data`, 5 loss curves with distinct final losses. State the cross-experiment check too (all 10 A+B checkpoints mutually distinct). |
+| **Trained on this experiment's own data** | The experiment-specific `train.npy` path + MD5, plus an *independent* corroboration that does not rely on the config file — the fitted scaler statistics differ between A and B (A: μ = 100.13621639651069, σ = 11.927961375843996; B: μ = 100.09714689788022, σ = 11.516370009298313), so the two runs provably did not share a training set. |
+| Official code + revision | Repo path, preset name, benchmark revision, and the wrapper's own commit |
+| Hyperparameters | **Defaults or validation-selected** — PDF §5's most-forgotten requirement |
+| Trainable parameters / training time / generation time / hardware | One row each or one combined |
+| Failed / unstable runs | Number **and reason**. `0` still needs the evidence: epochs completed, NaN check. Surface near-misses here too (see §7.10 E6). |
+| Declared post-hoc transformation (§1.3) | Any repair, with its effect on the metrics measured, not asserted |
+| Known non-conformance | `None.` is an acceptable answer **only** if each §1.4 bullet was re-measured from the array on disk |
+
+All of it is machine-readable in `generated_paths/seed_<q>/generation_manifest.json`; the README
+must still say it in prose. See §11.6.
+
+### 7.3 § 2 — Metrics A1–A34 + B, mean ± std across 5 seeds
+
+Two tables, from `metrics_summary.csv` via `make_metrics_tables.py --table A` and `--table B`,
+with the perfect-floor column beside each. Per-seed columns are **required** — PDF §5 says report
+every seed, not just the aggregate, and explicitly forbids reporting only the best seed.
+A33/A34 → `n/a` with the one-line reason. Never delete the rows.
 
 ⚠️ Metric labels contain literal pipes (`A2 |r| q95`, `ACF of |log-returns|`). They must be
 escaped `\|` or the whole Markdown table renders misaligned on GitHub. `make_metrics_tables.py`
-does this; if you hand-edit a row, do it too.
+does this; if you hand-edit a row, do it too — which is another reason not to hand-edit a row.
 
 **This section must not restate § 1's numbers, and § 1 must not borrow § 2's.** They are separate
-suites answering separate questions, and the interesting result is usually the *disagreement*
-between them — for LS4 on Experiment A, the standard battery's A18/A19 sit at the perfect floor
-while the protocol evaluator scores the model at 59 %. Blending the sections destroys that signal.
+suites answering separate questions, and **the interesting result is usually the disagreement
+between them.** Open § 2 with a blockquote that states whether the two suites agree, and if they
+disagree, which one to believe and why. Both observed cases are worth copying:
 
-### § 3 — Stylised Facts Diagnostic (real vs `<Method>`, seed 0)
+- **Experiment A — they disagree.** A18 discriminative (GRU) 0.00638 and A19 predictive (GRU)
+  0.04641 sit at or below the perfect floor, while § 1 shows the model recovers only 59 % of the
+  memory signal. Both are correct: A1–A32 measure *marginal and short-lag* structure, whereas the
+  protocol evaluator measures a *conditional, 32-step-delayed* dependence no marginal statistic is
+  sensitive to. A model can saturate the standard battery and still miss the structure that matters.
+- **Experiment B — they agree, except where it counts.** A14 KS 55× floor, A21 ACF |r| 73×, A31
+  rolling-vol KS 79× — but A18 (GRU) is only 1.5× floor and A19 (GRU) 1.0×. A GRU discriminator
+  cannot detect that two of eight modes are missing, because every individual path it inspects
+  *is* plausible; only the **population** is wrong.
 
-`plots/heston_diagnostics.png` (from `plot_stylised_facts.py`) + a short honest reading of where
-the model deviates. The black Heston-theory curve is suppressed by that tool because neither DGP
-is single-regime Heston — say so explicitly, so a reader does not think it was forgotten.
+The lesson generalises: **`A18`/`A19` are blind to mode collapse.** Never let them carry a verdict.
 
-### § 4 — Losses
+### 7.4 § 3 — Stylised Facts Diagnostic
 
-`losses/loss_convergence.png` + per-seed final/min loss and wall-clock time.
+`plots/heston_diagnostics.png` (from `plot_stylised_facts.py`), real vs `<Method>`, seed 0, plus a
+short honest reading of where the model deviates. The black Heston-theory reference curve is
+suppressed by that tool because neither DGP is single-regime Heston — **say so explicitly**, so a
+reader does not think it was forgotten.
 
-### § 5 — File layout
+### 7.5 § 4 — Losses
 
-The tree from §6.2. **No path-shadowing section** — it is not part of this protocol.
+`losses/loss_convergence.png` (all 5 seeds overlaid) + a per-seed table of final loss, **minimum
+loss and the epoch it occurred**, and wall-clock time. Final-loss-only hides late-training
+excursions (§7.10 E6).
 
-### Aggregation rules (apply everywhere)
+### 7.6 § 5 — File layout
+
+The tree from §6.2, as a fenced block, plus a `Tool | Produces` table mapping every script in
+`tools/` to the section it feeds. **No path-shadowing section** — it is not part of this protocol.
+
+Every file that exists on disk must appear in the tree, including the ones the README does not
+display inline (the 10 PCA/t-SNE figures). A file present but undocumented reads as an oversight.
+
+### 7.7 Figure specification
+
+**The full figure inventory — 13 per method per experiment.** Exactly three are displayed inline;
+the other ten are produced automatically by the metric battery and are listed in the file tree
+only.
+
+| # | Path | Generator | Displayed in | Shows |
+|---|---|---|---|---|
+| 1 | `plots/memory_structure_seed0.png` (**A**) | `plot_experiment_figures.py --experiment A` | § 1 | Early-drawdown-hit vs future-RV relationship; the delayed-memory mechanism the experiment is about |
+| 1 | `plots/mixture_structure_seed0.png` (**B**) | `plot_experiment_figures.py --experiment B` | § 1 | 8-regime proportion bars (target vs generated) + the three parameter marginals; **this is where mode collapse is visible as missing bars** |
+| 2 | `plots/heston_diagnostics.png` | `plot_stylised_facts.py` | § 3 | 8-panel stylised-facts battery, real vs method, seed 0 |
+| 3 | `losses/loss_convergence.png` | `plot_losses.py` | § 4 | All 5 training curves overlaid |
+| 4–8 | `plots/seed_<q>_pca.png` | metric battery (`compute_all.py`) | file tree only | 2-D PCA of the path cloud, real vs generated |
+| 9–13 | `plots/seed_<q>_tsne.png` | metric battery (`compute_all.py`) | file tree only | t-SNE embedding, real vs generated |
+
+**Rules for displayed figures.**
+
+- Reference with a relative path from the README: `![mixture structure](plots/mixture_structure_seed0.png)`.
+  Never an absolute path, never a URL — the README must render from inside the repo.
+- The alt text is a short lowercase description (`mixture structure`, `stylised facts`,
+  `loss convergence`), not the filename.
+- **Every figure carries a caption in prose that states a number appearing in the figure**, and
+  that number must be cross-checked against the evaluator JSON. For B, the figure prints
+  TVD = 0.245483 for seed 0 and the evaluator JSON reports 0.245483 — quote it and say they match.
+  A figure whose numbers were never reconciled with the tables is decoration.
+- Figures are **seed 0** by convention. If you display another seed, say which and why.
+- Verify every link resolves before committing:
+  ```bash
+  grep -oE '!\[[^]]*\]\(([^)]*)\)' README.md | sed -E 's/.*\((.*)\)/\1/' \
+    | while read f; do [ -f "$f" ] || echo "BROKEN: $f"; done
+  ```
+
+**Rule for figures that do not exist.** If a planned figure could not be produced, **do not put a
+dash, a placeholder, or an empty image link.** Delete the row from the inventory and state in
+prose why the figure is absent. An empty cell reads as an oversight; a sentence reads as a decision.
+
+### 7.8 Aggregation rules (apply everywhere)
 
 - 5 seeds `q ∈ {0,1,2,3,4}`, **mean ± sample std** (`ddof=1`).
-- 95 % CI = `mean ± 2.776 · std / sqrt(5)` (`t_{0.975,4} = 2.776`).
-- **Failed seeds are reported, never silently replaced.** State which seed failed and why
-  (NaN loss, OOM, divergence) and aggregate over the survivors with the reduced `n` written down.
-- A model is "at the floor" on a metric iff its 95 % CI overlaps the floor's. Say so.
+- 95 % CI half-width = `2.776 · std / sqrt(5)` (`t_{0.975,4} = 2.776`).
+- **Report every seed, plus mean, plus std, plus CI.** PDF §5: "Do not report only the best seed."
+- **Failed seeds are reported, never silently replaced** (PDF §1.5). State which seed failed and
+  why (NaN loss, OOM, divergence) and aggregate over the survivors with the reduced `n` written down.
+- A model is "at the floor" on a metric iff its 95 % CI overlaps the floor's. Say so explicitly.
 - Never compare a raw metric to 0. Compare to the floor.
+- Lower is better **except** for the §5 raw diagnostics: std-ratio, posterior confidence, group
+  means, novelty. Mark those rows.
+
+### 7.9 Cell-formatting rules
+
+| Situation | Write | Never write |
+|---|---|---|
+| Metric with zero variance across seeds | `0.67399 ± 0` and CI `0` | `0.67399 (target)`, `—` |
+| Metric the method does not produce | `n/a` **+ a one-line reason in prose** | blank, `—`, deleted row |
+| Metric that failed to compute | `n/a (<error>)` and a note in §1.4 | silently omitted row |
+| A number you are quoting in prose | the value re-read from the JSON | a value recalled from earlier in the session (§7.10 E5) |
+| A label containing a pipe | `A2 \|r\| q95` (escaped) | the bare unescaped form |
+
+The single em-dash `—` is reserved for cells in *hand-written* interpretation tables where the
+column genuinely does not apply to that row (e.g. a "Target" column for a metric that has no
+target). It must never appear in a machine-emitted table.
+
+### 7.10 Errors met building this — do not repeat them
+
+Each entry is a mistake actually made during the LS4 A+B build, with the check that catches it.
+
+**E1 — Hand-annotating a machine-emitted table, which erased real signal.**
+The first version of this guideline instructed: *"Write `(target)` in their mean cell and `—` in
+their CI cell rather than printing a meaningless `± 0 | 0`."* That was followed for Experiment A.
+It was wrong twice over: the README diverged from its own `*Reproduce:*` command, and — decisively —
+the same annotation applied to Experiment B would have erased the fact that
+`target_low_confidence_fraction` is **not** constant (std 8.63 × 10⁻⁵ across seeds). The "obviously
+constant" quantity was not constant, and the hand-annotation was precisely the thing that would
+have hidden it. **Check:** re-run every `*Reproduce:*` command and require an empty diff.
+
+**E2 — `taskset` swallowing environment assignments.**
+```bash
+CUDA_VISIBLE_DEVICES=1 taskset -c 0-7 OMP_NUM_THREADS=8 python train.py   # exit 127
+CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=8 taskset -c 0-7 python train.py   # correct
+```
+Bash treats everything after `taskset` as the command, so `OMP_NUM_THREADS=8` was executed as a
+binary. **All env assignments precede `taskset`.** **Check:** the job dies instantly with
+`No such file or directory` — read the exit code, don't assume the queue is slow.
+
+**E3 — `grep -i error` against JSON output, giving 15 false failures.**
+The evaluator echoes its full JSON to stdout, and that JSON contains `excess_kurtosis_error`,
+`return_std_error`, `leverage_curve_rmse`. Every successful job was reported as FAILED.
+**Check:** validate structurally, never lexically —
+```bash
+python -c "import json,glob; [json.load(open(f)) for f in glob.glob('pdf_metrics/*.json')]" \
+  && echo OK
+```
+
+**E4 — Documenting a filename without listing it.** The README claimed
+`losses/seed_<q>_loss.csv`; the files are `seed_<q>_losses.csv`. **Check:** `ls` every path the
+README names, don't rely on memory of the writer script.
+
+**E5 — Quoting numbers from memory instead of re-reading them.** Per-seed TVDs were written into
+prose as `0.2455/0.3125/0.2456/0.2461/0.2178`; the measured values are
+`0.245483/0.243164/0.258911/0.335815/0.250977`. The narrative claim built on them ("seed 2 is
+mid-pack") survived, but the identity of the worst seed did not — it is seed 3, not seed 1.
+**Check:** every number in prose is re-read from the JSON in the same session it is written.
+
+**E6 — Reporting only the final loss, which nearly hid an unstable seed.**
+`Failed / unstable runs: 0` was true, but Experiment B seed 2's last-epoch loss is −0.5683 against
+its own epoch-92 minimum of −1.1118. It turned out not to matter — generation uses the **EMA**
+weights (`ema_lamb = 0.99`; `train_ls4_experiment.py:154` selects `ema_model.module`), so a
+one-epoch excursion cannot reach the bank — but that is a *conclusion*, and it required checking
+which weights generation uses. **Check:** tabulate final **and** minimum loss with its epoch, then
+confirm which weights the generator actually loads.
+
+**E7 — Overclaiming in a draft.** A draft read "A18/A19 are essentially floor-level"; measurement
+gave A18 GRU = 1.5× floor, only A19 = 1.0×. **Check:** every comparative adjective
+("essentially", "at the floor", "matches") must be replaced by a ratio before committing.
+
+**E8 — Assuming a shared repo is yours alone.** A concurrent process commits to this repository;
+HEAD moved twice mid-session while no lock was held. **Check:** always commit with an explicit
+pathspec, and confirm the index is clean first —
+```bash
+git add -- dataset/Heston/new_experiments results/new_experiments
+git diff --cached --name-only \
+  | grep -v -E '^(dataset/Heston/new_experiments|results/new_experiments)/' \
+  && echo "FOREIGN FILES STAGED" || echo clean
+git commit -m "..." -- dataset/Heston/new_experiments results/new_experiments
+```
+
+**E9 — Repairing an artefact that exists to be a control.** When the S₀ defect was found, the
+instinct was to apply the fix everywhere. The perfect floor must **never** be repaired: it is
+drawn from the true DGP, so if it ever violates the output contract that is a *finding* about the
+generator, and silently normalising it destroys the only independent reference in the experiment.
+**Verify the floor; repair only the model.** See §11.5.
+
+**E10 — Explaining an anomaly instead of bounding it.** `target_low_confidence_fraction` jitters
+by ±1 path across seeds when it should be a pure function of `test.npy` and a frozen oracle. A
+threading hypothesis was formed and then **falsified** (two runs at different `OMP_NUM_THREADS`
+both reproduced 1408 exactly). The correct output was to bound the effect (1.2 × 10⁻⁴ on one raw
+diagnostic, zero effect on any primary metric) and write **"The cause was not isolated and is not
+claimed."** An unexplained anomaly, bounded and disclosed, is a result. A plausible story with no
+evidence is a liability.
 
 ---
 
@@ -980,9 +1277,24 @@ The tree from §6.2. **No path-shadowing section** — it is not part of this pr
 - [ ] 12. Stage 3b — the same on the perfect floor (skip if the floor already exists for this experiment).
 - [ ] 13. Stage 3c — the PDF evaluator, per seed, **unchanged**.
 - [ ] 14. Stage 4 — loss convergence + diagnostics + the experiment-specific figure.
-- [ ] 15. Write `README.md` with the 5 sections in order, PDF metrics first.
-- [ ] 16. Check every `metadata.json` for `gen_has_nan: false` and `first_nan_epoch: null`,
-      then commit and push.
+- [ ] 15. **Prove the 5 trainings were independent and used this experiment's data** (§7.2 block 5):
+      ```bash
+      md5sum weights/seed_*_model.pt | awk '{print $1}' | sort -u | wc -l   # must be 5
+      for s in 0 1 2 3 4; do python -c "import json;d=json.load(open('weights/seed_${s}_config.json'));print(d['seed'],d['experiment'],d['data'])"; done
+      for s in 0 1 2 3 4; do tail -1 losses/seed_${s}_losses.csv; done      # 100 epochs, distinct losses
+      ```
+      Then check the fitted scaler stats differ from the *other* experiment's — that is the one
+      piece of evidence that does not depend on the config file being honest.
+- [ ] 16. Write `README.md` with the 5 sections in order, PDF metrics first (§7.1 skeleton).
+- [ ] 17. **Re-run every `*Reproduce:*` command in the README and require an empty diff** (§7.0).
+      This is the check that catches hand-edited cells; it is the single most valuable step here.
+- [ ] 18. Verify every figure link resolves and every file on disk appears in the §5 tree (§7.7).
+- [ ] 19. Re-read every number quoted in *prose* from its JSON — not from memory (§7.10 E5).
+- [ ] 20. Check every `metadata.json` for `gen_has_nan: false` and `first_nan_epoch: null`,
+      and re-measure the §1.4 output contract from the arrays on disk (finite, > 0, shape,
+      dtype, `S₀ == 100.0`) rather than asserting it.
+- [ ] 21. Commit with an **explicit pathspec** and confirm no foreign files are staged (§7.10 E8),
+      then push.
 
 ---
 

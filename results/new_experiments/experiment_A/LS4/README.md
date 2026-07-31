@@ -41,8 +41,14 @@ Produced by `dataset/Heston/new_experiments/protocol/experiments/scripts/evaluat
 **run unchanged** (protocol PDF §7, checklist item 7). Aggregation: mean ± sample std
 (ddof = 1) over 5 seeds; 95 % CI half-width uses t₀.₉₇₅,₄ = 2.776.
 
-`target_memory.*` is measured on `test.npy` and is therefore identical across seeds
-(std = 0) — it is the target, not a result.
+**Reading the `target_memory.*` rows.** These are computed from `test.npy` alone by the frozen
+evaluator; they never touch the generated bank. They are therefore *bit-identical* across all
+five seeds — verified, not assumed — so their sample std and 95 % CI half-width are **exactly 0**,
+and both the LS4 and the perfect-floor column necessarily carry the same number. A zero here means
+"this quantity was never resampled", not "we measured a variance and it came out small". They are
+the target the two other columns are aiming at, not a result. Every cell is nonetheless printed as
+a number rather than a dash, because the table is emitted verbatim by
+`tools/aggregate_pdf_metrics.py` and any hand-substituted cell would break that guarantee.
 
 <!-- model seeds: 5 | floor seeds: 5 -->
 | Metric | LS4 (mean ± std) | 95% CI half-width | Perfect floor (mean ± std) |
@@ -68,15 +74,15 @@ Produced by `dataset/Heston/new_experiments/protocol/experiments/scripts/evaluat
 | `novelty.distinct_nearest_training_paths` | 1596.4 ± 33.1 | 41.1 | 1600.8 ± 11.5 |
 | `novelty.mean_standardized_nearest_train_path_rmse` | 0.949641 ± 0.00608 | 0.00755 | 0.937306 ± 0.000826 |
 | `novelty.median_standardized_nearest_train_path_rmse` | 0.988202 ± 0.00971 | 0.0121 | 0.989367 ± 0.00106 |
-| `target_memory.augmented_r2` | 0.67399 (target) | — | 0.67399 |
-| `target_memory.baseline_r2` | 0.385467 (target) | — | 0.385467 |
-| `target_memory.early_history_incremental_r2` | 0.288523 (target) | — | 0.288523 |
-| `target_memory.early_hit_future_rv_correlation` | 0.80836 (target) | — | 0.80836 |
-| `target_memory.early_hit_rate` | 0.629639 (target) | — | 0.629639 |
-| `target_memory.early_hit_standardized_coefficient` | 1.4987 (target) | — | 1.4987 |
-| `target_memory.future_rv_hit_gap` | 0.223872 (target) | — | 0.223872 |
-| `target_memory.future_rv_hit_mean` | 0.426855 (target) | — | 0.426855 |
-| `target_memory.future_rv_no_hit_mean` | 0.202984 (target) | — | 0.202984 |
+| `target_memory.augmented_r2` | 0.67399 ± 0 | 0 | 0.67399 ± 0 |
+| `target_memory.baseline_r2` | 0.385467 ± 0 | 0 | 0.385467 ± 0 |
+| `target_memory.early_history_incremental_r2` | 0.288523 ± 0 | 0 | 0.288523 ± 0 |
+| `target_memory.early_hit_future_rv_correlation` | 0.80836 ± 0 | 0 | 0.80836 ± 0 |
+| `target_memory.early_hit_rate` | 0.629639 ± 0 | 0 | 0.629639 ± 0 |
+| `target_memory.early_hit_standardized_coefficient` | 1.4987 ± 0 | 0 | 1.4987 ± 0 |
+| `target_memory.future_rv_hit_gap` | 0.223872 ± 0 | 0 | 0.223872 ± 0 |
+| `target_memory.future_rv_hit_mean` | 0.426855 ± 0 | 0 | 0.426855 ± 0 |
+| `target_memory.future_rv_no_hit_mean` | 0.202984 ± 0 | 0 | 0.202984 ± 0 |
 
 ### 1.1 PRIMARY panel — the four metrics the protocol designates
 
@@ -159,6 +165,8 @@ it is the cleanest available evidence that no tuning leaked into the reported ru
 | Test file | `dataset/Heston/new_experiments/experiment_A/test.npy` |
 | Generated bank size | 8192 × 128 `float64`, per seed |
 | Model seeds | 0, 1, 2, 3, 4 (training seed = generation seed, shared RNG stream) |
+| Independent retraining | **5 separate trainings, one per seed** — not one model sampled five times. Evidence: the five `weights/seed_<q>_model.pt` have five distinct MD5s; each `weights/seed_<q>_config.json` records `"experiment": "A"` and `"data": …/experiment_A/train.npy`; the five loss curves are 100 epochs each with distinct final losses (−0.9695, −1.0368, −1.0664, −1.0234, −1.0331). Cross-experiment check: all **10** A+B checkpoints are mutually distinct. |
+| Trained on this experiment's own data | **Yes** — `dataset/Heston/new_experiments/experiment_A/train.npy` (MD5 `52ed4ad2…`), a different file from Experiment B's. Independent corroboration: the standardizer fitted on it gives μ = 100.13621639651069, σ = 11.927961375843996, which differ from B's (μ = 100.09714689788022, σ = 11.516370009298313) — the two runs cannot have shared a training set. |
 | Official code + revision | **Yes** — `methods/LS4/code`, released `solar_weekly` preset, at benchmark revision `27df71e`; experiment wrapper `code/train_ls4_experiment.py` committed as `ba7c748` |
 | Hyperparameters | **Official defaults**, not validation-selected. No tuning was performed; `disc.npy` was used for scoring only. |
 | Trainable parameters | 2,146,857 |
