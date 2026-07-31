@@ -398,7 +398,7 @@ and is what a new method should reuse rather than reimplement:
 
 A full conformance cross-check of this run against the protocol PDF — SHA-256 integrity of all
 ten canonical files, metric-by-metric key coverage, and the §7 return checklist item by item —
-is recorded in `dataset/Heston/new_experiments/guideline_new_experiment.md` §11.
+is recorded in `results/new_experiments/guideline_new_experiment.md` §11.
 
 No path shadowing and no `baseline_no_prepro` in this experiment.
 
@@ -410,4 +410,4 @@ The protocol scripts under `dataset/Heston/new_experiments/protocol/` were run *
 (protocol PDF §7, checklist item 7).
 
 Full step-by-step instructions for adding another method to this experiment:
-[`guideline_new_experiment.md`](../../../../dataset/Heston/new_experiments/guideline_new_experiment.md).
+[`guideline_new_experiment.md`](../../guideline_new_experiment.md).

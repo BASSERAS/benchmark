@@ -11,7 +11,7 @@ This file covers three things:
 3. **What a new method must produce** — file layout, JSON/CSV schemas, README specification,
    and a copy-paste checklist (§6, §7, §8).
 
-The root [`GUIDELINE.md`](../../../GUIDELINE.md) governs the *original* 8192×128 Heston benchmark.
+The root [`GUIDELINE.md`](../../GUIDELINE.md) governs the *original* 8192×128 Heston benchmark.
 This file governs the blinded protocol only. Where the two disagree, this file wins **inside
 `dataset/Heston/new_experiments/` and `results/new_experiments/`**, and the root file wins everywhere else.
 
@@ -742,7 +742,6 @@ starts directly at Stage 1 — but LS4 still trains **5 fresh seeds on Experimen
 
 ```
 dataset/Heston/new_experiments/
-├── guideline_new_experiment.md          ← this file
 ├── make_perfect_floor.py                floor generator, both experiments
 ├── logs/                                fit_oracle.log, floor_A.log, floor_B.log
 ├── protocol/experiments/                ⛔ VENDORED VERBATIM — NEVER EDIT
@@ -773,13 +772,16 @@ Mirrors `results/Heston/preprocessing_with_log_returns/<Method>/`
 
 ```
 results/new_experiments/
+├── guideline_new_experiment.md                  ← this file
+├── README_TEMPLATE.md                           literal skeleton to copy for a new method (§7.1)
 ├── tools/                                       method-neutral, both experiments (§4)
 │   ├── aggregate_pdf_metrics.py                 README § 1 table: 5-seed mean ± std + 95% CI
 │   ├── make_metrics_tables.py                   README § 2 tables: A1–A34 and B curve-shape
 │   ├── plot_experiment_figures.py               README § 1 figure: memory (A) / mixture (B)
 │   ├── plot_stylised_facts.py                   README § 3 figure: heston_diagnostics.png
 │   ├── plot_losses.py                           README § 4 figure: loss_convergence.png
-│   └── write_generation_manifest.py             PDF §1.4 artefact, no README section
+│   ├── write_generation_manifest.py             PDF §1.4 artefact, no README section
+│   └── check_method_layout.py                   §6.6 — verifies a method dir matches this tree
 └── experiment_<A|B>/
     ├── perfect_floor/                           method-neutral sibling
     │   ├── pdf_metrics/seed_{0..4}_*.json       floor scored by the PDF evaluator vs test.npy
@@ -870,6 +872,76 @@ loss columns, last column `lr`.
 
 **`metrics_summary.csv`** — header exactly `metric,mean,std,seed_0,seed_1,seed_2,seed_3,seed_4`.
 
+### 6.5 The generator contract
+
+Everything downstream of training — the six tools in §4, the adapter in §6.3, the README
+spec in §7 — is method-neutral. It works for LS4 and it will work for CSDI, TimeGAN,
+DiffusionTS or anything else **provided the trainer satisfies this contract.** Port the
+method by satisfying the contract; do not adapt the tools to the method.
+
+**Required CLI.** The trainer must be `code/train_<method>_experiment.py` and accept exactly:
+
+| Flag | Required | Meaning |
+|---|---|---|
+| `--data` | **yes** | Absolute path to `dataset/Heston/new_experiments/experiment_<X>/`. Never defaulted — a default is how a run silently trains on the wrong experiment. |
+| `--experiment` | **yes** | `A` or `B`. Recorded into every artefact; never inferred from `--data`, so the two can be cross-checked. |
+| `--seed` | **yes** | `0..4`. Seeds every RNG the method touches (`random`, `numpy`, `torch`, CUDA). |
+| `--out` | **yes** | `results/new_experiments/experiment_<X>/<Method>/`. |
+| `--epochs` | no | Defaults to the method's frozen budget. If you change it, it is a deviation and goes in §10. |
+
+**Required firewall guard — copy verbatim, do not paraphrase (§4).** The trainer opens
+`train.npy` and, for model selection only, `disc.npy`. Any other array under the dataset
+directory is a protocol violation, and the guard is what makes that a crash instead of a
+silent contamination.
+
+**Required outputs, all five seeds.** These are the *inputs* to the tooling; if any is
+missing or misnamed, the tools fail or — worse — silently produce a short table:
+
+1. `generated_paths/seed_N/generated_paths_8192x128.npy` — `(8192, 128)`, float64,
+   **original price scale, not log-returns, not standardised.** Whatever preprocessing the
+   method applies internally must be inverted before writing. This is the single most common
+   porting bug: a bank that looks fine to `np.load` but sits at the wrong scale scores
+   catastrophically on every level-sensitive metric and plausibly on none of the others.
+2. `generated_paths/seed_N/metadata.json` — the §6.4 schema, **including `first_nan_epoch`
+   and `gen_has_nan`.**
+3. `weights/seed_N_model.pt` and `weights/seed_N_config.json` — the config carries `scaler_mu`,
+   `scaler_sigma`, `data` (absolute) and `experiment`, which is what makes the §8 item-15
+   independence proof possible.
+4. `losses/seed_N_losses.csv` — one row per epoch, first column `epoch`, last column `lr`.
+5. `code/logs/exp<X>_seed<N>.log` — the log must echo the resolved `--data` path, so item 10
+   of §8 can confirm the lane trained on what it claimed.
+
+**Scaler rule.** Fit the scaler on `train.npy` **only**, never on the concatenation of train
+and test, and record the fitted statistics. Two experiments trained on their own data will
+have *different* fitted statistics, and that difference is the one piece of retraining
+evidence that does not require trusting the config file (§8 item 15).
+
+**What the contract deliberately does not constrain.** Architecture, optimiser, loss,
+preprocessing, epoch budget, whether the method uses EMA weights at generation time. All of
+that is the method's business. If generation uses weights other than the last checkpoint —
+LS4 uses EMA, `ema_lamb = 0.99` — say so in README §1.4, because it changes how the final-epoch
+loss should be read.
+
+### 6.6 Verifying the layout mechanically
+
+"Same structure of files" is a claim, and claims get checked. `tools/check_method_layout.py`
+walks a method directory against §6.2 and exits non-zero on the first violation:
+
+```bash
+python results/new_experiments/tools/check_method_layout.py \
+    --root results/new_experiments/experiment_A/LS4 --experiment A
+```
+
+It checks presence and *shape*, not just names: every one of the five seeds present in each
+of the five per-seed families; `generated_paths_8192x128.npy` actually `(8192, 128)`, finite,
+strictly positive, `S₀ == 100.0`; `metadata.json` carrying `gen_has_nan: false` and
+`first_nan_epoch: null`; `metrics_summary.csv` with the exact §6.4 header; the evaluator
+JSONs parsing on both the test and validation sides. Run it **before** writing the README —
+it is cheaper to find a missing seed here than in a regenerated table.
+
+Run it against `LS4` first. If it does not pass on the reference method, the checker is wrong,
+not your new method.
+
 ---
 
 ## 7. README Specification
@@ -908,6 +980,16 @@ A non-empty diff means either the numbers changed (re-run the pipeline) or someo
 the table (revert the hand edit). Both are things you want to know before pushing.
 
 ### 7.1 Section order — non-negotiable
+
+**Start from the template, do not retype it.** `results/new_experiments/README_TEMPLATE.md`
+is this skeleton with every rule below embedded as an HTML comment next to the place it
+applies. Copy it, fill the `<PLACEHOLDER>`s, delete the comments:
+
+```bash
+cp ../../README_TEMPLATE.md README.md
+```
+
+The skeleton it contains is:
 
 Five sections, in this order. The PDF metrics come **first and standalone** because they are what
 the protocol actually asks; the repo's own battery is context, not verdict.
@@ -1285,7 +1367,15 @@ evidence is a liability.
       ```
       Then check the fitted scaler stats differ from the *other* experiment's — that is the one
       piece of evidence that does not depend on the config file being honest.
-- [ ] 16. Write `README.md` with the 5 sections in order, PDF metrics first (§7.1 skeleton).
+- [ ] 15b. **Machine-check the layout before writing any prose** (§6.6). It must print `PASS`:
+      ```bash
+      python ../../tools/check_method_layout.py --root . --experiment <X>
+      ```
+      209 checks on the reference method. It re-measures shapes and the §1.4 output contract
+      from the arrays themselves, so it catches the classic porting bug — a bank that loads
+      fine but sits at the wrong price scale.
+- [ ] 16. Write `README.md` by **copying `results/new_experiments/README_TEMPLATE.md`** and
+      filling the placeholders — 5 sections in order, PDF metrics first (§7.1).
 - [ ] 17. **Re-run every `*Reproduce:*` command in the README and require an empty diff** (§7.0).
       This is the check that catches hand-edited cells; it is the single most valuable step here.
 - [ ] 18. Verify every figure link resolves and every file on disk appears in the §5 tree (§7.7).

@@ -453,4 +453,4 @@ Shared tooling lives in `results/new_experiments/tools/`:
 | `write_generation_manifest.py` | PDF §1.4 manifests, with the output contract re-measured from the bank |
 
 Full protocol, DGP definitions, methodology and the complete PDF conformance cross-check:
-`dataset/Heston/new_experiments/guideline_new_experiment.md` (see §11).
+`results/new_experiments/guideline_new_experiment.md` (see §11).
