@@ -1,0 +1,197 @@
+{
+  "mixture_fidelity": {
+    "generated_low_confidence_fraction": 0.354248046875,
+    "generated_mean_max_probability": 0.6754077148437501,
+    "generated_mean_posterior_entropy": 0.8406071767481242,
+    "generated_regime_proportions": [
+      0.1719970703125,
+      0.1861572265625,
+      0.0015869140625,
+      0.0028076171875,
+      0.197509765625,
+      0.2047119140625,
+      0.11669921875,
+      0.1185302734375
+    ],
+    "parameters": {
+      "rho": {
+        "mean_error": 0.0188407763671875,
+        "q05_error": 0.08880299999999997,
+        "q95_error": 0.08250000000000002,
+        "std_ratio": 0.7778351732540654,
+        "support_normalized_wasserstein": 0.10140454101562497,
+        "wasserstein": 0.20078099121093745
+      },
+      "theta": {
+        "mean_error": 0.009782070312499995,
+        "q05_error": 0.00015999999999999868,
+        "q95_error": 5.333333333332191e-05,
+        "std_ratio": 0.9294117981258042,
+        "support_normalized_wasserstein": 0.12227587890624998,
+        "wasserstein": 0.009782070312499998
+      },
+      "xi": {
+        "mean_error": 0.16956192016601568,
+        "q05_error": 0.0017499999999999738,
+        "q95_error": 0.040750000000000064,
+        "std_ratio": 0.7604499418927927,
+        "support_normalized_wasserstein": 0.22608923339843756,
+        "wasserstein": 0.1695669250488282
+      }
+    },
+    "regime_proportion_tvd": 0.2509765625,
+    "target_low_confidence_fraction": 0.1717529296875,
+    "target_mean_max_probability": 0.7921633707682292,
+    "target_mean_posterior_entropy": 0.6007943546100145,
+    "target_regime_proportions": [
+      0.1231689453125,
+      0.1229248046875,
+      0.11962890625,
+      0.120361328125,
+      0.133056640625,
+      0.1302490234375,
+      0.124267578125,
+      0.1263427734375
+    ]
+  },
+  "novelty": {
+    "distinct_nearest_training_paths": 3162,
+    "mean_standardized_nearest_train_path_rmse": 0.9523682594299316,
+    "median_standardized_nearest_train_path_rmse": 0.9881918430328369
+  },
+  "observable_fidelity": {
+    "abs_return_acf_rmse_lags_1_50": 0.0972718211617166,
+    "excess_kurtosis_error": 2.6469418327249725,
+    "leverage_curve_rmse_lags_0_20": 0.007750393234927763,
+    "realized_volatility_wasserstein": 0.03710366016186727,
+    "return_std_error": 0.0014450575778067552,
+    "squared_return_acf_rmse_lags_1_50": 0.03724600065756544,
+    "terminal_log_price_ks": 0.0391845703125
+  },
+  "oracle_gate": {
+    "configuration": {
+      "max_features": 0.7,
+      "min_samples_leaf": 2,
+      "minimum_accuracy": 0.9,
+      "random_state": 42,
+      "trees": 500
+    },
+    "confusion_matrix": [
+      [
+        967,
+        23,
+        18,
+        0,
+        0,
+        9,
+        1,
+        6
+      ],
+      [
+        10,
+        980,
+        0,
+        19,
+        7,
+        0,
+        7,
+        1
+      ],
+      [
+        23,
+        0,
+        950,
+        6,
+        3,
+        2,
+        36,
+        4
+      ],
+      [
+        0,
+        25,
+        5,
+        947,
+        4,
+        1,
+        6,
+        36
+      ],
+      [
+        0,
+        4,
+        0,
+        0,
+        881,
+        98,
+        36,
+        5
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        106,
+        881,
+        6,
+        31
+      ],
+      [
+        1,
+        4,
+        1,
+        0,
+        78,
+        8,
+        918,
+        14
+      ],
+      [
+        3,
+        1,
+        0,
+        3,
+        9,
+        72,
+        10,
+        926
+      ]
+    ],
+    "eight_regime_accuracy": 0.909423828125,
+    "num_features": 77,
+    "parameter_state_accuracy": {
+      "rho": 0.95654296875,
+      "theta": 0.98291015625,
+      "xi": 0.95556640625
+    },
+    "train_paths": 32768,
+    "validation_paths": 8192,
+    "validation_predicted_counts": [
+      1004,
+      1037,
+      974,
+      975,
+      1088,
+      1071,
+      1020,
+      1023
+    ],
+    "validation_true_counts": [
+      1024,
+      1024,
+      1024,
+      1024,
+      1024,
+      1024,
+      1024,
+      1024
+    ]
+  },
+  "sources": {
+    "generated": "/home/tbasseras/benchmark/results/new_experiments/experiment_B/LS4/generated_paths/seed_4/generated_paths_8192x128.npy",
+    "oracle": "/home/tbasseras/benchmark/dataset/Heston/new_experiments/experiment_B/oracle/oracle.joblib",
+    "test": "/home/tbasseras/benchmark/dataset/Heston/new_experiments/experiment_B/test.npy",
+    "train": "/home/tbasseras/benchmark/dataset/Heston/new_experiments/experiment_B/train.npy"
+  }
+}

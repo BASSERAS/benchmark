@@ -159,14 +159,15 @@ it is the cleanest available evidence that no tuning leaked into the reported ru
 | Test file | `dataset/Heston/new_experiments/experiment_A/test.npy` |
 | Generated bank size | 8192 × 128 `float64`, per seed |
 | Model seeds | 0, 1, 2, 3, 4 (training seed = generation seed, shared RNG stream) |
-| Official code + revision | **Yes** — `methods/LS4/code`, released `solar_weekly` preset, at benchmark revision `27df71e` |
+| Official code + revision | **Yes** — `methods/LS4/code`, released `solar_weekly` preset, at benchmark revision `27df71e`; experiment wrapper `code/train_ls4_experiment.py` committed as `ba7c748` |
 | Hyperparameters | **Official defaults**, not validation-selected. No tuning was performed; `disc.npy` was used for scoring only. |
 | Trainable parameters | 2,146,857 |
 | Training time | 1874 s per seed (≈31 min) |
 | Generation time | 8.5 s per seed |
 | Hardware | 1 × A100-SXM4-80GB, 8 pinned cores of 2 × AMD EPYC 7763 |
 | Failed / unstable runs | **0** — all 5 seeds ran 100/100 epochs, no NaN in any bank |
-| Known non-conformance | `S₀ ≠ 100` (max deviation 1.4 × 10⁻²). Measured effect on every metric above: **nil** — see `generation_manifest.json → numerical_repair` and guideline §11.5. |
+| Declared post-hoc transformation (§1.3) | **`S ← 100·S/S[:,:1]`**, applied once to every bank. LS4 generates in standardized *price* space with no `t = 0` anchor, so raw `S₀` deviated by up to 1.4 × 10⁻² — beyond §1.4's "ordinary floating-point tolerance". The repair preserves every log-return to 1e-12, so the path law is untouched; the four primary metrics above are **bit-identical** pre- and post-repair, as predicted by the evaluators' `log(S/S[:,:1])` normalization and then verified. Recorded per seed in `generation_manifest.json → numerical_repair`. |
+| Known non-conformance | **None.** All §1.4 bullets hold: finite, strictly positive, 8192 × 128, `float64`, `S₀ == 100.0` exactly — re-measured from each array on disk by `write_generation_manifest.py`, not asserted. |
 
 Machine-readable in `generated_paths/seed_<q>/generation_manifest.json`.
 
@@ -183,66 +184,65 @@ Separate suite, separate question. These are the repo's usual metrics, computed 
 path, which is not part of the generator's output contract here. Their cells read `n/a` —
 never 0, which would silently flatter the method.
 
+> **The two suites disagree, and that disagreement is the result.** On this battery LS4 looks
+> excellent: A18 discriminative (GRU) 0.00638 and A19 predictive (GRU) 0.04641 sit **at or
+> below the perfect floor** — a GRU discriminator cannot separate LS4's paths from real ones
+> any better than it separates two independent draws of the true DGP. Yet §1 shows LS4
+> recovers only 59 % of the memory signal and carries a ≈53 σ bias in `future_rv_no_hit_mean`.
+>
+> Both are correct. A1–A32 measure *marginal and short-lag* structure, and LS4 gets those
+> nearly right. The protocol evaluator measures a *conditional, 32-step-delayed* dependence
+> that no marginal or short-lag statistic is sensitive to. This is precisely the blind spot
+> the PDF's DGP was designed to expose: **a model can saturate the standard battery and still
+> miss the structure that matters.** Read §1 first; §2 is context, not a verdict.
+
 ### 2.1 A1–A34
 
 | Metric | LS4 (mean ± std) | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |---|---|---|---|---|---|---|---|
 | **Fat Tail** | | | | | | | |
-| A1 Kurtosis Error ↓ | 0.202858 ± 0.11 | 0.169217 | 0.106189 | 0.0998008 | 0.307382 | 0.331699 | 0.0601011 ± 0.0382 |
+| A1 Kurtosis Error ↓ | 0.202463 ± 0.11 | 0.169246 | 0.105178 | 0.0992835 | 0.307199 | 0.331405 | 0.0601011 ± 0.0382 |
 | A2 \|r\| q95 Error ↓ | 0.000373524 ± 0.000359 | 0.000979206 | 0.000202931 | 0.000278215 | 0.00036717 | 4.00979e-05 | 6.48561e-05 ± 4.46e-05 |
 | A3 \|r\| q99 Error ↓ | 0.000270752 ± 0.000205 | 0.000549112 | 1.14535e-05 | 0.000386375 | 0.000212303 | 0.000194518 | 8.275e-05 ± 3.63e-05 |
 | A4 Tail QQ Error ↓ | 0.000474312 ± 0.000292 | 0.00090218 | 0.000185131 | 0.000218592 | 0.000497795 | 0.00056786 | 9.25658e-05 ± 4.42e-05 |
-| A5 Hill Tail Index Error ↓ | 0.169118 ± 0.146 | 0.392069 | 0.000940545 | 0.165716 | 0.199678 | 0.0871843 | 0.407724 ± 0.315 |
+| A5 Hill Tail Index Error ↓ | 0.182615 ± 0.106 | 0.338815 | 0.0474456 | 0.165096 | 0.209303 | 0.152414 | 0.407724 ± 0.315 |
 | **Distribution** | | | | | | | |
-| A6 Path MMD² ↓ | 0.00187134 ± 0.000208 | 0.00199671 | 0.00172138 | 0.00185488 | 0.00163281 | 0.00215091 | 0.00177285 ± 5.64e-05 |
-| A7 Terminal MMD² ↓ | 0.00207242 ± 0.00116 | 0.00408016 | 0.00160771 | 0.00143531 | 0.00119328 | 0.00204565 | 0.00170387 ± 0.000258 |
-| A8 Increment MMD² ↓ | 0.0013309 ± 0.000225 | 0.00133697 | 0.00127987 | 0.00106763 | 0.00128229 | 0.00168775 | 0.00107654 ± 6.13e-05 |
-| A9 Volatility MMD ↓ | 0.0172279 ± 0.00476 | 0.0191481 | 0.01301 | 0.0124165 | 0.017572 | 0.0239928 | 0.0105444 ± 0.00044 |
-| A10 Terminal SWD ↓ | 1.19568 ± 0.408 | 1.82962 | 0.956541 | 0.990391 | 0.83068 | 1.37118 | 1.02907 ± 0.185 |
-| A11 Path SWD ↓ | 0.616316 ± 0.125 | 0.743169 | 0.581007 | 0.572008 | 0.44813 | 0.737266 | 0.542455 ± 0.0723 |
+| A6 Path MMD² ↓ | 0.00199709 ± 0.000231 | 0.00237726 | 0.00202278 | 0.00177327 | 0.00194142 | 0.00187075 | 0.00177285 ± 5.64e-05 |
+| A7 Terminal MMD² ↓ | 0.00232808 ± 0.00111 | 0.00406597 | 0.00152917 | 0.00179947 | 0.00280769 | 0.00143808 | 0.00170387 ± 0.000258 |
+| A8 Increment MMD² ↓ | 0.00131215 ± 0.000165 | 0.00110786 | 0.00131853 | 0.00150995 | 0.00119485 | 0.00142957 | 0.00107654 ± 6.13e-05 |
+| A9 Volatility MMD ↓ | 0.0175338 ± 0.00182 | 0.0201817 | 0.0164502 | 0.0186837 | 0.0161123 | 0.0162412 | 0.0105444 ± 0.00044 |
+| A10 Terminal SWD ↓ | 1.5827 ± 0.657 | 2.67987 | 0.969072 | 1.33379 | 1.63375 | 1.297 | 1.02907 ± 0.185 |
+| A11 Path SWD ↓ | 0.663082 ± 0.0887 | 0.797373 | 0.547805 | 0.662744 | 0.654541 | 0.652945 | 0.542455 ± 0.0723 |
 | A12 RV Law Loss ↓ | 0.40919 ± 0.0954 | 0.550528 | 0.307957 | 0.354809 | 0.376749 | 0.455909 | 0.0622546 ± 0.0132 |
-| A13 Mean Path RMSE ↓ | 0.271958 ± 0.137 | 0.105951 | 0.302273 | 0.47636 | 0.274885 | 0.200323 | 0.119593 ± 0.0243 |
+| A13 Mean Path RMSE ↓ | 0.272603 ± 0.139 | 0.103931 | 0.3077 | 0.477461 | 0.274967 | 0.198954 | 0.119593 ± 0.0243 |
 | A14 KS Log-returns ↓ | 0.0165854 ± 0.00143 | 0.0151367 | 0.0165429 | 0.0178146 | 0.0152184 | 0.0182144 | 0.00113131 ± 9.72e-05 |
 | A15 Skewness Error ↓ | 0.0552681 ± 0.0347 | 0.0867337 | 0.0203442 | 0.0180106 | 0.0619081 | 0.0893441 | 0.00329532 ± 0.00104 |
 | A16 QQ RMSE ↓ | 0.000604692 ± 5.22e-05 | 0.000581868 | 0.000576318 | 0.000616089 | 0.000558748 | 0.000690437 | 4.91034e-05 ± 8.54e-06 |
-| A17 Terminal KS ↓ | 0.024707 ± 0.00934 | 0.0402832 | 0.0201416 | 0.0194092 | 0.0263672 | 0.017334 | 0.0120117 ± 0.00319 |
+| A17 Terminal KS ↓ | 0.0247803 ± 0.00912 | 0.0400391 | 0.0206299 | 0.0194092 | 0.0262451 | 0.0175781 | 0.0120117 ± 0.00319 |
 | **Adversarial** | | | | | | | |
-| A18 Discriminative (GRU) ↓ | 0.0059506 ± 0.00333 | 0.010528 | 0.006866 | 0.001373 | 0.006256 | 0.00473 | 0.0073542 ± 0.00565 |
-| A18 Discriminative (MLP) ↓ | 0.0036924 ± 0.00215 | 0.003509 | 0.00534 | 0.003204 | 0.005951 | 0.000458 | 0.0042418 ± 0.00229 |
+| A18 Discriminative (GRU) ↓ | 0.0063776 ± 0.00256 | 0.003204 | 0.00534 | 0.008697 | 0.009307 | 0.00534 | 0.0073542 ± 0.00565 |
+| A18 Discriminative (MLP) ↓ | 0.004486 ± 0.00519 | 0.000153 | 0.012664 | 0.006561 | 0.001984 | 0.001068 | 0.0042418 ± 0.00229 |
 | **Predictive** | | | | | | | |
-| A19 Predictive (GRU) ↓ | 0.046436 ± 3.69e-05 | 0.046501 | 0.046428 | 0.046423 | 0.046418 | 0.04641 | 0.0464168 ± 1.53e-05 |
-| A19 Predictive (MLP) ↓ | 0.048231 ± 0.000261 | 0.048507 | 0.047996 | 0.048303 | 0.048429 | 0.04792 | 0.048241 ± 0.00042 |
+| A19 Predictive (GRU) ↓ | 0.046411 ± 5.24e-06 | 0.046418 | 0.046415 | 0.046409 | 0.046407 | 0.046406 | 0.0464168 ± 1.53e-05 |
+| A19 Predictive (MLP) ↓ | 0.0480982 ± 9.26e-05 | 0.048176 | 0.047977 | 0.048141 | 0.048175 | 0.048022 | 0.048241 ± 0.00042 |
 | **Temporal** | | | | | | | |
-| A20 Covariance Error ↓ | 27.6087 ± 34.4 | 86.3908 | 9.30783 | 11.2868 | 1.63729 | 29.4209 | 17.2826 ± 9.01 |
+| A20 Covariance Error ↓ | 27.6665 ± 34.3 | 86.309 | 9.63944 | 11.3465 | 1.66924 | 29.3686 | 17.2826 ± 9.01 |
 | A21 ACF \|r\| ↓ | 0.00452511 ± 0.00146 | 0.00659347 | 0.00476083 | 0.00363649 | 0.00491748 | 0.00271731 | 0.00160018 ± 0.000752 |
 | A22 ACF r² ↓ | 0.00370279 ± 0.00165 | 0.00222566 | 0.00342784 | 0.00454972 | 0.00221094 | 0.00609982 | 0.00129902 ± 0.000643 |
 | A23 ACF lag-1 \|r\| Error ↓ | 0.00452018 ± 0.00243 | 0.00643519 | 0.00614584 | 0.00472568 | 0.00490128 | 0.000392886 | 0.00151053 ± 0.00114 |
 | A24 ACF lag-1 r² Error ↓ | 0.00675596 ± 0.00249 | 0.00598226 | 0.00681632 | 0.00714651 | 0.00345493 | 0.0103798 | 0.000984905 ± 0.000792 |
 | **Volatility** | | | | | | | |
-| A25 Mean RMSE ↓ | 0.57119 ± 0.197 | 0.300022 | 0.439594 | 0.701729 | 0.781427 | 0.633175 | 0.203377 ± 0.121 |
-| A26 Std Error ↓ | 0.0250984 ± 0.0158 | 0.0110969 | 0.0327758 | 0.040315 | 0.00524082 | 0.0360636 | 0.00441299 ± 0.00239 |
+| A25 Mean RMSE ↓ | 0.57019 ± 0.2 | 0.290122 | 0.446646 | 0.703081 | 0.781556 | 0.629545 | 0.203377 ± 0.121 |
+| A26 Std Error ↓ | 0.0251112 ± 0.0159 | 0.0109066 | 0.0329243 | 0.0403493 | 0.00523559 | 0.0361399 | 0.00441299 ± 0.00239 |
 | A27 Log-return Std Error ↓ | 0.000202294 ± 0.00012 | 4.04069e-05 | 0.000222959 | 0.000231223 | 0.000150397 | 0.000366481 | 2.79631e-05 ± 1.44e-05 |
 | A28 Kurtosis Ratio → 1 | 1.04109 ± 0.122 | 0.82611 | 1.09276 | 1.11878 | 1.06439 | 1.1034 | 0.991589 ± 0.00428 |
 | A29 Sigma Mean Error ↓ | 0.00543401 ± 0.00202 | 0.00283781 | 0.0054377 | 0.00597768 | 0.00456548 | 0.00835137 | 0.000392072 ± 0.000269 |
-| A30 Vol Path RMSE ↓ | 0.328006 ± 0.251 | 0.773182 | 0.210777 | 0.23335 | 0.164276 | 0.258445 | 0.190091 ± 0.0906 |
+| A30 Vol Path RMSE ↓ | 0.327853 ± 0.251 | 0.771873 | 0.211766 | 0.234079 | 0.164113 | 0.257433 | 0.190091 ± 0.0906 |
 | A31 Rolling Vol KS ↓ | 0.0691744 ± 0.00281 | 0.0693866 | 0.0711958 | 0.0689042 | 0.0646268 | 0.0717585 | 0.0019172 ± 0.000476 |
 | A32 Vol-of-vol Error ↓ | 0.000305445 ± 3.72e-05 | 0.000309433 | 0.000315231 | 0.000330883 | 0.000330659 | 0.000241018 | 2.13612e-05 ± 1.1e-05 |
 | **Heston-specific (dropped)** | | | | | | | |
 | A33 Sigma Correlation (dropped) | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
 | A34 Sigma RMSE (dropped) | n/a | n/a | n/a | n/a | n/a | n/a | n/a |
-
-**Reading it.** The adversarial and predictive scores (A18, A19) sit *at or below the perfect
-floor* — a discriminator cannot separate LS4 paths from real ones, and a forecaster trained on
-LS4 paths performs identically to one trained on real paths. On the standard battery, LS4 is
-essentially indistinguishable from the DGP.
-
-That is precisely the point of Experiment A: **A18/A19 do not see the failure**. The metrics
-that do are the volatility-regime ones — A31 Rolling Vol KS (0.0692 vs floor 0.0019, **36×**),
-A12 RV Law Loss (0.409 vs 0.062, **6.6×**), A14 KS Log-returns (0.0166 vs 0.0011, **15×**).
-All three are measuring the same thing the protocol evaluator measures: the *distribution of
-realised volatility* is wrong even though the paths look right. The standard battery scores
-LS4 as near-perfect; the protocol evaluator scores it at 59 %. **The protocol metric is the
-one that is right.**
 
 ### 2.2 B — curve-shape metrics
 
@@ -252,7 +252,7 @@ is the total-variation distance over the 2-D occupancy grid, in percent.
 
 | Plot | Measure | LS4 (mean ± std) | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |---|---|---|---|---|---|---|---|---|
-| **Grid TVD (%)** | — | 217.972 ± 28.5 | 264.473 | 190.935 | 199.738 | 220.375 | 214.338 | 155.077 ± 11.9 |
+| **Grid TVD (%)** | — | 217.113 ± 29 | 264.53 | 189.39 | 199.06 | 219.345 | 213.242 | 155.077 ± 11.9 |
 | **Log-return histogram** | MSE (funct/der/sec-der avg) | 0.360244 ± 0.0107 | 0.347641 | 0.37181 | 0.362361 | 0.35067 | 0.368739 | 0.0545244 ± 0.0165 |
 |  | % error | 107.839 ± 8.14 | 115.725 | 113.711 | 97.7613 | 111.465 | 100.53 | 95.391 ± 10.9 |
 |  | NRMSE | 11.0789 ± 1.09 | 10.8353 | 11.302 | 10.8936 | 12.6932 | 9.67012 | 8.62821 ± 1.4 |
@@ -283,10 +283,6 @@ is the total-variation distance over the 2-D occupancy grid, in percent.
 |  | NRMSE | 34914.3 ± 1.15e+03 | 36362.4 | 34615.3 | 35440.3 | 33223.7 | 34929.8 | 10677.2 ± 384 |
 |  | CVaR₉₀ | 3.16732 ± 0.196 | 2.96976 | 3.24666 | 3.25405 | 2.95966 | 3.40644 | 0.115426 ± 0.0234 |
 |  | CVaR₉₅ | 3.18372 ± 0.195 | 2.98584 | 3.26101 | 3.27181 | 2.97835 | 3.42156 | 0.122115 ± 0.0214 |
-
-The worst offender is again **rolling volatility** (MSE 13.0 vs floor 0.363, **36×** — the same
-ratio as A31 Rolling Vol KS). The ACF panels are within ~2× of the floor, so the *clustering*
-is right; it is the *level distribution* of volatility that is wrong. Consistent with §1.
 
 *Reproduce:*
 `python ../../tools/make_metrics_tables.py --model-dir . --floor-dir ../perfect_floor --label LS4 --table A`

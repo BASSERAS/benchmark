@@ -44,23 +44,24 @@
     "name": "LS4",
     "official_implementation": true,
     "source_path": "methods/LS4/code",
-    "source_revision": "27df71e",
+    "source_revision": "27df71e (methods/LS4/code at training time); experiment wrapper train_ls4_experiment.py committed as ba7c748",
     "trainable_parameters": 2146857,
     "variant": "LS4 (released solar_weekly preset)"
   },
   "numerical_repair": {
-    "applied": false,
-    "note": "Generator emits prices in standardized price space with no t=0 anchor. Measured effect on every PDF evaluator metric is nil: the evaluators and the oracle feature builder all normalize by S[:, :1], so renormalizing the bank moves the reported metrics only in the 15th-16th significant figure.",
-    "open_non_conformance": "PDF \u00a77 checklist item 5 (bank must begin at S0 = 100)",
-    "s0_max_relative_deviation": 0.008130950927734304
+    "applied": true,
+    "declared_under": "PDF \u00a71.3 (post-hoc transformation, declared) and \u00a71.4 (model-specific numerical repair)",
+    "operation": "S <- 100 * S / S[:, 0]",
+    "reason": "PDF \u00a71.4 and \u00a77 checklist item 5 require every bank to begin at S0 = 100; the raw generator emits prices in standardized price space and is not anchored at t = 0.",
+    "residual_s0_max_relative_deviation": 0.0
   },
   "output_contract": {
     "all_finite": true,
     "all_strictly_positive": true,
     "dtype": "float64",
     "dtype_is_float32_or_float64": true,
-    "s0_max_relative_deviation": 0.008130950927734304,
-    "s0_within_floating_point_tolerance": false,
+    "s0_max_relative_deviation": 0.0,
+    "s0_within_floating_point_tolerance": true,
     "shape": [
       8192,
       128

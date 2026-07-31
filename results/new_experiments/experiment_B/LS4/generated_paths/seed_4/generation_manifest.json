@@ -1,0 +1,82 @@
+{
+  "compute": {
+    "epochs_max": 100,
+    "epochs_run": 100,
+    "generation_time_sec": 9.2,
+    "run_date": "2026-07-31",
+    "training_time_sec": 1398.0
+  },
+  "data_files": {
+    "test": "dataset/Heston/new_experiments/experiment_B/test.npy",
+    "train": "dataset/Heston/new_experiments/experiment_B/train.npy",
+    "validation": "dataset/Heston/new_experiments/experiment_B/disc.npy"
+  },
+  "experiment": "B",
+  "failure_information": {
+    "failed_or_unstable": false,
+    "first_nan_epoch": null,
+    "nan_in_bank": false,
+    "reason": null
+  },
+  "hardware": {
+    "cores_pinned": 8,
+    "cpu": "2x AMD EPYC 7763",
+    "gpu": "A100-SXM4-80GB",
+    "gpus_used": 1,
+    "note": "One GPU per run; at most two runs concurrently."
+  },
+  "hyperparameter_origin": "official-default",
+  "hyperparameters": {
+    "batch_size": 128,
+    "d_model": 64,
+    "d_state": 64,
+    "ema_lamb": 0.99,
+    "ema_start_step": 200,
+    "epochs": 100,
+    "latent_type": "split",
+    "lr": 0.001,
+    "n_layers": 4,
+    "s4_type": "s4",
+    "weight_decay": 0.0,
+    "z_dim": 5
+  },
+  "model": {
+    "name": "LS4",
+    "official_implementation": true,
+    "source_path": "methods/LS4/code",
+    "source_revision": "27df71e (methods/LS4/code at training time); experiment wrapper train_ls4_experiment.py committed as ba7c748",
+    "trainable_parameters": 2146857,
+    "variant": "LS4 (released solar_weekly preset)"
+  },
+  "numerical_repair": {
+    "applied": true,
+    "declared_under": "PDF \u00a71.3 (post-hoc transformation, declared) and \u00a71.4 (model-specific numerical repair)",
+    "operation": "S <- 100 * S / S[:, 0]",
+    "reason": "PDF \u00a71.4 and \u00a77 checklist item 5 require every bank to begin at S0 = 100; the raw generator emits prices in standardized price space and is not anchored at t = 0.",
+    "residual_s0_max_relative_deviation": 0.0
+  },
+  "output_contract": {
+    "all_finite": true,
+    "all_strictly_positive": true,
+    "dtype": "float64",
+    "dtype_is_float32_or_float64": true,
+    "s0_max_relative_deviation": 0.0,
+    "s0_within_floating_point_tolerance": true,
+    "shape": [
+      8192,
+      128
+    ]
+  },
+  "preprocessing": {
+    "description": "Per-dataset affine standardization of raw prices: x -> (x - mu) / sigma, inverted before saving the bank. No log-return transform, no quantile map, no dimensionality reduction.",
+    "fitted_on": "train.npy only (PDF \u00a71.3)",
+    "mu": 100.09714689788022,
+    "sigma": 11.516370009298313,
+    "transform": "global_standardize"
+  },
+  "seeds": {
+    "generation_seed": 4,
+    "shared_rng_stream": true,
+    "training_seed": 4
+  }
+}

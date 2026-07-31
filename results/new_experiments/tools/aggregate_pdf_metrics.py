@@ -34,10 +34,10 @@ def flatten(node, prefix=""):
     return out
 
 
-def collect(directory, pattern):
-    paths = sorted(glob.glob(os.path.join(directory, "pdf_metrics", pattern)))
+def collect(directory, pattern, subdir="pdf_metrics"):
+    paths = sorted(glob.glob(os.path.join(directory, subdir, pattern)))
     if not paths:
-        raise SystemExit(f"no evaluator JSON matching {pattern} under {directory}/pdf_metrics")
+        raise SystemExit(f"no evaluator JSON matching {pattern} under {directory}/{subdir}")
     series, seeds = {}, []
     for p in paths:
         seeds.append(os.path.basename(p))
@@ -66,10 +66,16 @@ def main():
     ap.add_argument("--label", default="Model")
     ap.add_argument("--exclude-prefix", nargs="*", default=[],
                     help="dotted-path prefixes to omit, e.g. configuration oracle_gate")
+    # PDF §7 checklist item 2 requires evidence that disc.npy was used for validation and
+    # test.npy only after the config freeze. That evidence is a second scoring pass whose
+    # JSONs live in pdf_metrics_validation/, so the table has to be renderable from either
+    # directory by the same code -- otherwise the validation column gets hand-copied.
+    ap.add_argument("--subdir", default="pdf_metrics",
+                    help="pdf_metrics (test side) or pdf_metrics_validation (disc side)")
     a = ap.parse_args()
 
-    model, model_files = collect(a.model_dir, a.pattern)
-    floor, floor_files = (collect(a.floor_dir, a.pattern) if a.floor_dir else ({}, []))
+    model, model_files = collect(a.model_dir, a.pattern, a.subdir)
+    floor, floor_files = (collect(a.floor_dir, a.pattern, a.subdir) if a.floor_dir else ({}, []))
 
     print(f"<!-- model seeds: {len(model_files)} | floor seeds: {len(floor_files)} -->")
     for name, series in (("model", model), ("floor", floor)):

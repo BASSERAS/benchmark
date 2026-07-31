@@ -1056,7 +1056,7 @@ Experiment B rather than Experiment A's remaining seed 4.
 | 2 | `protocol/experiments/path_dt_experiments/__init__.py` is **empty** upstream and vendored empty. Not a truncation. | expected |
 | 3 | `manifest.json` float fields can differ in the **last ULP** across numpy versions. Compare with `np.allclose`, not `==`. Shapes, seeds and `regime_counts` are exact and must match. **Confirmed empirically** — see §11.1: both manifests miss the PDF's SHA-256 while all six `.npy` files match bit-for-bit. | expected, measured |
 | 4 | `oracle.joblib` (~554 MB) **cannot be byte-reproduced** across scikit-learn/joblib versions even with `random_state=42`. The **gate accuracy** is the reproducible artefact; `gate_report.json` is committed, the blob is gitignored. Refit locally if missing. **Confirmed empirically** — see §11.1: `gate_report.json` matches the PDF's SHA-256 byte-for-byte, including all 64 confusion-matrix entries, while the blob does not. | expected, measured |
-| 8 | **`S₀ ≠ 100` in every LS4 bank.** PDF §1.4 requires banks to "begin at S₀ = 100, up to ordinary floating-point tolerance"; §7 checklist item 5 repeats it. LS4 generates in standardized *price* space (`x → (x−μ)/σ`) with no anchor at `t = 0`, so `S₀` lands at 100 ± 0.07 (A) / ± 0.40 (B), max per-path deviation **1.4 × 10⁻²**. That is ten orders of magnitude beyond float tolerance — a genuine non-conformance, not a rounding artefact. **Measured impact on every PDF metric: nil** (§11.3). Recorded per-seed in `generation_manifest.json → numerical_repair.open_non_conformance`. | **open, quantified** |
+| 8 | **`S₀ ≠ 100` in every raw LS4 bank.** PDF §1.4 requires banks to "begin at S₀ = 100, up to ordinary floating-point tolerance"; §7 checklist item 5 repeats it. LS4 generates in standardized *price* space (`x → (x−μ)/σ`) with no anchor at `t = 0`, so raw `S₀` deviated by up to **3.5 × 10⁻²** — ten orders of magnitude beyond float tolerance, a genuine non-conformance, not a rounding artefact. **Measured impact on every PDF metric: nil** (§11.5), but the contract is a contract. Repaired by the declared renormalization `S ← 100·S/S[:,:1]`, which preserves every log-return to 1e-12; §2 battery re-run because it is level-sensitive. | **resolved — declared repair, §11.5** |
 | 5 | Perfect-floor seeds are **1000–1004** (`IND_SEED_BASE = 1000` from `metrics/compute_perfect_recovery.py`), disjoint from protocol seeds 0/1/2/100/101. | convention |
 | 6 | `plot_diagnostics.py` draws a **Heston-theory** curve that is invalid for both new DGPs. It is inside a try/except (`TB = None` on failure). Suppress it or caption it as non-applicable. | known |
 | 7 | **No Git LFS** (decision reversed 2026-07-30). Add no new LFS entries. The 8192×128 `float64` banks are ~8 MB each and **are committed normally**; only artefacts over GitHub's 100 MiB per-file cap get an explicit `.gitignore` entry — currently just `oracle.joblib`. | policy |
@@ -1175,7 +1175,7 @@ PDF §3.2: `trees 500`, `min_samples_leaf 2`, `max_features 0.7`, `random_state 
 | 2 | `disc.npy` used only for validation; `test.npy` not inspected pre-freeze | ✅ — and now **evidenced** by `pdf_metrics_validation/` (§11.4) |
 | 3 | No latent vol, regime label, oracle output, or competing-model result used | ✅ — generator reads one array, `train.npy` |
 | 4 | Five banks of shape 8192 × 128, or a documented deterministic exception | ✅ — seeds 0–4, no exceptions |
-| 5 | Every bank finite, positive, **starts at 100**, in price units | ⚠️ **finite ✅, positive ✅, price units ✅, S₀ ✗** — see §10 row 8 and §11.5 |
+| 5 | Every bank finite, positive, **starts at 100**, in price units | ✅ all four — `S₀ == 100.0` exactly after the declared repair of §11.5; re-measured from the array on disk by `write_generation_manifest.py`, not asserted |
 | 6 | Manifests contain code revision, seeds, preprocessing, hyperparameters, compute, failure info | ✅ — **added 2026-07-31** via `write_generation_manifest.py`; the old `metadata.json` alone did *not* satisfy this |
 | 7 | Supplied evaluator scripts run unchanged | ✅ — `git status --porcelain dataset/Heston/new_experiments/protocol` is empty; single vendoring commit `ba7c748` |
 | 8 | Per-seed metrics and aggregate uncertainty retained; no seed dropped on its score | ✅ — every seed is a column in the README tables; 0 failed runs |
@@ -1228,11 +1228,17 @@ worse** on the memory metrics. That is the opposite of the signature of `disc.np
 overfitting, and it is the cleanest available evidence that the test split stayed blind.
 **Keep this table in the submission.**
 
-### 11.5 The S₀ non-conformance, quantified
+### 11.5 The S₀ non-conformance — found, quantified, **repaired**
+
+> **Status: resolved.** The repair below was applied to all ten LS4 banks (5 seeds × 2
+> experiments) and is declared in every `generation_manifest.json`. This subsection is kept
+> in full because the *reasoning* is the reusable part: the same failure will recur for any
+> method that generates in price space without a `t = 0` anchor, and the next person needs
+> the invariance argument and the measurement, not just the one-line fix.
 
 PDF §1.4 allows "ordinary floating-point tolerance". A float64 round-trip is ~10⁻¹²
-relative. LS4's banks are off by up to **1.4 × 10⁻²**. The tolerance clause does not cover
-this; it is a real violation of checklist item 5.
+relative. LS4's raw banks were off by up to **3.5 × 10⁻²**. The tolerance clause does not
+cover this; it was a real violation of checklist item 5.
 
 **Root cause.** `train_ls4_experiment.py` does `Xg = gen_s[:, :, 0] * sigma + mu` — the model
 generates the whole path in standardized *price* space and nothing pins `t = 0`. A
@@ -1256,23 +1262,51 @@ early_history_incremental_r2_error  0.13966753072671312 -> 0.139667530726713
 future_rv_wasserstein               0.013922297890306213 -> 0.013922297890306216
 ```
 
-**The remedy, if applied**, is a one-line declared repair — PDF §1.3 permits declared
-post-hoc transformations and §1.4 has a field for exactly this:
+**The remedy, applied.** A one-line declared repair — PDF §1.3 permits declared post-hoc
+transformations and §1.4 has a field for exactly this:
 
 ```python
 S = 100.0 * S / S[:, :1]
 ```
 
-It must then be recorded via `write_generation_manifest.py --repair s0_renormalization`,
-which writes the formula and the residual deviation into
-`generation_manifest.json → numerical_repair`. Note the cost: PDF metrics are unaffected,
-but the README §2 battery contains **level-sensitive** metrics (A13 mean-path RMSE, A25 mean
-RMSE, and the price-space MMD/SWD family A6/A7/A10/A11), so applying the repair obliges a
-re-run of `compute_metrics_experiment.py` and a rewrite of README §2.
+Applied in place to all ten LS4 banks, each guarded by four assertions that must hold
+*after* the write, so a silent corruption cannot pass:
 
-Until that decision is taken, the deviation is **declared, not hidden** — every
-`generation_manifest.json` carries `numerical_repair.open_non_conformance` and
-`output_contract.s0_within_floating_point_tolerance: false`.
+```python
+assert np.isfinite(r).all() and (r > 0).all()          # §1.4 finite + strictly positive
+assert np.all(r[:, 0] == 100.0)                        # §1.4 / §7 item 5, exactly
+assert np.allclose(np.diff(np.log(a), axis=1),         # the path law is untouched:
+                   np.diff(np.log(r), axis=1),         # every log-return preserved
+                   rtol=0, atol=1e-12)
+```
+
+Measured deviations before → after:
+
+| | seed 0 | seed 1 | seed 2 | seed 3 | seed 4 |
+|---|---|---|---|---|---|
+| Experiment A | 8.13e-03 | 1.03e-02 | 1.42e-02 | 1.38e-02 | 7.63e-03 |
+| Experiment B | 1.48e-02 | 3.25e-02 | 2.23e-02 | 3.48e-02 | 7.07e-03 |
+| after (both) | **0** | **0** | **0** | **0** | **0** |
+
+Recorded via `write_generation_manifest.py --repair s0_renormalization`, which writes the
+formula, the justification, and the residual deviation into
+`generation_manifest.json → numerical_repair`, and independently re-measures
+`output_contract` from the array on disk — so the manifest cannot claim a conformance the
+bank does not have.
+
+**The cost, paid.** PDF metrics were unaffected (predicted above, then confirmed: A's four
+primary metrics are bit-identical pre- and post-repair). But the README §2 battery contains
+**level-sensitive** metrics — A13 mean-path RMSE, A25 mean RMSE, and the price-space
+MMD/SWD family A6/A7/A10/A11 — so the repair obliged a full re-run of
+`compute_metrics_experiment.py` for both experiments and a re-render of README §2.
+
+**Do not touch the perfect floor.** Floor banks are true-DGP draws and already satisfy
+`S₀ == 100` exactly. Renormalizing them would be a no-op at best and, if the floor were ever
+regenerated with a different construction, would silently mask a real defect. Verify, never
+repair, the floor.
+
+The pre-repair banks remain recoverable from commit `ba7c748` should the deviation itself
+ever need to be re-examined.
 
 ### 11.6 §5 reporting requirements — what every comparison table must state
 
