@@ -78,7 +78,29 @@ Produced by `dataset/Heston/new_experiments/protocol/experiments/scripts/evaluat
 | `target_memory.future_rv_hit_mean` | 0.426855 (target) | — | 0.426855 |
 | `target_memory.future_rv_no_hit_mean` | 0.202984 (target) | — | 0.202984 |
 
-### 1.1 Headline
+### 1.1 PRIMARY panel — the four metrics the protocol designates
+
+Protocol PDF §2.3 names exactly four primary metrics for this experiment. These decide it.
+Everything else in §1 is a secondary diagnostic.
+
+| Primary metric (↓ lower is better) | LS4 (mean ± std) | 95% CI half-width | Perfect floor | × floor |
+|---|---|---|---|---|
+| `early_hit_rate_error` | 0.0081543 ± 0.00691 | 0.00858 | 0.00310059 ± 0.00224 | **2.6×** |
+| `future_rv_hit_gap_error` | 0.0503776 ± 0.00241 | 0.00299 | 0.00102294 ± 0.000516 | **49×** |
+| `early_history_incremental_r2_error` | 0.118178 ± 0.0154 | 0.0191 | 0.00641167 ± 0.00544 | **18×** |
+| `future_rv_wasserstein` | 0.0119597 ± 0.00142 | 0.00176 | 0.00123331 ± 0.00021 | **9.7×** |
+
+The `× floor` column is the honest scale: LS4 reproduces the *unconditional* hit rate almost
+perfectly (2.6× floor — it gets drawdowns right), and misses the *conditional* structure by
+one to two orders of magnitude. The hit-gap error is the worst at 49× floor. §1.2 decomposes
+why.
+
+### 1.2 Headline — raw diagnostics behind the primary panel
+
+⚠️ These are **raw group means and R² values, not errors**. Protocol PDF §5 lists group means
+and novelty as the explicit exceptions to "lower is better". `early_history_incremental_r2`
+is a **two-sided** target — matching 0.288523 is the goal; overshooting is as wrong as
+undershooting. Only the `*_error` forms in §1.1 are minimisation targets.
 
 | Quantity | Target | LS4 | Perfect floor | Verdict |
 |---|---|---|---|---|
@@ -87,9 +109,6 @@ Produced by `dataset/Heston/new_experiments/protocol/experiments/scripts/evaluat
 | `future_rv_hit_gap` | 0.223872 | 0.173494 ± 0.00241 | 0.223988 ± 0.00125 | gap 23 % too small |
 | `future_rv_hit_mean` | 0.426855 | 0.415608 ± 0.00299 | 0.427455 ± 0.000421 | −2.6 % (close) |
 | `future_rv_no_hit_mean` | 0.202984 | **0.242114 ± 0.000655** | 0.203467 ± 0.000875 | **+19 %, ≈53 σ off** |
-
-The incremental R² is a **two-sided** target — the goal is to *match* 0.2885, not to maximise
-it. A model that overshoots is as wrong as one that undershoots.
 
 **What LS4 actually learned.** It is not Markovian: 0.170 of incremental R² is far above the
 0.0 a memoryless generator would produce, and `early_hit_future_rv_correlation` reaches 0.696
@@ -112,6 +131,44 @@ artefact — which is the useful reading.
 Left = real `test.npy`, middle = LS4 seed 0, right = the two hit-gap bars side by side. The
 generated black (early-drawdown) and orange (no-drawdown) histograms are clearly separated —
 memory exists — but the orange mass sits too far right: LS4's calm regime is not calm enough.
+
+### 1.3 Validation vs test — evidence that `test.npy` stayed blind
+
+Protocol PDF §1.4 asks for `metrics_validation.json` alongside `metrics_test.json`, and §7
+checklist item 2 requires that `disc.npy` was used **only** for validation. The same unchanged
+evaluator, re-run with `disc.npy` substituted for `--test-data` (`pdf_metrics_validation/`):
+
+| `errors.*` (↓) | vs `test.npy` | vs `disc.npy` (validation) |
+|---|---|---|
+| `early_hit_rate_error` | 0.0081543 ± 0.00691 | 0.00996094 ± 0.00849 |
+| `future_rv_hit_gap_error` | 0.0503776 ± 0.00241 | 0.05117 ± 0.00241 |
+| `early_history_incremental_r2_error` | 0.118178 ± 0.0154 | 0.128587 ± 0.0154 |
+| `future_rv_wasserstein` | 0.0119597 ± 0.00142 | 0.0125091 ± 0.00135 |
+| `terminal_log_price_ks` | 0.0247803 ± 0.00912 | 0.0226807 ± 0.00829 |
+
+Every metric agrees within one standard deviation, and validation is *marginally worse* on all
+four primary metrics. That is the opposite of the signature of validation-set overfitting, and
+it is the cleanest available evidence that no tuning leaked into the reported run.
+
+### 1.4 Protocol reporting block (PDF §5)
+
+| Requirement | Value |
+|---|---|
+| Training file | `dataset/Heston/new_experiments/experiment_A/train.npy` |
+| Validation file | `dataset/Heston/new_experiments/experiment_A/disc.npy` |
+| Test file | `dataset/Heston/new_experiments/experiment_A/test.npy` |
+| Generated bank size | 8192 × 128 `float64`, per seed |
+| Model seeds | 0, 1, 2, 3, 4 (training seed = generation seed, shared RNG stream) |
+| Official code + revision | **Yes** — `methods/LS4/code`, released `solar_weekly` preset, at benchmark revision `27df71e` |
+| Hyperparameters | **Official defaults**, not validation-selected. No tuning was performed; `disc.npy` was used for scoring only. |
+| Trainable parameters | 2,146,857 |
+| Training time | 1874 s per seed (≈31 min) |
+| Generation time | 8.5 s per seed |
+| Hardware | 1 × A100-SXM4-80GB, 8 pinned cores of 2 × AMD EPYC 7763 |
+| Failed / unstable runs | **0** — all 5 seeds ran 100/100 epochs, no NaN in any bank |
+| Known non-conformance | `S₀ ≠ 100` (max deviation 1.4 × 10⁻²). Measured effect on every metric above: **nil** — see `generation_manifest.json → numerical_repair` and guideline §11.5. |
+
+Machine-readable in `generated_paths/seed_<q>/generation_manifest.json`.
 
 *Reproduce:* `python ../../tools/aggregate_pdf_metrics.py --model-dir . --floor-dir ../perfect_floor --pattern '*_drawdown_memory.json' --label LS4 --exclude-prefix configuration sources`
 
@@ -305,12 +362,15 @@ results/new_experiments/experiment_A/LS4/
 ├── generated_paths/
 │   └── seed_{0..4}/
 │       ├── generated_paths_8192x128.npy    8.4 MiB, tracked (same policy as results/Heston/.../LS4)
-│       └── metadata.json            shape, moments, train_time_sec, NaN audit
+│       ├── metadata.json            raw run record written by the trainer
+│       └── generation_manifest.json PDF §1.4 mandatory manifest (§1.4 above)
 ├── losses/
 │   ├── seed_{0..4}_losses.csv       per-epoch ELBO split + lr
 │   └── loss_convergence.png         §4 figure
 ├── pdf_metrics/
-│   └── seed_{0..4}_drawdown_memory.json    protocol evaluator output, unmodified
+│   └── seed_{0..4}_drawdown_memory.json    protocol evaluator vs test.npy  ("metrics_test")
+├── pdf_metrics_validation/
+│   └── seed_{0..4}_drawdown_memory.json    same evaluator vs disc.npy      ("metrics_validation")
 ├── plots/
 │   ├── heston_diagnostics.png       §3 figure
 │   ├── memory_structure_seed0.png   §1 figure
@@ -330,6 +390,11 @@ and is what a new method should reuse rather than reimplement:
 | `plot_stylised_facts.py` | §3 figure |
 | `plot_losses.py` | §4 figure (panels taken from the CSV header, so any method plots) |
 | `plot_experiment_figures.py` | §1 memory-structure figure (A) / mixture figure (B) |
+| `write_generation_manifest.py` | `generation_manifest.json` per seed — no README section, a PDF §1.4 submission artefact |
+
+A full conformance cross-check of this run against the protocol PDF — SHA-256 integrity of all
+ten canonical files, metric-by-metric key coverage, and the §7 return checklist item by item —
+is recorded in `dataset/Heston/new_experiments/guideline_new_experiment.md` §11.
 
 No path shadowing and no `baseline_no_prepro` in this experiment.
 

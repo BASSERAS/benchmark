@@ -1,0 +1,53 @@
+{
+  "configuration": {
+    "annualization": 250.0,
+    "history_cutoff": 40,
+    "horizon": 32,
+    "recent_window": 20,
+    "split": 64,
+    "threshold": 0.04
+  },
+  "errors": {
+    "abs_return_acf_rmse_lags_1_50": 0.0014657412604494402,
+    "early_history_incremental_r2_error": 0.005670904048332592,
+    "early_hit_rate_error": 0.002197265625,
+    "excess_kurtosis_error": 0.01331998201489526,
+    "future_rv_hit_gap_error": 0.00035901311363398247,
+    "future_rv_wasserstein": 0.0013972714715292885,
+    "return_std_error": 1.601905797801728e-05,
+    "squared_return_acf_rmse_lags_1_50": 0.0014994386678994192,
+    "terminal_log_price_ks": 0.0172119140625
+  },
+  "generated_memory": {
+    "augmented_r2": 0.6785062190647378,
+    "baseline_r2": 0.37390392257722715,
+    "early_history_incremental_r2": 0.3046022964875107,
+    "early_hit_future_rv_correlation": 0.8125235334785377,
+    "early_hit_rate": 0.628662109375,
+    "early_hit_standardized_coefficient": 1.5340993203022293,
+    "future_rv_hit_gap": 0.2250229246501722,
+    "future_rv_hit_mean": 0.4279645697588315,
+    "future_rv_no_hit_mean": 0.2029416451086593
+  },
+  "novelty": {
+    "distinct_nearest_training_paths": 1618,
+    "mean_standardized_nearest_train_path_rmse": 0.9374408721923828,
+    "median_standardized_nearest_train_path_rmse": 0.9887614846229553
+  },
+  "sources": {
+    "generated": "/home/tbasseras/benchmark/dataset/Heston/new_experiments/experiment_A/perfect_floor/floor_seed1001.npy",
+    "test": "/home/tbasseras/benchmark/dataset/Heston/new_experiments/experiment_A/disc.npy",
+    "train": "/home/tbasseras/benchmark/dataset/Heston/new_experiments/experiment_A/train.npy"
+  },
+  "target_memory": {
+    "augmented_r2": 0.6752754499302316,
+    "baseline_r2": 0.3763440574910535,
+    "early_history_incremental_r2": 0.2989313924391781,
+    "early_hit_future_rv_correlation": 0.8114758772145975,
+    "early_hit_rate": 0.62646484375,
+    "early_hit_standardized_coefficient": 1.5325624470865815,
+    "future_rv_hit_gap": 0.22466391153653822,
+    "future_rv_hit_mean": 0.42747472588280094,
+    "future_rv_no_hit_mean": 0.20281081434626272
+  }
+}

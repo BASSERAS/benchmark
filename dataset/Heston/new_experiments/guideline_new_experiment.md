@@ -442,12 +442,16 @@ a per-seed model table.
 **Self-check:** every `target_*` row must show `± 0`. A non-zero std there means the seeds were
 scored against *different* reference data — stop and find out why.
 
-### The other four tools
+### The other five tools
 
 ```bash
 # README § 2 — the A1–A34 and B curve-shape tables, from metrics_summary.csv
 python make_metrics_tables.py --model-dir ../experiment_A/LS4 \
     --floor-dir ../experiment_A/perfect_floor --label LS4 --table A     # then --table B
+
+# PDF §1.4 mandatory per-seed manifest (NOT a README section — a submission artefact)
+python write_generation_manifest.py --model-dir ../experiment_A/LS4 \
+    --experiment A --source-revision "$(git rev-parse --short HEAD)" --repair none
 
 # README § 1 figure — memory structure (A) / mixture structure (B)
 python plot_experiment_figures.py --experiment A \
@@ -468,6 +472,16 @@ repo's standard battery*. Keeping one tool per section makes it impossible to mi
 accident. A33/A34 are dropped in both experiments (they need the latent σ path, which is not part
 of the generator's output contract), so their cells must read `n/a` — never `0`, which would
 silently flatter the method.
+
+`write_generation_manifest.py` is the odd one out: it feeds no README section. It exists because
+PDF §1.4 makes `generation_manifest.json` **mandatory** and fixes its contents, and the
+`metadata.json` our training script writes covers only about half the required fields — it has no
+source revision, no separate generation seed, no preprocessing block, no hyperparameters, and no
+numerical-repair field. The tool merges `metadata.json` with `weights/seed_<q>_config.json`, then
+**re-measures the §1.4 output contract from the bank itself** (finite, strictly positive, dtype,
+shape, `S₀ = 100`) rather than asserting it. A manifest that claims conformance while the array
+violates it is worse than no manifest. Run it once per method per experiment, after all five
+seeds exist. See §11.5 for the `--repair` flag.
 
 `plot_stylised_facts.py` wraps the benchmark-standard `metrics/plot_diagnostics.py` so every
 method gets the identical figure, with **one deliberate difference: the black Heston theory curve
@@ -744,10 +758,12 @@ results/new_experiments/
 │   ├── make_metrics_tables.py                   README § 2 tables: A1–A34 and B curve-shape
 │   ├── plot_experiment_figures.py               README § 1 figure: memory (A) / mixture (B)
 │   ├── plot_stylised_facts.py                   README § 3 figure: heston_diagnostics.png
-│   └── plot_losses.py                           README § 4 figure: loss_convergence.png
+│   ├── plot_losses.py                           README § 4 figure: loss_convergence.png
+│   └── write_generation_manifest.py             PDF §1.4 artefact, no README section
 └── experiment_<A|B>/
     ├── perfect_floor/                           method-neutral sibling
-    │   ├── pdf_metrics/seed_{0..4}_*.json       floor scored by the PDF evaluator
+    │   ├── pdf_metrics/seed_{0..4}_*.json       floor scored by the PDF evaluator vs test.npy
+    │   ├── pdf_metrics_validation/seed_{0..4}_*.json   same, vs disc.npy (§11.4)
     │   ├── seed_{0..4}_metrics.json             floor scored by the A/B suite
     │   ├── metrics_summary.csv
     │   └── plots/
@@ -759,14 +775,17 @@ results/new_experiments/
         │   └── logs/exp<A|B>_seed{0..4}.log
         ├── generated_paths/seed_{0..4}/
         │   ├── generated_paths_8192x128.npy     (8192,128) float64, ORIGINAL price scale
-        │   └── metadata.json
+        │   ├── metadata.json                    raw run record written by the trainer
+        │   └── generation_manifest.json         PDF §1.4 MANDATORY — see §11.3 item 6
         ├── weights/
         │   ├── seed_N_model.pt
         │   └── seed_N_config.json
         ├── losses/
         │   ├── seed_N_losses.csv
         │   └── loss_convergence.png
-        ├── pdf_metrics/
+        ├── pdf_metrics/                         scored vs test.npy   → "metrics_test"
+        │   └── seed_N_<drawdown_memory|heston_mixture>.json
+        ├── pdf_metrics_validation/              scored vs disc.npy  → "metrics_validation"
         │   └── seed_N_<drawdown_memory|heston_mixture>.json
         ├── metrics_summary.csv
         ├── seed_{0..4}_metrics.json
@@ -855,13 +874,54 @@ One table with **every** metric defined in the PDF for this experiment, aggregat
    Every numeric leaf appears, including the `target_*` rows — those are the target, measured
    on `test.npy`, so they carry `± 0` by construction. Write `(target)` in their mean cell and
    `—` in their CI cell rather than printing a meaningless `± 0 | 0`.
-2. A short **headline** table, hand-written, for the 4–6 metrics that decide the experiment:
-   `Quantity | Target | <Method> | Perfect floor | Verdict`. This is the one a reader actually
-   reads. Interpret it in prose beneath (§2.5 for A, §3.5 for B).
+2. The **PRIMARY panel** — the metrics the PDF itself designates, no others, no substitutes.
+   These are fixed by the protocol and are *not* a matter of taste:
+
+   | Experiment | PDF § | The four primary metrics |
+   |---|---|---|
+   | **A** | §2.3 | `early_hit_rate_error`, `future_rv_hit_gap_error`, `early_history_incremental_r2_error`, `future_rv_wasserstein` |
+   | **B** | §3.4 | regime TVD, **W̄_param**, realized-volatility Wasserstein, leverage-curve RMSE |
+
+   Present them as `Metric | <Method> (mean ± std) | 95% CI | Perfect floor`. Everything else
+   in the evaluator output is **secondary diagnostics** and must be labelled as such.
+
+   For Experiment B, `W̄_param` is **not emitted by the evaluator** and must be derived per seed
+   as the unweighted mean of the three `parameters.{theta,xi,rho}.support_normalized_wasserstein`
+   (§11.2). Label it *derived* in the table. Do **not** patch the evaluator to emit it —
+   checklist item 7 forbids touching `protocol/`.
+
+   PDF §3.4 also forbids collapsing B's four into an aggregate score after seeing results. It is
+   a panel. Report four numbers.
+
+3. A short **headline** table, hand-written, for the raw quantities that explain *why* the
+   primary metrics landed where they did: `Quantity | Target | <Method> | Perfect floor |
+   Verdict`. For A that means the `generated_memory` / `target_memory` pairs
+   (`early_history_incremental_r2`, `future_rv_hit_mean`, `future_rv_no_hit_mean`, …). This is
+   the one a reader actually reads. Interpret it in prose beneath (§2.5 for A, §3.5 for B).
+
+   ⚠️ These are **raw diagnostics, not errors** — PDF §5 singles out "standard-deviation ratio,
+   posterior confidence, group means, and novelty" as the exceptions to "lower is better". Mark
+   them, or a reader will try to minimise `std_ratio` (target **1.0**) or
+   `distinct_nearest_training_paths` (a raw count). And `early_history_incremental_r2` is a
+   **two-sided** target: matching 0.2885 is the goal; overshooting is as wrong as undershooting.
+   Only the `*_error` form belongs in the primary panel.
+
+4. The **validation-vs-test** table (§11.4), from `pdf_metrics_validation/`. Four to six
+   `errors.*` rows, two columns. This is the artefact that evidences §7 checklist item 2 —
+   that `disc.npy` was used for validation and `test.npy` stayed blind. If validation is
+   materially *better* than test, you have a leak; say so rather than shipping it.
 
 Do not fold the target into a column of table 1. The evaluator emits `target_*` and
 `generated_*` as sibling blocks; flattening them into one row per metric requires a hand-kept
 key mapping that silently rots the first time the evaluator gains a field.
+
+**Header block, before any table.** PDF §5 requires each comparison table to state seven
+things; six are easy and the seventh is always the one forgotten. Copy this checklist:
+exact train/validation/test files · bank size and all five seeds · **whether official code was
+used and its revision** · **whether hyperparameters were defaults or validation-selected** ·
+trainable parameters, training time, generation time, hardware · number and reason for failed
+runs. All seven are machine-readable in `generated_paths/seed_<q>/generation_manifest.json`;
+the README must still say them in prose. See §11.6.
 
 ### § 2 — Metrics A1–A34 + B, mean ± std across 5 seeds
 
@@ -994,8 +1054,263 @@ Experiment B rather than Experiment A's remaining seed 4.
 |---|---|---|
 | 1 | **A33/A34 dropped** in both experiments. Both need the Heston teacher variance `v`, undefined for both DGPs. Implemented by `v = None` + `compute_all`'s existing try/except → `null`. **No canonical code edited.** | Theo's decision, deliberate |
 | 2 | `protocol/experiments/path_dt_experiments/__init__.py` is **empty** upstream and vendored empty. Not a truncation. | expected |
-| 3 | `manifest.json` float fields can differ in the **last ULP** across numpy versions. Compare with `np.allclose`, not `==`. Shapes, seeds and `regime_counts` are exact and must match. | expected |
-| 4 | `oracle.joblib` (~554 MB) **cannot be byte-reproduced** across scikit-learn/joblib versions even with `random_state=42`. The **gate accuracy** is the reproducible artefact; `gate_report.json` is committed, the blob is gitignored. Refit locally if missing. | expected |
+| 3 | `manifest.json` float fields can differ in the **last ULP** across numpy versions. Compare with `np.allclose`, not `==`. Shapes, seeds and `regime_counts` are exact and must match. **Confirmed empirically** — see §11.1: both manifests miss the PDF's SHA-256 while all six `.npy` files match bit-for-bit. | expected, measured |
+| 4 | `oracle.joblib` (~554 MB) **cannot be byte-reproduced** across scikit-learn/joblib versions even with `random_state=42`. The **gate accuracy** is the reproducible artefact; `gate_report.json` is committed, the blob is gitignored. Refit locally if missing. **Confirmed empirically** — see §11.1: `gate_report.json` matches the PDF's SHA-256 byte-for-byte, including all 64 confusion-matrix entries, while the blob does not. | expected, measured |
+| 8 | **`S₀ ≠ 100` in every LS4 bank.** PDF §1.4 requires banks to "begin at S₀ = 100, up to ordinary floating-point tolerance"; §7 checklist item 5 repeats it. LS4 generates in standardized *price* space (`x → (x−μ)/σ`) with no anchor at `t = 0`, so `S₀` lands at 100 ± 0.07 (A) / ± 0.40 (B), max per-path deviation **1.4 × 10⁻²**. That is ten orders of magnitude beyond float tolerance — a genuine non-conformance, not a rounding artefact. **Measured impact on every PDF metric: nil** (§11.3). Recorded per-seed in `generation_manifest.json → numerical_repair.open_non_conformance`. | **open, quantified** |
 | 5 | Perfect-floor seeds are **1000–1004** (`IND_SEED_BASE = 1000` from `metrics/compute_perfect_recovery.py`), disjoint from protocol seeds 0/1/2/100/101. | convention |
 | 6 | `plot_diagnostics.py` draws a **Heston-theory** curve that is invalid for both new DGPs. It is inside a try/except (`TB = None` on failure). Suppress it or caption it as non-applicable. | known |
 | 7 | **No Git LFS** (decision reversed 2026-07-30). Add no new LFS entries. The 8192×128 `float64` banks are ~8 MB each and **are committed normally**; only artefacts over GitHub's 100 MiB per-file cap get an explicit `.gitignore` entry — currently just `oracle.joblib`. | policy |
+
+---
+
+## 11. Full PDF Conformance Cross-Check
+
+Run in full on **2026-07-31** against `synthetic_benchmark_protocol_drawdown_heston_mixture.pdf`.
+Every claim below is **measured**, not asserted. Re-run this whole section before any
+submission; it is cheap and it is the only thing standing between "we followed the protocol"
+and "we believe we followed the protocol".
+
+### 11.1 §6 integrity — SHA-256 against the PDF's published digests
+
+```bash
+cd dataset/Heston/new_experiments
+sha256sum experiment_A/{train,disc,test}.npy experiment_A/manifest.json \
+          experiment_B/{train,disc,test}.npy experiment_B/manifest.json \
+          experiment_B/oracle/oracle.joblib experiment_B/oracle/gate_report.json
+```
+
+| Canonical file | PDF §6 digest matches? | Reading |
+|---|---|---|
+| Drawdown `train.npy` | ✅ **bit-for-bit** | |
+| Drawdown `disc.npy` | ✅ **bit-for-bit** | |
+| Drawdown `test.npy` | ✅ **bit-for-bit** | |
+| Drawdown `manifest.json` | ❌ | diagnostics-float ULP only — see below |
+| Heston-mixture `train.npy` | ✅ **bit-for-bit** | |
+| Heston-mixture `disc.npy` | ✅ **bit-for-bit** | |
+| Heston-mixture `test.npy` | ✅ **bit-for-bit** | |
+| Heston-mixture `manifest.json` | ❌ | diagnostics-float ULP only |
+| `oracle.joblib` | ❌ | pickle version strings — model is identical |
+| `gate_report.json` | ✅ **bit-for-bit** | |
+
+**All six data arrays reproduce exactly.** That is the finding that matters: our DGP
+implementation is the PDF's, to the last byte, for both experiments and all three splits.
+
+The three misses are all explained and none is substantive:
+
+* **Manifests.** Both are written with `json.dumps(..., indent=2, sort_keys=True) + "\n"`,
+  so serialization is deterministic; the `configuration` / `regimes` / `splits` blocks are
+  integers and exact decimals. The only free variables are the derived diagnostic floats
+  (`log_return_mean`, `log_return_std`, `sigma_mean`, `price_min` …). Those come from numpy
+  pairwise-summation reductions whose blocking changes with numpy version and SIMD width.
+  Verified locally: `numpy.mean` reproduces every stored value exactly, and `math.fsum`
+  agrees to 1.6 × 10⁻¹⁶ relative. So the difference lives in the 16th significant figure of
+  metadata that nothing consumes. **Never "fix" a manifest by hand-editing it to match a
+  digest** — regenerate it or accept the ULP.
+* **`oracle.joblib`.** A pickled `ExtraTreesClassifier` embeds scikit-learn and joblib
+  version strings and per-object layout. Not byte-reproducible by construction. The proof
+  that the *model* is identical is that `gate_report.json` matches the PDF's digest exactly
+  — that file contains the full 8 × 8 confusion matrix over 8192 validation paths (all 64
+  integers), `eight_regime_accuracy = 0.909423828125`, and the three per-parameter
+  accuracies. A different forest cannot land on 64 identical cell counts.
+
+Environment that produced the above: numpy 2.4.6, scikit-learn 1.9.0, joblib 1.5.3,
+Python 3.12.3.
+
+### 11.2 Metric-by-metric conformance
+
+**Experiment A — `evaluate_drawdown_memory.py`.** The PDF's §2.3 four **primary** metrics
+are all emitted, under `errors.`:
+
+| PDF §2.3 primary metric | Emitted key | Present |
+|---|---|---|
+| Early hit-rate error | `errors.early_hit_rate_error` | ✅ |
+| Future-RV hit-gap error | `errors.future_rv_hit_gap_error` | ✅ |
+| Early-history incremental R² error | `errors.early_history_incremental_r2_error` | ✅ |
+| Future-RV Wasserstein | `errors.future_rv_wasserstein` | ✅ |
+
+Secondary, also emitted and reported: `return_std_error`, `excess_kurtosis_error`,
+`abs_return_acf_rmse_lags_1_50`, `squared_return_acf_rmse_lags_1_50`,
+`terminal_log_price_ks`. Raw diagnostics (not errors, no "better" direction) live under
+`target_memory.*` and `generated_memory.*`; novelty under `novelty.*`.
+
+Frozen configuration re-verified against PDF §2.1/§2.2 field by field — `split_index 64`,
+`history_cutoff 40` (**inclusive**), `recent_window 20`, `future_horizon 32`,
+`response_delay 32`, `memory_half_life 60.0`, `drawdown_threshold 0.04`,
+`sigma_low 0.12`, `sigma_high 0.45`, `dt 0.004`, `s0 100.0`, `sequence_length 128`,
+`num_paths 8192`, seeds `{train: 0, test: 1, disc: 2}`. **All match.**
+
+**Experiment B — `evaluate_heston_parameter_mixture.py`.** PDF §3.4's four **primary**
+panel entries:
+
+| PDF §3.4 primary metric | Emitted key | Present |
+|---|---|---|
+| Regime TVD | `mixture_fidelity.regime_proportion_tvd` | ✅ |
+| **W̄_param** (unweighted mean of the three normalized W₁) | — | ❌ **derived, see below** |
+| Realized-volatility Wasserstein | `observable_fidelity.realized_volatility_wasserstein` | ✅ |
+| Leverage-curve RMSE | `observable_fidelity.leverage_curve_rmse_lags_0_20` | ✅ |
+
+> ⚠️ **`W̄_param` is not emitted by the evaluator.** The script emits only the three
+> per-parameter `mixture_fidelity.parameters.{theta,xi,rho}.support_normalized_wasserstein`.
+> PDF §3.3 requires reporting **all three *and* their unweighted average**. Since checklist
+> item 7 forbids editing the evaluator, the README must **derive** it:
+>
+> ```
+> W̄_param = (W^norm_θ + W^norm_ξ + W^norm_ρ) / 3
+> ```
+>
+> computed per seed, then aggregated mean ± std like everything else. Label it explicitly as
+> *derived from the evaluator's three components*, so nobody hunts for it in the JSON.
+
+Support widths are computed inside the evaluator as `levels.max() − levels.min()`, giving
+**θ 0.08, ξ 0.75, ρ 1.98** — exactly the PDF §3.3 values. Oracle config re-verified against
+PDF §3.2: `trees 500`, `min_samples_leaf 2`, `max_features 0.7`, `random_state 42`,
+`num_features 77`, `train_paths 32768`, `validation_paths 8192`,
+`minimum_accuracy 0.90`, achieved **0.909423828125 → gate PASSES**. Scoring is valid.
+
+### 11.3 §7 Return Checklist — item by item
+
+| # | Checklist item | Status |
+|---|---|---|
+| 1 | Only `train.npy` used for learned preprocessing and model params | ✅ — scaler μ/σ fit on `train.npy`; firewall enforced (§4) |
+| 2 | `disc.npy` used only for validation; `test.npy` not inspected pre-freeze | ✅ — and now **evidenced** by `pdf_metrics_validation/` (§11.4) |
+| 3 | No latent vol, regime label, oracle output, or competing-model result used | ✅ — generator reads one array, `train.npy` |
+| 4 | Five banks of shape 8192 × 128, or a documented deterministic exception | ✅ — seeds 0–4, no exceptions |
+| 5 | Every bank finite, positive, **starts at 100**, in price units | ⚠️ **finite ✅, positive ✅, price units ✅, S₀ ✗** — see §10 row 8 and §11.5 |
+| 6 | Manifests contain code revision, seeds, preprocessing, hyperparameters, compute, failure info | ✅ — **added 2026-07-31** via `write_generation_manifest.py`; the old `metadata.json` alone did *not* satisfy this |
+| 7 | Supplied evaluator scripts run unchanged | ✅ — `git status --porcelain dataset/Heston/new_experiments/protocol` is empty; single vendoring commit `ba7c748` |
+| 8 | Per-seed metrics and aggregate uncertainty retained; no seed dropped on its score | ✅ — every seed is a column in the README tables; 0 failed runs |
+
+**Item 7 is worth a standing habit.** Before every submission run:
+
+```bash
+git status --porcelain dataset/Heston/new_experiments/protocol   # must print nothing
+git log --oneline -- dataset/Heston/new_experiments/protocol     # must show only the vendoring commit
+```
+
+### 11.4 Validation scoring — `metrics_validation.json` (was missing)
+
+PDF §1.4's recommended layout lists **both** `metrics_test.json` and
+`metrics_validation.json`. Only the test-side scoring existed. The validation side is the
+artefact that *demonstrates* checklist item 2 rather than merely claiming it: run the same
+unchanged evaluator with `disc.npy` substituted for `--test-data`.
+
+```bash
+cd dataset/Heston/new_experiments
+E=protocol/experiments/scripts/evaluate_drawdown_memory.py
+R=../../../results/new_experiments/experiment_A
+for d in LS4 perfect_floor; do
+  mkdir -p $R/$d/pdf_metrics_validation
+  for s in 0 1 2 3 4; do
+    OMP_NUM_THREADS=8 taskset -c 0-7 python $E \
+      --train-data experiment_A/train.npy --test-data experiment_A/disc.npy \
+      --generated-data <bank for $d seed $s> \
+      --dataset-manifest experiment_A/manifest.json \
+      --output $R/$d/pdf_metrics_validation/seed_${s}_drawdown_memory.json &
+  done
+done
+wait
+```
+
+Note the flag is `--dataset-manifest`, **not** `--manifest`; the latter exits 2.
+
+Result for LS4 on Experiment A — validation vs test, mean ± std over 5 seeds:
+
+| `errors.*` | test | validation |
+|---|---|---|
+| `early_history_incremental_r2_error` | 0.118178 ± 0.0154 | 0.128587 ± 0.0154 |
+| `future_rv_hit_gap_error` | 0.0503776 ± 0.00241 | 0.05117 ± 0.00241 |
+| `early_hit_rate_error` | 0.0081543 ± 0.00691 | 0.00996094 ± 0.00849 |
+| `future_rv_wasserstein` | 0.0119597 ± 0.00142 | 0.0125091 ± 0.00135 |
+| `terminal_log_price_ks` | 0.0247803 ± 0.00912 | 0.0226807 ± 0.00829 |
+
+Every metric agrees within one standard deviation, and the validation side is **marginally
+worse** on the memory metrics. That is the opposite of the signature of `disc.npy`
+overfitting, and it is the cleanest available evidence that the test split stayed blind.
+**Keep this table in the submission.**
+
+### 11.5 The S₀ non-conformance, quantified
+
+PDF §1.4 allows "ordinary floating-point tolerance". A float64 round-trip is ~10⁻¹²
+relative. LS4's banks are off by up to **1.4 × 10⁻²**. The tolerance clause does not cover
+this; it is a real violation of checklist item 5.
+
+**Root cause.** `train_ls4_experiment.py` does `Xg = gen_s[:, :, 0] * sigma + mu` — the model
+generates the whole path in standardized *price* space and nothing pins `t = 0`. A
+log-return preprocessing would have made `S₀ = 100` exact by reconstruction; this pipeline
+deliberately uses none.
+
+**Measured impact: nil.** Both evaluators and the oracle feature builder start from
+
+```python
+log_paths = np.log(prices / prices[:, :1])     # evaluate_drawdown_memory.py:54
+                                               # heston_mixture.py:135 (extract_price_path_features)
+```
+
+and Experiment B's terminal statistic is `np.log(x[:, -1] / x[:, 0])`. Every PDF metric is
+therefore **invariant to S₀ by construction**. Verified rather than assumed: re-running the
+Experiment A evaluator on a renormalized seed-0 bank changed **27 of 36 numeric leaves not
+at all**, and the other 9 only in the **15th–16th significant figure**, e.g.
+
+```
+early_history_incremental_r2_error  0.13966753072671312 -> 0.139667530726713
+future_rv_wasserstein               0.013922297890306213 -> 0.013922297890306216
+```
+
+**The remedy, if applied**, is a one-line declared repair — PDF §1.3 permits declared
+post-hoc transformations and §1.4 has a field for exactly this:
+
+```python
+S = 100.0 * S / S[:, :1]
+```
+
+It must then be recorded via `write_generation_manifest.py --repair s0_renormalization`,
+which writes the formula and the residual deviation into
+`generation_manifest.json → numerical_repair`. Note the cost: PDF metrics are unaffected,
+but the README §2 battery contains **level-sensitive** metrics (A13 mean-path RMSE, A25 mean
+RMSE, and the price-space MMD/SWD family A6/A7/A10/A11), so applying the repair obliges a
+re-run of `compute_metrics_experiment.py` and a rewrite of README §2.
+
+Until that decision is taken, the deviation is **declared, not hidden** — every
+`generation_manifest.json` carries `numerical_repair.open_non_conformance` and
+`output_contract.s0_within_floating_point_tolerance: false`.
+
+### 11.6 §5 reporting requirements — what every comparison table must state
+
+The PDF is prescriptive here and it is easy to satisfy six of seven and forget the seventh.
+The README must state **all** of:
+
+| §5 requirement | Where it lives |
+|---|---|
+| Exact training, validation, and test files | README header + `generation_manifest.json → data_files` |
+| Generated bank size and all model seeds | README header (`8192 × 128`, seeds 0–4) |
+| **Whether official code was used and its revision** | `generation_manifest.json → model.{official_implementation, source_revision, source_path}` |
+| **Whether hyperparameters were defaults or validation-selected** | `generation_manifest.json → hyperparameter_origin` (`official-default` for LS4) |
+| Trainable parameters, training time, generation time, hardware | `generation_manifest.json → model.trainable_parameters`, `compute`, `hardware` |
+| Number and reason for failed runs | `generation_manifest.json → failure_information` (0 failed) |
+
+The two bolded rows are the ones that were missing before 2026-07-31.
+
+Also from §5, and easy to violate by accident:
+
+* Report **every** seed, the mean, the sample std (`ddof=1`), and the 95 % CI half-width
+  `t₀.₉₇₅,₄ · s/√5` with **t = 2.776**. Never only the best seed.
+* For aligned-seed model-vs-model comparisons, additionally report the **five seedwise
+  differences** and their paired interval.
+* "All displayed fidelity metrics are errors or distances, so lower is better, **except**
+  explicitly identified raw diagnostics such as standard-deviation ratio, posterior
+  confidence, group means, and novelty." Those must be visually marked as raw, or a reader
+  will minimise `std_ratio` (target 1.0) and `distinct_nearest_training_paths` (raw count).
+
+### 11.7 Things the PDF forbids that are easy to do anyway
+
+* **Do not build an aggregate score for Experiment B after seeing results** (§3.4). The
+  four primary metrics are a panel, not a sum.
+* **Do not combine novelty with fidelity** (§4). Novelty has no monotone "better"
+  direction — it is a memorisation check, reported beside the fidelity metrics, never
+  folded into them.
+* **Do not treat `early_history_incremental_r2` as "higher is better"** (§2.3). It is a
+  two-sided target: matching 0.2885 is the goal; overshooting is as wrong as undershooting.
+  Only the `*_error` form is a "lower is better" quantity.
+* **Do not silently replace a failed seed** (§1.5). Report it with its reason.
+* **Do not hand-edit anything under `protocol/`** (§7 item 7). If the evaluator lacks a
+  quantity the PDF wants — as with `W̄_param` — derive it in the README, not in the script.
