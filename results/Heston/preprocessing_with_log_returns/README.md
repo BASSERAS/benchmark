@@ -12,11 +12,13 @@ five "seeds" differ only in the generation RNG). Each is scored on the held-out 
 and given a strict 1M-path path-shadowing bank. Every subsequent method gets its own sibling folder built the
 same way — see [`GUIDELINE.md`](GUIDELINE.md) for the step-by-step recipe.
 
-> **TimeDiT status.** Its A and B columns below are complete (5 seeds, SBTS-preproc variant). It is
-> **deliberately absent from the path-shadowing table**: log-return preprocessing *degrades* TimeDiT
-> (raw price wins the matched seed-0 control **31–3**), so its 1M scenario bank was built from the
-> **raw / no-preproc** checkpoint and the strict protocol was run on that. No preprocessed bank was
-> evaluated, so a TimeDiT PS column would not be like-for-like with CSDI / LS4 / SBTS. Full results:
+> **TimeDiT status — read the two halves separately, they disagree.** Its A and B columns below are the
+> **SBTS-preproc** variant (5 seeds), where it is unremarkable (A 2/36, B 1/7). Its **PS column is the
+> `TimeDiT (raw)` one**, generated from the **no-preproc** checkpoint, because log-return preprocessing
+> *degrades* TimeDiT — raw price wins the matched seed-0 control **31–3** (1 exact tie), so the strict
+> protocol was run on the checkpoint that actually represents the model. On that column it is the **best
+> generator in the folder: 14 of 18 ranked rows at every one of the five bank sizes**, sitting on the Heston
+> oracle. Only ONE bank exists (raw); the preprocessed-bank run was descoped. Full results:
 > [`TimeDiT/README.md`](TimeDiT/README.md#path-shadowing--strict-paper-protocol-arxiv230801486-on-the-raw--no-preproc-checkpoint).
 
 The tables below mirror the main [`results/`](../../README.md) display **at this experiment's 4096/512
@@ -218,12 +220,13 @@ the ideal 0.05 wins). Winner is decided per row over the 6 ranked metrics (18 ra
 The two model families reach the same predictive object by **different routes**, and both are scored
 identically so the columns are apples-to-apples:
 
-- **Generators (CSDI, LS4, SBTS)** — the strict route: retrieve the K=256 nearest prefixes in the method's own
-  **1M-path generated bank** and read their futures as the ensemble (shadow-forecasting).
-  **TimeDiT is absent from this table by design**: preprocessing *hurts* it, so its 1M bank was built from the
-  **raw / no-preproc** checkpoint. Its PS numbers are real and complete — TimeDiT-raw matches the Heston oracle
-  on all three quantities — but they describe a *differently-conditioned* model than the three columns here,
-  so mixing them in would silently break the apples-to-apples property this table depends on. See
+- **Generators (CSDI, TimeDiT, LS4, SBTS)** — the strict route: retrieve the K=256 nearest prefixes in the
+  method's own **1M-path generated bank** and read their futures as the ensemble (shadow-forecasting).
+  **TimeDiT's column is labelled `TimeDiT (raw)`** because its bank was generated from the **no-preproc**
+  checkpoint: log-return preprocessing *degrades* TimeDiT (raw price wins the matched seed-0 control **31–3**),
+  so the strict protocol was run on the checkpoint that actually represents the model. That input choice is the
+  **only** difference — protocol, K=256, the 512 queries, the 4-block embedding, the Heston oracle, the RW floor
+  and the five nested bank sizes are byte-identical to the other three, so the column ranks legitimately. See
   [`TimeDiT/README.md`](TimeDiT/README.md#path-shadowing--strict-paper-protocol-arxiv230801486-on-the-raw--no-preproc-checkpoint).
 - **Forecasters (Chronos-2, TimesFM)** — conditional route: fine-tuned on the **same 4096 train paths**
   (byte-identical recipe to the main-benchmark finetune, 1000 steps, lr 1e-4, batch 256) and forecast each
@@ -245,13 +248,13 @@ each query directly and retrieve nothing, and the random walk is analytic — so
 all five tables (flagged *bank-independent* in the header).
 
 <details>
-<summary><b>Bank 4 096</b> — winners: SBTS 14 · CSDI 4</summary>
+<summary><b>Bank 4 096</b> — winners: TimeDiT (raw) 14 · CSDI 2 · SBTS 2</summary>
 
 <table>
 <thead>
   <tr>
     <th rowspan="2">Quantity / metric</th>
-    <th colspan="3">Generators (4 096 bank)</th>
+    <th colspan="4">Generators (4 096 bank)</th>
     <th colspan="2">Forecasters (fine-tuned @4096)<br><sup>bank-independent</sup></th>
     <th rowspan="2">Heston oracle<br>(perfect floor, 4 096)</th>
     <th rowspan="2">RW floor<br><sup>bank-independent</sup></th>
@@ -259,6 +262,7 @@ all five tables (flagged *bank-independent* in the header).
   </tr>
   <tr>
     <th>CSDI</th>
+    <th>TimeDiT (raw)</th>
     <th>LS4</th>
     <th>SBTS</th>
     <th>Chronos-2</th>
@@ -266,46 +270,46 @@ all five tables (flagged *bank-independent* in the header).
   </tr>
 </thead>
 <tbody>
-  <tr><td colspan="9"><b>cum (M×H trajectory)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.04131</b></td><td>0.04149</td><td>0.04158</td><td>0.04921</td><td>0.05094</td><td>0.04154</td><td>0.04796</td><td><b>CSDI</b></td></tr>
-  <tr><td>CRPS ↓</td><td>0.02548</td><td>0.02544</td><td><b>0.02544</b></td><td>0.02624</td><td>0.02722</td><td>0.02539</td><td>0.02946</td><td><b>SBTS</b></td></tr>
-  <tr><td>coverage₅₀ (→0.50)</td><td>0.4571</td><td>0.4764</td><td><b>0.4839</b></td><td>0.4050</td><td>0.4664</td><td>0.4875</td><td>0.4719</td><td><b>SBTS</b></td></tr>
-  <tr><td>coverage₉₀ (→0.90)</td><td>0.8629</td><td>0.8691</td><td><b>0.8805</b></td><td>0.7905</td><td>0.8177</td><td>0.8919</td><td>0.8553</td><td><b>SBTS</b></td></tr>
-  <tr><td>width₅₀ (diag)</td><td>0.05070</td><td>0.05376</td><td>0.05536</td><td>0.04454</td><td>0.05477</td><td>0.05573</td><td>0.06286</td><td>—</td></tr>
-  <tr><td>width₉₀ (diag)</td><td>0.1318</td><td>0.1353</td><td>0.1439</td><td>0.1166</td><td>0.1348</td><td>0.1462</td><td>0.1520</td><td>—</td></tr>
-  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07764</td><td>0.06476</td><td><b>0.05554</b></td><td>0.09595</td><td>0.09265</td><td>0.05731</td><td>0.08331</td><td><b>SBTS</b></td></tr>
-  <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05945</b></td><td>0.06616</td><td>0.06396</td><td>0.1135</td><td>0.08966</td><td>0.05078</td><td>0.06134</td><td><b>CSDI</b></td></tr>
-  <tr><td colspan="9"><b>step (M×H)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01176</td><td>0.01180</td><td>0.01295</td><td>0.01332</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
-  <tr><td>CRPS ↓</td><td><b>0.006780</b></td><td>0.006794</td><td>0.006812</td><td>0.01272</td><td>0.01473</td><td>0.006765</td><td>0.006874</td><td><b>CSDI</b></td></tr>
-  <tr><td>coverage₅₀ (→0.50)</td><td>0.4510</td><td>0.4656</td><td><b>0.4813</b></td><td>0.9449</td><td>0.9479</td><td>0.4849</td><td>0.5157</td><td><b>SBTS</b></td></tr>
-  <tr><td>coverage₉₀ (→0.90)</td><td>0.8602</td><td>0.8591</td><td><b>0.8782</b></td><td>0.9970</td><td>0.9949</td><td>0.8869</td><td>0.8866</td><td><b>SBTS</b></td></tr>
-  <tr><td>width₅₀ (diag)</td><td>0.01321</td><td>0.01359</td><td>0.01434</td><td>0.06405</td><td>0.07667</td><td>0.01434</td><td>0.01602</td><td>—</td></tr>
-  <tr><td>width₉₀ (diag)</td><td>0.03524</td><td>0.03530</td><td>0.03769</td><td>0.1609</td><td>0.1801</td><td>0.03828</td><td>0.03968</td><td>—</td></tr>
-  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07098</td><td>0.07233</td><td><b>0.05890</b></td><td>0.001770</td><td>0.002319</td><td>0.05676</td><td>0.05933</td><td><b>SBTS</b></td></tr>
-  <tr><td>upper miss₉₀ (→0.05)</td><td>0.06885</td><td>0.06860</td><td><b>0.06287</b></td><td>0.001221</td><td>0.002808</td><td>0.05634</td><td>0.05408</td><td><b>SBTS</b></td></tr>
-  <tr><td colspan="9"><b>rv (M scalar)</b></td></tr>
-  <tr><td>RMSE ↓</td><td>0.01458</td><td>0.01516</td><td><b>0.01420</b></td><td>0.2307</td><td>0.2865</td><td>0.01381</td><td>0.01509</td><td><b>SBTS</b></td></tr>
-  <tr><td>CRPS ↓</td><td>0.01055</td><td>0.01098</td><td><b>0.01010</b></td><td>0.1913</td><td>0.2291</td><td>0.009777</td><td>0.01168</td><td><b>SBTS</b></td></tr>
-  <tr><td>coverage₅₀ (→0.50)</td><td>0.4609</td><td>0.4121</td><td><b>0.4805</b></td><td>0</td><td>0</td><td>0.5059</td><td>0.2344</td><td><b>SBTS</b></td></tr>
-  <tr><td>coverage₉₀ (→0.90)</td><td>0.8594</td><td>0.7812</td><td><b>0.8652</b></td><td>0</td><td>0.001953</td><td>0.9141</td><td>0.5332</td><td><b>SBTS</b></td></tr>
-  <tr><td>width₅₀ (diag)</td><td>0.02220</td><td>0.02027</td><td>0.02287</td><td>0.06861</td><td>0.06689</td><td>0.02404</td><td>0.01202</td><td>—</td></tr>
-  <tr><td>width₉₀ (diag)</td><td>0.05413</td><td>0.04837</td><td>0.05458</td><td>0.1651</td><td>0.1610</td><td>0.05753</td><td>0.02873</td><td>—</td></tr>
-  <tr><td>lower miss₉₀ (→0.05)</td><td>0.01758</td><td>0.05664</td><td><b>0.05078</b></td><td>1.000</td><td>0.9980</td><td>0.02734</td><td>0.2891</td><td><b>SBTS</b></td></tr>
-  <tr><td>upper miss₉₀ (→0.05)</td><td>0.1230</td><td>0.1621</td><td><b>0.08398</b></td><td>0</td><td>0</td><td>0.05859</td><td>0.1777</td><td><b>SBTS</b></td></tr>
+  <tr><td colspan="10"><b>cum (M×H trajectory)</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.04131</b></td><td>0.04142</td><td>0.04149</td><td>0.04158</td><td>0.04921</td><td>0.05094</td><td>0.04154</td><td>0.04796</td><td><b>CSDI</b></td></tr>
+  <tr><td>CRPS ↓</td><td>0.02548</td><td><b>0.02531</b></td><td>0.02544</td><td>0.02544</td><td>0.02624</td><td>0.02722</td><td>0.02539</td><td>0.02946</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4571</td><td><b>0.5105</b></td><td>0.4764</td><td>0.4839</td><td>0.4050</td><td>0.4664</td><td>0.4875</td><td>0.4719</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td>0.8629</td><td><b>0.8957</b></td><td>0.8691</td><td>0.8805</td><td>0.7905</td><td>0.8177</td><td>0.8919</td><td>0.8553</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.05070</td><td>0.05901</td><td>0.05376</td><td>0.05536</td><td>0.04454</td><td>0.05477</td><td>0.05573</td><td>0.06286</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.1318</td><td>0.1488</td><td>0.1353</td><td>0.1439</td><td>0.1166</td><td>0.1348</td><td>0.1462</td><td>0.1520</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07764</td><td><b>0.04840</b></td><td>0.06476</td><td>0.05554</td><td>0.09595</td><td>0.09265</td><td>0.05731</td><td>0.08331</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td>0.05945</td><td><b>0.05591</b></td><td>0.06616</td><td>0.06396</td><td>0.1135</td><td>0.08966</td><td>0.05078</td><td>0.06134</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td colspan="10"><b>step (M×H)</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01177</td><td>0.01176</td><td>0.01180</td><td>0.01295</td><td>0.01332</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
+  <tr><td>CRPS ↓</td><td>0.006780</td><td><b>0.006766</b></td><td>0.006794</td><td>0.006812</td><td>0.01272</td><td>0.01473</td><td>0.006765</td><td>0.006874</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4510</td><td>0.4811</td><td>0.4656</td><td><b>0.4813</b></td><td>0.9449</td><td>0.9479</td><td>0.4849</td><td>0.5157</td><td><b>SBTS</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td>0.8602</td><td><b>0.8854</b></td><td>0.8591</td><td>0.8782</td><td>0.9970</td><td>0.9949</td><td>0.8869</td><td>0.8866</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.01321</td><td>0.01429</td><td>0.01359</td><td>0.01434</td><td>0.06405</td><td>0.07667</td><td>0.01434</td><td>0.01602</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.03524</td><td>0.03794</td><td>0.03530</td><td>0.03769</td><td>0.1609</td><td>0.1801</td><td>0.03828</td><td>0.03968</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07098</td><td><b>0.05573</b></td><td>0.07233</td><td>0.05890</td><td>0.001770</td><td>0.002319</td><td>0.05676</td><td>0.05933</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td>0.06885</td><td><b>0.05884</b></td><td>0.06860</td><td>0.06287</td><td>0.001221</td><td>0.002808</td><td>0.05634</td><td>0.05408</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td colspan="10"><b>rv (M scalar)</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.01458</td><td><b>0.01364</b></td><td>0.01516</td><td>0.01420</td><td>0.2307</td><td>0.2865</td><td>0.01381</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>CRPS ↓</td><td>0.01055</td><td><b>0.009653</b></td><td>0.01098</td><td>0.01010</td><td>0.1913</td><td>0.2291</td><td>0.009777</td><td>0.01168</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4609</td><td><b>0.4805</b></td><td>0.4121</td><td>0.4805</td><td>0</td><td>0</td><td>0.5059</td><td>0.2344</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td>0.8594</td><td><b>0.8945</b></td><td>0.7812</td><td>0.8652</td><td>0</td><td>0.001953</td><td>0.9141</td><td>0.5332</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.02220</td><td>0.02273</td><td>0.02027</td><td>0.02287</td><td>0.06861</td><td>0.06689</td><td>0.02404</td><td>0.01202</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.05413</td><td>0.05489</td><td>0.04837</td><td>0.05458</td><td>0.1651</td><td>0.1610</td><td>0.05753</td><td>0.02873</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.01758</td><td>0.04102</td><td>0.05664</td><td><b>0.05078</b></td><td>1.000</td><td>0.9980</td><td>0.02734</td><td>0.2891</td><td><b>SBTS</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td>0.1230</td><td><b>0.06445</b></td><td>0.1621</td><td>0.08398</td><td>0</td><td>0</td><td>0.05859</td><td>0.1777</td><td><b>TimeDiT (raw)</b></td></tr>
 </tbody>
 </table>
 
 </details>
 
 <details>
-<summary><b>Bank 16 384</b> — winners: CSDI 8 · SBTS 7 · LS4 3</summary>
+<summary><b>Bank 16 384</b> — winners: TimeDiT (raw) 14 · CSDI 3 · SBTS 1</summary>
 
 <table>
 <thead>
   <tr>
     <th rowspan="2">Quantity / metric</th>
-    <th colspan="3">Generators (16 384 bank)</th>
+    <th colspan="4">Generators (16 384 bank)</th>
     <th colspan="2">Forecasters (fine-tuned @4096)<br><sup>bank-independent</sup></th>
     <th rowspan="2">Heston oracle<br>(perfect floor, 16 384)</th>
     <th rowspan="2">RW floor<br><sup>bank-independent</sup></th>
@@ -313,6 +317,7 @@ all five tables (flagged *bank-independent* in the header).
   </tr>
   <tr>
     <th>CSDI</th>
+    <th>TimeDiT (raw)</th>
     <th>LS4</th>
     <th>SBTS</th>
     <th>Chronos-2</th>
@@ -320,46 +325,46 @@ all five tables (flagged *bank-independent* in the header).
   </tr>
 </thead>
 <tbody>
-  <tr><td colspan="9"><b>cum (M×H trajectory)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.04142</b></td><td>0.04150</td><td>0.04234</td><td>0.04921</td><td>0.05094</td><td>0.04155</td><td>0.04796</td><td><b>CSDI</b></td></tr>
-  <tr><td>CRPS ↓</td><td>0.02543</td><td><b>0.02542</b></td><td>0.02610</td><td>0.02624</td><td>0.02722</td><td>0.02535</td><td>0.02946</td><td><b>LS4</b></td></tr>
-  <tr><td>coverage₅₀ (→0.50)</td><td>0.4604</td><td><b>0.4755</b></td><td>0.4694</td><td>0.4050</td><td>0.4664</td><td>0.4859</td><td>0.4719</td><td><b>LS4</b></td></tr>
-  <tr><td>coverage₉₀ (→0.90)</td><td><b>0.8694</b></td><td>0.8685</td><td>0.8644</td><td>0.7905</td><td>0.8177</td><td>0.8884</td><td>0.8553</td><td><b>CSDI</b></td></tr>
-  <tr><td>width₅₀ (diag)</td><td>0.05197</td><td>0.05375</td><td>0.05538</td><td>0.04454</td><td>0.05477</td><td>0.05606</td><td>0.06286</td><td>—</td></tr>
-  <tr><td>width₉₀ (diag)</td><td>0.1348</td><td>0.1357</td><td>0.1410</td><td>0.1166</td><td>0.1348</td><td>0.1446</td><td>0.1520</td><td>—</td></tr>
-  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07318</td><td><b>0.06458</b></td><td>0.06787</td><td>0.09595</td><td>0.09265</td><td>0.05731</td><td>0.08331</td><td><b>LS4</b></td></tr>
-  <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05743</b></td><td>0.06689</td><td>0.06769</td><td>0.1135</td><td>0.08966</td><td>0.05432</td><td>0.06134</td><td><b>CSDI</b></td></tr>
-  <tr><td colspan="9"><b>step (M×H)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01176</td><td>0.01192</td><td>0.01295</td><td>0.01332</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
-  <tr><td>CRPS ↓</td><td><b>0.006777</b></td><td>0.006788</td><td>0.006930</td><td>0.01272</td><td>0.01473</td><td>0.006761</td><td>0.006874</td><td><b>CSDI</b></td></tr>
-  <tr><td>coverage₅₀ (→0.50)</td><td>0.4493</td><td>0.4648</td><td><b>0.4751</b></td><td>0.9449</td><td>0.9479</td><td>0.4810</td><td>0.5157</td><td><b>SBTS</b></td></tr>
-  <tr><td>coverage₉₀ (→0.90)</td><td><b>0.8639</b></td><td>0.8630</td><td>0.8624</td><td>0.9970</td><td>0.9949</td><td>0.8862</td><td>0.8866</td><td><b>CSDI</b></td></tr>
-  <tr><td>width₅₀ (diag)</td><td>0.01326</td><td>0.01365</td><td>0.01444</td><td>0.06405</td><td>0.07667</td><td>0.01437</td><td>0.01602</td><td>—</td></tr>
-  <tr><td>width₉₀ (diag)</td><td>0.03534</td><td>0.03544</td><td>0.03709</td><td>0.1609</td><td>0.1801</td><td>0.03807</td><td>0.03968</td><td>—</td></tr>
-  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07104</td><td>0.06995</td><td><b>0.06750</b></td><td>0.001770</td><td>0.002319</td><td>0.05762</td><td>0.05933</td><td><b>SBTS</b></td></tr>
-  <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.06506</b></td><td>0.06702</td><td>0.07013</td><td>0.001221</td><td>0.002808</td><td>0.05621</td><td>0.05408</td><td><b>CSDI</b></td></tr>
-  <tr><td colspan="9"><b>rv (M scalar)</b></td></tr>
-  <tr><td>RMSE ↓</td><td>0.01421</td><td>0.01470</td><td><b>0.01414</b></td><td>0.2307</td><td>0.2865</td><td>0.01347</td><td>0.01509</td><td><b>SBTS</b></td></tr>
-  <tr><td>CRPS ↓</td><td>0.01028</td><td>0.01066</td><td><b>0.01009</b></td><td>0.1913</td><td>0.2291</td><td>0.009513</td><td>0.01168</td><td><b>SBTS</b></td></tr>
-  <tr><td>coverage₅₀ (→0.50)</td><td>0.4570</td><td>0.4199</td><td><b>0.4629</b></td><td>0</td><td>0</td><td>0.4961</td><td>0.2344</td><td><b>SBTS</b></td></tr>
-  <tr><td>coverage₉₀ (→0.90)</td><td><b>0.8691</b></td><td>0.7871</td><td>0.8574</td><td>0</td><td>0.001953</td><td>0.9141</td><td>0.5332</td><td><b>CSDI</b></td></tr>
-  <tr><td>width₅₀ (diag)</td><td>0.02189</td><td>0.01990</td><td>0.02194</td><td>0.06861</td><td>0.06689</td><td>0.02286</td><td>0.01202</td><td>—</td></tr>
-  <tr><td>width₉₀ (diag)</td><td>0.05318</td><td>0.04786</td><td>0.05252</td><td>0.1651</td><td>0.1610</td><td>0.05559</td><td>0.02873</td><td>—</td></tr>
-  <tr><td>lower miss₉₀ (→0.05)</td><td>0.01562</td><td>0.05469</td><td><b>0.05273</b></td><td>1.000</td><td>0.9980</td><td>0.03125</td><td>0.2891</td><td><b>SBTS</b></td></tr>
-  <tr><td>upper miss₉₀ (→0.05)</td><td>0.1152</td><td>0.1582</td><td><b>0.08984</b></td><td>0</td><td>0</td><td>0.05469</td><td>0.1777</td><td><b>SBTS</b></td></tr>
+  <tr><td colspan="10"><b>cum (M×H trajectory)</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.04142</b></td><td>0.04156</td><td>0.04150</td><td>0.04234</td><td>0.04921</td><td>0.05094</td><td>0.04155</td><td>0.04796</td><td><b>CSDI</b></td></tr>
+  <tr><td>CRPS ↓</td><td>0.02543</td><td><b>0.02534</b></td><td>0.02542</td><td>0.02610</td><td>0.02624</td><td>0.02722</td><td>0.02535</td><td>0.02946</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4604</td><td><b>0.5103</b></td><td>0.4755</td><td>0.4694</td><td>0.4050</td><td>0.4664</td><td>0.4859</td><td>0.4719</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td>0.8694</td><td><b>0.8952</b></td><td>0.8685</td><td>0.8644</td><td>0.7905</td><td>0.8177</td><td>0.8884</td><td>0.8553</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.05197</td><td>0.05936</td><td>0.05375</td><td>0.05538</td><td>0.04454</td><td>0.05477</td><td>0.05606</td><td>0.06286</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.1348</td><td>0.1484</td><td>0.1357</td><td>0.1410</td><td>0.1166</td><td>0.1348</td><td>0.1446</td><td>0.1520</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07318</td><td><b>0.04651</b></td><td>0.06458</td><td>0.06787</td><td>0.09595</td><td>0.09265</td><td>0.05731</td><td>0.08331</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05743</b></td><td>0.05829</td><td>0.06689</td><td>0.06769</td><td>0.1135</td><td>0.08966</td><td>0.05432</td><td>0.06134</td><td><b>CSDI</b></td></tr>
+  <tr><td colspan="10"><b>step (M×H)</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01177</td><td>0.01176</td><td>0.01192</td><td>0.01295</td><td>0.01332</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
+  <tr><td>CRPS ↓</td><td>0.006777</td><td><b>0.006768</b></td><td>0.006788</td><td>0.006930</td><td>0.01272</td><td>0.01473</td><td>0.006761</td><td>0.006874</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4493</td><td><b>0.4818</b></td><td>0.4648</td><td>0.4751</td><td>0.9449</td><td>0.9479</td><td>0.4810</td><td>0.5157</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td>0.8639</td><td><b>0.8843</b></td><td>0.8630</td><td>0.8624</td><td>0.9970</td><td>0.9949</td><td>0.8862</td><td>0.8866</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.01326</td><td>0.01431</td><td>0.01365</td><td>0.01444</td><td>0.06405</td><td>0.07667</td><td>0.01437</td><td>0.01602</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.03534</td><td>0.03781</td><td>0.03544</td><td>0.03709</td><td>0.1609</td><td>0.1801</td><td>0.03807</td><td>0.03968</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07104</td><td><b>0.05719</b></td><td>0.06995</td><td>0.06750</td><td>0.001770</td><td>0.002319</td><td>0.05762</td><td>0.05933</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td>0.06506</td><td><b>0.05847</b></td><td>0.06702</td><td>0.07013</td><td>0.001221</td><td>0.002808</td><td>0.05621</td><td>0.05408</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td colspan="10"><b>rv (M scalar)</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.01421</td><td><b>0.01341</b></td><td>0.01470</td><td>0.01414</td><td>0.2307</td><td>0.2865</td><td>0.01347</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>CRPS ↓</td><td>0.01028</td><td><b>0.009484</b></td><td>0.01066</td><td>0.01009</td><td>0.1913</td><td>0.2291</td><td>0.009513</td><td>0.01168</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4570</td><td><b>0.4883</b></td><td>0.4199</td><td>0.4629</td><td>0</td><td>0</td><td>0.4961</td><td>0.2344</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td>0.8691</td><td><b>0.8926</b></td><td>0.7871</td><td>0.8574</td><td>0</td><td>0.001953</td><td>0.9141</td><td>0.5332</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.02189</td><td>0.02217</td><td>0.01990</td><td>0.02194</td><td>0.06861</td><td>0.06689</td><td>0.02286</td><td>0.01202</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.05318</td><td>0.05322</td><td>0.04786</td><td>0.05252</td><td>0.1651</td><td>0.1610</td><td>0.05559</td><td>0.02873</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.01562</td><td>0.03906</td><td>0.05469</td><td><b>0.05273</b></td><td>1.000</td><td>0.9980</td><td>0.03125</td><td>0.2891</td><td><b>SBTS</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td>0.1152</td><td><b>0.06836</b></td><td>0.1582</td><td>0.08984</td><td>0</td><td>0</td><td>0.05469</td><td>0.1777</td><td><b>TimeDiT (raw)</b></td></tr>
 </tbody>
 </table>
 
 </details>
 
 <details>
-<summary><b>Bank 65 536</b> — winners: CSDI 13 · LS4 4 · Chronos-2 1</summary>
+<summary><b>Bank 65 536</b> — winners: TimeDiT (raw) 14 · CSDI 3 · LS4 1</summary>
 
 <table>
 <thead>
   <tr>
     <th rowspan="2">Quantity / metric</th>
-    <th colspan="3">Generators (65 536 bank)</th>
+    <th colspan="4">Generators (65 536 bank)</th>
     <th colspan="2">Forecasters (fine-tuned @4096)<br><sup>bank-independent</sup></th>
     <th rowspan="2">Heston oracle<br>(perfect floor, 65 536)</th>
     <th rowspan="2">RW floor<br><sup>bank-independent</sup></th>
@@ -367,6 +372,7 @@ all five tables (flagged *bank-independent* in the header).
   </tr>
   <tr>
     <th>CSDI</th>
+    <th>TimeDiT (raw)</th>
     <th>LS4</th>
     <th>SBTS</th>
     <th>Chronos-2</th>
@@ -374,46 +380,46 @@ all five tables (flagged *bank-independent* in the header).
   </tr>
 </thead>
 <tbody>
-  <tr><td colspan="9"><b>cum (M×H trajectory)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.04130</b></td><td>0.04148</td><td>0.04389</td><td>0.04921</td><td>0.05094</td><td>0.04140</td><td>0.04796</td><td><b>CSDI</b></td></tr>
-  <tr><td>CRPS ↓</td><td><b>0.02535</b></td><td>0.02536</td><td>0.02768</td><td>0.02624</td><td>0.02722</td><td>0.02524</td><td>0.02946</td><td><b>CSDI</b></td></tr>
-  <tr><td>coverage₅₀ (→0.50)</td><td>0.4670</td><td><b>0.4717</b></td><td>0.4256</td><td>0.4050</td><td>0.4664</td><td>0.4886</td><td>0.4719</td><td><b>LS4</b></td></tr>
-  <tr><td>coverage₉₀ (→0.90)</td><td><b>0.8738</b></td><td>0.8685</td><td>0.8198</td><td>0.7905</td><td>0.8177</td><td>0.8887</td><td>0.8553</td><td><b>CSDI</b></td></tr>
-  <tr><td>width₅₀ (diag)</td><td>0.05283</td><td>0.05369</td><td>0.05231</td><td>0.04454</td><td>0.05477</td><td>0.05630</td><td>0.06286</td><td>—</td></tr>
-  <tr><td>width₉₀ (diag)</td><td>0.1354</td><td>0.1353</td><td>0.1309</td><td>0.1166</td><td>0.1348</td><td>0.1448</td><td>0.1520</td><td>—</td></tr>
-  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07147</td><td><b>0.06500</b></td><td>0.08795</td><td>0.09595</td><td>0.09265</td><td>0.05688</td><td>0.08331</td><td><b>LS4</b></td></tr>
-  <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05469</b></td><td>0.06647</td><td>0.09229</td><td>0.1135</td><td>0.08966</td><td>0.05444</td><td>0.06134</td><td><b>CSDI</b></td></tr>
-  <tr><td colspan="9"><b>step (M×H)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01175</b></td><td>0.01177</td><td>0.01228</td><td>0.01295</td><td>0.01332</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
-  <tr><td>CRPS ↓</td><td><b>0.006770</b></td><td>0.006786</td><td>0.007304</td><td>0.01272</td><td>0.01473</td><td>0.006754</td><td>0.006874</td><td><b>CSDI</b></td></tr>
-  <tr><td>coverage₅₀ (→0.50)</td><td>0.4486</td><td><b>0.4667</b></td><td>0.4406</td><td>0.9449</td><td>0.9479</td><td>0.4820</td><td>0.5157</td><td><b>LS4</b></td></tr>
-  <tr><td>coverage₉₀ (→0.90)</td><td><b>0.8639</b></td><td>0.8627</td><td>0.8183</td><td>0.9970</td><td>0.9949</td><td>0.8864</td><td>0.8866</td><td><b>CSDI</b></td></tr>
-  <tr><td>width₅₀ (diag)</td><td>0.01330</td><td>0.01367</td><td>0.01400</td><td>0.06405</td><td>0.07667</td><td>0.01441</td><td>0.01602</td><td>—</td></tr>
-  <tr><td>width₉₀ (diag)</td><td>0.03542</td><td>0.03538</td><td>0.03433</td><td>0.1609</td><td>0.1801</td><td>0.03807</td><td>0.03968</td><td>—</td></tr>
-  <tr><td>lower miss₉₀ (→0.05)</td><td><b>0.07001</b></td><td>0.07025</td><td>0.08905</td><td>0.001770</td><td>0.002319</td><td>0.05658</td><td>0.05933</td><td><b>CSDI</b></td></tr>
-  <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.06610</b></td><td>0.06708</td><td>0.09265</td><td>0.001221</td><td>0.002808</td><td>0.05701</td><td>0.05408</td><td><b>CSDI</b></td></tr>
-  <tr><td colspan="9"><b>rv (M scalar)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01393</b></td><td>0.01448</td><td>0.01432</td><td>0.2307</td><td>0.2865</td><td>0.01314</td><td>0.01509</td><td><b>CSDI</b></td></tr>
-  <tr><td>CRPS ↓</td><td><b>0.01007</b></td><td>0.01048</td><td>0.01058</td><td>0.1913</td><td>0.2291</td><td>0.009330</td><td>0.01168</td><td><b>CSDI</b></td></tr>
-  <tr><td>coverage₅₀ (→0.50)</td><td><b>0.4551</b></td><td>0.4141</td><td>0.4258</td><td>0</td><td>0</td><td>0.4980</td><td>0.2344</td><td><b>CSDI</b></td></tr>
-  <tr><td>coverage₉₀ (→0.90)</td><td><b>0.8652</b></td><td>0.7910</td><td>0.8262</td><td>0</td><td>0.001953</td><td>0.9199</td><td>0.5332</td><td><b>CSDI</b></td></tr>
-  <tr><td>width₅₀ (diag)</td><td>0.02148</td><td>0.01961</td><td>0.02067</td><td>0.06861</td><td>0.06689</td><td>0.02259</td><td>0.01202</td><td>—</td></tr>
-  <tr><td>width₉₀ (diag)</td><td>0.05219</td><td>0.04666</td><td>0.04806</td><td>0.1651</td><td>0.1610</td><td>0.05502</td><td>0.02873</td><td>—</td></tr>
-  <tr><td>lower miss₉₀ (→0.05)</td><td>0.01562</td><td><b>0.05078</b></td><td>0.06445</td><td>1.000</td><td>0.9980</td><td>0.02930</td><td>0.2891</td><td><b>LS4</b></td></tr>
-  <tr><td>upper miss₉₀ (→0.05)</td><td>0.1191</td><td>0.1582</td><td>0.1094</td><td><b>0</b></td><td>0</td><td>0.05078</td><td>0.1777</td><td><b>Chronos-2</b></td></tr>
+  <tr><td colspan="10"><b>cum (M×H trajectory)</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.04130</b></td><td>0.04161</td><td>0.04148</td><td>0.04389</td><td>0.04921</td><td>0.05094</td><td>0.04140</td><td>0.04796</td><td><b>CSDI</b></td></tr>
+  <tr><td>CRPS ↓</td><td>0.02535</td><td><b>0.02533</b></td><td>0.02536</td><td>0.02768</td><td>0.02624</td><td>0.02722</td><td>0.02524</td><td>0.02946</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4670</td><td><b>0.5046</b></td><td>0.4717</td><td>0.4256</td><td>0.4050</td><td>0.4664</td><td>0.4886</td><td>0.4719</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td>0.8738</td><td><b>0.8970</b></td><td>0.8685</td><td>0.8198</td><td>0.7905</td><td>0.8177</td><td>0.8887</td><td>0.8553</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.05283</td><td>0.05886</td><td>0.05369</td><td>0.05231</td><td>0.04454</td><td>0.05477</td><td>0.05630</td><td>0.06286</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.1354</td><td>0.1480</td><td>0.1353</td><td>0.1309</td><td>0.1166</td><td>0.1348</td><td>0.1448</td><td>0.1520</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07147</td><td><b>0.04761</b></td><td>0.06500</td><td>0.08795</td><td>0.09595</td><td>0.09265</td><td>0.05688</td><td>0.08331</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05469</b></td><td>0.05536</td><td>0.06647</td><td>0.09229</td><td>0.1135</td><td>0.08966</td><td>0.05444</td><td>0.06134</td><td><b>CSDI</b></td></tr>
+  <tr><td colspan="10"><b>step (M×H)</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.01175</b></td><td>0.01177</td><td>0.01177</td><td>0.01228</td><td>0.01295</td><td>0.01332</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
+  <tr><td>CRPS ↓</td><td>0.006770</td><td><b>0.006762</b></td><td>0.006786</td><td>0.007304</td><td>0.01272</td><td>0.01473</td><td>0.006754</td><td>0.006874</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4486</td><td><b>0.4765</b></td><td>0.4667</td><td>0.4406</td><td>0.9449</td><td>0.9479</td><td>0.4820</td><td>0.5157</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td>0.8639</td><td><b>0.8810</b></td><td>0.8627</td><td>0.8183</td><td>0.9970</td><td>0.9949</td><td>0.8864</td><td>0.8866</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.01330</td><td>0.01423</td><td>0.01367</td><td>0.01400</td><td>0.06405</td><td>0.07667</td><td>0.01441</td><td>0.01602</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.03542</td><td>0.03760</td><td>0.03538</td><td>0.03433</td><td>0.1609</td><td>0.1801</td><td>0.03807</td><td>0.03968</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07001</td><td><b>0.05884</b></td><td>0.07025</td><td>0.08905</td><td>0.001770</td><td>0.002319</td><td>0.05658</td><td>0.05933</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td>0.06610</td><td><b>0.06012</b></td><td>0.06708</td><td>0.09265</td><td>0.001221</td><td>0.002808</td><td>0.05701</td><td>0.05408</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td colspan="10"><b>rv (M scalar)</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.01393</td><td><b>0.01327</b></td><td>0.01448</td><td>0.01432</td><td>0.2307</td><td>0.2865</td><td>0.01314</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>CRPS ↓</td><td>0.01007</td><td><b>0.009409</b></td><td>0.01048</td><td>0.01058</td><td>0.1913</td><td>0.2291</td><td>0.009330</td><td>0.01168</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4551</td><td><b>0.4902</b></td><td>0.4141</td><td>0.4258</td><td>0</td><td>0</td><td>0.4980</td><td>0.2344</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td>0.8652</td><td><b>0.8945</b></td><td>0.7910</td><td>0.8262</td><td>0</td><td>0.001953</td><td>0.9199</td><td>0.5332</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.02148</td><td>0.02197</td><td>0.01961</td><td>0.02067</td><td>0.06861</td><td>0.06689</td><td>0.02259</td><td>0.01202</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.05219</td><td>0.05302</td><td>0.04666</td><td>0.04806</td><td>0.1651</td><td>0.1610</td><td>0.05502</td><td>0.02873</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.01562</td><td>0.03711</td><td><b>0.05078</b></td><td>0.06445</td><td>1.000</td><td>0.9980</td><td>0.02930</td><td>0.2891</td><td><b>LS4</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td>0.1191</td><td><b>0.06836</b></td><td>0.1582</td><td>0.1094</td><td>0</td><td>0</td><td>0.05078</td><td>0.1777</td><td><b>TimeDiT (raw)</b></td></tr>
 </tbody>
 </table>
 
 </details>
 
 <details>
-<summary><b>Bank 262 144</b> — winners: CSDI 9 · LS4 8 · Chronos-2 1</summary>
+<summary><b>Bank 262 144</b> — winners: TimeDiT (raw) 14 · CSDI 3 · LS4 1</summary>
 
 <table>
 <thead>
   <tr>
     <th rowspan="2">Quantity / metric</th>
-    <th colspan="3">Generators (262 144 bank)</th>
+    <th colspan="4">Generators (262 144 bank)</th>
     <th colspan="2">Forecasters (fine-tuned @4096)<br><sup>bank-independent</sup></th>
     <th rowspan="2">Heston oracle<br>(perfect floor, 262 144)</th>
     <th rowspan="2">RW floor<br><sup>bank-independent</sup></th>
@@ -421,6 +427,7 @@ all five tables (flagged *bank-independent* in the header).
   </tr>
   <tr>
     <th>CSDI</th>
+    <th>TimeDiT (raw)</th>
     <th>LS4</th>
     <th>SBTS</th>
     <th>Chronos-2</th>
@@ -428,33 +435,33 @@ all five tables (flagged *bank-independent* in the header).
   </tr>
 </thead>
 <tbody>
-  <tr><td colspan="9"><b>cum (M×H trajectory)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.04138</b></td><td>0.04149</td><td>0.04540</td><td>0.04921</td><td>0.05094</td><td>0.04136</td><td>0.04796</td><td><b>CSDI</b></td></tr>
-  <tr><td>CRPS ↓</td><td>0.02541</td><td><b>0.02536</b></td><td>0.02987</td><td>0.02624</td><td>0.02722</td><td>0.02524</td><td>0.02946</td><td><b>LS4</b></td></tr>
-  <tr><td>coverage₅₀ (→0.50)</td><td>0.4644</td><td><b>0.4723</b></td><td>0.3552</td><td>0.4050</td><td>0.4664</td><td>0.4904</td><td>0.4719</td><td><b>LS4</b></td></tr>
-  <tr><td>coverage₉₀ (→0.90)</td><td>0.8691</td><td><b>0.8696</b></td><td>0.7396</td><td>0.7905</td><td>0.8177</td><td>0.8922</td><td>0.8553</td><td><b>LS4</b></td></tr>
-  <tr><td>width₅₀ (diag)</td><td>0.05267</td><td>0.05349</td><td>0.04573</td><td>0.04454</td><td>0.05477</td><td>0.05706</td><td>0.06286</td><td>—</td></tr>
-  <tr><td>width₉₀ (diag)</td><td>0.1344</td><td>0.1350</td><td>0.1137</td><td>0.1166</td><td>0.1348</td><td>0.1460</td><td>0.1520</td><td>—</td></tr>
-  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07501</td><td><b>0.06653</b></td><td>0.1324</td><td>0.09595</td><td>0.09265</td><td>0.05548</td><td>0.08331</td><td><b>LS4</b></td></tr>
-  <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05591</b></td><td>0.06384</td><td>0.1280</td><td>0.1135</td><td>0.08966</td><td>0.05231</td><td>0.06134</td><td><b>CSDI</b></td></tr>
-  <tr><td colspan="9"><b>step (M×H)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01177</td><td>0.01290</td><td>0.01295</td><td>0.01332</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
-  <tr><td>CRPS ↓</td><td><b>0.006771</b></td><td>0.006784</td><td>0.008009</td><td>0.01272</td><td>0.01473</td><td>0.006752</td><td>0.006874</td><td><b>CSDI</b></td></tr>
-  <tr><td>coverage₅₀ (→0.50)</td><td>0.4529</td><td><b>0.4653</b></td><td>0.3699</td><td>0.9449</td><td>0.9479</td><td>0.4825</td><td>0.5157</td><td><b>LS4</b></td></tr>
-  <tr><td>coverage₉₀ (→0.90)</td><td>0.8638</td><td><b>0.8645</b></td><td>0.7321</td><td>0.9970</td><td>0.9949</td><td>0.8849</td><td>0.8866</td><td><b>LS4</b></td></tr>
-  <tr><td>width₅₀ (diag)</td><td>0.01332</td><td>0.01367</td><td>0.01230</td><td>0.06405</td><td>0.07667</td><td>0.01444</td><td>0.01602</td><td>—</td></tr>
-  <tr><td>width₉₀ (diag)</td><td>0.03547</td><td>0.03538</td><td>0.02975</td><td>0.1609</td><td>0.1801</td><td>0.03806</td><td>0.03968</td><td>—</td></tr>
-  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07080</td><td><b>0.06830</b></td><td>0.1332</td><td>0.001770</td><td>0.002319</td><td>0.05829</td><td>0.05933</td><td><b>LS4</b></td></tr>
-  <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.06543</b></td><td>0.06720</td><td>0.1347</td><td>0.001221</td><td>0.002808</td><td>0.05682</td><td>0.05408</td><td><b>CSDI</b></td></tr>
-  <tr><td colspan="9"><b>rv (M scalar)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01379</b></td><td>0.01433</td><td>0.01487</td><td>0.2307</td><td>0.2865</td><td>0.01306</td><td>0.01509</td><td><b>CSDI</b></td></tr>
-  <tr><td>CRPS ↓</td><td><b>0.009987</b></td><td>0.01038</td><td>0.01155</td><td>0.1913</td><td>0.2291</td><td>0.009256</td><td>0.01168</td><td><b>CSDI</b></td></tr>
-  <tr><td>coverage₅₀ (→0.50)</td><td><b>0.4609</b></td><td>0.4277</td><td>0.3496</td><td>0</td><td>0</td><td>0.4922</td><td>0.2344</td><td><b>CSDI</b></td></tr>
-  <tr><td>coverage₉₀ (→0.90)</td><td><b>0.8672</b></td><td>0.8105</td><td>0.7500</td><td>0</td><td>0.001953</td><td>0.9180</td><td>0.5332</td><td><b>CSDI</b></td></tr>
-  <tr><td>width₅₀ (diag)</td><td>0.02140</td><td>0.01929</td><td>0.01770</td><td>0.06861</td><td>0.06689</td><td>0.02231</td><td>0.01202</td><td>—</td></tr>
-  <tr><td>width₉₀ (diag)</td><td>0.05196</td><td>0.04621</td><td>0.04149</td><td>0.1651</td><td>0.1610</td><td>0.05430</td><td>0.02873</td><td>—</td></tr>
-  <tr><td>lower miss₉₀ (→0.05)</td><td>0.01758</td><td><b>0.04688</b></td><td>0.09766</td><td>1.000</td><td>0.9980</td><td>0.03125</td><td>0.2891</td><td><b>LS4</b></td></tr>
-  <tr><td>upper miss₉₀ (→0.05)</td><td>0.1152</td><td>0.1426</td><td>0.1523</td><td><b>0</b></td><td>0</td><td>0.05078</td><td>0.1777</td><td><b>Chronos-2</b></td></tr>
+  <tr><td colspan="10"><b>cum (M×H trajectory)</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.04138</b></td><td>0.04152</td><td>0.04149</td><td>0.04540</td><td>0.04921</td><td>0.05094</td><td>0.04136</td><td>0.04796</td><td><b>CSDI</b></td></tr>
+  <tr><td>CRPS ↓</td><td>0.02541</td><td><b>0.02528</b></td><td>0.02536</td><td>0.02987</td><td>0.02624</td><td>0.02722</td><td>0.02524</td><td>0.02946</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4644</td><td><b>0.5010</b></td><td>0.4723</td><td>0.3552</td><td>0.4050</td><td>0.4664</td><td>0.4904</td><td>0.4719</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td>0.8691</td><td><b>0.8972</b></td><td>0.8696</td><td>0.7396</td><td>0.7905</td><td>0.8177</td><td>0.8922</td><td>0.8553</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.05267</td><td>0.05879</td><td>0.05349</td><td>0.04573</td><td>0.04454</td><td>0.05477</td><td>0.05706</td><td>0.06286</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.1344</td><td>0.1480</td><td>0.1350</td><td>0.1137</td><td>0.1166</td><td>0.1348</td><td>0.1460</td><td>0.1520</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07501</td><td><b>0.04675</b></td><td>0.06653</td><td>0.1324</td><td>0.09595</td><td>0.09265</td><td>0.05548</td><td>0.08331</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05591</b></td><td>0.05609</td><td>0.06384</td><td>0.1280</td><td>0.1135</td><td>0.08966</td><td>0.05231</td><td>0.06134</td><td><b>CSDI</b></td></tr>
+  <tr><td colspan="10"><b>step (M×H)</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01177</td><td>0.01177</td><td>0.01290</td><td>0.01295</td><td>0.01332</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
+  <tr><td>CRPS ↓</td><td>0.006771</td><td><b>0.006760</b></td><td>0.006784</td><td>0.008009</td><td>0.01272</td><td>0.01473</td><td>0.006752</td><td>0.006874</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4529</td><td><b>0.4753</b></td><td>0.4653</td><td>0.3699</td><td>0.9449</td><td>0.9479</td><td>0.4825</td><td>0.5157</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td>0.8638</td><td><b>0.8822</b></td><td>0.8645</td><td>0.7321</td><td>0.9970</td><td>0.9949</td><td>0.8849</td><td>0.8866</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.01332</td><td>0.01425</td><td>0.01367</td><td>0.01230</td><td>0.06405</td><td>0.07667</td><td>0.01444</td><td>0.01602</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.03547</td><td>0.03759</td><td>0.03538</td><td>0.02975</td><td>0.1609</td><td>0.1801</td><td>0.03806</td><td>0.03968</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07080</td><td><b>0.05811</b></td><td>0.06830</td><td>0.1332</td><td>0.001770</td><td>0.002319</td><td>0.05829</td><td>0.05933</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td>0.06543</td><td><b>0.05969</b></td><td>0.06720</td><td>0.1347</td><td>0.001221</td><td>0.002808</td><td>0.05682</td><td>0.05408</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td colspan="10"><b>rv (M scalar)</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.01379</td><td><b>0.01305</b></td><td>0.01433</td><td>0.01487</td><td>0.2307</td><td>0.2865</td><td>0.01306</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>CRPS ↓</td><td>0.009987</td><td><b>0.009273</b></td><td>0.01038</td><td>0.01155</td><td>0.1913</td><td>0.2291</td><td>0.009256</td><td>0.01168</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4609</td><td><b>0.4902</b></td><td>0.4277</td><td>0.3496</td><td>0</td><td>0</td><td>0.4922</td><td>0.2344</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td>0.8672</td><td><b>0.8926</b></td><td>0.8105</td><td>0.7500</td><td>0</td><td>0.001953</td><td>0.9180</td><td>0.5332</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.02140</td><td>0.02177</td><td>0.01929</td><td>0.01770</td><td>0.06861</td><td>0.06689</td><td>0.02231</td><td>0.01202</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.05196</td><td>0.05261</td><td>0.04621</td><td>0.04149</td><td>0.1651</td><td>0.1610</td><td>0.05430</td><td>0.02873</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.01758</td><td>0.03906</td><td><b>0.04688</b></td><td>0.09766</td><td>1.000</td><td>0.9980</td><td>0.03125</td><td>0.2891</td><td><b>LS4</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td>0.1152</td><td><b>0.06836</b></td><td>0.1426</td><td>0.1523</td><td>0</td><td>0</td><td>0.05078</td><td>0.1777</td><td><b>TimeDiT (raw)</b></td></tr>
 </tbody>
 </table>
 
@@ -466,7 +473,7 @@ all five tables (flagged *bank-independent* in the header).
 <thead>
   <tr>
     <th rowspan="2">Quantity / metric</th>
-    <th colspan="3">Generators (1 000 000 bank)</th>
+    <th colspan="4">Generators (1 000 000 bank)</th>
     <th colspan="2">Forecasters (fine-tuned @4096)<br><sup>bank-independent</sup></th>
     <th rowspan="2">Heston oracle<br>(perfect floor, 1 000 000)</th>
     <th rowspan="2">RW floor<br><sup>bank-independent</sup></th>
@@ -474,6 +481,7 @@ all five tables (flagged *bank-independent* in the header).
   </tr>
   <tr>
     <th>CSDI</th>
+    <th>TimeDiT (raw)</th>
     <th>LS4</th>
     <th>SBTS</th>
     <th>Chronos-2</th>
@@ -481,37 +489,37 @@ all five tables (flagged *bank-independent* in the header).
   </tr>
 </thead>
 <tbody>
-  <tr><td colspan="9"><b>cum (M×H trajectory)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.04144</b></td><td>0.04145</td><td>0.04674</td><td>0.04921</td><td>0.05094</td><td>0.04148</td><td>0.04796</td><td><b>CSDI</b></td></tr>
-  <tr><td>CRPS ↓</td><td>0.02544</td><td><b>0.02534</b></td><td>0.03179</td><td>0.02624</td><td>0.02722</td><td>0.02525</td><td>0.02946</td><td><b>LS4</b></td></tr>
-  <tr><td>coverage₅₀ (→0.50)</td><td>0.4624</td><td><b>0.4688</b></td><td>0.3001</td><td>0.4050</td><td>0.4664</td><td>0.4891</td><td>0.4719</td><td><b>LS4</b></td></tr>
-  <tr><td>coverage₉₀ (→0.90)</td><td><b>0.8682</b></td><td>0.8682</td><td>0.6575</td><td>0.7905</td><td>0.8177</td><td>0.8941</td><td>0.8553</td><td><b>CSDI</b></td></tr>
-  <tr><td>width₅₀ (diag)</td><td>0.05285</td><td>0.05359</td><td>0.04003</td><td>0.04454</td><td>0.05477</td><td>0.05719</td><td>0.06286</td><td>—</td></tr>
-  <tr><td>width₉₀ (diag)</td><td>0.1348</td><td>0.1349</td><td>0.09761</td><td>0.1166</td><td>0.1348</td><td>0.1465</td><td>0.1520</td><td>—</td></tr>
-  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07599</td><td><b>0.06757</b></td><td>0.1738</td><td>0.09595</td><td>0.09265</td><td>0.05463</td><td>0.08331</td><td><b>LS4</b></td></tr>
-  <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05579</b></td><td>0.06427</td><td>0.1687</td><td>0.1135</td><td>0.08966</td><td>0.05127</td><td>0.06134</td><td><b>CSDI</b></td></tr>
-  <tr><td colspan="9"><b>step (M×H)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01176</td><td>0.01350</td><td>0.01295</td><td>0.01332</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
-  <tr><td>CRPS ↓</td><td><b>0.006767</b></td><td>0.006778</td><td>0.008688</td><td>0.01272</td><td>0.01473</td><td>0.006750</td><td>0.006874</td><td><b>CSDI</b></td></tr>
-  <tr><td>coverage₅₀ (→0.50)</td><td>0.4532</td><td><b>0.4672</b></td><td>0.3082</td><td>0.9449</td><td>0.9479</td><td>0.4816</td><td>0.5157</td><td><b>LS4</b></td></tr>
-  <tr><td>coverage₉₀ (→0.90)</td><td><b>0.8640</b></td><td>0.8640</td><td>0.6479</td><td>0.9970</td><td>0.9949</td><td>0.8864</td><td>0.8866</td><td><b>CSDI</b></td></tr>
-  <tr><td>width₅₀ (diag)</td><td>0.01338</td><td>0.01368</td><td>0.01071</td><td>0.06405</td><td>0.07667</td><td>0.01449</td><td>0.01602</td><td>—</td></tr>
-  <tr><td>width₉₀ (diag)</td><td>0.03550</td><td>0.03538</td><td>0.02568</td><td>0.1609</td><td>0.1801</td><td>0.03815</td><td>0.03968</td><td>—</td></tr>
-  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07062</td><td><b>0.06921</b></td><td>0.1762</td><td>0.001770</td><td>0.002319</td><td>0.05725</td><td>0.05933</td><td><b>LS4</b></td></tr>
-  <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.06543</b></td><td>0.06683</td><td>0.1758</td><td>0.001221</td><td>0.002808</td><td>0.05634</td><td>0.05408</td><td><b>CSDI</b></td></tr>
-  <tr><td colspan="9"><b>rv (M scalar)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01373</b></td><td>0.01426</td><td>0.01541</td><td>0.2307</td><td>0.2865</td><td>0.01291</td><td>0.01509</td><td><b>CSDI</b></td></tr>
-  <tr><td>CRPS ↓</td><td><b>0.009938</b></td><td>0.01032</td><td>0.01241</td><td>0.1913</td><td>0.2291</td><td>0.009143</td><td>0.01168</td><td><b>CSDI</b></td></tr>
-  <tr><td>coverage₅₀ (→0.50)</td><td><b>0.4746</b></td><td>0.4102</td><td>0.2930</td><td>0</td><td>0</td><td>0.4727</td><td>0.2344</td><td><b>CSDI</b></td></tr>
-  <tr><td>coverage₉₀ (→0.90)</td><td><b>0.8633</b></td><td>0.7988</td><td>0.6641</td><td>0</td><td>0.001953</td><td>0.9238</td><td>0.5332</td><td><b>CSDI</b></td></tr>
-  <tr><td>width₅₀ (diag)</td><td>0.02115</td><td>0.01914</td><td>0.01493</td><td>0.06861</td><td>0.06689</td><td>0.02217</td><td>0.01202</td><td>—</td></tr>
-  <tr><td>width₉₀ (diag)</td><td>0.05138</td><td>0.04589</td><td>0.03608</td><td>0.1651</td><td>0.1610</td><td>0.05411</td><td>0.02873</td><td>—</td></tr>
-  <tr><td>lower miss₉₀ (→0.05)</td><td>0.01758</td><td><b>0.05078</b></td><td>0.1328</td><td>1.000</td><td>0.9980</td><td>0.02930</td><td>0.2891</td><td><b>LS4</b></td></tr>
-  <tr><td>upper miss₉₀ (→0.05)</td><td>0.1191</td><td>0.1504</td><td>0.2031</td><td><b>0</b></td><td>0</td><td>0.04688</td><td>0.1777</td><td><b>Chronos-2</b></td></tr>
+  <tr><td colspan="10"><b>cum (M×H trajectory)</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.04144</b></td><td>0.04145</td><td>0.04145</td><td>0.04674</td><td>0.04921</td><td>0.05094</td><td>0.04148</td><td>0.04796</td><td><b>CSDI</b></td></tr>
+  <tr><td>CRPS ↓</td><td>0.02544</td><td><b>0.02521</b></td><td>0.02534</td><td>0.03179</td><td>0.02624</td><td>0.02722</td><td>0.02525</td><td>0.02946</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4624</td><td><b>0.5072</b></td><td>0.4688</td><td>0.3001</td><td>0.4050</td><td>0.4664</td><td>0.4891</td><td>0.4719</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td>0.8682</td><td><b>0.8983</b></td><td>0.8682</td><td>0.6575</td><td>0.7905</td><td>0.8177</td><td>0.8941</td><td>0.8553</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.05285</td><td>0.05901</td><td>0.05359</td><td>0.04003</td><td>0.04454</td><td>0.05477</td><td>0.05719</td><td>0.06286</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.1348</td><td>0.1486</td><td>0.1349</td><td>0.09761</td><td>0.1166</td><td>0.1348</td><td>0.1465</td><td>0.1520</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07599</td><td><b>0.04572</b></td><td>0.06757</td><td>0.1738</td><td>0.09595</td><td>0.09265</td><td>0.05463</td><td>0.08331</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05579</b></td><td>0.05597</td><td>0.06427</td><td>0.1687</td><td>0.1135</td><td>0.08966</td><td>0.05127</td><td>0.06134</td><td><b>CSDI</b></td></tr>
+  <tr><td colspan="10"><b>step (M×H)</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01178</td><td>0.01176</td><td>0.01350</td><td>0.01295</td><td>0.01332</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
+  <tr><td>CRPS ↓</td><td>0.006767</td><td><b>0.006760</b></td><td>0.006778</td><td>0.008688</td><td>0.01272</td><td>0.01473</td><td>0.006750</td><td>0.006874</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4532</td><td><b>0.4761</b></td><td>0.4672</td><td>0.3082</td><td>0.9449</td><td>0.9479</td><td>0.4816</td><td>0.5157</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td>0.8640</td><td><b>0.8806</b></td><td>0.8640</td><td>0.6479</td><td>0.9970</td><td>0.9949</td><td>0.8864</td><td>0.8866</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.01338</td><td>0.01428</td><td>0.01368</td><td>0.01071</td><td>0.06405</td><td>0.07667</td><td>0.01449</td><td>0.01602</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.03550</td><td>0.03758</td><td>0.03538</td><td>0.02568</td><td>0.1609</td><td>0.1801</td><td>0.03815</td><td>0.03968</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.07062</td><td><b>0.05884</b></td><td>0.06921</td><td>0.1762</td><td>0.001770</td><td>0.002319</td><td>0.05725</td><td>0.05933</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td>0.06543</td><td><b>0.06061</b></td><td>0.06683</td><td>0.1758</td><td>0.001221</td><td>0.002808</td><td>0.05634</td><td>0.05408</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td colspan="10"><b>rv (M scalar)</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.01373</td><td><b>0.01295</b></td><td>0.01426</td><td>0.01541</td><td>0.2307</td><td>0.2865</td><td>0.01291</td><td>0.01509</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>CRPS ↓</td><td>0.009938</td><td><b>0.009179</b></td><td>0.01032</td><td>0.01241</td><td>0.1913</td><td>0.2291</td><td>0.009143</td><td>0.01168</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₅₀ (→0.50)</td><td>0.4746</td><td><b>0.4883</b></td><td>0.4102</td><td>0.2930</td><td>0</td><td>0</td><td>0.4727</td><td>0.2344</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>coverage₉₀ (→0.90)</td><td>0.8633</td><td><b>0.8945</b></td><td>0.7988</td><td>0.6641</td><td>0</td><td>0.001953</td><td>0.9238</td><td>0.5332</td><td><b>TimeDiT (raw)</b></td></tr>
+  <tr><td>width₅₀ (diag)</td><td>0.02115</td><td>0.02155</td><td>0.01914</td><td>0.01493</td><td>0.06861</td><td>0.06689</td><td>0.02217</td><td>0.01202</td><td>—</td></tr>
+  <tr><td>width₉₀ (diag)</td><td>0.05138</td><td>0.05213</td><td>0.04589</td><td>0.03608</td><td>0.1651</td><td>0.1610</td><td>0.05411</td><td>0.02873</td><td>—</td></tr>
+  <tr><td>lower miss₉₀ (→0.05)</td><td>0.01758</td><td>0.03125</td><td><b>0.05078</b></td><td>0.1328</td><td>1.000</td><td>0.9980</td><td>0.02930</td><td>0.2891</td><td><b>LS4</b></td></tr>
+  <tr><td>upper miss₉₀ (→0.05)</td><td>0.1191</td><td><b>0.07422</b></td><td>0.1504</td><td>0.2031</td><td>0</td><td>0</td><td>0.04688</td><td>0.1777</td><td><b>TimeDiT (raw)</b></td></tr>
 </tbody>
 </table>
 
-<!-- PS strict win-counts @1 000 000: CSDI=11, LS4=6, Chronos-2=1 -->
+<!-- PS strict win-counts @1 000 000 (of 18 ranked rows = 6 ranked metrics × 3 quantities; width rows are diagnostic): TimeDiT (raw)=14, CSDI=3, LS4=1 -->
 
 > **RMSE convention.** All five tables report RMSE as **mean_q(√se_q)** — the average per-query root error —
 > matching the path-shadowing reproducibility report (Tables 1–5). This is *not* √(mean_q se_q); by Jensen the
@@ -522,28 +530,39 @@ all five tables (flagged *bank-independent* in the header).
 > near-tie with CSDI — so **do not rank the forecaster RMSE cells against the generator ones**. Every other
 > metric (CRPS, coverages, widths, miss rates) is convention-free and fully comparable across all seven columns.
 
-**Bank size flips the ranking, and that is the result.** Read the win-counts down the sweep:
+**TimeDiT (raw) wins the sweep outright, and SBTS collapses through it.** Read the win-counts down the sweep:
 
 | Bank | Winners (of 18 ranked rows) | SBTS cum-CRPS | SBTS cum coverage₉₀ (→0.90) |
 |---|---|---|---|
-| 4 096 | **SBTS 14** · CSDI 4 | 0.0254 | 0.8805 |
-| 16 384 | **CSDI 8** · SBTS 7 · LS4 3 | 0.0261 | 0.8644 |
-| 65 536 | **CSDI 13** · LS4 4 · Chronos-2 1 | 0.0277 | 0.8198 |
-| 262 144 | **CSDI 9** · LS4 8 · Chronos-2 1 | 0.0299 | 0.7396 |
-| 1 000 000 | **CSDI 11** · LS4 6 · Chronos-2 1 | **0.0318** | **0.6575** |
+| 4 096 | **TimeDiT (raw) 14** · CSDI 2 · SBTS 2 | 0.0254 | 0.8805 |
+| 16 384 | **TimeDiT (raw) 14** · CSDI 3 · SBTS 1 | 0.0261 | 0.8644 |
+| 65 536 | **TimeDiT (raw) 14** · CSDI 3 · LS4 1 | 0.0277 | 0.8198 |
+| 262 144 | **TimeDiT (raw) 14** · CSDI 3 · LS4 1 | 0.0299 | 0.7396 |
+| 1 000 000 | **TimeDiT (raw) 14** · CSDI 3 · LS4 1 | **0.0318** | **0.6575** |
 
-SBTS goes from **14/18 to 0/18**, its cum-CRPS degrades monotonically past the RW floor (0.0295) and its
-coverage₉₀ collapses monotonically from 0.88 to 0.66 — while CSDI and LS4 both *improve* toward the oracle. A
-small bank hides conditional-variance collapse: with only 4 096 candidates the K=256 nearest prefixes are loose
-matches, so the retrieved ensemble inherits spread from the *marginal* law — which SBTS reproduces almost
-perfectly. As the bank grows the matches tighten and the ensemble converges to SBTS's true *conditional* law,
-which is far too narrow. **Evaluating path-shadowing at a small bank measures the marginal law wearing a
+Two independent readings sit in that table.
+
+**TimeDiT (raw) takes 14 of 18 rows at *every* bank size** — the only method whose ranking is completely
+bank-independent. It is not winning because a small bank flatters it and it is not winning by a nose: it takes
+all six calibration rows on cum and step, every rv row but one, and both rv accuracy rows. Its cum-CRPS at 1M
+(**0.02521**) is nominally *below the Heston oracle's* 0.02525, and its cum coverage₅₀/₉₀ (0.507 / 0.898) are
+closer to nominal than the oracle's own (0.489 / 0.894). That is the ceiling, reached — not beaten; the gaps
+are well inside the bootstrap CIs. The one row it loses to LS4, rv lower-miss₉₀, is the mirror of its single
+real defect: **rv upper-miss₉₀ 0.074 vs the ideal 0.05**, i.e. a shadow ensemble slightly too thin in the
+high-volatility tail.
+
+**SBTS goes from 2/18 to 0/18**, its cum-CRPS degrades monotonically past the RW floor (0.0295) and its
+coverage₉₀ collapses monotonically from 0.88 to 0.66 — while CSDI, LS4 and TimeDiT all *improve* toward the
+oracle. A small bank hides conditional-variance collapse: with only 4 096 candidates the K=256 nearest prefixes
+are loose matches, so the retrieved ensemble inherits spread from the *marginal* law — which SBTS reproduces
+almost perfectly. As the bank grows the matches tighten and the ensemble converges to SBTS's true *conditional*
+law, which is far too narrow. **Evaluating path-shadowing at a small bank measures the marginal law wearing a
 conditional mask.** The 1M table is therefore the only one that answers the intended question; the smaller ones
 are shown to expose exactly this artefact.
 
 
 **The generators dominate the forecasters on distributional forecasting, and the full metric set shows
-*where* the forecasters break.** On the smooth **cum** trajectory all four methods are within ~7% on
+*where* the forecasters break.** On the smooth **cum** trajectory every column but SBTS is within ~8% on
 CRPS/RMSE and near the Heston oracle — a partial path's cumulative drift is easy, and even a point-forecaster
 tracks it. But move to the **shape** of the distribution and the two families diverge:
 
@@ -557,11 +576,14 @@ tracks it. But move to the **shape** of the distribution and the two families di
   exactly what path-shadowing over a well-trained generator bank recovers. (Chronos-2's lone "win" — rv upper
   miss₉₀ = 0 — is degenerate: 0% of truth exceeds an interval that the *whole* distribution already sits above.)
 
-Between the *trained* generators it is close: **CSDI 11 — LS4 6 — Chronos-2 1** across the 18 ranked rows. CSDI
-takes all three RMSE rows, both 90% coverages, the upper-miss rows and every rv row; LS4 takes cum-CRPS, both
-50% coverages and all three lower-miss rows. Both sit right on the Heston oracle across all 24 values and far
-ahead of either forecaster on everything but bare cum drift — the whole point of shadow-forecasting over a distribution-faithful generator
-rather than a mean-reverting point forecaster.
+Between the *trained* generators it is **not** close once TimeDiT is in the table: **TimeDiT (raw) 14 — CSDI 3
+— LS4 1** across the 18 ranked rows. TimeDiT takes all three CRPS rows, all four 50/90% coverages on cum and
+step, both rv accuracy rows and five of the six miss rows; CSDI keeps all three **RMSE** rows plus cum
+upper-miss; LS4 keeps rv lower-miss. Note what CSDI retaining every RMSE row means: the two are separated by
+**distributional** quality, not point accuracy — their cum-RMSE differs in the 5th decimal (0.04144 vs 0.04145)
+while their rv-CRPS differs by 8% (0.00994 vs 0.00918). All three sit on or near the Heston oracle across the
+24 values and far ahead of either forecaster on everything but bare cum drift — the whole point of
+shadow-forecasting over a distribution-faithful generator rather than a mean-reverting point forecaster.
 
 **SBTS is the counter-example, and it is the single most important result in this folder.** The method that
 *won* the unconditional A/B tables outright (26/36 A, 29/31 B) **wins zero of the 18 PS rows** and is the only
@@ -746,7 +768,7 @@ for the full split table and file list. Summary:
 | Method | Status | Folder | Verdict |
 |--------|--------|--------|---------|
 | CSDI | ✅ done (5 seeds + 1M PS bank) | [`CSDI/`](CSDI/README.md) | **mirror-opposite of LS4** — log-returns **fix** the vol/tail/adversarial facts (A9 −70%, A31 −48%, A32 −42%, A18-GRU halved) but the `cumsum→exp` reconstruction **drifts the terminal +3.25%**, breaking price-location (A13, A17, A25, grid_tvd). Seed-stable. Matched control: raw wins **19–16** on row-count, log-returns win the facts. |
-| TimeDiT | ✅ A/B (5 seeds) + PS on the **raw** checkpoint | [`TimeDiT/`](TimeDiT/README.md) | log-returns **hurt, decisively — and unlike LS4 with no seed instability to blame** (all 5 seeds plateau within 3.4% of each other). Essentially every fidelity metric degrades vs the original price-input run; wins only **2/36 A** and **1/31 B** sublines. The matched 4096/seed-0 control **confirms** the multi-seed verdict rather than reversing it: raw price wins **31–3** (1 exact tie). Because preprocessing loses, the 1M scenario bank was built from the **no-preproc** checkpoint; on the strict protocol **TimeDiT-raw matches the Heston oracle on cum (0.02521 vs 0.02525), step (0.00676 vs 0.00675) and RV CRPS (0.00918 vs 0.00914)** — the RV tie is something LS4 could not achieve. Kept out of the cross-method PS table because that column would not be like-for-like. |
+| TimeDiT | ✅ A/B (5 seeds) + PS on the **raw** checkpoint | [`TimeDiT/`](TimeDiT/README.md) | **Split verdict — the most interesting result in the folder.** *Unconditionally*, log-returns **hurt decisively, and unlike LS4 with no seed instability to blame** (all 5 seeds plateau within 3.4% of each other): essentially every fidelity metric degrades vs the original price-input run, winning only **2/36 A** and **1/31 B** sublines, and the matched 4096/seed-0 control **confirms** it rather than reversing it — raw price wins **31–3** (1 exact tie). *Conditionally*, the same model on the raw checkpoint is **the strongest generator here**: `TimeDiT (raw)` takes **14/18 ranked PS rows at all five bank sizes**, matching or beating the Heston oracle on cum CRPS (0.02521 vs 0.02525), step (0.00676 vs 0.00675) and **RV CRPS (0.00918 vs 0.00914)** — the RV tie is something LS4 could not achieve. Marginal fidelity and conditional calibration are different properties, and TimeDiT is the clearest demonstration of it. |
 | LS4 | ✅ done (5 seeds + 1M PS bank) | [`LS4/`](LS4/README.md) | log-returns **hurt** LS4 — 30/34 A-metrics regress, seeds destabilize; only A28 kurtosis-ratio improves. On the matched 4096/seed-0 control the preprocessing wins the stylised facts **19–16**. |
 | SBTS | ✅ done (5 seeds + 1M PS bank) | [`SBTS/`](SBTS/README.md) | **the split-personality result.** Non-parametric kernel; log-returns are its native representation. **Best unconditional generator in the folder** — sweeps the A table (26/36) and B table (29/31 sublines), tightest grid_tvd (5.36%), ~zero terminal drift. Yet it **fails path-shadowing**: wins 0/18 PS rows and falls **below the RW floor** (cum-CRPS 0.0318 > 0.0295), coverage collapsing to ~0.66 from conditional-variance under-dispersion that *worsens* as the bank grows. Marginal fidelity ≠ conditional calibration. Ablation: native log-returns beat raw price **34–2**. |
 

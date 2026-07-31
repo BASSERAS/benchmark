@@ -17,8 +17,8 @@ canonical per-method report so the two runs are directly comparable.
 > 1M-path scenario bank was built from the **no-preproc** checkpoint and the strict paper protocol
 > (arXiv:2308.01486) was run on that. **No preprocessed bank exists and none was evaluated.** Results:
 > [path shadowing on the raw checkpoint](#path-shadowing--strict-paper-protocol-arxiv230801486-on-the-raw--no-preproc-checkpoint).
-> Consequently TimeDiT is **not** in the cross-method PS table in [`../README.md`](../README.md) — its
-> column would not be like-for-like with CSDI / LS4 / SBTS.
+> It ships in the cross-method PS table in [`../README.md`](../README.md) as **`TimeDiT (raw)`**, where it
+> is the **best generator in the folder — 14 of 18 ranked rows at every one of the five bank sizes**.
 
 ---
 
@@ -524,10 +524,13 @@ more closely — the visual counterpart to the tail and vol Δ% rows above.
 > on the SBTS log-return one. That is a direct consequence of the verdict in this section:
 > **log-return preprocessing degrades TimeDiT** — raw price wins the matched seed-0 control **31–3**
 > (1 exact tie) and every 5-seed A/B column agrees — so the one 1M scenario bank is built from the
-> input transform that actually works for this model. **No preprocessed bank was evaluated.** Because
-> this makes the column **not like-for-like** with CSDI / LS4 / SBTS, whose PS runs use their
-> *preprocessed* checkpoints, TimeDiT is deliberately **excluded from the cross-method PS table** in
-> [`../README.md`](../README.md).
+> input transform that actually works for this model. **No preprocessed bank was evaluated.** These
+> numbers ship in the cross-method PS table in [`../README.md`](../README.md) under the label
+> **`TimeDiT (raw)`**, where they win **14 of 18 ranked rows at all five bank sizes** — the best
+> generator in the folder. The checkpoint is the *only* input difference: protocol, K=256, the 512
+> queries, the 4-block embedding, the Heston oracle, the RW floor and the bank-size sweep are
+> byte-identical to CSDI / LS4 / SBTS, so the column ranks legitimately; the `(raw)` tag is there so a
+> reader always knows which checkpoint produced it.
 
 > This uses the **exact protocol from the paper**, *not* the simplified `methods/TimeDiT`
 > reference eval (65D murex embedding, K=77, prefix-price L2, CRPS/MAE/RMSE only). See
