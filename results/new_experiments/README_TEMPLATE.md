@@ -44,8 +44,12 @@ perfect floor on <metric>.">
      belongs here. -->
 
 <!-- Block 1: provenance. Which evaluator script, which commit, which input. -->
-Scored by `protocol/experiments/scripts/evaluate_<drawdown_memory|heston_mixture>.py`,
+Scored by `protocol/experiments/scripts/evaluate_<drawdown_memory|heston_parameter_mixture>.py`,
 **run unchanged** (PDF §7 item 7), on the 5 model banks against `test.npy`.
+<!-- NOTE the asymmetry: the SCRIPT for B is evaluate_heston_parameter_mixture.py
+     but the OUTPUT FILE it writes is seed_N_heston_mixture.json. They do not
+     match, and guessing either from the other is how §7.10 E4 happens. -->
+
 The perfect-floor column is the same evaluator on 5 true-DGP draws
 (seeds 1000-1004), which is what makes the ratio meaningful.
 
@@ -113,7 +117,12 @@ reader who reads nothing else will read.>
 | Output contract | <re-MEASURED from the arrays on disk: finite, > 0, (8192,128), dtype, S0 == 100.0 — not asserted> |
 | CI convention | 95 %, t(0.975, 4) = 2.776, half-width = t·s/√5 |
 
-*Reproduce:* `python ../../tools/aggregate_pdf_metrics.py --model-dir . --floor-dir ../perfect_floor --pattern '*_<drawdown_memory|heston_mixture>.json' --label <Method> --exclude-prefix configuration sources`
+<!-- The two experiments take DIFFERENT --exclude-prefix lists. Copy the right
+     one; do not merge them. B has an oracle_gate block that A does not. -->
+
+*Reproduce (A):* `python ../../tools/aggregate_pdf_metrics.py --model-dir . --floor-dir ../perfect_floor --pattern '*_drawdown_memory.json' --label <Method> --exclude-prefix configuration sources`
+
+*Reproduce (B):* `python ../../tools/aggregate_pdf_metrics.py --model-dir . --floor-dir ../perfect_floor --pattern '*_heston_mixture.json' --label <Method> --exclude-prefix oracle_gate sources configuration`
 
 ---
 
@@ -144,9 +153,8 @@ reader who reads nothing else will read.>
      Quote the ratio. -->
 
 *Reproduce:*
-```bash
-python ../../tools/make_metrics_tables.py --results-dir . --floor-dir ../perfect_floor
-```
+`python ../../tools/make_metrics_tables.py --model-dir . --floor-dir ../perfect_floor --label <Method> --table A`
+(and `--table B`).
 
 ---
 

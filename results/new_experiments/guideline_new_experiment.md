@@ -1750,3 +1750,423 @@ Also from §5, and easy to violate by accident:
 * **Do not silently replace a failed seed** (§1.5). Report it with its reason.
 * **Do not hand-edit anything under `protocol/`** (§7 item 7). If the evaluator lacks a
   quantity the PDF wants — as with `W̄_param` — derive it in the README, not in the script.
+
+---
+
+## 12. Metric Provenance — the exact file and the exact key for every number
+
+This section exists so that nobody ever has to *guess* where a number came from. Every value
+that appears in a README is listed here with the file that holds it and the dotted key inside
+that file. All paths are relative to the repo root `/home/tbasseras/benchmark`. Everything
+below was read off disk, not recalled.
+
+### 12.1 The four roots
+
+| Root | Absolute path | Writable by a generator? |
+|---|---|---|
+| Dataset | `dataset/Heston/new_experiments/experiment_<X>/` | **read `train.npy`, `disc.npy` only** |
+| Vendored protocol | `dataset/Heston/new_experiments/protocol/experiments/` | ⛔ never edited, never written |
+| Deliverables | `results/new_experiments/experiment_<X>/<Method>/` | yes — this is the method's output |
+| Shared tooling | `results/new_experiments/tools/` | method-neutral, edit only to add a feature |
+
+### 12.2 Dataset files — exact names, shapes, and who may read them
+
+`dataset/Heston/new_experiments/experiment_A/`
+
+| File | Shape / dtype | Who may read it |
+|---|---|---|
+| `train.npy` | `(8192, 128)` float64 | **generator** + evaluator |
+| `disc.npy` | `(8192, 128)` float64 | **generator** (model selection only) + evaluator |
+| `test.npy` | `(8192, 128)` float64 | ⛔ evaluator only |
+| `train_sigma.npy`, `disc_sigma.npy`, `test_sigma.npy` | **`(8192, 127)`** float32 | ⛔ evaluator only — latent vol, the answer key |
+
+**The `_sigma` arrays are 127 wide, not 128** — one latent volatility per *increment*, not per
+observation. Any code that assumes they align column-for-column with the price paths is wrong.
+| `manifest.json` | — | evaluator (passed as `--dataset-manifest`) |
+| `perfect_floor/floor_seed{1000..1004}.npy` (+ `_sigma.npy`) | `(8192, 128)` | ⛔ evaluator only |
+
+`dataset/Heston/new_experiments/experiment_B/`
+
+| File | Shape | Who may read it |
+|---|---|---|
+| `train.npy`, `disc.npy` | `(8192, 128)` | **generator** + evaluator |
+| `test.npy` | `(8192, 128)` | ⛔ evaluator only |
+| `train_labels.npy`, `disc_labels.npy`, `test_labels.npy` | `(8192,)` int | ⛔ evaluator only — the regime answer key |
+| `oracle_train.npy` | `(32768, 128)` | ⛔ oracle fitting only |
+| `oracle_validation.npy` | `(8192, 128)` | ⛔ oracle fitting only |
+| `oracle_train_labels.npy`, `oracle_validation_labels.npy` | int | ⛔ oracle fitting only |
+| `oracle/oracle.joblib` | 529 MiB, **gitignored** | ⛔ evaluator only — refit locally, see §3.3 |
+| `oracle/gate_report.json` | — | ⛔ evaluator only (`--oracle-gate-report`) |
+| `mean_heston.npy`, `whole_path_bootstrap.npy` | `(8192, 128)` | degenerate baselines, not part of a method run |
+| `perfect_floor/floor_seed{1000..1004}.npy` (+ `_labels.npy`) | `(8192, 128)` | ⛔ evaluator only |
+
+**Note that `experiment_A` has `*_sigma.npy` and `experiment_B` has `*_labels.npy`.** They are
+not interchangeable, and a firewall guard copied from one experiment to the other must have its
+forbidden-file list updated or it will happily let the answer key through.
+
+### 12.3 The evaluators — exact scripts and exact CLI
+
+Both live in `dataset/Heston/new_experiments/protocol/experiments/scripts/` and are run
+**unchanged** (PDF §7 item 7).
+
+**Experiment A — `evaluate_drawdown_memory.py`.** All five arguments are `required=True`:
+
+```bash
+python dataset/Heston/new_experiments/protocol/experiments/scripts/evaluate_drawdown_memory.py \
+  --train-data        dataset/Heston/new_experiments/experiment_A/train.npy \
+  --test-data         dataset/Heston/new_experiments/experiment_A/test.npy \
+  --generated-data    results/new_experiments/experiment_A/<Method>/generated_paths/seed_0/generated_paths_8192x128.npy \
+  --dataset-manifest  dataset/Heston/new_experiments/experiment_A/manifest.json \
+  --output            results/new_experiments/experiment_A/<Method>/pdf_metrics/seed_0_drawdown_memory.json
+```
+
+**Experiment B — `evaluate_heston_parameter_mixture.py`.** Six required arguments; note there is
+**no `--dataset-manifest`**, and two oracle arguments instead:
+
+```bash
+python dataset/Heston/new_experiments/protocol/experiments/scripts/evaluate_heston_parameter_mixture.py \
+  --train-data          dataset/Heston/new_experiments/experiment_B/train.npy \
+  --test-data           dataset/Heston/new_experiments/experiment_B/test.npy \
+  --generated-data      results/new_experiments/experiment_B/<Method>/generated_paths/seed_0/generated_paths_8192x128.npy \
+  --oracle              dataset/Heston/new_experiments/experiment_B/oracle/oracle.joblib \
+  --oracle-gate-report  dataset/Heston/new_experiments/experiment_B/oracle/gate_report.json \
+  --output              results/new_experiments/experiment_B/<Method>/pdf_metrics/seed_0_heston_mixture.json
+```
+
+⚠️ **The script name and the output name do not match for B.** The script is
+`evaluate_heston_parameter_mixture.py`; the file it writes is `seed_N_heston_mixture.json`,
+because that is the stem `aggregate_pdf_metrics.py --pattern '*_heston_mixture.json'` looks
+for. Deriving either name from the other is exactly error class E4.
+
+**Validation side.** Run each evaluator a second time with `--test-data` pointing at
+`disc.npy` and `--output` into `pdf_metrics_validation/`. That second run is what backs
+README §1.3, and it is the evidence that `test.npy` stayed blind. It is not optional (§11.4).
+
+### 12.4 Experiment A — all 39 evaluator keys, by block
+
+File: `results/new_experiments/experiment_A/<Method>/pdf_metrics/seed_<q>_drawdown_memory.json`
+
+**`errors.*` — 9 keys. The four PRIMARY metrics live here.**
+
+| Dotted key | PRIMARY? | Meaning |
+|---|---|---|
+| `errors.early_hit_rate_error` | ★ **yes** | \|generated − target\| early-hit rate |
+| `errors.future_rv_hit_gap_error` | ★ **yes** | error on the hit/no-hit future-RV gap |
+| `errors.early_history_incremental_r2_error` | ★ **yes** | error on the incremental R² of early history |
+| `errors.future_rv_wasserstein` | ★ **yes** | W1 between future-RV distributions |
+| `errors.abs_return_acf_rmse_lags_1_50` | no | stylised fact |
+| `errors.squared_return_acf_rmse_lags_1_50` | no | stylised fact |
+| `errors.excess_kurtosis_error` | no | stylised fact |
+| `errors.return_std_error` | no | stylised fact |
+| `errors.terminal_log_price_ks` | no | stylised fact |
+
+**`generated_memory.*` — 9 keys**, the raw memory diagnostics measured on the model bank:
+`augmented_r2`, `baseline_r2`, `early_history_incremental_r2`, `early_hit_future_rv_correlation`,
+`early_hit_rate`, `early_hit_standardized_coefficient`, `future_rv_hit_gap`,
+`future_rv_hit_mean`, `future_rv_no_hit_mean`.
+
+**`target_memory.*` — the same 9 keys** measured on `test.npy`. **These are constant across
+seeds** — they are a property of the frozen test set, recomputed identically every time — so
+the aggregator prints `± 0` and a CI of `0`. **Print the zeros.** Explain them in prose. See
+§7.0: hand-annotating this block as "(target) / —" is what erased a real deviation in
+Experiment B.
+
+**`novelty.*` — 3 keys**: `distinct_nearest_training_paths`,
+`mean_standardized_nearest_train_path_rmse`, `median_standardized_nearest_train_path_rmse`.
+This is the memorisation check. PDF §5 exempts it from the mean ± std treatment.
+
+**`configuration.*` — 6 keys** (`annualization`, `history_cutoff`, `horizon`, `recent_window`,
+`split`, `threshold`) and **`sources.*` — 3 keys** (`generated`, `test`, `train`, absolute
+paths). Both blocks are **excluded from the README table** via
+`--exclude-prefix configuration sources`. `sources.*` is nonetheless the audit trail that proves
+which arrays the evaluator actually opened — read it, do not print it.
+
+### 12.5 Experiment B — all 56 evaluator keys, by block
+
+File: `results/new_experiments/experiment_B/<Method>/pdf_metrics/seed_<q>_heston_mixture.json`
+
+**`mixture_fidelity.*` — the regime block.**
+
+| Dotted key | PRIMARY? | Note |
+|---|---|---|
+| `mixture_fidelity.regime_proportion_tvd` | ★ **yes** | the headline mode-collapse number |
+| `mixture_fidelity.generated_regime_proportions` | no | **list of 8** — not a scalar, do not put it in a mean ± std table |
+| `mixture_fidelity.target_regime_proportions` | no | list of 8, constant across seeds |
+| `mixture_fidelity.generated_mean_max_probability` | no | posterior confidence |
+| `mixture_fidelity.generated_mean_posterior_entropy` | no | posterior confidence |
+| `mixture_fidelity.generated_low_confidence_fraction` | no | fraction with `max_prob < 0.6` |
+| `mixture_fidelity.target_mean_max_probability` | no | constant across seeds |
+| `mixture_fidelity.target_mean_posterior_entropy` | no | constant across seeds |
+| `mixture_fidelity.target_low_confidence_fraction` | no | **NOT constant** — std 8.63e-05. The one target row that moves. |
+
+**`mixture_fidelity.parameters.<p>.*` for `p ∈ {theta, xi, rho}` — 6 keys each, 18 total**:
+`mean_error`, `q05_error`, `q95_error`, `std_ratio`, `support_normalized_wasserstein`,
+`wasserstein`. The `std_ratio` triple is the diagnostic that corroborates a TVD failure
+independently — read §3.5, they are meant to be read together.
+
+**`observable_fidelity.*` — 7 keys.** Two of the four PRIMARY metrics live here:
+
+| Dotted key | PRIMARY? |
+|---|---|
+| `observable_fidelity.realized_volatility_wasserstein` | ★ **yes** |
+| `observable_fidelity.leverage_curve_rmse_lags_0_20` | ★ **yes** |
+| `observable_fidelity.abs_return_acf_rmse_lags_1_50` | no |
+| `observable_fidelity.squared_return_acf_rmse_lags_1_50` | no |
+| `observable_fidelity.excess_kurtosis_error` | no |
+| `observable_fidelity.return_std_error` | no |
+| `observable_fidelity.terminal_log_price_ks` | no |
+
+**`novelty.*` — 3 keys**, same as A.
+
+**`oracle_gate.*` — 14 keys**, and **all of them are constant across seeds and across methods**:
+they describe the frozen oracle, not your model. `eight_regime_accuracy` (0.909423828125),
+`num_features` (77), `train_paths` (32768), `validation_paths` (8192), `confusion_matrix`,
+`validation_true_counts`, `validation_predicted_counts`, `parameter_state_accuracy.{theta,xi,rho}`,
+and `configuration.{trees, max_features, min_samples_leaf, minimum_accuracy, random_state}`.
+Excluded from the README table via `--exclude-prefix oracle_gate sources configuration`.
+Quote `eight_regime_accuracy` **in prose** in §1 — a reader must know the oracle clears its own
+0.9 gate before believing any TVD computed with it.
+
+**`sources.*` — 4 keys** for B (`generated`, `oracle`, `test`, `train`); A has 3 (no `oracle`).
+
+### 12.6 `W̄_param` — the one metric you must derive
+
+The evaluator does **not** emit it. PDF §3.4 defines it as the mean over the three parameters
+of the support-normalised Wasserstein distance. Compute it per seed, then aggregate:
+
+```python
+W_q = mean over p in {theta, xi, rho} of
+      json["mixture_fidelity"]["parameters"][p]["support_normalized_wasserstein"]
+```
+
+then report `mean ± std` of the five `W_q`, with the same t(0.975, 4) = 2.776 CI. Derive it in
+the README. **Do not add it to the evaluator** — that would violate §7 item 7.
+
+It is the only derived quantity in either experiment. If you find yourself deriving a second
+one, you have probably misread a key name.
+
+### 12.7 The A1–A34 + B battery — a different suite, different files
+
+The battery is **not** the PDF evaluator and answers a different question. It is produced by
+`code/compute_metrics_experiment.py` (the §6.3 adapter around the canonical
+`metrics/compute_all.py`) and lands in:
+
+| File | Contents |
+|---|---|
+| `results/new_experiments/experiment_<X>/<Method>/seed_<q>_metrics.json` | one seed, all battery metrics |
+| `results/new_experiments/experiment_<X>/<Method>/metrics_summary.csv` | the 5-seed aggregate, header `metric,mean,std,seed_0,seed_1,seed_2,seed_3,seed_4` |
+
+`metrics_summary.csv` holds **103 metric rows** (measured with
+`wc -l`, not counted by eye): `A1_kurtosis_error` … `A32_vol_of_vol_error`,
+then `A33_sigma_corr` and `A34_sigma_rmse` (**null in both experiments** — dropped by Theo's
+ruling; they land as null because the adapter's `load_data()` returns `v = None`), then the
+`B_*` curve-shape family and `grid_tvd`.
+
+Exact `A*` row names, in file order:
+
+```
+A1_kurtosis_error  A2_abs_r_q95_error  A3_abs_r_q99_error  A4_tail_qq_error
+A5_hill_tail_index_error  A6_path_mmd2  A7_terminal_mmd2  A8_increment_mmd2
+A9_volatility_mmd  A10_terminal_swd  A11_path_swd  A12_rv_law_loss
+A13_mean_path_rmse  A14_ks_logreturns  A15_skewness_error  A16_qq_rmse
+A17_terminal_ks  A18_disc_score_gru  A18_disc_score_mlp  A19_pred_score_gru
+A19_pred_score_mlp  A20_cov_error  A21_acf_abs  A22_acf_sq
+A23_acf_lag1_abs_error  A24_acf_lag1_sq_error  A25_mean_rmse  A26_std_error
+A27_logreturn_std_error  A28_kurtosis_ratio  A29_sigma_mean_error
+A30_vol_path_rmse  A31_rolling_vol_ks  A32_vol_of_vol_error
+A33_sigma_corr  A34_sigma_rmse            ← null in both experiments
+```
+
+**A18/A19 have two variants each** (`_gru` and `_mlp`) — four rows, not two. The `B_*` family is
+six curve types (`log_ret_hist`, `qq_plot`, `acf_abs_r`, `acf_sq_r`, `roll_vol_hist`,
+`tail_surv`) × the suffixes `_funct`, `_der`, `_sec_der`, `_funct_pct`, `_der_pct`,
+`_sec_der_pct`, `_funct_nrmse`, `_der_nrmse`, `_sec_der_nrmse`, `_funct_cvar90`,
+`_funct_cvar95`.
+
+**Read A18/A19 against §7.3.** A GRU discriminator near the floor while the distributional
+metrics sit at 15–79× floor does not mean the model is fine; it means every individual path is
+plausible and only the population is wrong. **A18/A19 are blind to mode collapse.**
+
+### 12.8 The perfect floor — the denominator of every ratio
+
+`results/new_experiments/experiment_<X>/perfect_floor/` holds the *same* file families as a
+method directory, produced by the *same* code paths, from 5 true-DGP draws (seeds 1000–1004):
+
+```
+perfect_floor/
+├── pdf_metrics/seed_{0..4}_<stem>.json              PDF evaluator, vs test.npy
+├── pdf_metrics_validation/seed_{0..4}_<stem>.json   PDF evaluator, vs disc.npy
+├── seed_{0..4}_metrics.json                         A1–A34 + B battery
+├── metrics_summary.csv
+└── plots/
+```
+
+It is method-neutral: compute it **once per experiment** and every method divides by it. If it
+already exists, do not recompute it — and above all, **never "repair" the floor; verify it**
+(§11.5). A floor that gets fixed can mask a real defect. The LS4 floor banks were checked and
+already satisfied `S₀ == 100` exactly, being true-DGP draws.
+
+### 12.9 Which command emits which README block
+
+| README block | Emitted by | Reads |
+|---|---|---|
+| §1 table + §1.1 primary panel | `tools/aggregate_pdf_metrics.py` | `pdf_metrics/*.json` + `../perfect_floor/pdf_metrics/*.json` |
+| §1.3 validation column | same tool with `--subdir pdf_metrics_validation` | `pdf_metrics_validation/*.json` |
+| §2.1 A1–A34 | `tools/make_metrics_tables.py --table A` | `metrics_summary.csv` (model + floor) |
+| §2.2 B curve-shape | `tools/make_metrics_tables.py --table B` | `metrics_summary.csv` (model + floor) |
+| §1 figure | `tools/plot_experiment_figures.py --experiment <X>` | model bank + dataset |
+| §3 figure | `tools/plot_stylised_facts.py --experiment <X>` | model bank + `test.npy` |
+| §4 figure | `tools/plot_losses.py --model-dir .` | `losses/seed_*_losses.csv` |
+| PDF §1.4 manifest (**not** a README section) | `tools/write_generation_manifest.py` | `weights/`, `generated_paths/` |
+
+Exact flags for every tool:
+
+```
+aggregate_pdf_metrics.py     --model-dir --floor-dir --pattern --label --exclude-prefix --subdir
+make_metrics_tables.py       --model-dir --floor-dir --label --table
+plot_experiment_figures.py   --experiment --model-dir --seed --out --label
+plot_stylised_facts.py       --experiment --model-dir --seed --label
+plot_losses.py               --model-dir --title
+write_generation_manifest.py --model-dir --experiment --source-revision --repair --hyperparameter-origin
+check_method_layout.py       --root --experiment
+```
+
+**The `--exclude-prefix` lists differ between experiments** and are not interchangeable:
+
+* A: `--exclude-prefix configuration sources`
+* B: `--exclude-prefix oracle_gate sources configuration`
+
+---
+
+## 13. Worked example — the exact command sequence for a new method
+
+Written with `<Method>` and `<X>` as the only placeholders. Run from the repo root unless a
+step says otherwise. Python is `/home/tbasseras/gpu-venv/bin/python` — **not** `~/.cc-venv`.
+
+```bash
+REPO=/home/tbasseras/benchmark
+PY=/home/tbasseras/gpu-venv/bin/python
+M=<Method>; X=<A|B>
+DATA=$REPO/dataset/Heston/new_experiments/experiment_$X
+OUT=$REPO/results/new_experiments/experiment_$X/$M
+PROTO=$REPO/dataset/Heston/new_experiments/protocol/experiments/scripts
+```
+
+**Step 0 — the reproduction gate (§5 Stage 0). Do not skip, and do not proceed without
+Theo's explicit validation.** Reproduce the method's committed 8192×128 Heston result, record
+the level reached (1–4) and the exact numbers, and confirm the figures reproduce the method's
+**known defects**, not only its fits.
+
+**Step 1 — skeleton.**
+```bash
+mkdir -p $OUT/{code/logs,generated_paths,losses,weights,plots,pdf_metrics,pdf_metrics_validation}
+cp $REPO/results/new_experiments/experiment_A/LS4/code/compute_metrics_experiment.py $OUT/code/
+# then edit ONLY the path constants in that copy
+```
+
+**Step 2 — check the machine is free (hard limits: 2 GPUs, 16 cores).**
+```bash
+nvidia-smi; htop     # if a GPU is busy or RAM > 50 %, ASK before launching
+```
+
+**Step 3 — train 5 seeds in exactly 2 lanes.** Env assignments must precede `taskset`, or bash
+treats the assignment as the command and you get exit 127:
+```bash
+cd $OUT/code
+setsid env CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=8 taskset -c 0-7 \
+  bash -c 'for s in 0 2 4; do '"$PY"' train_'"$M"'_experiment.py --data '"$DATA"' --experiment '"$X"' --seed $s --out '"$OUT"' > logs/exp'"$X"'_seed$s.log 2>&1; done' & disown
+setsid env CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=8 taskset -c 8-15 \
+  bash -c 'for s in 1 3; do '"$PY"' train_'"$M"'_experiment.py --data '"$DATA"' --experiment '"$X"' --seed $s --out '"$OUT"' > logs/exp'"$X"'_seed$s.log 2>&1; done' & disown
+```
+Within 60 s confirm: 2 PIDs, 2 GPUs holding memory, and the correct `[data]` path echoed in
+**both** logs. Never let two lanes target the same seed.
+
+**Step 4 — the A1–A34 + B battery, model then floor.**
+```bash
+cd $OUT/code
+$PY compute_metrics_experiment.py --seeds 5
+$PY compute_metrics_experiment.py --seeds 5 --source floor     # skip if the floor exists
+```
+
+**Step 5 — the PDF evaluator, per seed, unchanged, on BOTH sides.** For A:
+```bash
+for q in 0 1 2 3 4; do
+  G=$OUT/generated_paths/seed_$q/generated_paths_8192x128.npy
+  $PY $PROTO/evaluate_drawdown_memory.py --train-data $DATA/train.npy \
+     --test-data $DATA/test.npy --generated-data $G \
+     --dataset-manifest $DATA/manifest.json \
+     --output $OUT/pdf_metrics/seed_${q}_drawdown_memory.json
+  $PY $PROTO/evaluate_drawdown_memory.py --train-data $DATA/train.npy \
+     --test-data $DATA/disc.npy --generated-data $G \
+     --dataset-manifest $DATA/manifest.json \
+     --output $OUT/pdf_metrics_validation/seed_${q}_drawdown_memory.json
+done
+```
+For B, swap in `evaluate_heston_parameter_mixture.py`, drop `--dataset-manifest`, add
+`--oracle $DATA/oracle/oracle.joblib --oracle-gate-report $DATA/oracle/gate_report.json`, and
+write `seed_${q}_heston_mixture.json`.
+
+⚠️ **Never check these runs with `grep -qiE "error|traceback"`.** The evaluator echoes JSON
+containing `excess_kurtosis_error`, `return_std_error`, … and every job will look FAILED.
+Verify by `json.load`-ing all 20 outputs instead.
+
+**Step 6 — figures and the PDF §1.4 manifest.**
+```bash
+cd $OUT
+$PY ../../tools/plot_losses.py --model-dir . --title "$M — Experiment $X"
+$PY ../../tools/plot_stylised_facts.py --experiment $X --model-dir . --seed 0 --label $M
+$PY ../../tools/plot_experiment_figures.py --experiment $X --model-dir . --seed 0 --label $M
+$PY ../../tools/write_generation_manifest.py --model-dir . --experiment $X
+```
+
+**Step 7 — machine-check the layout. Must print PASS before any prose is written.**
+```bash
+$PY ../../tools/check_method_layout.py --root . --experiment $X
+```
+
+**Step 8 — prove the 5 trainings were independent and used this experiment's data.**
+```bash
+md5sum weights/seed_*_model.pt | awk '{print $1}' | sort -u | wc -l    # must be 5
+for s in 0 1 2 3 4; do $PY -c "import json;d=json.load(open('weights/seed_${s}_config.json'));print(d['seed'],d['experiment'],d['data'])"; done
+for s in 0 1 2 3 4; do tail -1 losses/seed_${s}_losses.csv; done        # 100 epochs, distinct
+```
+Then compare the fitted `scaler_mu` / `scaler_sigma` against the **other** experiment's. They
+must differ. That is the one piece of evidence that does not require trusting the config file.
+
+**Step 9 — the README.**
+```bash
+cp ../../README_TEMPLATE.md README.md
+$PY ../../tools/aggregate_pdf_metrics.py --model-dir . --floor-dir ../perfect_floor \
+   --pattern '*_drawdown_memory.json' --label $M --exclude-prefix configuration sources
+$PY ../../tools/make_metrics_tables.py --model-dir . --floor-dir ../perfect_floor --label $M --table A
+$PY ../../tools/make_metrics_tables.py --model-dir . --floor-dir ../perfect_floor --label $M --table B
+```
+Paste each table **verbatim**. Then re-run every `*Reproduce:*` line and require an empty diff
+(§8 item 17). Re-read every number quoted in prose from its JSON, not from memory (E5).
+
+**Step 10 — commit with an explicit pathspec**, because a concurrent process also commits to
+this repo:
+```bash
+git add -- results/new_experiments/experiment_$X/$M
+git diff --cached --name-only | grep -v "^results/new_experiments/experiment_$X/$M/"   # must be empty
+```
+
+### 13.1 Porting notes specific to CSDI
+
+CSDI already exists in this repo at `methods/CSDI/` (`code/train_heston.py`,
+`code/plot_losses.py`, plus `generated_paths/`, `losses/`, `weights/`,
+`paper_reimplementation/`, `path_shadowing/`). Two consequences:
+
+* **Stage 0 is cheap** — the committed 8192×128 Heston result is already there to reproduce
+  against. Do it anyway, and record the level reached.
+* `methods/CSDI/code/train_heston.py` is the starting point for
+  `code/train_csdi_experiment.py`, but it must be **adapted to the §6.5 contract**, not copied:
+  `--data` required and never defaulted, `--experiment` required, the firewall guard verbatim,
+  and the five required per-seed outputs under the §6.2 names.
+* CSDI is a **diffusion imputation** model working on log-returns. The §6.5 warning applies
+  directly: the bank written to `generated_paths_8192x128.npy` must be inverted back to the
+  **original price scale with S₀ = 100**, not left in log-return or standardised space. That
+  bank loads fine and scores catastrophically. `check_method_layout.py` catches it —
+  it asserts `S₀ == 100.0` and strict positivity on the array itself.
+* `path_shadowing/` and `baseline_no_preproc/` **do not apply here** and must not be created
+  under `results/new_experiments/`.
