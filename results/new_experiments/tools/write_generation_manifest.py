@@ -106,12 +106,18 @@ def main():
 
         contract, rel = output_contract(np.load(bank_path))
 
+        # The method name drives the source path. It used to be the literal
+        # "methods/LS4/code", which silently wrote a false provenance line into every
+        # CSDI manifest. Derive it instead -- a manifest that misreports where the
+        # official code lives is worse than no manifest.
+        method_name = meta.get("method", "LS4")
+
         manifest = {
             "model": {
-                "name": meta.get("method", "LS4"),
+                "name": method_name,
                 "variant": cfg.get("variant"),
                 "source_revision": a.source_revision,
-                "source_path": "methods/LS4/code",
+                "source_path": f"methods/{method_name}/code",
                 "official_implementation": True,
                 "trainable_parameters": meta.get("params"),
             },

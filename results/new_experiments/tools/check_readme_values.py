@@ -397,7 +397,12 @@ def main() -> int:
     pat = PATTERN[a.experiment]
     agg = os.path.join(TOOLS, "aggregate_pdf_metrics.py")
     tab = os.path.join(TOOLS, "make_metrics_tables.py")
-    base = ["--model-dir", a.root, "--floor-dir", a.floor, "--pattern", pat, "--label", "LS4",
+    # The label is the method-directory name, not the literal "LS4". It only sets the
+    # generated table's HEADER, which compare() drops before diffing -- so a stale
+    # literal here would not fail loudly, it would just make the tool's own output
+    # claim it was checking LS4 while checking CSDI. Derive it.
+    label = os.path.basename(os.path.normpath(a.root))
+    base = ["--model-dir", a.root, "--floor-dir", a.floor, "--pattern", pat, "--label", label,
             "--exclude-prefix", "configuration", "oracle_gate"]
 
     print(f"Checking {readme_path} (experiment {a.experiment})")
@@ -423,7 +428,7 @@ def main() -> int:
     for t in ("A", "B"):
         fails += compare(f"battery table {t}",
                          run([tab, "--model-dir", a.root, "--floor-dir", a.floor,
-                              "--label", "LS4", "--table", t]), tables, skip)
+                              "--label", label, "--table", t]), tables, skip)
 
     fails += GENERATOR_ERRORS
     if fails:

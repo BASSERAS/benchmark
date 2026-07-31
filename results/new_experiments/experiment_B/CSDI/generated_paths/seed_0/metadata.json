@@ -1,0 +1,33 @@
+{
+  "method": "CSDI",
+  "experiment": "B",
+  "seed": 0,
+  "shape": [
+    8192,
+    128
+  ],
+  "min_val": 23.00902557373047,
+  "max_val": 255.67596435546875,
+  "generated_mean": 99.56739044189453,
+  "generated_std": 9.240167617797852,
+  "real_mean": 100.09714689788022,
+  "real_std": 11.516370009298313,
+  "gen_sec": 15.5,
+  "train_time_sec": 3298.9,
+  "gpu": "A100-SXM4-80GB",
+  "date": "2026-07-31",
+  "zscore_mean": 100.09714689788022,
+  "zscore_std": 11.516370009298313,
+  "params": 412945,
+  "epochs": 200,
+  "epochs_run": 200,
+  "epochs_max": 200,
+  "batch_size": 16,
+  "num_steps": 50,
+  "min_total_loss": 0.11487638096514274,
+  "first_nan_epoch": null,
+  "min_loss": 0.0059460001066327095,
+  "first_nan_step": null,
+  "s0_max_deviation_raw": 0.48233795166015625,
+  "gen_has_nan": false
+}
