@@ -442,13 +442,41 @@ a per-seed model table.
 **Self-check:** every `target_*` row must show `± 0`. A non-zero std there means the seeds were
 scored against *different* reference data — stop and find out why.
 
-### The other two tools
+### The other four tools
 
 ```bash
+# README § 2 — the A1–A34 and B curve-shape tables, from metrics_summary.csv
+python make_metrics_tables.py --model-dir ../experiment_A/LS4 \
+    --floor-dir ../experiment_A/perfect_floor --label LS4 --table A     # then --table B
+
+# README § 1 figure — memory structure (A) / mixture structure (B)
 python plot_experiment_figures.py --experiment A \
     --model-dir ../experiment_A/LS4 --seed 0 --out ../experiment_A/LS4/plots
+
+# README § 3 figure — the eight-panel stylised-facts diagnostic
+python plot_stylised_facts.py --experiment A \
+    --model-dir ../experiment_A/LS4 --seed 0 --label LS4
+
+# README § 4 figure — loss convergence, all seeds overlaid
 python plot_losses.py --model-dir ../experiment_A/LS4 --title "LS4 (Experiment A)"
 ```
+
+`make_metrics_tables.py` is deliberately **separate** from `aggregate_pdf_metrics.py`. The two
+suites answer different questions and README § 1 and § 2 must never be blended: § 1 asks *did the
+model reproduce the DGP structure the protocol targets*, § 2 asks *how does it score on the
+repo's standard battery*. Keeping one tool per section makes it impossible to mix them by
+accident. A33/A34 are dropped in both experiments (they need the latent σ path, which is not part
+of the generator's output contract), so their cells must read `n/a` — never `0`, which would
+silently flatter the method.
+
+`plot_stylised_facts.py` wraps the benchmark-standard `metrics/plot_diagnostics.py` so every
+method gets the identical figure, with **one deliberate difference: the black Heston theory curve
+is suppressed.** That curve is the closed-form *single-regime* Heston reference. Experiment A is a
+latching drawdown-memory process and Experiment B is an 8-regime mixture — neither is
+single-regime Heston, so the curve would be a wrong reference drawn with authority. The
+suppression is done by monkeypatching `compute_theory_bundle` to raise, never by editing the
+shared canonical module. Expect the line `[warn] theory bundle unavailable ...` in the output;
+that warning means it worked.
 
 `plot_experiment_figures.py` draws the one picture that the scalar table cannot: for Experiment A,
 `future_rv` split by `early_hit` for real and generated side by side; for Experiment B, the eight
@@ -712,9 +740,11 @@ Mirrors `results/Heston/preprocessing_with_log_returns/<Method>/`
 ```
 results/new_experiments/
 ├── tools/                                       method-neutral, both experiments (§4)
-│   ├── aggregate_pdf_metrics.py                 5-seed mean ± std + 95% CI table
-│   ├── plot_experiment_figures.py               memory (A) / mixture (B) structure figure
-│   └── plot_losses.py                           losses/loss_convergence.png
+│   ├── aggregate_pdf_metrics.py                 README § 1 table: 5-seed mean ± std + 95% CI
+│   ├── make_metrics_tables.py                   README § 2 tables: A1–A34 and B curve-shape
+│   ├── plot_experiment_figures.py               README § 1 figure: memory (A) / mixture (B)
+│   ├── plot_stylised_facts.py                   README § 3 figure: heston_diagnostics.png
+│   └── plot_losses.py                           README § 4 figure: loss_convergence.png
 └── experiment_<A|B>/
     ├── perfect_floor/                           method-neutral sibling
     │   ├── pdf_metrics/seed_{0..4}_*.json       floor scored by the PDF evaluator
@@ -818,18 +848,40 @@ One table with **every** metric defined in the PDF for this experiment, aggregat
 - Experiment B: all of `mixture_fidelity` (incl. per-parameter `std_ratio`),
   `observable_fidelity`, `novelty`, and the `oracle_gate` accuracy.
 
-Columns: `Metric | Target (test.npy) | Generated mean ± std | Perfect floor | Direction`.
-State the headline metric explicitly and interpret it (§2.5 / §3.5) in prose beneath the table.
+**Two tables, in this order.**
+
+1. The full flattened table emitted verbatim by `aggregate_pdf_metrics.py`:
+   `Metric | <Method> (mean ± std) | 95% CI half-width | Perfect floor (mean ± std)`.
+   Every numeric leaf appears, including the `target_*` rows — those are the target, measured
+   on `test.npy`, so they carry `± 0` by construction. Write `(target)` in their mean cell and
+   `—` in their CI cell rather than printing a meaningless `± 0 | 0`.
+2. A short **headline** table, hand-written, for the 4–6 metrics that decide the experiment:
+   `Quantity | Target | <Method> | Perfect floor | Verdict`. This is the one a reader actually
+   reads. Interpret it in prose beneath (§2.5 for A, §3.5 for B).
+
+Do not fold the target into a column of table 1. The evaluator emits `target_*` and
+`generated_*` as sibling blocks; flattening them into one row per metric requires a hand-kept
+key mapping that silently rots the first time the evaluator gains a field.
 
 ### § 2 — Metrics A1–A34 + B, mean ± std across 5 seeds
 
-From `metrics_summary.csv`, with the perfect-floor column beside it.
-A33/A34 → `n/a`, with the one-line reason. Never delete the rows.
+From `metrics_summary.csv` via `make_metrics_tables.py --table A` and `--table B`, with the
+perfect-floor column beside it. A33/A34 → `n/a`, with the one-line reason. Never delete the rows.
+
+⚠️ Metric labels contain literal pipes (`A2 |r| q95`, `ACF of |log-returns|`). They must be
+escaped `\|` or the whole Markdown table renders misaligned on GitHub. `make_metrics_tables.py`
+does this; if you hand-edit a row, do it too.
+
+**This section must not restate § 1's numbers, and § 1 must not borrow § 2's.** They are separate
+suites answering separate questions, and the interesting result is usually the *disagreement*
+between them — for LS4 on Experiment A, the standard battery's A18/A19 sit at the perfect floor
+while the protocol evaluator scores the model at 59 %. Blending the sections destroys that signal.
 
 ### § 3 — Stylised Facts Diagnostic (real vs `<Method>`, seed 0)
 
-`plots/diagnostics_seed0.png` + a short honest reading of where the model deviates.
-The Heston-theory curve does not apply to these DGPs — say so if it is visible.
+`plots/heston_diagnostics.png` (from `plot_stylised_facts.py`) + a short honest reading of where
+the model deviates. The black Heston-theory curve is suppressed by that tool because neither DGP
+is single-regime Heston — say so explicitly, so a reader does not think it was forgotten.
 
 ### § 4 — Losses
 
