@@ -670,10 +670,30 @@ top of the high-vol regime is still slightly thin, the same failure *direction* 
 finite-bank artefact: cum/step CRPS are flat across the 244× sweep while RV improves monotonically
 (0.00965 → 0.00918) and stays pinned to the oracle at every size.
 
+**CRPS vs bank size (log x).** All three quantities on one axis across the 244× nested-prefix sweep:
+**solid = TimeDiT-raw, dashed = the size-matched Heston oracle**, shaded = 95% bootstrap band. The
+headline is that **the solid and dashed lines are visually indistinguishable at every bank size and on
+every quantity** — the generator tracks the true-law ceiling throughout, not just at 1M. cum (blue,
+≈0.0253) and step (orange, ≈0.0068) are flat: the conditional law is already resolved at 4 096
+candidates, so extra bank buys nothing. **rv (green) is the only curve that moves**, declining
+monotonically 0.00965 → 0.00918 and staying pinned to its oracle the whole way. Compare SBTS, whose cum
+curve *rises away* from the oracle as the bank grows — the under-dispersion signature. (No RW floor is
+drawn here; it is bank-independent and is in the tables above: cum 0.0295, step 0.00687, rv 0.0117.)
+
+![CRPS vs bank size](baseline_no_preproc/path_shadowing/plots/pdf_crps_vs_banksize.png)
+
+**Coverage calibration @ 1M.** Grouped bars — empirical coverage₅₀ (blue) and coverage₉₀ (orange) per
+quantity, with the **dashed lines marking the 0.50 / 0.90 nominal targets**. cum is essentially exact on
+both levels (0.507 / 0.898). The two visible shortfalls are **step₉₀ (0.881)** and **rv₉₀ (0.895 vs the
+oracle's 0.924)**; the rv deficit is entirely one-sided — **upper**-miss 0.0742 against the ideal 0.05
+and the oracle's 0.0469, i.e. the thin high-volatility tail discussed above. Bars only cover TimeDiT-raw;
+the oracle and RW comparison numbers are in the tables.
+
+![Coverage calibration](baseline_no_preproc/path_shadowing/plots/pdf_coverage_calibration.png)
+
 Artifacts: [`baseline_no_preproc/path_shadowing/pdf_summary.json`](baseline_no_preproc/path_shadowing/pdf_summary.json)
 · driver [`baseline_no_preproc/path_shadowing/path_shadowing_pdf.py`](baseline_no_preproc/path_shadowing/path_shadowing_pdf.py)
-· plots [`pdf_crps_vs_banksize.png`](baseline_no_preproc/path_shadowing/plots/pdf_crps_vs_banksize.png),
-[`pdf_coverage_calibration.png`](baseline_no_preproc/path_shadowing/plots/pdf_coverage_calibration.png).
+· bank builder [`path_shadowing/gen_banks.py`](path_shadowing/gen_banks.py).
 
 **Bottom line — which is best?** For TimeDiT, **raw-price input is the better choice**, and the reason
 generalizes: GUIDELINE §0.1's decision rule asks whether the model has a **fixed output-noise floor**

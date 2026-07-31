@@ -613,6 +613,19 @@ only difference is the input transform, so any divergence between the two panels
 effect in isolation. Follow each method's `README.md` for the per-metric Δ% head-to-head behind these
 pictures.
 
+The eight panels are, row by row: **real vs generated path bundles**; **log-return density** and **QQ vs
+real**; **ACF of |r|** (volatility clustering) and **ACF of r²** (GARCH effect); **5-day rolling-volatility
+density** and **terminal-price tail survival** (log-log). Blue = real test set, red/orange = generated,
+dashed = the theoretical or empirical reference.
+
+> **Known caption artefact — the panel titles say "8192 total"; the real count is 4096.** Every figure in
+> this section is drawn by the shared [`metrics/plot_diagnostics.py`](../../../metrics/plot_diagnostics.py),
+> whose path-bundle titles hardcode `8192` (lines 151/160) from the main benchmark's sample count. This
+> experiment runs at **4096 train / 4096 test** throughout (see *What differs from the main benchmark*
+> below). The plotted data is the correct 4096-path test set — only the string is stale. The file is
+> **shared reference code and is import-only under the GUIDELINE scope rule**, so it is not patched here;
+> the mislabel affects LS4, CSDI, TimeDiT and SBTS identically and changes no number in any table.
+
 ### LS4
 
 | log-return preprocessing (with) | raw price, no preprocessing |
@@ -631,6 +644,26 @@ Preprocessing recovers the ACF-of-|r| / ACF-of-r² and rolling-vol curves the ra
 Preprocessing tightens the return-histogram / QQ marginal and the vol block (A9 −62%, A31 −42%,
 A32 −48%), but the `cumsum→exp` **terminal drift (+3.25%)** hands the raw model every price-location
 row (A13, A17, A25, grid_tvd). Net **19–16 for raw** on row-count — the mirror of LS4.
+
+### TimeDiT
+
+| log-return preprocessing (with) | raw price, no preprocessing |
+|:-------------------------------:|:---------------------------:|
+| ![TimeDiT logret diagnostics](TimeDiT/plots/heston_diagnostics.png) | ![TimeDiT raw diagnostics](TimeDiT/baseline_no_preproc/plots/heston_diagnostics.png) |
+
+**The clearest visual "preprocessing loses" in the folder**, and the panels agree with the 31–3 row-count.
+Read the bottom four: the raw model's **rolling-volatility density** lies almost exactly on the real curve
+while the preprocessed one is shifted and short-peaked (A31 **0.0175 vs 0.0442**); its **log-return
+histogram** and **QQ** sit tighter (A14 **0.0048 vs 0.0152**, A27 std-error **0.00022 vs 0.00096**); and its
+**ACF of |r|** tracks the empirical decay instead of running above it at short lags (A21 **0.0035 vs
+0.0102**). Only the **terminal-price tail-survival** panel is a wash — both deviate from the empirical curve
+in the last decade, the preprocessed one upward. The mechanism is in
+[`TimeDiT/README.md`](TimeDiT/README.md): TimeDiT has **no fixed output-noise floor** for the SBTS transform
+to lift it above (unlike LS4's decoder σ = 0.1), so the transform buys nothing and still pays 25% of the
+normalized dynamic range to outlier-pinned min-max plus an error-integrating `exp ∘ cumsum` inverse.
+**Note the split verdict:** this is the *unconditional* picture. On the *conditional* path-shadowing task the
+same raw checkpoint is the best generator in the table (14/18 rows at every bank size) — marginal fidelity
+and conditional calibration are different properties.
 
 ### SBTS
 
