@@ -1,0 +1,206 @@
+{
+  "dt": 0.004,
+  "kappa": 3.0,
+  "mean_heston_parameters": {
+    "rho": 0.0,
+    "theta": 0.049999999999999996,
+    "xi": 0.7250000000000001
+  },
+  "mu": 0.0,
+  "name": "balanced_discrete_heston_parameter_mixture",
+  "regimes": [
+    {
+      "label": 0,
+      "rho": -0.99,
+      "rho_index": 0,
+      "theta": 0.01,
+      "theta_index": 0,
+      "xi": 0.35,
+      "xi_index": 0
+    },
+    {
+      "label": 1,
+      "rho": 0.99,
+      "rho_index": 1,
+      "theta": 0.01,
+      "theta_index": 0,
+      "xi": 0.35,
+      "xi_index": 0
+    },
+    {
+      "label": 2,
+      "rho": -0.99,
+      "rho_index": 0,
+      "theta": 0.01,
+      "theta_index": 0,
+      "xi": 1.1,
+      "xi_index": 1
+    },
+    {
+      "label": 3,
+      "rho": 0.99,
+      "rho_index": 1,
+      "theta": 0.01,
+      "theta_index": 0,
+      "xi": 1.1,
+      "xi_index": 1
+    },
+    {
+      "label": 4,
+      "rho": -0.99,
+      "rho_index": 0,
+      "theta": 0.09,
+      "theta_index": 1,
+      "xi": 0.35,
+      "xi_index": 0
+    },
+    {
+      "label": 5,
+      "rho": 0.99,
+      "rho_index": 1,
+      "theta": 0.09,
+      "theta_index": 1,
+      "xi": 0.35,
+      "xi_index": 0
+    },
+    {
+      "label": 6,
+      "rho": -0.99,
+      "rho_index": 0,
+      "theta": 0.09,
+      "theta_index": 1,
+      "xi": 1.1,
+      "xi_index": 1
+    },
+    {
+      "label": 7,
+      "rho": 0.99,
+      "rho_index": 1,
+      "theta": 0.09,
+      "theta_index": 1,
+      "xi": 1.1,
+      "xi_index": 1
+    }
+  ],
+  "rho_levels": [
+    -0.99,
+    0.99
+  ],
+  "s0": 100.0,
+  "sequence_length": 128,
+  "splits": {
+    "disc": {
+      "log_return_mean": -0.00010440642905105268,
+      "log_return_std": 0.014507432550475784,
+      "price_max": 485.88495293950274,
+      "price_min": 13.034913070043189,
+      "regime_counts": [
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024
+      ],
+      "seed": 2,
+      "shape": [
+        8192,
+        128
+      ]
+    },
+    "oracle_train": {
+      "log_return_mean": -9.375987672106316e-05,
+      "log_return_std": 0.014488028458393946,
+      "price_max": 490.9646374480712,
+      "price_min": 10.548308840012895,
+      "regime_counts": [
+        4096,
+        4096,
+        4096,
+        4096,
+        4096,
+        4096,
+        4096,
+        4096
+      ],
+      "seed": 100,
+      "shape": [
+        32768,
+        128
+      ]
+    },
+    "oracle_validation": {
+      "log_return_mean": -9.832868201346794e-05,
+      "log_return_std": 0.01442077917043794,
+      "price_max": 423.8526580863723,
+      "price_min": 12.338649323375789,
+      "regime_counts": [
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024
+      ],
+      "seed": 101,
+      "shape": [
+        8192,
+        128
+      ]
+    },
+    "test": {
+      "log_return_mean": -0.00010437564804854491,
+      "log_return_std": 0.014442770449402143,
+      "price_max": 403.23476826693,
+      "price_min": 22.245822231174213,
+      "regime_counts": [
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024
+      ],
+      "seed": 1,
+      "shape": [
+        8192,
+        128
+      ]
+    },
+    "train": {
+      "log_return_mean": -9.273909681995805e-05,
+      "log_return_std": 0.014502113827932053,
+      "price_max": 358.87610143627353,
+      "price_min": 22.91188230938678,
+      "regime_counts": [
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024,
+        1024
+      ],
+      "seed": 0,
+      "shape": [
+        8192,
+        128
+      ]
+    }
+  },
+  "theta_levels": [
+    0.01,
+    0.09
+  ],
+  "xi_levels": [
+    0.35,
+    1.1
+  ]
+}

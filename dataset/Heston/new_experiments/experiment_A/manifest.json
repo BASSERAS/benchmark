@@ -1,0 +1,61 @@
+{
+  "configuration": {
+    "drawdown_threshold": 0.04,
+    "dt": 0.004,
+    "future_horizon": 32,
+    "history_cutoff": 40,
+    "memory_half_life": 60.0,
+    "name": "delayed_drawdown_memory_volatility",
+    "num_paths": 8192,
+    "recent_window": 20,
+    "response_delay": 32,
+    "s0": 100.0,
+    "seeds": {
+      "disc": 2,
+      "test": 1,
+      "train": 0
+    },
+    "sequence_length": 128,
+    "sigma_high": 0.45,
+    "sigma_low": 0.12,
+    "split_index": 64
+  },
+  "diagnostics": {
+    "disc": {
+      "log_return_mean": -0.00017015034845767275,
+      "log_return_std": 0.01939029651288469,
+      "price_max": 236.26641204472767,
+      "price_min": 34.188609191338266,
+      "shape": [
+        8192,
+        128
+      ],
+      "sigma_mean": 0.2620792497587909,
+      "sigma_std": 0.1592555334503107
+    },
+    "test": {
+      "log_return_mean": -0.00017906890254611537,
+      "log_return_std": 0.019378527865918413,
+      "price_max": 219.05306788143483,
+      "price_min": 24.27718771212963,
+      "shape": [
+        8192,
+        128
+      ],
+      "sigma_mean": 0.2624907412455391,
+      "sigma_std": 0.15938310302144296
+    },
+    "train": {
+      "log_return_mean": -0.00016271297618305762,
+      "log_return_std": 0.019399556829414456,
+      "price_max": 272.98613491405473,
+      "price_min": 39.39212530497512,
+      "shape": [
+        8192,
+        128
+      ],
+      "sigma_mean": 0.2618857738062238,
+      "sigma_std": 0.15928066045971337
+    }
+  }
+}

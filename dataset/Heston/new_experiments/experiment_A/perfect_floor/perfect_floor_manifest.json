@@ -1,0 +1,69 @@
+{
+  "draws": [
+    {
+      "log_return_mean": -0.00015973589499181112,
+      "log_return_std": 0.019384040011827138,
+      "price_max": 235.17518327590722,
+      "price_min": 36.0537113761222,
+      "seed": 1000,
+      "shape": [
+        8192,
+        128
+      ]
+    },
+    {
+      "log_return_mean": -0.00020883660719129012,
+      "log_return_std": 0.019406315570862708,
+      "price_max": 262.9403255539987,
+      "price_min": 36.29260138671417,
+      "seed": 1001,
+      "shape": [
+        8192,
+        128
+      ]
+    },
+    {
+      "log_return_mean": -0.00015872117363897666,
+      "log_return_std": 0.01941094032917886,
+      "price_max": 262.9243570240728,
+      "price_min": 32.0332410023487,
+      "seed": 1002,
+      "shape": [
+        8192,
+        128
+      ]
+    },
+    {
+      "log_return_mean": -0.00018708312559515626,
+      "log_return_std": 0.01940717167786405,
+      "price_max": 228.7377304565208,
+      "price_min": 31.272481628696635,
+      "seed": 1003,
+      "shape": [
+        8192,
+        128
+      ]
+    },
+    {
+      "log_return_mean": -0.00017511257993223927,
+      "log_return_std": 0.01942398715147256,
+      "price_max": 276.4537865463291,
+      "price_min": 39.20884311634767,
+      "seed": 1004,
+      "shape": [
+        8192,
+        128
+      ]
+    }
+  ],
+  "experiment": "A",
+  "num_paths": 8192,
+  "role": "evaluator-side perfect floor, independent true-DGP draws",
+  "seeds": [
+    1000,
+    1001,
+    1002,
+    1003,
+    1004
+  ]
+}

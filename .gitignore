@@ -47,3 +47,8 @@ results/Heston/preprocessing_with_log_returns/TimeDiT/baseline_no_preproc/path_s
 # The small seed_N_config.json recipe files stay tracked.
 results/Heston/preprocessing_with_log_returns/TimeDiT/weights/*.pt
 results/Heston/preprocessing_with_log_returns/TimeDiT/baseline_no_preproc/weights/*.pt
+# Experiment B regime oracle — ExtraTrees(500 trees, 77 features) serialises to
+# 529 MiB, over GitHub's 100 MiB per-file HARD cap. The reproducible artefact is
+# the gate accuracy in oracle/gate_report.json (tracked); the blob is refit locally
+# via protocol/experiments/scripts/fit_heston_mixture_oracle.py --workers 16.
+dataset/Heston/new_experiments/experiment_B/oracle/oracle.joblib
