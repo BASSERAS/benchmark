@@ -1,0 +1,17 @@
+{
+  "mode": "tf32",
+  "n": 4096,
+  "gen_batch": 4096,
+  "sample_seed": 12345,
+  "gen_sec": 480.6,
+  "paths_per_sec": 8.5235,
+  "eta_1M_hours": 32.59,
+  "price_min": 57.913847371480585,
+  "price_max": 144.10730996619523,
+  "price_mean": 103.19829519021673,
+  "price_std": 8.949271537958897,
+  "model_space_mean": 0.024061378091573715,
+  "model_space_std": 0.9345622658729553,
+  "has_nan": false,
+  "ckpt": "results/Heston/preprocessing_with_log_returns/TimeDiT/weights/seed_0_model.pt"
+}

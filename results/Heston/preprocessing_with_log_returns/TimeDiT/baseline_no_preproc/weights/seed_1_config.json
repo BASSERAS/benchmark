@@ -1,0 +1,31 @@
+{
+  "method": "TimeDiT",
+  "variant": "TimeDiT (DiT-S, paper recipe) + NO preprocessing (raw price minmax+znorm)",
+  "seed": 1,
+  "model_size": "S",
+  "hidden_size": 384,
+  "depth": 12,
+  "num_heads": 6,
+  "learn_sigma": false,
+  "schedule": "linear",
+  "T": 1000,
+  "sampler": "ddpm_fixed",
+  "lr": 0.0003,
+  "weight_decay": 0.0,
+  "ema": 0.0,
+  "batch_size": 256,
+  "n_steps": 15000,
+  "n_train": 4096,
+  "seq_len": 128,
+  "feature_size": 1,
+  "dataset": "Heston",
+  "paper_hyperparams": true,
+  "scaler": "raw_price_minmax+znorm",
+  "minmax": [
+    50.60880373245497,
+    148.44645264671703
+  ],
+  "znorm_mu": 0.5187896300439027,
+  "znorm_sd": 0.10121930584680569,
+  "params": 32463745
+}

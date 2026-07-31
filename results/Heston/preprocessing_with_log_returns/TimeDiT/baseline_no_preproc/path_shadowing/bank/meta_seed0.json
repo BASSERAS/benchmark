@@ -1,0 +1,24 @@
+{
+  "variant": "raw",
+  "seed": 0,
+  "bank_size": 1000000,
+  "gen_batch": 8192,
+  "n_shards": 2,
+  "per_shard_sec": [
+    58904.7,
+    58722.0
+  ],
+  "tf32": true,
+  "sampler": "ddpm_fixed_T1000",
+  "dtype": "float32",
+  "total_sec": 58904.7,
+  "hours": 16.36,
+  "paths_per_sec": 16.977,
+  "gb_on_disk": 0.512,
+  "sample_price_min": 71.65678405761719,
+  "sample_price_max": 131.07513427734375,
+  "sample_price_mean": 99.76289633818831,
+  "sample_price_std": 10.168679774733722,
+  "sample_has_nan": false,
+  "ckpt": "results/Heston/preprocessing_with_log_returns/TimeDiT/baseline_no_preproc/weights/seed_0_model.pt"
+}

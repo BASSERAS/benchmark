@@ -1,0 +1,1 @@
+{"shard": 0, "n_shards": 2, "chunks_done": 62, "chunks_total": 62, "rows_done": 500288, "rows_total": 500288, "total": 1000000, "gen_batch": 8192, "tf32": true, "elapsed_sec": 58904.7}

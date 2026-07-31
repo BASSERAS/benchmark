@@ -1,0 +1,29 @@
+{
+  "method": "TimeDiT",
+  "seed": 0,
+  "shape": [
+    4096,
+    128
+  ],
+  "min_val": 61.38997237259429,
+  "max_val": 143.69558045339687,
+  "generated_mean": 103.24337882088129,
+  "generated_std": 8.800604767057052,
+  "real_mean": 101.36596141705022,
+  "real_std": 9.90305890878509,
+  "sbts_sigma": 0.012631629629200154,
+  "minmax_lo": -0.4117880201451232,
+  "minmax_hi": 0.41617576706653875,
+  "znorm_mu": 0.49819981150535475,
+  "znorm_sd": 0.07608792526146786,
+  "preproc": "sbts_log_return+minmax+znorm",
+  "gen_sec": 1470.7,
+  "train_time_sec": 4794.1,
+  "gpu": "A100-SXM4-80GB",
+  "date": "2026-07-29",
+  "params": 32463745,
+  "steps": 15000,
+  "min_loss": 0.17449316382408142,
+  "first_nan_step": null,
+  "gen_has_nan": false
+}

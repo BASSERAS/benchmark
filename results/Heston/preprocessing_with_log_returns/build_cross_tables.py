@@ -15,11 +15,18 @@ method set to the methods carried through the pipeline:
     VAE                : LS4     (results/.../preprocessing_with_log_returns/LS4)
     Schrödinger Bridge : SBTS    (results/.../preprocessing_with_log_returns/SBTS)
 
-NOTE (TimeDiT / PS): TimeDiT is present in the A and B tables but **not** in
-PS_MODELS below — its strict 1M-bank `path_shadowing/pdf_summary.json` does not
-exist yet (the raw and log-return banks are still generating). Add its entry to
-PS_MODELS once that file lands; the header colspans are computed, not hardcoded,
-so nothing else needs changing.
+NOTE (TimeDiT / PS): TimeDiT is present in the A and B tables but **deliberately
+not** in PS_MODELS below, and this is NOT a TODO. Log-return preprocessing
+degrades TimeDiT (raw price wins the matched seed-0 control 31-3), so its single
+1M bank was built from the *no-preproc* checkpoint and the strict protocol was
+run on that -> results live in
+`TimeDiT/baseline_no_preproc/path_shadowing/pdf_summary.json`, NOT in
+`TimeDiT/path_shadowing/` (which holds only the shared tooling). Adding that
+file as a PS column would place a raw-conditioned model beside three
+preprocessed ones and silently break the apples-to-apples property this table
+depends on. Do not "fix" this by adding the entry, and do not build a
+preprocessed bank to make it symmetric — that experiment was explicitly
+descoped (Theo, 2026-07-31).
 
 Perfect floor = the independent-seed (1000+) 4096-path draw in
 `perfect_recovery/results/` (compute_perfect_4096.py), scored against this
@@ -315,7 +322,8 @@ def render_PS_strict(bank_size=1000000):
     paths_kinds = [(os.path.join(HERE, p), k) for _, p, k in PS_MODELS]
     ncol = 1 + len(PS_MODELS) + 3  # Metric + models + Oracle + RW + Winner
     # colspans are COMPUTED from PS_MODELS, not hardcoded, so adding a generator
-    # (e.g. TimeDiT once its pdf_summary.json exists) keeps the header aligned.
+    # later keeps the header aligned. (Not applicable to TimeDiT — see the
+    # module docstring for why it is intentionally excluded.)
     n_gen = sum(1 for _, _, k in PS_MODELS if k == "gen")
     n_fc = sum(1 for _, _, k in PS_MODELS if k == "fc")
     bs_label = f"{int(bank_size):,}".replace(",", " ")

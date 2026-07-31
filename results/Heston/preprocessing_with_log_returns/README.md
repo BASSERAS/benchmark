@@ -12,11 +12,12 @@ five "seeds" differ only in the generation RNG). Each is scored on the held-out 
 and given a strict 1M-path path-shadowing bank. Every subsequent method gets its own sibling folder built the
 same way — see [`GUIDELINE.md`](GUIDELINE.md) for the step-by-step recipe.
 
-> **TimeDiT status.** Its A and B columns below are complete (5 seeds, SBTS-preproc variant). Its
-> **path-shadowing row set is not yet in the PS table**: unlike the other three, TimeDiT is evaluated with
-> **two** 1M banks — one from the raw / no-preproc checkpoint and one from the log-return checkpoint — and
-> those banks are still generating. See
-> [`TimeDiT/README.md`](TimeDiT/README.md#path-shadowing--strict-paper-protocol-arxiv230801486).
+> **TimeDiT status.** Its A and B columns below are complete (5 seeds, SBTS-preproc variant). It is
+> **deliberately absent from the path-shadowing table**: log-return preprocessing *degrades* TimeDiT
+> (raw price wins the matched seed-0 control **31–3**), so its 1M scenario bank was built from the
+> **raw / no-preproc** checkpoint and the strict protocol was run on that. No preprocessed bank was
+> evaluated, so a TimeDiT PS column would not be like-for-like with CSDI / LS4 / SBTS. Full results:
+> [`TimeDiT/README.md`](TimeDiT/README.md#path-shadowing--strict-paper-protocol-arxiv230801486-on-the-raw--no-preproc-checkpoint).
 
 The tables below mirror the main [`results/`](../../README.md) display **at this experiment's 4096/512
 scale**: cross-method A1–A34, curve-shape B, and the strict path-shadowing forecast, each with a
@@ -219,9 +220,11 @@ identically so the columns are apples-to-apples:
 
 - **Generators (CSDI, LS4, SBTS)** — the strict route: retrieve the K=256 nearest prefixes in the method's own
   **1M-path generated bank** and read their futures as the ensemble (shadow-forecasting).
-  **TimeDiT is absent from this table for now**: it is the only method evaluated with *two* 1M banks — one from
-  the raw / no-preproc checkpoint and one from the log-return checkpoint — and those banks are still
-  generating. See [`TimeDiT/README.md`](TimeDiT/README.md#path-shadowing--strict-paper-protocol-arxiv230801486).
+  **TimeDiT is absent from this table by design**: preprocessing *hurts* it, so its 1M bank was built from the
+  **raw / no-preproc** checkpoint. Its PS numbers are real and complete — TimeDiT-raw matches the Heston oracle
+  on all three quantities — but they describe a *differently-conditioned* model than the three columns here,
+  so mixing them in would silently break the apples-to-apples property this table depends on. See
+  [`TimeDiT/README.md`](TimeDiT/README.md#path-shadowing--strict-paper-protocol-arxiv230801486-on-the-raw--no-preproc-checkpoint).
 - **Forecasters (Chronos-2, TimesFM)** — conditional route: fine-tuned on the **same 4096 train paths**
   (byte-identical recipe to the main-benchmark finetune, 1000 steps, lr 1e-4, batch 256) and forecast each
   query **directly**. The load/score pipeline was smoke-tested to reproduce the published main-benchmark
@@ -569,7 +572,7 @@ mode is **conditional-variance collapse / under-dispersion**: SBTS reproduces th
 perfectly (why it sweeps A/B) but its shadow ensemble, conditioned on a matched 65-point prefix, is far too
 tight — it under-represents the spread of futures the true Heston law admits from that state. And it gets
 **worse as the bank grows** (see the [bank-size sweep](#bank-size-sweep--the-same-table-at-every-nested-prefix-size)
-above, and the per-method [`SBTS/README.md`](SBTS/README.md#path-shadowing): cum-CRPS climbs
+above, and the per-method [`SBTS/README.md`](SBTS/README.md#path-shadowing--strict-paper-protocol-arxiv230801486): cum-CRPS climbs
 0.0254 → 0.0318 from 4k → 1M): a larger bank yields tighter prefix matches, which only expose the
 under-dispersion more sharply. This is **not** a retrieval artefact — SBTS's unique-neighbour fraction and
 prefix-distance track the oracle's almost exactly at every bank size; the oracle stays calibrated (coverage₉₀
@@ -743,7 +746,7 @@ for the full split table and file list. Summary:
 | Method | Status | Folder | Verdict |
 |--------|--------|--------|---------|
 | CSDI | ✅ done (5 seeds + 1M PS bank) | [`CSDI/`](CSDI/README.md) | **mirror-opposite of LS4** — log-returns **fix** the vol/tail/adversarial facts (A9 −70%, A31 −48%, A32 −42%, A18-GRU halved) but the `cumsum→exp` reconstruction **drifts the terminal +3.25%**, breaking price-location (A13, A17, A25, grid_tvd). Seed-stable. Matched control: raw wins **19–16** on row-count, log-returns win the facts. |
-| TimeDiT | 🟡 A/B done (5 seeds); **PS banks generating** | [`TimeDiT/`](TimeDiT/README.md) | log-returns **hurt, decisively — and unlike LS4 with no seed instability to blame** (all 5 seeds plateau within 3.4% of each other). Essentially every fidelity metric degrades vs the original price-input run; wins only **2/36 A** and **1/31 B** sublines. The matched 4096/seed-0 control **confirms** the multi-seed verdict rather than reversing it: raw price wins **31–3** (1 exact tie). Absent from the PS table for now — it is the only method with **two** 1M banks (raw-checkpoint and log-return-checkpoint), still generating. |
+| TimeDiT | ✅ A/B (5 seeds) + PS on the **raw** checkpoint | [`TimeDiT/`](TimeDiT/README.md) | log-returns **hurt, decisively — and unlike LS4 with no seed instability to blame** (all 5 seeds plateau within 3.4% of each other). Essentially every fidelity metric degrades vs the original price-input run; wins only **2/36 A** and **1/31 B** sublines. The matched 4096/seed-0 control **confirms** the multi-seed verdict rather than reversing it: raw price wins **31–3** (1 exact tie). Because preprocessing loses, the 1M scenario bank was built from the **no-preproc** checkpoint; on the strict protocol **TimeDiT-raw matches the Heston oracle on cum (0.02521 vs 0.02525), step (0.00676 vs 0.00675) and RV CRPS (0.00918 vs 0.00914)** — the RV tie is something LS4 could not achieve. Kept out of the cross-method PS table because that column would not be like-for-like. |
 | LS4 | ✅ done (5 seeds + 1M PS bank) | [`LS4/`](LS4/README.md) | log-returns **hurt** LS4 — 30/34 A-metrics regress, seeds destabilize; only A28 kurtosis-ratio improves. On the matched 4096/seed-0 control the preprocessing wins the stylised facts **19–16**. |
 | SBTS | ✅ done (5 seeds + 1M PS bank) | [`SBTS/`](SBTS/README.md) | **the split-personality result.** Non-parametric kernel; log-returns are its native representation. **Best unconditional generator in the folder** — sweeps the A table (26/36) and B table (29/31 sublines), tightest grid_tvd (5.36%), ~zero terminal drift. Yet it **fails path-shadowing**: wins 0/18 PS rows and falls **below the RW floor** (cum-CRPS 0.0318 > 0.0295), coverage collapsing to ~0.66 from conditional-variance under-dispersion that *worsens* as the bank grows. Marginal fidelity ≠ conditional calibration. Ablation: native log-returns beat raw price **34–2**. |
 
