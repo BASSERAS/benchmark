@@ -44,6 +44,16 @@ Produced by `dataset/Heston/new_experiments/protocol/experiments/scripts/evaluat
 **run unchanged** (protocol PDF §7, checklist item 7). Aggregation: mean ± sample std
 (ddof = 1) over 5 seeds; 95 % CI half-width uses t₀.₉₇₅,₄ = 2.776.
 
+**Why there is no paired interval here, stated rather than omitted.** PDF §5 requires the five
+seedwise differences and a paired interval *"for comparisons between models run with **aligned
+seeds**"*. This table compares LS4 (seeds 0–4) against the perfect floor, which is five
+true-DGP draws at seeds **1000–1004** — there is no correspondence between floor seed 1000 and
+model seed 0, so pairing them would fabricate a covariance and yield an interval that changes
+if the floor files are reordered. The comparison is therefore unpaired **by the protocol's own
+condition**. `tools/aggregate_pdf_metrics.py --paired-dir` enforces this: it reads the true
+seed from `sources.generated` and refuses to pair 0–4 against 1000–1004, and it will produce
+the paired table automatically once a second *method* (same seeds 0–4) exists to compare with.
+
 **Reading the `target_*` rows.** These are computed from `test.npy` alone by the frozen oracle;
 they never touch the generated bank. Ten of the eleven are *bit-identical* across all five seeds
 — verified, not assumed — so their sample std and 95 % CI half-width are **exactly 0**, and the
@@ -245,7 +255,7 @@ claim: there is no validation/test gap to explain.
 | Trained on this experiment's own data | **Yes** — `dataset/Heston/new_experiments/experiment_B/train.npy` (MD5 `7713b823…`), a different file from Experiment A's. Independent corroboration: the standardizer fitted on it gives μ = 100.09714689788022, σ = 11.516370009298313, which differ from A's (μ = 100.13621639651069, σ = 11.927961375843996) — the two runs cannot have shared a training set. |
 | Failed / unstable runs | **0** — all 5 seeds ran 100/100 epochs, no NaN in any bank, no seed replaced or dropped. One observation recorded rather than smoothed over: seed 2's *last-epoch* total loss spikes to −0.5683 against its own epoch-92 minimum of −1.1118 (seeds 0/1/3/4 finish at −1.101/−1.071/−0.958/−1.079). This does **not** reach the bank: generation uses the **EMA** weights (`ema_lamb = 0.99`, `train_ls4_experiment.py:154` selects `ema_model.module`), and a single-epoch excursion is damped by the EMA's ≈100-step memory. Seed 2 is also not an outlier in the headline metric — its regime-proportion TVD is 0.258911, mid-pack among 0.245483 / 0.243164 / **0.258911** / 0.335815 / 0.250977, where the worst seed is 3, not 2. Reported here because PDF §1.5 requires unstable behaviour to be surfaced, not because it changed a result. |
 | Oracle gate | **PASS** — 0.909423828125 ≥ 0.90 required (PDF §3.2) |
-| Declared post-hoc transformation (§1.3) | **`S ← 100·S/S[:,:1]`**, applied once to every bank. LS4 generates in standardized *price* space with no `t = 0` anchor, so raw `S₀` deviated by up to 3.5 × 10⁻² — beyond §1.4's "ordinary floating-point tolerance". The repair preserves every log-return to 1e-12, so the path law is untouched. Recorded per seed in `generation_manifest.json → numerical_repair`. |
+| Declared post-hoc transformation (§1.3) | **`S ← 100·S/S[:,:1]`**, applied once to every bank. LS4 generates in standardized *price* space with no `t = 0` anchor, so raw `S₀` deviated by up to 3.5 × 10⁻² — beyond §1.4's "ordinary floating-point tolerance". The repair preserves every log-return to 1e-12, so the path law is untouched. Recorded per seed in `generation_manifest.json → numerical_repair`. **The repair is now committed code (`tools/apply_s0_repair.py`), but for Experiment B it is *not* re-derivable, and this row says so rather than borrowing Experiment A's evidence.** B's banks were first committed (`f54d87f`) already repaired, so no pre-repair copy survives in history, and generation cannot be replayed from `seed_N_model.pt` alone — the torch RNG state at generation time depends on the whole training run. What *is* re-measured from disk: `S₀ == 100.0` exactly on all 5 banks, and the map is a per-path rescaling, hence log-return-invariant to 1.776 × 10⁻¹⁵. Experiment A, whose raw banks were kept, is re-derived bit-for-bit 5/5; B is the weaker case and the asymmetry is deliberate to record. |
 | Known non-conformance | **None.** All §1.4 bullets hold: finite, strictly positive, 8192 × 128, `float64`, `S₀ == 100.0` exactly — re-measured from each array on disk by `write_generation_manifest.py`, not asserted. |
 
 Machine-readable in `generated_paths/seed_<q>/generation_manifest.json`.

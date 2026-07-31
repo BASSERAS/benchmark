@@ -41,6 +41,16 @@ Produced by `dataset/Heston/new_experiments/protocol/experiments/scripts/evaluat
 **run unchanged** (protocol PDF §7, checklist item 7). Aggregation: mean ± sample std
 (ddof = 1) over 5 seeds; 95 % CI half-width uses t₀.₉₇₅,₄ = 2.776.
 
+**Why there is no paired interval here, stated rather than omitted.** PDF §5 requires the five
+seedwise differences and a paired interval *"for comparisons between models run with **aligned
+seeds**"*. This table compares LS4 (seeds 0–4) against the perfect floor, which is five
+true-DGP draws at seeds **1000–1004** — there is no correspondence between floor seed 1000 and
+model seed 0, so pairing them would fabricate a covariance and yield an interval that changes
+if the floor files are reordered. The comparison is therefore unpaired **by the protocol's own
+condition**. `tools/aggregate_pdf_metrics.py --paired-dir` enforces this: it reads the true
+seed from `sources.generated` and refuses to pair 0–4 against 1000–1004, and it will produce
+the paired table automatically once a second *method* (same seeds 0–4) exists to compare with.
+
 **Reading the `target_memory.*` rows.** These are computed from `test.npy` alone by the frozen
 evaluator; they never touch the generated bank. They are therefore *bit-identical* across all
 five seeds — verified, not assumed — so their sample std and 95 % CI half-width are **exactly 0**,
@@ -174,7 +184,7 @@ it is the cleanest available evidence that no tuning leaked into the reported ru
 | Generation time | 8.5 s per seed |
 | Hardware | 1 × A100-SXM4-80GB, 8 pinned cores of 2 × AMD EPYC 7763 |
 | Failed / unstable runs | **0** — all 5 seeds ran 100/100 epochs, no NaN in any bank |
-| Declared post-hoc transformation (§1.3) | **`S ← 100·S/S[:,:1]`**, applied once to every bank. LS4 generates in standardized *price* space with no `t = 0` anchor, so raw `S₀` deviated by up to 1.4 × 10⁻² — beyond §1.4's "ordinary floating-point tolerance". The repair preserves every log-return to 1e-12, so the path law is untouched; the four primary metrics above are **bit-identical** pre- and post-repair, as predicted by the evaluators' `log(S/S[:,:1])` normalization and then verified. Recorded per seed in `generation_manifest.json → numerical_repair`. |
+| Declared post-hoc transformation (§1.3) | **`S ← 100·S/S[:,:1]`**, applied once to every bank. LS4 generates in standardized *price* space with no `t = 0` anchor, so raw `S₀` deviated by up to 1.4 × 10⁻² — beyond §1.4's "ordinary floating-point tolerance". The repair preserves every log-return to 1e-12, so the path law is untouched; the four primary metrics above are **bit-identical** pre- and post-repair, as predicted by the evaluators' `log(S/S[:,:1])` normalization and then verified. Recorded per seed in `generation_manifest.json → numerical_repair`. **The repair is now committed code and is fully audited:** `tools/apply_s0_repair.py --raw-dir`, run against the pre-repair banks preserved in commit `ba7c748`, re-derives all **5/5** scored banks **bit-for-bit** (max log-return perturbation 1.776 × 10⁻¹⁵). The spelling is load-bearing — `100.0 * S / S[:, :1]`, multiply first; the three other algebraically identical orderings differ by 2.8 × 10⁻¹⁴ and re-derive nothing. |
 | Known non-conformance | **None.** All §1.4 bullets hold: finite, strictly positive, 8192 × 128, `float64`, `S₀ == 100.0` exactly — re-measured from each array on disk by `write_generation_manifest.py`, not asserted. |
 
 Machine-readable in `generated_paths/seed_<q>/generation_manifest.json`.

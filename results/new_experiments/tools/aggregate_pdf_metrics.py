@@ -13,6 +13,7 @@ Usage:
       --pattern '*_drawdown_memory.json'
 """
 import os
+import re
 import json
 import glob
 import argparse
@@ -58,6 +59,86 @@ def fmt(mean, std):
     return f"{mean:.6g} ± {std:.3g}"
 
 
+def true_seeds(directory, pattern, subdir="pdf_metrics"):
+    """The TRUE generating seeds, read from each JSON's `sources.generated` path.
+
+    Two things this deliberately does not do:
+
+    * It does not use the filename. `perfect_floor/pdf_metrics/` names its files
+      seed_0..seed_4 while the banks behind them are floor_seed1000..floor_seed1004, so a
+      filename-based check calls that pair "aligned" and emits a paired interval over two
+      unrelated seed sets. Measured: that is exactly what the first version of this guard did.
+    * It does not go through `flatten()`, which keeps only numeric leaves and therefore drops
+      `sources.generated` -- a string -- entirely.
+    """
+    seeds = []
+    for p in sorted(glob.glob(os.path.join(directory, subdir, pattern))):
+        gen = str(json.load(open(p)).get("sources", {}).get("generated", ""))
+        hits = re.findall(r"seed_?(\d+)", gen)
+        seeds.append(int(hits[-1]) if hits else None)
+    return seeds
+
+
+def paired(a):
+    """PDF §5 paired comparison: five seedwise differences + the paired interval.
+
+    The pairing is by SEED, so seed q of one method is differenced against seed q of the
+    other. Averaging each method separately and subtracting the means throws away exactly the
+    seed-to-seed covariance the paired interval exists to exploit -- the two means agree, but
+    the interval does not, and it is usually much too wide. That is the whole point of the
+    requirement.
+    """
+    left, lf = collect(a.model_dir, a.pattern, a.subdir)
+    right, rf = collect(a.paired_dir, a.pattern, a.subdir)
+
+    # Alignment is a precondition, not a nicety -- and FILENAMES ARE NOT THE TEST.
+    # The perfect_floor writes seed_0..seed_4_<stem>.json for DGP seeds 1000..1004, so
+    # comparing basenames says "aligned" for a comparison that is nothing of the kind.
+    # The true seed is in sources.generated: ".../seed_0/..." vs ".../floor_seed1000.npy".
+    lseeds = true_seeds(a.model_dir, a.pattern, a.subdir)
+    rseeds = true_seeds(a.paired_dir, a.pattern, a.subdir)
+    if lseeds != rseeds or None in lseeds:
+        raise SystemExit(
+            "REFUSING to pair: seeds are not aligned.\n"
+            f"  {a.model_dir}: seeds {lseeds}  (files {lf})\n"
+            f"  {a.paired_dir}: seeds {rseeds}  (files {rf})\n"
+            "PDF 5 requires the paired interval only 'for comparisons between models run "
+            "with aligned seeds'. Model-vs-perfect-floor is NOT one of those -- the floor is "
+            "drawn at seeds 1000-1004 -- even though its files are named seed_0..seed_4. "
+            "Report the unpaired table there, and say in prose why it is unpaired."
+        )
+
+    n = len(lf)
+    print(f"<!-- PDF 5 paired comparison | {a.label} - {a.paired_label} | "
+          f"{n} aligned seeds: {lseeds} -->")
+    print(f"| Metric | {a.label} | {a.paired_label} | Seedwise differences "
+          f"({a.label} - {a.paired_label}) | Mean diff ± std | Paired 95% CI |")
+    print("|---|---|---|---|---|---|")
+
+    for key in sorted(set(left) & set(right)):
+        if any(key.startswith(p + ".") or key == p for p in a.exclude_prefix):
+            continue
+        lv, rv = left[key], right[key]
+        if len(lv) != n or len(rv) != n:
+            print(f"| `{key}` | INCOMPLETE | INCOMPLETE | — | — | — |")
+            continue
+        try:
+            d = np.asarray(lv, dtype=float) - np.asarray(rv, dtype=float)
+        except (TypeError, ValueError):
+            continue  # non-numeric leaf (a path, a name); nothing to difference
+        dm, ds, dh = stats(d)
+        lm, ls, _ = stats(lv)
+        rm, rs, _ = stats(rv)
+        diffs = ", ".join(f"{x:+.4g}" for x in d)
+        print(f"| `{key}` | {fmt(lm, ls)} | {fmt(rm, rs)} | {diffs} | "
+              f"{fmt(dm, ds)} | ±{dh:.3g} |")
+
+    print(f"\n<!-- Paired half-width = t(0.975,4)={T_CRIT_4DOF} * s_d / sqrt({n}). "
+          "A CI excluding 0 is a per-seed-consistent difference; one containing 0 is not, "
+          "however far apart the two means look. -->")
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model-dir", required=True, help="method dir containing pdf_metrics/")
@@ -72,7 +153,20 @@ def main():
     # directory by the same code -- otherwise the validation column gets hand-copied.
     ap.add_argument("--subdir", default="pdf_metrics",
                     help="pdf_metrics (test side) or pdf_metrics_validation (disc side)")
+    # PDF §5: "For comparisons between models run with aligned seeds, also report the five
+    # seedwise differences and their corresponding paired interval." That sentence binds only
+    # when the seeds are ALIGNED. Model-vs-perfect-floor is NOT such a comparison -- the floor
+    # is drawn at seeds 1000-1004 against a model's 0-4 -- so an unpaired table is correct
+    # there, and this mode refuses to run rather than manufacturing a bogus pairing.
+    # Model-vs-model (e.g. CSDI seeds 0-4 vs LS4 seeds 0-4) IS aligned, and then the paired
+    # interval is mandatory, not optional.
+    ap.add_argument("--paired-dir", default=None,
+                    help="second METHOD dir with the same seeds; emits the PDF 5 paired table")
+    ap.add_argument("--paired-label", default="Baseline")
     a = ap.parse_args()
+
+    if a.paired_dir:
+        return paired(a)
 
     model, model_files = collect(a.model_dir, a.pattern, a.subdir)
     floor, floor_files = (collect(a.floor_dir, a.pattern, a.subdir) if a.floor_dir else ({}, []))

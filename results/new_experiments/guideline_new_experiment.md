@@ -21,9 +21,22 @@ This file governs the blinded protocol only. Where the two disagree, this file w
 
 The protocol is defined by `synthetic_benchmark_protocol_drawdown_heston_mixture.pdf`
 (31 July 2026). §6 of the PDF names the canonical upstream repository
-`/home/samer/scenarios/deep-mkv-gen-path-dt` and pins six authoritative files by SHA-256.
+`/home/samer/scenarios/deep-mkv-gen-path-dt` and does **two separate things** that are easy
+to conflate — and conflating them is a false-provenance claim, so read this twice:
 
-Those six files are **vendored verbatim** into this repository at:
+1. It **lists, by path, six authoritative implementation files** (the five `experiments/scripts/*.py`
+   plus `experiments/path_dt_experiments/heston_mixture.py`). These are named. **No digest is
+   given for any of them.**
+2. It **pins ten SHA-256 digests**, and every one of the ten is a *data or artefact* file:
+   `{train,disc,test}.npy` + `manifest.json` for each experiment (8), plus `oracle.joblib`
+   and `gate_report.json` (2).
+
+> **The scripts are named, not pinned. The data is pinned, not named as code.**
+> There is therefore **no cryptographic check available for `evaluate_drawdown_memory.py`
+> or `evaluate_heston_parameter_mixture.py`** — the two files on which every scored number
+> in both READMEs depends. What we have instead is *functional* provenance; see §0.1.
+
+Those six named files are **vendored verbatim** into this repository at:
 
 ```
 dataset/Heston/new_experiments/protocol/experiments/
@@ -38,7 +51,47 @@ dataset/Heston/new_experiments/protocol/experiments/
     └── evaluate_heston_parameter_mixture.py         Experiment B evaluator
 ```
 
-All six were SHA-256 verified against the PDF (6/6 match) at vendoring time.
+### 0.1 What is actually verified, and what is not
+
+Measured 2026-07-31 (re-run the `sha256sum` block in §11.1 — it takes under a second):
+
+| Object | PDF §6 gives a digest? | Our result |
+|---|---|---|
+| The six named `.py` implementation files | **no** | nothing to check — see below |
+| `experiment_A/{train,disc,test}.npy` | yes | ✅ **bit-for-bit** |
+| `experiment_B/{train,disc,test}.npy` | yes | ✅ **bit-for-bit** |
+| `experiment_B/oracle/gate_report.json` | yes | ✅ **bit-for-bit** |
+| `experiment_A/manifest.json` | yes | ❌ `d03d0000…` vs PDF `d4d41179…` |
+| `experiment_B/manifest.json` | yes | ❌ `e55f167a…` vs PDF `86ac0541…` |
+| `experiment_B/oracle/oracle.joblib` | yes | ❌ `a36d64eb…` vs PDF `54c3f2c9…` |
+
+**7 of the 10 pinned digests match. 3 do not.** The three misses are diagnosed in §11.1
+(manifests differ only in 16th-significant-figure diagnostic floats; a pickled
+`ExtraTreesClassifier` is not byte-reproducible across library versions). Neither
+explanation is a match, and this file will not call them one.
+
+**The scripts have no cryptographic provenance at all.** What stands in its place is three
+independent *functional* verifications, and they are the whole basis for trusting the
+vendored code:
+
+1. Running the vendored `generate_drawdown_memory_dataset.py` reproduces
+   `258b455f…` / `e01ccb8a…` / `3b1efbcc…` — the PDF's own three Experiment A digests.
+2. Running the vendored `generate_heston_parameter_mixture_dataset.py` (with
+   `heston_mixture.py`) reproduces `63ed5401…` / `5b292afe…` / `74fae6bd…`.
+3. Running the vendored `fit_heston_mixture_oracle.py` reproduces `gate_report.json` at
+   `7bd779b9…` byte-for-byte — including all 64 confusion-matrix cells over 8192 validation
+   paths and `eight_regime_accuracy = 0.909423828125`.
+
+Those three cover **four** of the six named files: both dataset generators, the oracle
+fitter, and `heston_mixture.py` (exercised transitively by generator 2 — a wrong DGP cannot
+land on the PDF's `train.npy` digest).
+
+> ⚠️ **The two evaluator scripts are covered by none of them.**
+> `evaluate_drawdown_memory.py` and `evaluate_heston_parameter_mixture.py` produce every
+> scored number in both READMEs and have **neither a digest in the PDF nor an output whose
+> digest the PDF pins**. The only assurance is that they were run **unchanged** (PDF §7
+> item 7), which is a statement about *us*, not about *them*. If the upstream repository
+> ever becomes reachable, `diff` these two files first.
 
 > ### ⛔ Never edit anything under `protocol/`
 > PDF §7 checklist item 7 requires: *"The supplied evaluator scripts were run unchanged."*
@@ -76,14 +129,41 @@ has memory but collapses modes.
 
 Per path, per step `t`:
 
+Transcribed from `generate_drawdown_memory_dataset.py:41-72`. The state variable is the
+**log path** `X_t = log(S_t / S_0)`, with `X_0 = 0`:
+
 ```
-drawdown_t  = 1 - S_t / max(S_0..S_t)
+X_t         = log(S_t / S_0)                            # LOG SPACE, X_0 = 0
+M_t         = max_{j <= t} X_j                          # running max of the LOG path
+drawdown_t  = M_t - X_t                                 # LOG drawdown, NOT 1 - S/cummax(S)
 hit_t       = 1 if drawdown_t >= drawdown_threshold else 0
 memory_t    = max(decay * memory_{t-1}, hit_t)          # LATCHING, then decaying
-              decay = exp(-ln 2 / memory_half_life)
-sigma_t     = sigma_low + (sigma_high - sigma_low) * memory_{t - response_delay}
-S_{t+1}     = S_t * exp(-0.5 * sigma_t^2 * dt + sigma_t * sqrt(dt) * Z_t)
+              decay = exp(-ln 2 / memory_half_life),  memory_{-1} = 0
+delayed_t   = memory_{t - response_delay}  if t >= response_delay
+              0                            if t <  response_delay      # <-- see below
+sigma_t     = sigma_low + (sigma_high - sigma_low) * delayed_t
+X_{t+1}     = X_t - 0.5 * sigma_t^2 * dt + sigma_t * sqrt(dt) * Z_t
+S_t         = S_0 * exp(X_t)                            # price is the LAST step
 ```
+
+> ⚠️ **Log space, in both the DGP and the evaluator.** `generate_drawdown_memory_dataset.py:50`
+> is `drawdown = running_max - log_paths[:, step]` and
+> `evaluate_drawdown_memory.py:56-57` is `running_max = np.maximum.accumulate(log_paths, axis=1);
+> drawdown = running_max - log_paths`. The price-space form `1 - S_t / max(S_0..S_t)` is
+> **wrong** and is the single most common porting error here: for a 4 % threshold the two
+> definitions differ by ~2 % *relative*, which is enough to move paths across the `early_hit`
+> boundary and silently shift every group-conditional metric. The same trap is tabulated for
+> the figure script in §7.4 — it is listed twice on purpose.
+
+> ⚠️ **Warm-up clause.** `delayed_t = 0` for every `t < response_delay = 32`, because
+> `memory_history` is not yet populated (`generate_drawdown_memory_dataset.py:56-60`). The
+> first 32 steps of every path therefore run at `sigma_low` **unconditionally**, whatever
+> drawdowns occur in them. A model that learns "vol is always low early" is not wrong about
+> the data; it is wrong only if it fails to switch afterwards.
+
+> ⚠️ **`sigma_history` has `sequence_length - 1` columns** (line 46): one volatility per
+> *increment*, not per observation. This is why `*_sigma.npy` is `(8192, 127)` while the
+> price banks are `(8192, 128)`. See §12.2.
 
 The three properties that make this hard:
 
@@ -589,7 +669,9 @@ Keep the `repro_*` artefacts until the experiments are committed; they are the e
 
 One-time per experiment, shared by every method. Skip if already present.
 
-1. Vendor `protocol/` and verify SHA-256 against PDF §6 (6/6).
+1. Vendor `protocol/`. **PDF §6 pins no script digest**, so there is nothing to verify here;
+   the check that matters comes at step 2, when the generated `.npy` files must land on the
+   PDF's digests (§0.1). Do not record a "6/6" — it does not exist.
 2. Generate datasets (§2.3, §3.1) → `train/test/disc` + side info + `manifest.json`.
 3. **Experiment B only:** fit the oracle and check the gate ≥ 0.90 (§3.3). Stop on failure.
 4. Generate the perfect floor, 5 draws, seeds 1000–1004 (§4).
@@ -781,7 +863,8 @@ results/new_experiments/
 │   ├── plot_stylised_facts.py                   README § 3 figure: heston_diagnostics.png
 │   ├── plot_losses.py                           README § 4 figure: loss_convergence.png
 │   ├── write_generation_manifest.py             PDF §1.4 artefact, no README section
-│   └── check_method_layout.py                   §6.6 — verifies a method dir matches this tree
+│   ├── check_method_layout.py                   §6.6 — verifies a method dir matches this tree
+│   └── apply_s0_repair.py                       §11.5 — applies AND audits the S0 repair
 └── experiment_<A|B>/
     ├── perfect_floor/                           method-neutral sibling
     │   ├── pdf_metrics/seed_{0..4}_*.json       floor scored by the PDF evaluator vs test.npy
@@ -1707,8 +1790,45 @@ MMD/SWD family A6/A7/A10/A11 — so the repair obliged a full re-run of
 regenerated with a different construction, would silently mask a real defect. Verify, never
 repair, the floor.
 
-The pre-repair banks remain recoverable from commit `ba7c748` should the deviation itself
-ever need to be re-examined.
+**The repair is committed code, and for Experiment A it is fully re-derived.** The
+transformation used to live only in a shell line, which meant the committed pipeline did not
+reproduce the committed banks. It is now `tools/apply_s0_repair.py`, and the audit is a
+command rather than a claim:
+
+```bash
+# extract the raw pre-repair banks (they ARE in git) and re-derive the scored ones
+for s in 0 1 2 3 4; do
+  mkdir -p /tmp/rawA/generated_paths/seed_$s
+  git show ba7c748:results/new_experiments/experiment_A/LS4/generated_paths/seed_$s/generated_paths_8192x128.npy \
+    > /tmp/rawA/generated_paths/seed_$s/generated_paths_8192x128.npy
+done
+python ../../tools/apply_s0_repair.py --model-dir . --raw-dir /tmp/rawA
+# -> seed 0..4: STRONG OK  repair(raw) == scored bit-for-bit; log-return drift 1.776e-15
+```
+
+| | Experiment A | Experiment B |
+|---|---|---|
+| raw pre-repair banks in git | ✅ `ba7c748` | ❌ first committed already repaired (`f54d87f`) |
+| scored banks re-derived bit-for-bit | ✅ **5/5** | ❌ not possible |
+| `S₀ == 100.0` exactly, re-measured | ✅ 5/5 | ✅ 5/5 |
+| max log-return perturbation | 1.776e-15 | 1.776e-15 |
+
+**Experiment B is weaker and this table says so.** Its raw banks do not exist in history and
+generation is not replayable from the checkpoint alone — the torch RNG state at generation
+time depends on the entire training run, so loading `seed_N_model.pt` and calling `generate`
+gives a *different* bank. For B, the verifiable facts are the exact anchoring and the
+analytic invariance of the map, not a re-derivation.
+
+> ⚠️ **Operator order is load-bearing.** The four algebraically identical spellings of this
+> map differ by up to **2.8e-14** in float64, so only one of them re-derives a given bank.
+> The one that does is the one the manifests declare, associated as Python associates it:
+> `100.0 * S / S[:, :1]` — multiply first. If a *new* method's bank then fails §1.4's
+> `S₀ == 100` (which the PDF states with no tolerance), use `--anchor-exact`, which divides
+> first and is exact by construction because `x / x` is exactly `1.0`.
+>
+> **A new method must keep its raw banks** and commit them, or at minimum run
+> `apply_s0_repair.py --raw-dir` once and paste the output. Experiment B is the cautionary
+> tale: five minutes of foresight would have made it as auditable as A.
 
 ### 11.6 §5 reporting requirements — what every comparison table must state
 
@@ -1731,11 +1851,64 @@ Also from §5, and easy to violate by accident:
 * Report **every** seed, the mean, the sample std (`ddof=1`), and the 95 % CI half-width
   `t₀.₉₇₅,₄ · s/√5` with **t = 2.776**. Never only the best seed.
 * For aligned-seed model-vs-model comparisons, additionally report the **five seedwise
-  differences** and their paired interval.
+  differences** and their paired interval. Scope box below.
 * "All displayed fidelity metrics are errors or distances, so lower is better, **except**
   explicitly identified raw diagnostics such as standard-deviation ratio, posterior
   confidence, group means, and novelty." Those must be visually marked as raw, or a reader
   will minimise `std_ratio` (target 1.0) and `distinct_nearest_training_paths` (raw count).
+
+#### The paired-interval clause — read its scope before you obey it
+
+The PDF sentence is:
+
+> *"For comparisons between models run with **aligned seeds**, also report the five seedwise
+> differences and their corresponding paired interval. Do not report only the best seed."*
+
+The clause is conditional, and the condition is doing real work:
+
+| Comparison | Aligned? | What to report |
+|---|---|---|
+| `<Method>` vs **perfect floor** | ❌ **no** | unpaired mean ± std + CI, **and say in prose that it is unpaired and why** |
+| `<Method>` vs another **method** | ✅ yes (both use seeds 0–4) | unpaired table **plus** the 5 seedwise differences and the paired interval |
+| `<Method>` on `test.npy` vs `disc.npy` | ✅ yes (same 5 banks) | paired is meaningful; §1.3 of the README already shows both sides |
+
+**Why the floor is not aligned.** The perfect floor is five *true-DGP draws* at seeds
+**1000–1004** (§4), scored against a model's seeds **0–4**. There is no correspondence between
+"floor seed 1000" and "model seed 0" — pairing them would invent a covariance that does not
+exist, and would produce an interval that is not merely wrong but arbitrary, since it changes
+if you reorder the floor files. So every floor comparison in the LS4 READMEs is unpaired,
+**by the protocol's own condition, not by omission.**
+
+**The trap that makes this a landmine.** `perfect_floor/pdf_metrics/` names its files
+`seed_0_*.json … seed_4_*.json`, for banks that are `floor_seed1000.npy … floor_seed1004.npy`.
+Anything that infers alignment from filenames will happily pair them. The first version of the
+guard in `aggregate_pdf_metrics.py` did exactly that; it now reads the true seed out of
+`sources.generated` and refuses:
+
+```
+$ python ../../tools/aggregate_pdf_metrics.py --model-dir . --paired-dir ../perfect_floor ...
+REFUSING to pair: seeds are not aligned.
+  .:               seeds [0, 1, 2, 3, 4]
+  ../perfect_floor: seeds [1000, 1001, 1002, 1003, 1004]
+```
+
+**When a second method lands (CSDI), the paired table becomes mandatory:**
+
+```bash
+python ../../tools/aggregate_pdf_metrics.py \
+    --model-dir  ../CSDI --paired-dir ../LS4 \
+    --pattern '*_drawdown_memory.json' \
+    --label CSDI --paired-label LS4 --exclude-prefix configuration sources
+```
+
+It emits, per metric, the five differences, their mean ± std, and `± t(0.975,4)·s_d/√5`.
+**This is not cosmetic.** On a worked check, a metric whose *unpaired* CI half-width was
+`±0.0084` had a *paired* half-width of `±1.5e-18` — the seed-to-seed variation is shared
+between the two methods and cancels in the difference. Reporting only the unpaired interval
+would have called a perfectly consistent difference "inside the noise".
+
+> A paired CI excluding 0 means the difference held **in every seed**. A paired CI containing
+> 0 means it did not — however far apart the two means look. Quote the interval, not the gap.
 
 ### 11.7 Things the PDF forbids that are easy to do anyway
 
@@ -2023,12 +2196,14 @@ Exact flags for every tool:
 
 ```
 aggregate_pdf_metrics.py     --model-dir --floor-dir --pattern --label --exclude-prefix --subdir
+                             --paired-dir --paired-label      (PDF 5 paired table; see 11.6)
 make_metrics_tables.py       --model-dir --floor-dir --label --table
 plot_experiment_figures.py   --experiment --model-dir --seed --out --label
 plot_stylised_facts.py       --experiment --model-dir --seed --label
 plot_losses.py               --model-dir --title
 write_generation_manifest.py --model-dir --experiment --source-revision --repair --hyperparameter-origin
 check_method_layout.py       --root --experiment
+apply_s0_repair.py           --model-dir --seeds --raw-dir --apply --anchor-exact
 ```
 
 **The `--exclude-prefix` lists differ between experiments** and are not interchangeable:
@@ -2080,6 +2255,23 @@ setsid env CUDA_VISIBLE_DEVICES=2 OMP_NUM_THREADS=8 taskset -c 8-15 \
 ```
 Within 60 s confirm: 2 PIDs, 2 GPUs holding memory, and the correct `[data]` path echoed in
 **both** logs. Never let two lanes target the same seed.
+
+**Step 3b — anchor the banks at S₀ = 100, if your generator does not (PDF §1.4 / §7 item 5).**
+This step comes **before** every measurement, because the A1–A34 battery contains
+level-sensitive metrics (A13, A25, and the price-space MMD/SWD family A6/A7/A10/A11).
+Repairing after scoring means re-scoring — which is exactly the cost §11.5 records paying.
+
+```bash
+cd $OUT
+cp -r generated_paths ../${M}_raw_banks          # KEEP THE RAW BANKS. See below.
+$PY ../../tools/apply_s0_repair.py --model-dir . --apply
+$PY ../../tools/apply_s0_repair.py --model-dir . --raw-dir ../${M}_raw_banks   # must print 5/5 STRONG OK
+```
+
+If your generator already emits `S[:, 0] == 100.0` exactly, `--apply` writes nothing and says
+so; skip the rest. If it does not, **the raw copy is not optional**: without it nobody can
+ever verify that the transformation between your generator and your scored numbers was the
+declared one. Experiment B of LS4 is the standing example of getting this wrong (§11.5).
 
 **Step 4 — the A1–A34 + B battery, model then floor.**
 ```bash
