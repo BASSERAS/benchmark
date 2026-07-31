@@ -2240,6 +2240,22 @@ results. No metric value in either README was ever wrong.
 > transitively through the data and gate digests they reproduce. So **PDF §7 item 7 currently
 > rests on an assertion about our own conduct, not on verifiable provenance.** Action item open:
 > request the digests from the protocol author.
+>
+> **Message drafted 2026-07-31, awaiting reply — see
+> [`open_questions_to_protocol_author.md`](open_questions_to_protocol_author.md).** It asks for
+> something stronger than the digests: a **conformance fixture**, i.e. both evaluators run with
+> the already-pinned `disc.npy` supplied as the generated bank, with the resulting metrics JSONs
+> published. A file digest proves only that we hold the same bytes; it cannot detect environment
+> drift through numpy's reduction order, `scipy.stats.wasserstein_distance`, sklearn's unpickling
+> of `oracle.joblib`, or faiss — none of which is pinned anywhere in the distributed tree. A
+> fixture on pinned input catches both at once and subsumes the digest request.
+>
+> That file also carries a **remediation runbook**: for each of the four questions, what changes
+> if the answer comes back badly, which keys move, and what it costs. The load-bearing conclusion
+> recorded there: **no possible reply requires retraining.** Generation and evaluation are
+> separate re-runnable steps and `generated_paths/seed_{0..4}/` is retained, so the worst case is
+> an evaluation re-run. **Any method added later — CSDI included — must preserve that property.**
+> This is why none of the four questions blocks further work.
 
 **What is affirmatively verified, by measurement, today:**
 
