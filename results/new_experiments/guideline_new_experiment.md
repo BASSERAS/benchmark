@@ -1088,6 +1088,7 @@ results/new_experiments/
 │   ├── plot_losses.py                           README § 4 figure: loss_convergence.png
 │   ├── write_generation_manifest.py             PDF §1.4 artefact, no README section
 │   ├── check_method_layout.py                   §6.6 — verifies a method dir matches this tree
+│   ├── check_readme_values.py                   §6.7 — every README cell vs a fresh regeneration
 │   ├── check_oracle_gate.py                     §3.3 — MANDATORY preflight before scoring B
 │   └── apply_s0_repair.py                       §11.5 — applies AND audits the S0 repair
 └── experiment_<A|B>/
@@ -1249,6 +1250,87 @@ it is cheaper to find a missing seed here than in a regenerated table.
 
 Run it against `LS4` first. If it does not pass on the reference method, the checker is wrong,
 not your new method.
+
+### 6.7 Verifying the README *values* — `check_readme_values.py`
+
+`check_method_layout.py` proves the **files** are right. It says nothing about whether the
+**numbers printed in the README** still correspond to those files. That is a separate and more
+dangerous failure, because it is invisible: a README whose tables have drifted reads exactly
+like one whose tables have not.
+
+The realistic way it happens is not fraud. It is:
+
+- someone recomputes metrics and refreshes §1 but forgets §2, or vice versa;
+- someone edits prose — a verdict, a σ multiple, a typo — and a digit inside an adjacent table
+  cell moves with it;
+- a derived cell (`× floor`, `W̄_param`) is left stale next to freshly regenerated operands.
+
+The last one is the worst: every visible operand is correct and only the conclusion is wrong.
+
+```bash
+python results/new_experiments/tools/check_readme_values.py \
+    --root  results/new_experiments/experiment_A/LS4 \
+    --floor results/new_experiments/experiment_A/perfect_floor \
+    --experiment A
+```
+
+**What it does.** For every generated block it re-runs the generator that was supposed to have
+produced it and compares **cell by cell**, on the *rendered text* rather than a re-parsed float.
+That strictness is deliberate: the README's contract is that the bytes came from the generator,
+so a cell that differs only in formatting is still a defect — it means somebody retyped it.
+
+| Block | Source of truth | How it is matched |
+|---|---|---|
+| §1 PDF metrics (test) | `aggregate_pdf_metrics.py --subdir pdf_metrics` | whole table, key by key |
+| §1.1 PRIMARY panel | same aggregate + **derived** `× floor` | header contains `× floor` |
+| §1.3 validation digest | **both** aggregator runs, test vs validation | header contains `` `disc.npy` `` |
+| §2.1 A1–A34 | `make_metrics_tables.py --table A` | whole table |
+| §2.2 B curve-shape | `make_metrics_tables.py --table B` | whole table |
+
+§1.1 and §1.3 are **hand-assembled digests**, not generated blocks — their row labels are prose
+("Regime proportion TVD"), so the label → metric-key mapping is written out explicitly in
+`SECTION_1_1` / `SECTION_1_3` at the top of the file. If you add a row to either table, add its
+key there too; the checker refuses to pass a label it does not recognise rather than skipping it
+silently.
+
+**Derived cells are recomputed, never trusted.** Two exist:
+
+- `× floor` = model mean ÷ floor mean, checked to 5 % (the README renders two significant figures).
+- **`W̄_param`** = the unweighted mean of the three support-normalised Wassersteins (PDF §3.3),
+  recomputed **per seed and only then aggregated**. Averaging the three already-aggregated means
+  gives the same mean and the *wrong* std, which is exactly the mistake this recomputation exists
+  to catch.
+
+> ⚠️ **A matcher that keys off row labels alone is not safe here.** The first version of this
+> checker located the §1.3 digest by "the table whose row labels are a subset of the map". In
+> Experiment A that matched the **§1.1 PRIMARY panel** instead — it shares four of the five row
+> labels but lays its columns out differently (column 2 is a CI half-width, not the validation
+> value). The result was four confident, entirely bogus mismatch reports. The fix, and the rule:
+> match hand-assembled tables on their **header signature**, never on row-label overlap.
+
+**A failing generator does not abort the run.** It is recorded and reported with everything else
+at the end. Aborting would discard the mismatches already found in earlier blocks — precisely
+the wrong behaviour when a README has both a bad cell *and* a missing artefact.
+
+**Verified on the reference method, 2026-07-31:**
+
+| | Experiment A | Experiment B |
+|---|---|---|
+| §1 PDF metrics | 30 rows / 120 cells | 51 rows / 204 cells |
+| §1.1 PRIMARY panel | 4 rows / 16 cells | 4 rows / 15 cells |
+| §1.3 validation digest | 5 rows / 10 cells | 4 rows / 8 cells |
+| §2.1 battery A | 43 rows / 352 cells | 43 rows / 352 cells |
+| §2.2 battery B | 31 rows / 281 cells | 31 rows / 281 cells |
+| **total** | **779 cells** | **860 cells** |
+| **mismatches** | **0** | **0** |
+
+**1 639 cells cross-checked against freshly regenerated artefacts, zero mismatches.**
+
+Negative-tested, not just run: injecting `0.0081543 → 0.0081999` into one §1 cell and
+`2.6× → 9.9×` into the derived ratio produced exactly two failures with exact locations, and
+exit 1. A checker that has only ever been run on passing input is not evidence of anything.
+
+Run it **after** every metric recomputation and **before** every commit that touches a README.
 
 ---
 
@@ -2118,6 +2200,70 @@ Every claim below is **measured**, not asserted. Re-run this whole section befor
 submission; it is cheap and it is the only thing standing between "we followed the protocol"
 and "we believe we followed the protocol".
 
+### 11.0 Verdict — is the protocol respected, and was it ever not?
+
+**Was there a mistake in Experiment A or B? Yes. Thirteen, found by external audit.** All
+thirteen are now closed and measured. Two carry caveats that must be quoted rather than
+summarised. The honest state, per item:
+
+| # | What was wrong | A | B | Status |
+|---|---|---|---|---|
+| D1 | Vendored-script provenance not recorded | ● | ● | closed — local digests in §0.1 |
+| D2 | Perfect-floor seed derivation undocumented | ● | ● | closed — §10 row 5 |
+| D3 | Generation time reported from one seed | ● | ● | closed — 5-seed mean + range |
+| D4 | **Wrong σ multiple repeated three times** (`future_rv_no_hit_mean`) | ● | — | closed — recomputed **59.7 σ** |
+| D5 | Loss-curve provenance unstated | ● | ● | closed |
+| D6 | `oracle.joblib` refit locally, mismatch undisclosed | — | ● | closed — disclosed mismatch-first |
+| D7 | ±1/8192 jitter cause asserted, not isolated | — | ● | closed — read from sklearn source |
+| D8 | A failed oracle gate could score silently | — | ● | closed — `check_oracle_gate.py` |
+| D9 | `current_log_return` misnomer undocumented | ● | — | closed — §2.4 box |
+| D10 | Artefact roles + §1.4 naming deviation undeclared | ● | ● | closed — §6.0, §10 rows 9–10 |
+| D11 | Two extra files absent from the PDF, unexplained | — | ● | closed — §3.2 box |
+| D12 | Information firewall not written down | ● | ● | closed — §4.1 / §4.2 |
+| D13 | `--workers` default 24 exceeds the 16-core cap | — | ● | closed — §3.3 warning |
+
+**D4 was the only one that put a wrong number in front of a reader.** Everything else was
+missing disclosure, missing tooling, or missing provenance — real defects, but not incorrect
+results. No metric value in either README was ever wrong.
+
+**Two caveats that are not closed and must not be reported as if they were:**
+
+> **① D10(b) is closed asymmetrically.** Experiment A re-derives **bit-for-bit, 5/5 seeds**,
+> from commit `ba7c748`. **Experiment B does not re-derive at all.** Its banks exist and its
+> numbers are internally consistent, but the path from source to those banks does not
+> reproduce. That is a materially weaker guarantee and it is not the same claim.
+>
+> **② §10 row 10 cannot be closed by anyone locally.** PDF §6 names six implementation scripts
+> and publishes the digest of **none** of them; all ten published digests are data artefacts.
+> `evaluate_drawdown_memory.py` and `evaluate_heston_parameter_mixture.py` additionally have no
+> functional cross-check — unlike the two generators and the oracle fitter, which are verified
+> transitively through the data and gate digests they reproduce. So **PDF §7 item 7 currently
+> rests on an assertion about our own conduct, not on verifiable provenance.** Action item open:
+> request the digests from the protocol author.
+
+**What is affirmatively verified, by measurement, today:**
+
+| Check | Command | Result |
+|---|---|---|
+| File layout, both experiments | `check_method_layout.py` | **209/209 each** |
+| **README numbers, both experiments** | `check_readme_values.py` | **1 639 cells, 0 mismatches** |
+| Oracle gate + report coherence | `check_oracle_gate.py` | **exit 0**, acc 0.909423828125, margin +0.009424 |
+| S₀ = 100 exactly, all 10 banks | §10.1 A6 snippet | **exact**, `min == max == 100.0` |
+| `protocol/` unmodified | `git status -- protocol` | **clean** |
+| Information firewall | §4.1 / §4.2 | generators read `train.npy` only; `disc.npy` has exactly one non-training call site |
+| Five independent trainings per experiment | §13 step 8 | 5 distinct weight digests, 5 distinct configs, per experiment |
+
+**Separately from our conduct: the PDF itself is under-specified in eight places** (§10.1).
+Those are not deviations — they are places where an independent reimplementation can differ and
+be equally compliant. **A2 is the one that matters**: the pooled-ACF numerator normalisation is
+unpinned by the notation and moves `abs_return_acf_rmse_lags_1_50` from 0.018115 to 0.015340 — a
+15 % swing, larger than our entire five-seed spread, with no downstream diagnostic that would
+expose the mismatch.
+
+**Bottom line.** The protocol is respected now, on every check that can be run locally. It was
+not respected at the start of the audit. And two things remain outside our reach: Experiment B's
+non-reproducibility, and the absence of any published digest for the evaluator scripts.
+
 ### 11.1 §6 integrity — SHA-256 against the PDF's published digests
 
 ```bash
@@ -2766,6 +2912,8 @@ plot_stylised_facts.py       --experiment --model-dir --seed --label
 plot_losses.py               --model-dir --title
 write_generation_manifest.py --model-dir --experiment --source-revision --repair --hyperparameter-origin
 check_method_layout.py       --root --experiment
+check_readme_values.py       --root --floor --experiment
+check_oracle_gate.py         --gate-report --oracle --minimum-accuracy
 apply_s0_repair.py           --model-dir --seeds --raw-dir --apply --anchor-exact
 ```
 
@@ -2898,6 +3046,19 @@ $PY ../../tools/make_metrics_tables.py --model-dir . --floor-dir ../perfect_floo
 ```
 Paste each table **verbatim**. Then re-run every `*Reproduce:*` line and require an empty diff
 (§8 item 17). Re-read every number quoted in prose from its JSON, not from memory (E5).
+
+**Step 9b — machine-check the README's numbers. Must print PASS before you commit.**
+```bash
+$PY ../../tools/check_readme_values.py --root . --floor ../perfect_floor --experiment $X
+```
+Step 7 proved the *files* are right; this proves the *numbers you printed about them* are. It
+re-runs both generators and diffs every cell, including the derived `× floor` and `W̄_param`
+cells that no generator emits (§6.7). If you added a row to the §1.1 or §1.3 digests, register
+its metric key in `SECTION_1_1` / `SECTION_1_3` first — the checker fails on an unknown label
+rather than skipping it.
+
+Run this again after **any** later edit to the README, however cosmetic. The failure mode it
+exists for is a prose fix that drags a digit with it.
 
 **Step 10 — commit with an explicit pathspec**, because a concurrent process also commits to
 this repo:
