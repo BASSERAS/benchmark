@@ -272,19 +272,38 @@ PS_METRICS = [
     ("upper_miss90", "upper miss₉₀ (→0.05)", 0.05),
 ]
 
-# (quantity, json_key) -> display label that overrides the PS_METRICS default.
+# ── the RMSE row: which aggregation each quantity actually reports ───────────
 #
-# The scorer aggregates as mean_q(√(mean_u se_{q,u})) — root INSIDE (GUIDELINE E16b).
-# For cum and step the horizon has H=32 points, so the inner term is a genuine
-# per-path RMS over the horizon and "RMSE" is a fair name for the average of those.
-# rv is a SCALAR per query (H=1), so mean_u collapses, √se_q reduces to |e_q|, and
-# the row is *exactly* a mean absolute error. Labelling it "RMSE" was misleading, so
-# the rv row is displayed as MAE.
+# The scorer emits TWO aggregations of the same per-query squared error se_q
+# (path_shadowing_pdf.py METRIC_MAP / _agg):
 #
-# Display only: the JSON key stays "rmse" in every pdf_summary.json and in the
-# scorer's METRIC_MAP. Renaming the key would mean editing path_shadowing_pdf.py —
-# the untouched strict reference implementation, five copies — and re-running the
-# whole 5-bank × 5-method sweep to rewrite the artefacts, for zero numerical gain.
+#   "rmse"           mean_q(√se_q)    root INSIDE — the reproducibility report's
+#                    convention (Tables 1–5); the average per-path root error.
+#   "rmse_textbook"  √(mean_q se_q)   root LAST — the textbook RMSE.
+#
+# √ is concave, so by Jensen root-inside is strictly the smaller of the two.
+#
+# cum / step: H=32, and se_q is already the mean over the horizon, so
+#   √(mean_q se_q) = √(mean over every (query, horizon-step)) — the genuine
+#   root-mean-square error. mean_q(√se_q) is NOT an RMSE: it averages per-path
+#   RMS values, a hybrid with no standard name. These rows therefore read
+#   "rmse_textbook", which makes the "RMSE ↓" label literally correct.
+#
+# rv: SCALAR per query (H=1), so mean_u collapses, √se_q reduces to |e_q|, and
+#   mean_q(√se_q) is *exactly* a mean absolute error. This row keeps the
+#   root-inside key and is labelled MAE — the honest name for what it is. Its
+#   "rmse_textbook" value is in the JSON if a true rv RMSE is ever wanted.
+#
+# Both keys are written to every artefact, so nothing published under the old
+# convention is lost. See the README footnote and GUIDELINE E16b.
+
+# (quantity, PS_METRICS json_key) -> the json_key actually read.
+PS_METRIC_KEY = {
+    ("cum", "rmse"): "rmse_textbook",
+    ("step", "rmse"): "rmse_textbook",
+}
+
+# (quantity, PS_METRICS json_key) -> display label overriding the PS_METRICS default.
 PS_METRIC_LABEL = {
     ("rv", "rmse"): "MAE ↓",
 }
@@ -310,9 +329,17 @@ def _fc_quantities(path):
     return json.load(open(path))["quantities"]
 
 
+def _ps_key(qn, metric):
+    """PS_METRICS declares one json_key per row, but the RMSE row reads a different
+    aggregation for the trajectory quantities than for the scalar one — see
+    PS_METRIC_KEY. Every read of a PS value goes through here so the table, the
+    winner ranking and the LaTeX report can never drift apart."""
+    return PS_METRIC_KEY.get((qn, metric), metric)
+
+
 def _ps_value(path, kind, qn, metric, bank_size):
     q = _gen_quantities(path, bank_size) if kind == "gen" else _fc_quantities(path)
-    return q[qn][metric]["value"]
+    return q[qn][_ps_key(qn, metric)]["value"]
 
 
 def _ps_winner_idx(vals, rule):
@@ -374,8 +401,9 @@ def render_PS_strict(bank_size=1000000):
                 wins[model_names[wi]] += 1
             cells = "".join(RT.cell(RT.fmt(v), bold=(wi is not None and i == wi))
                             for i, v in enumerate(vals))
-            ov = RT.fmt(oracle_q[qn][metric]["value"])
-            rv = RT.fmt(rw_q[qn][metric]["value"])
+            mk = _ps_key(qn, metric)
+            ov = RT.fmt(oracle_q[qn][mk]["value"])
+            rv = RT.fmt(rw_q[qn][mk]["value"])
             win_cell = f"<b>{model_names[wi]}</b>" if wi is not None else "—"
             label = PS_METRIC_LABEL.get((qn, metric), mlabel)
             out.append(f'  <tr><td>{label}</td>{cells}'
@@ -385,9 +413,40 @@ def render_PS_strict(bank_size=1000000):
     return "\n".join(out), wins
 
 
+def render_PS_sweep_summary(focus="SBTS"):
+    """The README's sweep-summary markdown table: one row per nested-prefix bank
+    size, carrying the per-bank win-counts plus the two columns that carry the
+    SBTS-collapse reading (cum CRPS and cum coverage90).
+
+    Generated, never hand-typed (GUIDELINE 10.2). The win-counts come from the
+    SAME `render_PS_strict` call that renders the big HTML tables, so the summary
+    physically cannot disagree with the tables it summarises — which is exactly
+    how it went stale twice before this function existed."""
+    focus_path, focus_kind = next((os.path.join(HERE, p), k)
+                                  for n, p, k in PS_MODELS if n == focus)
+    lines = [f"| Bank | Winners (of 18 ranked rows) | {focus} cum-CRPS | "
+             f"{focus} cum coverage₉₀ (→0.90) |",
+             "|---|---|---|---|"]
+    sizes = ps_bank_sizes()
+    for i, bs in enumerate(sizes):
+        _, wins = render_PS_strict(bs)
+        # ties broken alphabetically so re-running never reshuffles the row text
+        ranked = sorted(((k, v) for k, v in wins.items() if v), key=lambda x: (-x[1], x[0]))
+        top = f"**{ranked[0][0]} {ranked[0][1]}**"
+        rest = " · ".join(f"{k} {v}" for k, v in ranked[1:])
+        crps = RT.fmt(_ps_value(focus_path, focus_kind, "cum", "crps", bs))
+        cov = RT.fmt(_ps_value(focus_path, focus_kind, "cum", "coverage90", bs))
+        last = (i == len(sizes) - 1)          # bold the headline row's two columns
+        b = (lambda s: f"**{s}**") if last else (lambda s: s)
+        lines.append(f"| {int(bs):,} |".replace(",", " ")
+                     + f" {top}" + (f" · {rest}" if rest else "")
+                     + f" | {b(crps)} | {b(cov)} |")
+    return "\n".join(lines)
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--which", choices=["A", "B", "PS", "all"], default="all")
+    ap.add_argument("--which", choices=["A", "B", "PS", "PSSUM", "all"], default="all")
     ap.add_argument("--all-bank-sizes", action="store_true",
                     help="emit one PS table per nested-prefix bank size (GUIDELINE §9.1) "
                          "instead of the 1M table alone")
@@ -416,6 +475,10 @@ def main():
             print(html)
             print(f"\n<!-- PS strict win-counts @{bs_label} (of 18 ranked rows = 6 ranked metrics × 3 quantities; width rows are diagnostic): " +
                   ", ".join(f"{k}={v}" for k, v in sorted(wins.items(), key=lambda x: -x[1]) if v) + " -->\n")
+    if args.which in ("PSSUM", "all"):
+        print("<!-- ===== PS SWEEP SUMMARY (markdown) ===== -->")
+        print(render_PS_sweep_summary())
+        print()
 
 
 if __name__ == "__main__":

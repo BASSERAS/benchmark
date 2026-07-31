@@ -211,8 +211,10 @@ Monte-Carlo CRPS of the main benchmark. Each of the 512 held-out query paths is 
 **H=32** from its 65-point prefix, producing a K=256-member predictive ensemble of **normalized-return**
 continuations. We score three quantities — **cum** (cumulative-return trajectory, M×H), **step** (per-step
 return, M×H), **rv** (realized vol, M scalar) — on the **full strict-PDF metric set** (8 metrics × 3
-quantities = 24 values) with a 2000-resample paired bootstrap (seed 20230814). Per quantity: **RMSE** and
-energy-score **CRPS** (↓ lower is better); **coverage₅₀/coverage₉₀** (calibration — closest to the 0.50/0.90
+quantities = 24 values) with a 2000-resample paired bootstrap (seed 20230814). Per quantity: **RMSE** — for
+cum/step the textbook √(mean_q se_q), for the scalar rv the equivalent mean_q|e_q| shown as **MAE**; see the
+convention note under the tables — and energy-score **CRPS** (↓ lower is better); **coverage₅₀/coverage₉₀**
+(calibration — closest to the 0.50/0.90
 target wins); **width₅₀/width₉₀** (interval sharpness — *diagnostic only*: width alone is meaningless
 without its coverage, so it selects no winner); **lower/upper miss₉₀** (one-sided calibration — closest to
 the ideal 0.05 wins). Winner is decided per row over the 6 ranked metrics (18 ranked rows total).
@@ -248,7 +250,7 @@ each query directly and retrieve nothing, and the random walk is analytic — so
 all five tables (flagged *bank-independent* in the header).
 
 <details>
-<summary><b>Bank 4 096</b> — winners: TimeDiT (raw) 14 · CSDI 2 · SBTS 2</summary>
+<summary><b>Bank 4 096</b> — winners: TimeDiT (raw) 15 · SBTS 2 · CSDI 1</summary>
 
 <table>
 <thead>
@@ -271,7 +273,7 @@ all five tables (flagged *bank-independent* in the header).
 </thead>
 <tbody>
   <tr><td colspan="10"><b>cum (M×H trajectory)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.04131</b></td><td>0.04142</td><td>0.04149</td><td>0.04158</td><td>0.04168</td><td>0.04276</td><td>0.04154</td><td>0.04796</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.04919</td><td><b>0.04890</b></td><td>0.04906</td><td>0.04916</td><td>0.04921</td><td>0.05094</td><td>0.04924</td><td>0.05670</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.02548</td><td><b>0.02531</b></td><td>0.02544</td><td>0.02544</td><td>0.02624</td><td>0.02722</td><td>0.02539</td><td>0.02946</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4571</td><td><b>0.5105</b></td><td>0.4764</td><td>0.4839</td><td>0.4050</td><td>0.4664</td><td>0.4875</td><td>0.4719</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8629</td><td><b>0.8957</b></td><td>0.8691</td><td>0.8805</td><td>0.7905</td><td>0.8177</td><td>0.8919</td><td>0.8553</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -280,7 +282,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07764</td><td><b>0.04840</b></td><td>0.06476</td><td>0.05554</td><td>0.09595</td><td>0.09265</td><td>0.05731</td><td>0.08331</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td>0.05945</td><td><b>0.05591</b></td><td>0.06616</td><td>0.06396</td><td>0.1135</td><td>0.08966</td><td>0.05078</td><td>0.06134</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td colspan="10"><b>step (M×H)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01177</td><td>0.01176</td><td>0.01180</td><td>0.01227</td><td>0.01267</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.01244</b></td><td>0.01245</td><td>0.01245</td><td>0.01249</td><td>0.01295</td><td>0.01332</td><td>0.01245</td><td>0.01253</td><td><b>CSDI</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.006780</td><td><b>0.006766</b></td><td>0.006794</td><td>0.006812</td><td>0.01272</td><td>0.01473</td><td>0.006765</td><td>0.006874</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4510</td><td>0.4811</td><td>0.4656</td><td><b>0.4813</b></td><td>0.9449</td><td>0.9479</td><td>0.4849</td><td>0.5157</td><td><b>SBTS</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8602</td><td><b>0.8854</b></td><td>0.8591</td><td>0.8782</td><td>0.9970</td><td>0.9949</td><td>0.8869</td><td>0.8866</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -303,7 +305,7 @@ all five tables (flagged *bank-independent* in the header).
 </details>
 
 <details>
-<summary><b>Bank 16 384</b> — winners: TimeDiT (raw) 14 · CSDI 3 · SBTS 1</summary>
+<summary><b>Bank 16 384</b> — winners: TimeDiT (raw) 15 · CSDI 1 · LS4 1 · SBTS 1</summary>
 
 <table>
 <thead>
@@ -326,7 +328,7 @@ all five tables (flagged *bank-independent* in the header).
 </thead>
 <tbody>
   <tr><td colspan="10"><b>cum (M×H trajectory)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.04142</b></td><td>0.04156</td><td>0.04150</td><td>0.04234</td><td>0.04168</td><td>0.04276</td><td>0.04155</td><td>0.04796</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.04915</td><td><b>0.04901</b></td><td>0.04903</td><td>0.04996</td><td>0.04921</td><td>0.05094</td><td>0.04923</td><td>0.05670</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.02543</td><td><b>0.02534</b></td><td>0.02542</td><td>0.02610</td><td>0.02624</td><td>0.02722</td><td>0.02535</td><td>0.02946</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4604</td><td><b>0.5103</b></td><td>0.4755</td><td>0.4694</td><td>0.4050</td><td>0.4664</td><td>0.4859</td><td>0.4719</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8694</td><td><b>0.8952</b></td><td>0.8685</td><td>0.8644</td><td>0.7905</td><td>0.8177</td><td>0.8884</td><td>0.8553</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -335,7 +337,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07318</td><td><b>0.04651</b></td><td>0.06458</td><td>0.06787</td><td>0.09595</td><td>0.09265</td><td>0.05731</td><td>0.08331</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05743</b></td><td>0.05829</td><td>0.06689</td><td>0.06769</td><td>0.1135</td><td>0.08966</td><td>0.05432</td><td>0.06134</td><td><b>CSDI</b></td></tr>
   <tr><td colspan="10"><b>step (M×H)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01177</td><td>0.01176</td><td>0.01192</td><td>0.01227</td><td>0.01267</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.01245</td><td>0.01245</td><td><b>0.01245</b></td><td>0.01261</td><td>0.01295</td><td>0.01332</td><td>0.01245</td><td>0.01253</td><td><b>LS4</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.006777</td><td><b>0.006768</b></td><td>0.006788</td><td>0.006930</td><td>0.01272</td><td>0.01473</td><td>0.006761</td><td>0.006874</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4493</td><td><b>0.4818</b></td><td>0.4648</td><td>0.4751</td><td>0.9449</td><td>0.9479</td><td>0.4810</td><td>0.5157</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8639</td><td><b>0.8843</b></td><td>0.8630</td><td>0.8624</td><td>0.9970</td><td>0.9949</td><td>0.8862</td><td>0.8866</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -358,7 +360,7 @@ all five tables (flagged *bank-independent* in the header).
 </details>
 
 <details>
-<summary><b>Bank 65 536</b> — winners: TimeDiT (raw) 14 · CSDI 3 · LS4 1</summary>
+<summary><b>Bank 65 536</b> — winners: TimeDiT (raw) 14 · CSDI 2 · LS4 2</summary>
 
 <table>
 <thead>
@@ -381,7 +383,7 @@ all five tables (flagged *bank-independent* in the header).
 </thead>
 <tbody>
   <tr><td colspan="10"><b>cum (M×H trajectory)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.04130</b></td><td>0.04161</td><td>0.04148</td><td>0.04389</td><td>0.04168</td><td>0.04276</td><td>0.04140</td><td>0.04796</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.04912</td><td>0.04909</td><td><b>0.04900</b></td><td>0.05207</td><td>0.04921</td><td>0.05094</td><td>0.04910</td><td>0.05670</td><td><b>LS4</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.02535</td><td><b>0.02533</b></td><td>0.02536</td><td>0.02768</td><td>0.02624</td><td>0.02722</td><td>0.02524</td><td>0.02946</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4670</td><td><b>0.5046</b></td><td>0.4717</td><td>0.4256</td><td>0.4050</td><td>0.4664</td><td>0.4886</td><td>0.4719</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8738</td><td><b>0.8970</b></td><td>0.8685</td><td>0.8198</td><td>0.7905</td><td>0.8177</td><td>0.8887</td><td>0.8553</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -390,7 +392,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07147</td><td><b>0.04761</b></td><td>0.06500</td><td>0.08795</td><td>0.09595</td><td>0.09265</td><td>0.05688</td><td>0.08331</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05469</b></td><td>0.05536</td><td>0.06647</td><td>0.09229</td><td>0.1135</td><td>0.08966</td><td>0.05444</td><td>0.06134</td><td><b>CSDI</b></td></tr>
   <tr><td colspan="10"><b>step (M×H)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01175</b></td><td>0.01177</td><td>0.01177</td><td>0.01228</td><td>0.01227</td><td>0.01267</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.01244</b></td><td>0.01245</td><td>0.01246</td><td>0.01297</td><td>0.01295</td><td>0.01332</td><td>0.01245</td><td>0.01253</td><td><b>CSDI</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.006770</td><td><b>0.006762</b></td><td>0.006786</td><td>0.007304</td><td>0.01272</td><td>0.01473</td><td>0.006754</td><td>0.006874</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4486</td><td><b>0.4765</b></td><td>0.4667</td><td>0.4406</td><td>0.9449</td><td>0.9479</td><td>0.4820</td><td>0.5157</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8639</td><td><b>0.8810</b></td><td>0.8627</td><td>0.8183</td><td>0.9970</td><td>0.9949</td><td>0.8864</td><td>0.8866</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -413,7 +415,7 @@ all five tables (flagged *bank-independent* in the header).
 </details>
 
 <details>
-<summary><b>Bank 262 144</b> — winners: TimeDiT (raw) 14 · CSDI 3 · LS4 1</summary>
+<summary><b>Bank 262 144</b> — winners: TimeDiT (raw) 15 · CSDI 2 · LS4 1</summary>
 
 <table>
 <thead>
@@ -436,7 +438,7 @@ all five tables (flagged *bank-independent* in the header).
 </thead>
 <tbody>
   <tr><td colspan="10"><b>cum (M×H trajectory)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.04138</b></td><td>0.04152</td><td>0.04149</td><td>0.04540</td><td>0.04168</td><td>0.04276</td><td>0.04136</td><td>0.04796</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.04911</td><td><b>0.04891</b></td><td>0.04897</td><td>0.05373</td><td>0.04921</td><td>0.05094</td><td>0.04898</td><td>0.05670</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.02541</td><td><b>0.02528</b></td><td>0.02536</td><td>0.02987</td><td>0.02624</td><td>0.02722</td><td>0.02524</td><td>0.02946</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4644</td><td><b>0.5010</b></td><td>0.4723</td><td>0.3552</td><td>0.4050</td><td>0.4664</td><td>0.4904</td><td>0.4719</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8691</td><td><b>0.8972</b></td><td>0.8696</td><td>0.7396</td><td>0.7905</td><td>0.8177</td><td>0.8922</td><td>0.8553</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -445,7 +447,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07501</td><td><b>0.04675</b></td><td>0.06653</td><td>0.1324</td><td>0.09595</td><td>0.09265</td><td>0.05548</td><td>0.08331</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05591</b></td><td>0.05609</td><td>0.06384</td><td>0.1280</td><td>0.1135</td><td>0.08966</td><td>0.05231</td><td>0.06134</td><td><b>CSDI</b></td></tr>
   <tr><td colspan="10"><b>step (M×H)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01177</td><td>0.01177</td><td>0.01290</td><td>0.01227</td><td>0.01267</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td><b>0.01245</b></td><td>0.01245</td><td>0.01245</td><td>0.01360</td><td>0.01295</td><td>0.01332</td><td>0.01245</td><td>0.01253</td><td><b>CSDI</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.006771</td><td><b>0.006760</b></td><td>0.006784</td><td>0.008009</td><td>0.01272</td><td>0.01473</td><td>0.006752</td><td>0.006874</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4529</td><td><b>0.4753</b></td><td>0.4653</td><td>0.3699</td><td>0.9449</td><td>0.9479</td><td>0.4825</td><td>0.5157</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8638</td><td><b>0.8822</b></td><td>0.8645</td><td>0.7321</td><td>0.9970</td><td>0.9949</td><td>0.8849</td><td>0.8866</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -490,7 +492,7 @@ all five tables (flagged *bank-independent* in the header).
 </thead>
 <tbody>
   <tr><td colspan="10"><b>cum (M×H trajectory)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.04144</b></td><td>0.04145</td><td>0.04145</td><td>0.04674</td><td>0.04168</td><td>0.04276</td><td>0.04148</td><td>0.04796</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.04925</td><td><b>0.04888</b></td><td>0.04894</td><td>0.05523</td><td>0.04921</td><td>0.05094</td><td>0.04911</td><td>0.05670</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.02544</td><td><b>0.02521</b></td><td>0.02534</td><td>0.03179</td><td>0.02624</td><td>0.02722</td><td>0.02525</td><td>0.02946</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4624</td><td><b>0.5072</b></td><td>0.4688</td><td>0.3001</td><td>0.4050</td><td>0.4664</td><td>0.4891</td><td>0.4719</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8682</td><td><b>0.8983</b></td><td>0.8682</td><td>0.6575</td><td>0.7905</td><td>0.8177</td><td>0.8941</td><td>0.8553</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -499,7 +501,7 @@ all five tables (flagged *bank-independent* in the header).
   <tr><td>lower miss₉₀ (→0.05)</td><td>0.07599</td><td><b>0.04572</b></td><td>0.06757</td><td>0.1738</td><td>0.09595</td><td>0.09265</td><td>0.05463</td><td>0.08331</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>upper miss₉₀ (→0.05)</td><td><b>0.05579</b></td><td>0.05597</td><td>0.06427</td><td>0.1687</td><td>0.1135</td><td>0.08966</td><td>0.05127</td><td>0.06134</td><td><b>CSDI</b></td></tr>
   <tr><td colspan="10"><b>step (M×H)</b></td></tr>
-  <tr><td>RMSE ↓</td><td><b>0.01176</b></td><td>0.01178</td><td>0.01176</td><td>0.01350</td><td>0.01227</td><td>0.01267</td><td>0.01176</td><td>0.01185</td><td><b>CSDI</b></td></tr>
+  <tr><td>RMSE ↓</td><td>0.01245</td><td>0.01246</td><td><b>0.01245</b></td><td>0.01421</td><td>0.01295</td><td>0.01332</td><td>0.01244</td><td>0.01253</td><td><b>LS4</b></td></tr>
   <tr><td>CRPS ↓</td><td>0.006767</td><td><b>0.006760</b></td><td>0.006778</td><td>0.008688</td><td>0.01272</td><td>0.01473</td><td>0.006750</td><td>0.006874</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₅₀ (→0.50)</td><td>0.4532</td><td><b>0.4761</b></td><td>0.4672</td><td>0.3082</td><td>0.9449</td><td>0.9479</td><td>0.4816</td><td>0.5157</td><td><b>TimeDiT (raw)</b></td></tr>
   <tr><td>coverage₉₀ (→0.90)</td><td>0.8640</td><td><b>0.8806</b></td><td>0.8640</td><td>0.6479</td><td>0.9970</td><td>0.9949</td><td>0.8864</td><td>0.8866</td><td><b>TimeDiT (raw)</b></td></tr>
@@ -519,53 +521,64 @@ all five tables (flagged *bank-independent* in the header).
 </tbody>
 </table>
 
-<!-- PS strict win-counts @1 000 000 (of 18 ranked rows = 6 ranked metrics × 3 quantities; width rows are diagnostic): TimeDiT (raw)=14, CSDI=3, LS4=1 -->
+<!-- PS strict win-counts @1 000 000 (of 18 ranked rows = 6 ranked metrics × 3 quantities; width rows are diagnostic): TimeDiT (raw)=15, LS4=2, CSDI=1 -->
 
-> **RMSE convention — one convention, every column.** All five tables report RMSE as **mean_q(√se_q)**, the
-> average per-query root error, matching the path-shadowing reproducibility report (Tables 1–5). This is *not*
-> √(mean_q se_q); √ is concave, so by Jensen mean_q(√se_q) ≤ √(mean_q se_q) always (e.g. CSDI cum 0.0414 vs
-> 0.0493 at 1M). Old and new numbers must never be mixed in one table.
+> **RMSE convention — each row reports the aggregation its label claims.** The scorer emits **both**
+> aggregations of the same per-query squared error `se_q`, for every model, bank size and quantity:
+> `rmse` = **mean_q(√se_q)** (root inside — the reproducibility report's convention, Tables 1–5) and
+> `rmse_textbook` = **√(mean_q se_q)** (root last — the textbook RMSE). √ is concave, so by Jensen
+> root-inside ≤ root-last always. Which key each row reads is declared once, in
+> `build_cross_tables.PS_METRIC_KEY`, and is read by both the README and the PDF renderer, so the two
+> cannot disagree.
 >
-> **Why the rv row says MAE.** rv is a *scalar* per query (H=1), so the inner mean collapses, √se_q reduces to
-> |e_q|, and `mean_q(√se_q)` is **exactly a mean absolute error**. The reproducibility report labels it "RMSE";
-> these tables label it **MAE**, because that is what it is. cum and step keep "RMSE" — there H=32, the inner
-> term is a genuine per-path RMS across the horizon and the row averages those, which is a hybrid with no
-> standard name but is certainly not a MAE. This is a **display rename only**: the JSON key stays `rmse` in
-> every `pdf_summary.json` and in the scorer's `METRIC_MAP`, since renaming the key would mean editing the
-> untouched reference `path_shadowing_pdf.py` and re-running the whole 5-bank × 5-method sweep for zero
-> numerical gain. The override lives in `build_cross_tables.PS_METRIC_LABEL` and is read by both the README
-> and the PDF renderer, so the two cannot disagree.
+> - **cum and step → `rmse_textbook`, labelled RMSE.** H = 32 and `se_q` is *already* the mean over the
+>   horizon, so √(mean_q se_q) = √(mean over every (query, horizon-step)) — the genuine root-mean-square
+>   error. `mean_q(√se_q)` averages per-path RMS values: a hybrid with no standard name that is **not** an
+>   RMSE, and understates the textbook figure by ~18 % (cum) / ~6 % (step). The label is now literally correct.
+> - **rv → `rmse`, labelled MAE.** rv is a *scalar* per query (H = 1), so the inner mean collapses, √se_q
+>   reduces to |e_q|, and `mean_q(√se_q)` is **exactly a mean absolute error**. The reproducibility report
+>   labels it "RMSE"; these tables label it MAE, because that is what it is. Its `rmse_textbook` value is in
+>   the JSON if a true rv RMSE is ever wanted.
 >
-> **Fixed 2026-07-31.** Chronos-2 and TimesFM previously carried the older √(mean_q se_q) values, because the
-> reproducibility report never recomputed its forecaster column. That was not benign: the Winner column ranks
-> *all* model columns, so it was comparing forecaster cells inflated by ~18 % (cum) / ~6 % (step) / ~5 % (rv)
-> against un-inflated generator ones. `forecaster/pdf_bridge.py` now calls the shared `metrics_with_ci`, and
-> both forecasters were re-run — every other cell reproduced bit-identically, confirming the RMSE rows are the
-> only change. Chronos-2 cum-RMSE 0.04921 → **0.04168** against CSDI's 0.04144: a 19 % deficit was really a
-> 0.6 % one. **No Winner cell changed at any of the five bank sizes.** The report's published forecaster RMSE
-> cells are therefore superseded, not reproduced. Every other metric (CRPS, coverages, widths, miss rates) is
-> an arithmetic mean, was never affected, and is comparable across all columns.
+> **The cum/step RMSE winner among the top three generators is noise — do not read it.** At the 1M bank CSDI,
+> TimeDiT (raw) and LS4 sit at 0.049253 / 0.048875 / 0.048944, a spread of 3.8e-4, while each 95 % bootstrap CI
+> is ~6.3e-3 wide — 17× larger, and every interval contains every other point estimate. Switching aggregation
+> moves the winner in **7 of the 10** cum/step rows (2 quantities × 5 banks): CSDI takes all ten under
+> root-inside and loses most to TimeDiT (raw) or LS4 under the textbook form. Only SBTS (13 % worse) and, more
+> weakly, the two forecasters separate at all. CRPS, coverage and the miss rows are what discriminate here.
+>
+> **Changed 2026-07-31, in two steps.** (1) Chronos-2 and TimesFM were pinned to root-last by a local override
+> in `forecaster/pdf_bridge.py` while every other column used root-inside — and since the Winner column ranks
+> *all* model columns, it was comparing inflated forecaster cells against un-inflated generator ones. The
+> override was deleted and both forecasters re-run; every non-RMSE leaf reproduced bit-identically. (2) With one
+> convention in place it became answerable *which* one deserves the name, so cum/step moved to `rmse_textbook`
+> — for all eight columns at once (4 generators, 2 forecasters, oracle, RW floor) through the single
+> `PS_METRIC_KEY` lookup, so comparability is a property of the routing rather than of hand-applied
+> discipline. Every RMSE re-run left CRPS, coverages, widths and miss rates untouched to the last digit: those
+> are arithmetic means and were never affected by any of this.
 
 **TimeDiT (raw) wins the sweep outright, and SBTS collapses through it.** Read the win-counts down the sweep:
 
+<!-- generated: build_cross_tables.py --which PSSUM (GUIDELINE 10.2 — do not hand-edit) -->
 | Bank | Winners (of 18 ranked rows) | SBTS cum-CRPS | SBTS cum coverage₉₀ (→0.90) |
 |---|---|---|---|
-| 4 096 | **TimeDiT (raw) 14** · CSDI 2 · SBTS 2 | 0.0254 | 0.8805 |
-| 16 384 | **TimeDiT (raw) 14** · CSDI 3 · SBTS 1 | 0.0261 | 0.8644 |
-| 65 536 | **TimeDiT (raw) 14** · CSDI 3 · LS4 1 | 0.0277 | 0.8198 |
-| 262 144 | **TimeDiT (raw) 14** · CSDI 3 · LS4 1 | 0.0299 | 0.7396 |
-| 1 000 000 | **TimeDiT (raw) 14** · CSDI 3 · LS4 1 | **0.0318** | **0.6575** |
+| 4 096 | **TimeDiT (raw) 15** · SBTS 2 · CSDI 1 | 0.02544 | 0.8805 |
+| 16 384 | **TimeDiT (raw) 15** · CSDI 1 · LS4 1 · SBTS 1 | 0.02610 | 0.8644 |
+| 65 536 | **TimeDiT (raw) 14** · CSDI 2 · LS4 2 | 0.02768 | 0.8198 |
+| 262 144 | **TimeDiT (raw) 15** · CSDI 2 · LS4 1 | 0.02987 | 0.7396 |
+| 1 000 000 | **TimeDiT (raw) 15** · LS4 2 · CSDI 1 | **0.03179** | **0.6575** |
 
 Two independent readings sit in that table.
 
-**TimeDiT (raw) takes 14 of 18 rows at *every* bank size** — the only method whose ranking is completely
-bank-independent. It is not winning because a small bank flatters it and it is not winning by a nose: it takes
-all six calibration rows on cum and step, every rv row but one, and both rv accuracy rows. Its cum-CRPS at 1M
-(**0.02521**) is nominally *below the Heston oracle's* 0.02525, and its cum coverage₅₀/₉₀ (0.507 / 0.898) are
-closer to nominal than the oracle's own (0.489 / 0.894). That is the ceiling, reached — not beaten; the gaps
-are well inside the bootstrap CIs. The one row it loses to LS4, rv lower-miss₉₀, is the mirror of its single
-real defect: **rv upper-miss₉₀ 0.074 vs the ideal 0.05**, i.e. a shadow ensemble slightly too thin in the
-high-volatility tail.
+**TimeDiT (raw) takes 14–15 of 18 rows at *every* bank size** — the only method whose ranking is essentially
+bank-independent. It is not winning because a small bank flatters it and it is not winning by a nose: at 1M it
+takes every cum row but one, every step row but one, and every rv row but one. Its cum-CRPS at 1M (**0.02521**)
+is nominally *below the Heston oracle's* 0.02525, and its cum coverage₅₀/₉₀ (0.507 / 0.898) are closer to
+nominal than the oracle's own (0.489 / 0.894). That is the ceiling, reached — not beaten; the gaps are well
+inside the bootstrap CIs. Of the three rows it drops at 1M, two are decided inside the noise floor (step RMSE
+to LS4 — see the RMSE-convention note above; cum upper-miss₉₀ to CSDI), and the third, rv lower-miss₉₀ to LS4,
+is the mirror of its single real defect: **rv upper-miss₉₀ 0.074 vs the ideal 0.05**, i.e. a shadow ensemble
+slightly too thin in the high-volatility tail.
 
 **SBTS goes from 2/18 to 0/18**, its cum-CRPS degrades monotonically past the RW floor (0.0295) and its
 coverage₉₀ collapses monotonically from 0.88 to 0.66 — while CSDI, LS4 and TimeDiT all *improve* toward the
@@ -578,9 +591,9 @@ are shown to expose exactly this artefact.
 
 
 **The generators dominate the forecasters on distributional forecasting, and the full metric set shows
-*where* the forecasters break.** On the smooth **cum** trajectory every column but SBTS is within ~8% on
-CRPS/RMSE and near the Heston oracle — a partial path's cumulative drift is easy, and even a point-forecaster
-tracks it. But move to the **shape** of the distribution and the two families diverge:
+*where* the forecasters break.** On the smooth **cum** trajectory every column but SBTS is within ~8% on CRPS
+and ~4% on RMSE, and near the Heston oracle — a partial path's cumulative drift is easy, and even a
+point-forecaster tracks it. But move to the **shape** of the distribution and the two families diverge:
 
 - **step** — Chronos-2/TimesFM over-cover wildly (coverage₉₀ 0.995–0.997 vs target 0.90) with **4–5× too wide**
   intervals (width₉₀ 0.16–0.18 vs the generators' ~0.035). They hedge per-step uncertainty by inflating the
@@ -592,14 +605,16 @@ tracks it. But move to the **shape** of the distribution and the two families di
   exactly what path-shadowing over a well-trained generator bank recovers. (Chronos-2's lone "win" — rv upper
   miss₉₀ = 0 — is degenerate: 0% of truth exceeds an interval that the *whole* distribution already sits above.)
 
-Between the *trained* generators it is **not** close once TimeDiT is in the table: **TimeDiT (raw) 14 — CSDI 3
-— LS4 1** across the 18 ranked rows. TimeDiT takes all three CRPS rows, all four 50/90% coverages on cum and
-step, both rv accuracy rows and five of the six miss rows; CSDI keeps all three **RMSE** rows plus cum
-upper-miss; LS4 keeps rv lower-miss. Note what CSDI retaining every RMSE row means: the two are separated by
-**distributional** quality, not point accuracy — their cum-RMSE differs in the 5th decimal (0.04144 vs 0.04145)
-while their rv-CRPS differs by 8% (0.00994 vs 0.00918). All three sit on or near the Heston oracle across the
-24 values and far ahead of either forecaster on everything but bare cum drift — the whole point of
-shadow-forecasting over a distribution-faithful generator rather than a mean-reverting point forecaster.
+Between the *trained* generators it is **not** close once TimeDiT is in the table: **TimeDiT (raw) 15 — LS4 2
+— CSDI 1** across the 18 ranked rows. TimeDiT takes all three CRPS rows, all six 50/90% coverages, the cum and
+rv accuracy rows and four of the six miss rows; LS4 keeps step RMSE and rv lower-miss; CSDI keeps cum
+upper-miss. **Do not read the accuracy rows as the separation.** CSDI, TimeDiT (raw) and LS4 are within
+4e-4 of each other on cum RMSE — a spread ~17× narrower than the bootstrap CI on any one of them, which is why
+switching the RMSE aggregation reshuffles those winners (see the convention note above). What actually
+separates them is **distributional** quality: their rv-CRPS differs by 8% (0.00994 vs 0.00918), far outside
+the noise. All three sit on or near the Heston oracle across the 24 values and far ahead of either forecaster
+on everything but bare cum drift — the whole point of shadow-forecasting over a distribution-faithful
+generator rather than a mean-reverting point forecaster.
 
 **SBTS is the counter-example, and it is the single most important result in this folder.** The method that
 *won* the unconditional A/B tables outright (26/36 A, 29/31 B) **wins zero of the 18 PS rows** and is the only

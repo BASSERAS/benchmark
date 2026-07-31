@@ -90,7 +90,18 @@ RECENT_N = 32                    # last-N log-returns block
 
 # metric -> (per-path key, aggregation kind)
 METRIC_MAP = {
+    # Two RMSE aggregations of the SAME per-query squared error `se`, both emitted:
+    #   "rmse"          root-inside  mean_q(sqrt(se_q))   -- the reproducibility report's
+    #                   convention (Tables 1-5). For the scalar rv quantity (H=1) this is
+    #                   exactly a MAE, which is how the tables label it.
+    #   "rmse_textbook" root-last    sqrt(mean_q(se_q))   -- the textbook RMSE. For the
+    #                   trajectory quantities cum/step (H=32) se_q is already the mean over
+    #                   the horizon, so sqrt(mean_q(se_q)) == sqrt(mean over every (q,u))
+    #                   -- i.e. the genuine root-mean-square error, which mean_q(sqrt(se_q))
+    #                   is NOT (sqrt is concave; Jensen makes root-inside strictly smaller).
+    # Both are kept so no artefact loses the value it was published with.
     "rmse": ("se", "rmse"),
+    "rmse_textbook": ("se", "rmse_last"),
     "crps": ("crps", "mean"),
     "coverage50": ("cov50", "mean"),
     "coverage90": ("cov90", "mean"),
@@ -248,16 +259,28 @@ def per_path_metrics(Y, y):
 
 
 def _agg(per, kind):
-    # RMSE = mean_q(sqrt(per_q)), the average per-path root error, per the
-    # reproducibility report Table 5. NOT sqrt(mean_q(per_q)) — that is larger
-    # (Jensen). Caveat: for the scalar rv quantity this reduces exactly to MAE.
-    return float(np.sqrt(per).mean()) if kind == "rmse" else float(per.mean())
+    # kind == "rmse"       -> mean_q(sqrt(per_q)), root INSIDE: the average per-path root
+    #                         error, per the reproducibility report Table 5. For the scalar
+    #                         rv quantity this reduces exactly to MAE.
+    # kind == "rmse_last"  -> sqrt(mean_q(per_q)), root LAST: the textbook RMSE. Larger
+    #                         than the above for every non-degenerate error distribution
+    #                         (sqrt is concave -> Jensen).
+    if kind == "rmse":
+        return float(np.sqrt(per).mean())
+    if kind == "rmse_last":
+        return float(np.sqrt(per.mean()))
+    return float(per.mean())
 
 
 def _boot_ci(per, kind, boot_idx):
     """Paired bootstrap 95% percentile CI using a SHARED resample-index matrix."""
     samp = per[boot_idx]                                    # (N_BOOT, Nq)
-    stat = np.sqrt(samp).mean(axis=1) if kind == "rmse" else samp.mean(axis=1)
+    if kind == "rmse":
+        stat = np.sqrt(samp).mean(axis=1)                   # root inside
+    elif kind == "rmse_last":
+        stat = np.sqrt(samp.mean(axis=1))                   # root last (textbook)
+    else:
+        stat = samp.mean(axis=1)
     return [float(np.percentile(stat, 2.5)), float(np.percentile(stat, 97.5))]
 
 

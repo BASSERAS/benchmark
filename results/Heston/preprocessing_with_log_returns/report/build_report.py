@@ -12,9 +12,11 @@ functions the README tables are rendered with (`PS_MODELS`, `PS_QUANT`,
 tables therefore cannot drift from the README: they share one code path and one
 set of `pdf_summary.json` inputs.
 
-The only literals in this file are (a) prose, and (b) the *historical*
-pre-99977a3 numbers quoted from PDF Table 8, which no longer exist in any JSON
-on disk and are marked as such in HISTORICAL_OLD_RMSE below.
+The only literals in this file are prose. Every number --- including the
+"before" column of the convention-change tables --- is read live from the JSONs,
+because the scorer now emits both aggregations side by side (`rmse` root-inside,
+`rmse_textbook` root-last). See the block below for why the two former constant
+tables were deleted.
 
 Usage:
     /home/tbasseras/gpu-venv/bin/python report/build_report.py
@@ -33,34 +35,38 @@ import build_cross_tables as B  # noqa: E402  (path must be set first)
 RT = B.RT                       # canonical renderer, already imported by B
 
 # ---------------------------------------------------------------------------
-# Historical values. Produced by the PRE-99977a3 aggregation; not recoverable
-# from any pdf_summary.json currently on disk, so they are quoted rather than
-# computed. Source: PDF Table 8 (§4.3) == README before commit 99977a3,
-# cross-checked against `git show 99977a3`.
+# NO historical literals in this file.
+#
+# Earlier revisions carried two hand-quoted constant blocks: HISTORICAL_OLD_RMSE
+# (PDF Table 8, the pre-99977a3 generator numbers) and FORECASTER_PRE_FIX (the
+# Chronos-2 / TimesFM cells as they stood before the 2026-07-31 convention fix).
+# Both were quoted because the value they held --- the root-LAST aggregation ---
+# existed in no JSON on disk.
+#
+# It does now. The scorer emits "rmse_textbook" (root-last) alongside "rmse"
+# (root-inside) for every model, bank and quantity, and it reproduces all fifteen
+# quoted numbers: the nine generator cells to every printed digit, and the six
+# forecaster cells bit-for-bit at full float64 precision. So both blocks were
+# deleted and every "before" cell in this report is now read live, satisfying
+# GUIDELINE 10.2 (never hand-type a cell) with no exceptions at all.
 # ---------------------------------------------------------------------------
-HISTORICAL_OLD_RMSE = {  # quantity -> {method: root-of-mean RMSE @1M bank}
-    "cum":  {"CSDI": 0.04925, "LS4": 0.04894, "SBTS": 0.05523},
-    "step": {"CSDI": 0.01245, "LS4": 0.01245, "SBTS": 0.01421},
-    "rv":   {"CSDI": 0.01772, "LS4": 0.01819, "SBTS": 0.01972},
-}
 
-# ---------------------------------------------------------------------------
-# The forecaster RMSE cells as they stood BEFORE the 2026-07-31 convention fix,
-# i.e. what forecaster/pdf_bridge.py::_metrics_frozen_rmse produced under (A).
-# Quoted, not computed: the fix overwrote chronos2_pdf.json / timesfm_pdf.json,
-# and the pre-fix values are recoverable only from git history
-# (`git show HEAD~1:.../forecaster/chronos2_pdf.json`). The post-fix values in
-# the same table ARE read live from those JSONs, so the ratio column cannot
-# drift away from the shipped numbers.
-# ---------------------------------------------------------------------------
-FORECASTER_PRE_FIX = {  # method -> {quantity: (A) root-last RMSE}
-    "Chronos-2": {"cum": 0.049206019623857795,
-                  "step": 0.01295227380817077,
-                  "rv": 0.23074659175504625},
-    "TimesFM":   {"cum": 0.05093751948245248,
-                  "step": 0.013315990532177139,
-                  "rv": 0.2864952717060515},
-}
+RMSE_INSIDE = "rmse"            # mean_q(sqrt(se_q)) -- reproducibility report Tables 1-5
+RMSE_LAST = "rmse_textbook"     # sqrt(mean_q(se_q)) -- the textbook RMSE
+
+
+def rmse_of(method, qn, key, bank_size=1000000):
+    """One RMSE cell under an explicitly named aggregation, read live.
+
+    `key` is RMSE_INSIDE or RMSE_LAST. Deliberately bypasses B._ps_value, which
+    applies the per-quantity PS_METRIC_KEY default: the prose sections need to
+    name the aggregation themselves rather than inherit the table's choice.
+    """
+    path, kind = dict((m, (p, k)) for m, p, k in B.PS_MODELS)[method]
+    path = os.path.join(EXP, path)
+    q = (B._gen_quantities(path, bank_size) if kind == "gen"
+         else B._fc_quantities(path))
+    return q[qn][key]["value"]
 
 # LaTeX-ification of the display labels used by build_cross_tables.
 LATEX_LABEL = {
@@ -77,6 +83,36 @@ LATEX_LABEL = {
     "step (M×H)": r"step ($M\times H$)",
     "rv (M scalar)": r"rv ($M$ scalar)",
 }
+
+
+def sci(x, sig=1):
+    """LaTeX scientific notation, e.g. 0.00038 -> $3.8\\times10^{-4}$."""
+    m, e = f"{x:.{sig}e}".split("e")
+    return r"$%s\times10^{%d}$" % (m, int(e))
+
+
+def rmse_winner_moves(quantities=("cum", "step")):
+    """(n_moved, n_rows): how many RMSE-row winners differ between the root-inside
+    and the textbook aggregation, across every quantity x bank size.
+
+    Computed, never quoted. The switch to the textbook form was assumed to be
+    rank-preserving on the grounds that R_A/R_B is near-constant within a
+    quantity; that assumption is false, and this function is what proves it.
+    """
+    paths_kinds = [(os.path.join(EXP, p), k) for _, p, k in B.PS_MODELS]
+    names = [n for n, _, _ in B.PS_MODELS]
+    moved = total = 0
+    for bs in BANK_SIZES:
+        for qn in quantities:
+            w = []
+            for key in (RMSE_INSIDE, RMSE_LAST):
+                vals = [(B._gen_quantities(p, bs) if k == "gen"
+                         else B._fc_quantities(p))[qn][key]["value"]
+                        for p, k in paths_kinds]
+                w.append(names[B._ps_winner_idx(vals, "min")])
+            total += 1
+            moved += (w[0] != w[1])
+    return moved, total
 
 
 def tex_escape(s):
@@ -119,8 +155,12 @@ def ps_table(bank_size):
             for i, v in enumerate(vals):
                 t = RT.fmt(v)
                 cells.append(r"\textbf{%s}" % t if (wi is not None and i == wi) else t)
-            ov = RT.fmt(oracle_q[qn][metric]["value"])
-            rv = RT.fmt(rw_q[qn][metric]["value"])
+            # Same per-quantity key override the README uses (cum/step RMSE reads
+            # the textbook root-last aggregation), read from build_cross_tables so
+            # the floors cannot be scored on a different convention to the models.
+            mk = B._ps_key(qn, metric)
+            ov = RT.fmt(oracle_q[qn][mk]["value"])
+            rv = RT.fmt(rw_q[qn][mk]["value"])
             win = r"\textbf{%s}" % tex_escape(names[wi]) if wi is not None else "---"
             # Same per-quantity label override the README uses (rv "RMSE" -> "MAE"),
             # read from build_cross_tables so the two renderers cannot diverge.
@@ -228,9 +268,8 @@ BASSERAS/benchmark}
 def main():
     L = [PREAMBLE, r"\tableofcontents", r"\clearpage"]
 
-    csdi_old = HISTORICAL_OLD_RMSE["rv"]["CSDI"]
-    csdi_new = B._ps_value(os.path.join(EXP, B.PS_MODELS[0][1]), "gen",
-                           "rv", "rmse", 1000000)
+    csdi_old = rmse_of("CSDI", "rv", RMSE_LAST)
+    csdi_new = rmse_of("CSDI", "rv", RMSE_INSIDE)
     L.append(r"""
 \section{The short answer}
 
@@ -257,6 +296,15 @@ digit; it disagrees with Table 8 by a factor of %.3f. Only the RMSE rows differ
 --- CRPS, coverage, width and miss-rate cells are identical between Table 8 and
 Table 5, because those metrics are plain arithmetic means and are untouched by
 the aggregation choice.
+
+\paragraph{Read \S\ref{sec:switch} before using the tables.} The row quoted
+above is \emph{rv}, and rv still reports root-inside --- correctly, because for a
+scalar quantity that aggregation \emph{is} a mean absolute error, and the tables
+now say MAE. The two \emph{trajectory} quantities, cum and step, no longer do:
+as of 2026-07-31 they report the textbook root-last RMSE, so those rows in
+\S\ref{sec:tables} match Table 8's convention rather than Table 5's. The scorer
+emits both aggregations for every model, bank and quantity, so nothing is lost
+and every ``before'' number in this document is read live from the artefacts.
 """ % (RT.fmt(csdi_old), RT.fmt(csdi_new), RT.fmt(csdi_new), csdi_old / csdi_new))
 
     L.append(r"""
@@ -300,53 +348,69 @@ always the smaller number}, and the gap widens as the spread of per-path errors
 grows. This is why the effect is largest on rv: a scalar quantity with no
 horizon averaging to smooth its error distribution.
 
-\subsection{What the code actually does}
+\subsection{What the code does now}
 
-The shipped scorer (\texttt{path\_shadowing\_pdf.py}, \texttt{\_agg}) is
-convention (B):
+The scorer (\texttt{path\_shadowing\_pdf.py}, \texttt{\_agg}) computes
+\emph{both} aggregations from the same per-path vector and writes both to every
+artefact:
 
 \begin{quote}\footnotesize\ttfamily
-return float(np.sqrt(per).mean()) \\
-\hspace*{2em} if kind == "rmse" else float(per.mean())
+if kind == "rmse": \ \ \ \ \ \ return float(np.sqrt(per).mean()) \\
+if kind == "rmse\_last": \ return float(np.sqrt(per.mean()))
 \end{quote}
 
 \noindent
-\texttt{np.sqrt(per).mean()} roots \emph{then} averages. The paired bootstrap
-uses the matching form, \texttt{np.sqrt(samp).mean(axis=1)}, so the confidence
-intervals are consistent with the point estimate.
+\texttt{np.sqrt(per).mean()} roots \emph{then} averages --- convention (B), JSON
+key \texttt{rmse}. \texttt{np.sqrt(per.mean())} averages \emph{then} roots ---
+convention (A), JSON key \texttt{rmse\_textbook}. The paired bootstrap carries
+the matching branch (\texttt{np.sqrt(samp).mean(axis=1)} versus
+\texttt{np.sqrt(samp.mean(axis=1))}), so each confidence interval is consistent
+with its own point estimate.
 
-\subsection{A naming defect --- and the relabelling that fixes it}
+\subsection{A naming defect --- and what each row now reports}
+\label{sec:switch}
 
 Under convention (B) the reported quantity \textbf{is not a root-mean-square
-error}. For the scalar quantity rv the horizon collapses ($H=1$), so
+error}, and the two kinds of quantity fail the name in different ways.
+
+\paragraph{rv --- reports (B), labelled MAE.} The horizon collapses ($H=1$), so
 $se_q = e_q^2$ and
 \[
 R_B=\frac{1}{m}\sum_q \sqrt{e_q^{2}}=\frac{1}{m}\sum_q |e_q| \;=\; \textbf{MAE exactly.}
 \]
-The rv row is a mean absolute error, and the reproducibility report labels it
-``RMSE''. \textbf{The tables in \S6 label it MAE.} That is a rename of the
-displayed label only: the underlying JSON key stays \texttt{rmse} in every
-\texttt{pdf\_summary.json} and in the scorer's \texttt{METRIC\_MAP}, because
-renaming the key would mean editing \texttt{path\_shadowing\_pdf.py} --- the
-untouched strict reference implementation --- and re-running the entire
-five-bank, five-method sweep to rewrite the artefacts, for no numerical gain.
-The override lives in \texttt{build\_cross\_tables.PS\_METRIC\_LABEL} and is
-read by both renderers, so the README and this document cannot disagree.
+This row is a mean absolute error. The reproducibility report labels it
+``RMSE''; \textbf{the tables in \S\ref{sec:tables} label it MAE}, which is simply
+its correct name. The value is unchanged --- only the label is.
 
-cum and step keep the ``RMSE'' label. There $H=32$, the inner term
-$\sqrt{\text{mean}_u se_{q,u}}$ is a genuine per-path RMS across the horizon,
-and the row is the average of those --- a horizon-RMS averaged across paths.
-That is a hybrid with no standard name, but it is not a MAE, and calling it one
-would be a second error rather than a fix.
+\paragraph{cum and step --- report (A), labelled RMSE.} Here $H=32$ and (B)
+gives $\frac{1}{m}\sum_q\sqrt{\text{mean}_u se_{q,u}}$: an average of per-path
+horizon-RMS values. That is a hybrid with no standard name, and it is not an
+RMSE either. Calling it one understates the textbook figure by roughly $18\%$
+(cum) and $6\%$ (step). Since $se_q$ is \emph{already} the mean over the horizon,
+\[
+R_A \;=\; \sqrt{\frac{1}{m}\sum_q se_q}
+\;=\; \sqrt{\frac{1}{mH}\sum_{q}\sum_{u} se_{q,u}}
+\]
+--- the root of the mean squared error over every (query, horizon-step) pair,
+i.e.\ exactly the textbook RMSE. \textbf{These two rows therefore read the
+\texttt{rmse\_textbook} key}, so the ``RMSE'' label is now literally correct
+rather than a convenient approximation.
+
+\paragraph{Nothing is lost, and no cell is hand-typed.} Both keys are written for
+every model, bank size and quantity, so a reader who wants the reproducibility
+report's convention still has it in the JSON. The routing lives in
+\texttt{build\_cross\_tables.PS\_METRIC\_KEY} (which key each row reads) and
+\texttt{PS\_METRIC\_LABEL} (what each row is called), and both are read by the
+README renderer and by this document, so the two cannot disagree.
 """)
 
+    # Both columns read live under an EXPLICITLY named aggregation — the ratio
+    # cannot silently collapse to 1.000 if a row's default key ever changes.
     rows = []
     for q in ("cum", "step", "rv"):
         for m_ in ("CSDI", "LS4", "SBTS"):
-            o = HISTORICAL_OLD_RMSE[q][m_]
-            idx = [n for n, _, _ in B.PS_MODELS].index(m_)
-            p, k = B.PS_MODELS[idx][1], B.PS_MODELS[idx][2]
-            n_ = B._ps_value(os.path.join(EXP, p), k, q, "rmse", 1000000)
+            o = rmse_of(m_, q, RMSE_LAST)
+            n_ = rmse_of(m_, q, RMSE_INSIDE)
             rows.append(r"%s & %s & %s & %s & %.3f \\" %
                         (q, m_, RT.fmt(o), RT.fmt(n_), o / n_))
     L.append(r"""
@@ -358,6 +422,9 @@ path-shadowing RMSE with reproducibility report Table 5'', switched
 in all five scorers to (B) and re-ran the CSDI / LS4 / SBTS pipelines. Only the
 RMSE fields moved; every other metric reproduced bit-identically, and the
 Heston-oracle block stayed bit-identical across all three summaries.
+(The trajectory quantities have since moved back to (A) for the reason given in
+\S\ref{sec:switch}; both columns of the table below are read live, so it states
+the size of that move rather than assuming it.)
 
 The measured inflation $R_A/R_B$ at the 1M bank:
 
@@ -451,8 +518,10 @@ rates all unchanged to the last digit), which confirms the aggregation was the
 only thing that moved.
 """)
 
-    # Built from FORECASTER_PRE_FIX (historical) + the live JSONs, so the shipped
-    # "after" column is by construction the same number the tables in §6 print.
+    # Both columns come from the live JSONs: "before (A)" is the rmse_textbook key
+    # (root last -- exactly what the frozen bridge used to emit) and "after (B)" is
+    # the rmse key (root inside). No historical literals: the shipped numbers are by
+    # construction the same ones the tables in §6 print.
     L.append(r"""
 \begin{center}\small
 \begin{tabular}{llrrr}
@@ -461,11 +530,9 @@ Method & Quantity & before (A) & after (B) & ratio \\
 \hline
 """)
     for meth in ("Chronos-2", "TimesFM"):
-        path = dict((m, p) for m, p, _ in B.PS_MODELS)[meth]
-        live = B._fc_quantities(os.path.join(EXP, path))
         for qn in ("cum", "step", "rv"):
-            a = FORECASTER_PRE_FIX[meth][qn]
-            b = live[qn]["rmse"]["value"]
+            a = rmse_of(meth, qn, RMSE_LAST)
+            b = rmse_of(meth, qn, RMSE_INSIDE)
             L.append(f"{tex_escape(meth)} & {qn} & {a:.5f} & {b:.5f} & "
                      f"{a / b:.3f} \\\\\n")
     L.append(r"""\hline
@@ -474,24 +541,78 @@ Method & Quantity & before (A) & after (B) & ratio \\
 """)
 
     L.append(r"""
-\textbf{What it changes.} Chronos-2's cum RMSE falls from $0.04921$ to
-$0.04168$, against CSDI's $0.04144$: a row that read as a $19\%$ deficit is a
-$0.6\%$ one. The estimate offered before the re-run --- ``roughly $0.0416$'' from
-the generator cum ratio --- was accurate for cum and step, but the rv ratio came
-out at $1.050$ rather than the generators' $1.28$ (see the caveat in \S3), so
-only the recomputation settles it.
+\textbf{What it changed.} Under the common convention Chronos-2's cum RMSE fell
+from $0.04921$ to $0.04168$, against CSDI's $0.04144$: a row that read as a
+$19\%$ deficit became a $0.6\%$ one. The estimate offered before the re-run ---
+``roughly $0.0416$'' from the generator cum ratio --- was accurate for cum and
+step, but the rv ratio came out at $1.050$ rather than the generators' $1.28$
+(see the caveat in \S3), so only the recomputation settled it.
 
-\textbf{What it does not change.} Win counts were recomputed at all five bank
-sizes and are identical: TimeDiT (raw) 14 at every bank, with CSDI 2 / SBTS 2 at
+\textbf{What it did not change.} Win counts were recomputed at all five bank
+sizes and were identical: TimeDiT (raw) 14 at every bank, with CSDI 2 / SBTS 2 at
 4\,096, CSDI 3 / SBTS 1 at 16\,384, and CSDI 3 / LS4 1 at the top three. CSDI
-remains the row minimum for cum and step RMSE, so \textbf{no Winner cell moved}.
-The tables in \S6 are the post-fix numbers.
+remained the row minimum for cum and step RMSE, so \textbf{no Winner cell moved}
+--- that statement is about \emph{this} fix, the un-mixing of the forecaster
+column. The later switch of cum/step to the textbook aggregation \emph{does} move
+Winner cells, and the paragraph after next measures by how much.
+
+\paragraph{Why the tables in \S\ref{sec:tables} now show the (A) column again.}
+This is not a reversal. \textbf{The defect was the \emph{mixing}, not the
+choice.} Once every column shared one convention it became possible to ask which
+one deserves the name ``RMSE'' --- and for cum and step the answer is (A)
+(\S\ref{sec:switch}). So the trajectory rows moved to (A) \emph{for all eight
+columns at once}: four generators, two forecasters, the Heston oracle and the RW
+floor, through the single \texttt{PS\_METRIC\_KEY} lookup. Comparability is
+preserved by construction; it is a property of the routing, not of a convention
+happening to be applied consistently by hand.
+
+""")
+
+    # Measured, not asserted: how many RMSE-row winners the switch actually moves,
+    # and how that compares to the width of the bootstrap CI on the same row.
+    n_moved, n_rows = rmse_winner_moves()
+    top3 = ["CSDI", "TimeDiT (raw)", "LS4"]
+    v3 = [rmse_of(m, "cum", RMSE_LAST) for m in top3]
+    spread = max(v3) - min(v3)
+    ci = B._gen_quantities(os.path.join(EXP, dict(
+        (m, p) for m, p, _ in B.PS_MODELS)["CSDI"]), 1000000)["cum"][RMSE_LAST]["ci"]
+    ciw = ci[1] - ci[0]
+    sbts_pct = 100 * (rmse_of("SBTS", "cum", RMSE_LAST) / min(v3) - 1)
+    L.append(r"""
+\paragraph{The ranking does \emph{not} survive the move --- and that is the real
+finding.} It would be convenient to claim that a near-constant ratio $R_A/R_B$
+rescales each column monotonically and leaves the argmin alone. It does not.
+Recomputing every RMSE row under both aggregations, \textbf{""" +
+             f"{n_moved} of the {n_rows}" + r""" cum/step rows
+(2 quantities $\times$ 5 bank sizes) change winner}: CSDI takes every one of them
+under root-inside, and loses most of them to TimeDiT (raw) or LS4 under the
+textbook form.
+
+That is not a defect in either convention. It is a measurement of how little
+separates the top three generators. At the 1M bank the cum RMSE values are """ +
+             ", ".join(f"${v:.6f}$" for v in v3) + r""" for CSDI, TimeDiT (raw)
+and LS4 --- a spread of """ + sci(spread) + r""" --- while each 95\% bootstrap CI
+is about """ + sci(ciw) + f" wide, {ciw / spread:.0f}" + r"""$\times$ larger.
+Every interval contains every other point estimate. \textbf{The cum and step RMSE
+winner among those three is noise}, and a reweighting as mild as moving one
+square root is enough to reshuffle it. Only SBTS (""" + f"{sbts_pct:.0f}" +
+             r"""\% worse) and, more weakly, the two forecasters separate from the
+pack at all.
+
+The practical consequence: read the RMSE rows of \S\ref{sec:tables} as
+``CSDI $\approx$ TimeDiT (raw) $\approx$ LS4 $<$ Chronos-2 $<$ TimesFM $\ll$
+SBTS'', and treat the bolded cell among the leading three as arbitrary. The
+CRPS, coverage and miss rows are the ones that discriminate. The win counts
+printed under each table are recomputed from the shipped artefacts every build,
+never assumed.
 
 \textbf{The cost.} The reproducibility report's published Chronos-2 / TimesFM
-RMSE cells are now \emph{superseded, not reproduced} --- a re-run will no longer
-match them, by design. That is the correct trade: one internally consistent
-table is worth more than fidelity to a column the report itself never
-recomputed. This is recorded in GUIDELINE E16b.
+\emph{rv} cell is now \emph{superseded, not reproduced}: rv reports (B) and is
+labelled MAE, so a re-run will not match the report's rv column, by design. The
+cum and step cells, having moved to (A), agree with the report's Table 8
+convention again. That is the correct trade: one internally consistent table,
+with both aggregations preserved in the JSON for anyone who needs the other.
+This is recorded in GUIDELINE E16b.
 """)
 
     L.append(r"\clearpage" + "\n" + r"\section{The five cross-method tables}"

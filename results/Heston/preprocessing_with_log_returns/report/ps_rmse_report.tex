@@ -51,6 +51,15 @@ digit; it disagrees with Table 8 by a factor of 1.291. Only the RMSE rows differ
 Table 5, because those metrics are plain arithmetic means and are untouched by
 the aggregation choice.
 
+\paragraph{Read \S\ref{sec:switch} before using the tables.} The row quoted
+above is \emph{rv}, and rv still reports root-inside --- correctly, because for a
+scalar quantity that aggregation \emph{is} a mean absolute error, and the tables
+now say MAE. The two \emph{trajectory} quantities, cum and step, no longer do:
+as of 2026-07-31 they report the textbook root-last RMSE, so those rows in
+\S\ref{sec:tables} match Table 8's convention rather than Table 5's. The scorer
+emits both aggregations for every model, bank and quantity, so nothing is lost
+and every ``before'' number in this document is read live from the artefacts.
+
 
 \section{How the RMSE is computed}
 
@@ -92,44 +101,60 @@ always the smaller number}, and the gap widens as the spread of per-path errors
 grows. This is why the effect is largest on rv: a scalar quantity with no
 horizon averaging to smooth its error distribution.
 
-\subsection{What the code actually does}
+\subsection{What the code does now}
 
-The shipped scorer (\texttt{path\_shadowing\_pdf.py}, \texttt{\_agg}) is
-convention (B):
+The scorer (\texttt{path\_shadowing\_pdf.py}, \texttt{\_agg}) computes
+\emph{both} aggregations from the same per-path vector and writes both to every
+artefact:
 
 \begin{quote}\footnotesize\ttfamily
-return float(np.sqrt(per).mean()) \\
-\hspace*{2em} if kind == "rmse" else float(per.mean())
+if kind == "rmse": \ \ \ \ \ \ return float(np.sqrt(per).mean()) \\
+if kind == "rmse\_last": \ return float(np.sqrt(per.mean()))
 \end{quote}
 
 \noindent
-\texttt{np.sqrt(per).mean()} roots \emph{then} averages. The paired bootstrap
-uses the matching form, \texttt{np.sqrt(samp).mean(axis=1)}, so the confidence
-intervals are consistent with the point estimate.
+\texttt{np.sqrt(per).mean()} roots \emph{then} averages --- convention (B), JSON
+key \texttt{rmse}. \texttt{np.sqrt(per.mean())} averages \emph{then} roots ---
+convention (A), JSON key \texttt{rmse\_textbook}. The paired bootstrap carries
+the matching branch (\texttt{np.sqrt(samp).mean(axis=1)} versus
+\texttt{np.sqrt(samp.mean(axis=1))}), so each confidence interval is consistent
+with its own point estimate.
 
-\subsection{A naming defect --- and the relabelling that fixes it}
+\subsection{A naming defect --- and what each row now reports}
+\label{sec:switch}
 
 Under convention (B) the reported quantity \textbf{is not a root-mean-square
-error}. For the scalar quantity rv the horizon collapses ($H=1$), so
+error}, and the two kinds of quantity fail the name in different ways.
+
+\paragraph{rv --- reports (B), labelled MAE.} The horizon collapses ($H=1$), so
 $se_q = e_q^2$ and
 \[
 R_B=\frac{1}{m}\sum_q \sqrt{e_q^{2}}=\frac{1}{m}\sum_q |e_q| \;=\; \textbf{MAE exactly.}
 \]
-The rv row is a mean absolute error, and the reproducibility report labels it
-``RMSE''. \textbf{The tables in \S6 label it MAE.} That is a rename of the
-displayed label only: the underlying JSON key stays \texttt{rmse} in every
-\texttt{pdf\_summary.json} and in the scorer's \texttt{METRIC\_MAP}, because
-renaming the key would mean editing \texttt{path\_shadowing\_pdf.py} --- the
-untouched strict reference implementation --- and re-running the entire
-five-bank, five-method sweep to rewrite the artefacts, for no numerical gain.
-The override lives in \texttt{build\_cross\_tables.PS\_METRIC\_LABEL} and is
-read by both renderers, so the README and this document cannot disagree.
+This row is a mean absolute error. The reproducibility report labels it
+``RMSE''; \textbf{the tables in \S\ref{sec:tables} label it MAE}, which is simply
+its correct name. The value is unchanged --- only the label is.
 
-cum and step keep the ``RMSE'' label. There $H=32$, the inner term
-$\sqrt{\text{mean}_u se_{q,u}}$ is a genuine per-path RMS across the horizon,
-and the row is the average of those --- a horizon-RMS averaged across paths.
-That is a hybrid with no standard name, but it is not a MAE, and calling it one
-would be a second error rather than a fix.
+\paragraph{cum and step --- report (A), labelled RMSE.} Here $H=32$ and (B)
+gives $\frac{1}{m}\sum_q\sqrt{\text{mean}_u se_{q,u}}$: an average of per-path
+horizon-RMS values. That is a hybrid with no standard name, and it is not an
+RMSE either. Calling it one understates the textbook figure by roughly $18\%$
+(cum) and $6\%$ (step). Since $se_q$ is \emph{already} the mean over the horizon,
+\[
+R_A \;=\; \sqrt{\frac{1}{m}\sum_q se_q}
+\;=\; \sqrt{\frac{1}{mH}\sum_{q}\sum_{u} se_{q,u}}
+\]
+--- the root of the mean squared error over every (query, horizon-step) pair,
+i.e.\ exactly the textbook RMSE. \textbf{These two rows therefore read the
+\texttt{rmse\_textbook} key}, so the ``RMSE'' label is now literally correct
+rather than a convenient approximation.
+
+\paragraph{Nothing is lost, and no cell is hand-typed.} Both keys are written for
+every model, bank size and quantity, so a reader who wants the reproducibility
+report's convention still has it in the JSON. The routing lives in
+\texttt{build\_cross\_tables.PS\_METRIC\_KEY} (which key each row reads) and
+\texttt{PS\_METRIC\_LABEL} (what each row is called), and both are read by the
+README renderer and by this document, so the two cannot disagree.
 
 
 \section{Why the difference exists}
@@ -140,6 +165,9 @@ path-shadowing RMSE with reproducibility report Table 5'', switched
 in all five scorers to (B) and re-ran the CSDI / LS4 / SBTS pipelines. Only the
 RMSE fields moved; every other metric reproduced bit-identically, and the
 Heston-oracle block stayed bit-identical across all three summaries.
+(The trajectory quantities have since moved back to (A) for the reason given in
+\S\ref{sec:switch}; both columns of the table below are read live, so it states
+the size of that move rather than assuming it.)
 
 The measured inflation $R_A/R_B$ at the 1M bank:
 
@@ -156,7 +184,7 @@ step & LS4 & 0.01245 & 0.01176 & 1.058 \\
 step & SBTS & 0.01421 & 0.01350 & 1.053 \\
 rv & CSDI & 0.01772 & 0.01373 & 1.291 \\
 rv & LS4 & 0.01819 & 0.01426 & 1.276 \\
-rv & SBTS & 0.01972 & 0.01541 & 1.279 \\
+rv & SBTS & 0.01972 & 0.01541 & 1.280 \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -262,24 +290,64 @@ TimesFM & rv & 0.28650 & 0.25696 & 1.115 \\
 \end{center}
 
 
-\textbf{What it changes.} Chronos-2's cum RMSE falls from $0.04921$ to
-$0.04168$, against CSDI's $0.04144$: a row that read as a $19\%$ deficit is a
-$0.6\%$ one. The estimate offered before the re-run --- ``roughly $0.0416$'' from
-the generator cum ratio --- was accurate for cum and step, but the rv ratio came
-out at $1.050$ rather than the generators' $1.28$ (see the caveat in \S3), so
-only the recomputation settles it.
+\textbf{What it changed.} Under the common convention Chronos-2's cum RMSE fell
+from $0.04921$ to $0.04168$, against CSDI's $0.04144$: a row that read as a
+$19\%$ deficit became a $0.6\%$ one. The estimate offered before the re-run ---
+``roughly $0.0416$'' from the generator cum ratio --- was accurate for cum and
+step, but the rv ratio came out at $1.050$ rather than the generators' $1.28$
+(see the caveat in \S3), so only the recomputation settled it.
 
-\textbf{What it does not change.} Win counts were recomputed at all five bank
-sizes and are identical: TimeDiT (raw) 14 at every bank, with CSDI 2 / SBTS 2 at
+\textbf{What it did not change.} Win counts were recomputed at all five bank
+sizes and were identical: TimeDiT (raw) 14 at every bank, with CSDI 2 / SBTS 2 at
 4\,096, CSDI 3 / SBTS 1 at 16\,384, and CSDI 3 / LS4 1 at the top three. CSDI
-remains the row minimum for cum and step RMSE, so \textbf{no Winner cell moved}.
-The tables in \S6 are the post-fix numbers.
+remained the row minimum for cum and step RMSE, so \textbf{no Winner cell moved}
+--- that statement is about \emph{this} fix, the un-mixing of the forecaster
+column. The later switch of cum/step to the textbook aggregation \emph{does} move
+Winner cells, and the paragraph after next measures by how much.
+
+\paragraph{Why the tables in \S\ref{sec:tables} now show the (A) column again.}
+This is not a reversal. \textbf{The defect was the \emph{mixing}, not the
+choice.} Once every column shared one convention it became possible to ask which
+one deserves the name ``RMSE'' --- and for cum and step the answer is (A)
+(\S\ref{sec:switch}). So the trajectory rows moved to (A) \emph{for all eight
+columns at once}: four generators, two forecasters, the Heston oracle and the RW
+floor, through the single \texttt{PS\_METRIC\_KEY} lookup. Comparability is
+preserved by construction; it is a property of the routing, not of a convention
+happening to be applied consistently by hand.
+
+
+
+\paragraph{The ranking does \emph{not} survive the move --- and that is the real
+finding.} It would be convenient to claim that a near-constant ratio $R_A/R_B$
+rescales each column monotonically and leaves the argmin alone. It does not.
+Recomputing every RMSE row under both aggregations, \textbf{7 of the 10 cum/step rows
+(2 quantities $\times$ 5 bank sizes) change winner}: CSDI takes every one of them
+under root-inside, and loses most of them to TimeDiT (raw) or LS4 under the
+textbook form.
+
+That is not a defect in either convention. It is a measurement of how little
+separates the top three generators. At the 1M bank the cum RMSE values are $0.049253$, $0.048875$, $0.048944$ for CSDI, TimeDiT (raw)
+and LS4 --- a spread of $3.8\times10^{-4}$ --- while each 95\% bootstrap CI
+is about $6.3\times10^{-3}$ wide, 17$\times$ larger.
+Every interval contains every other point estimate. \textbf{The cum and step RMSE
+winner among those three is noise}, and a reweighting as mild as moving one
+square root is enough to reshuffle it. Only SBTS (13\% worse) and, more weakly, the two forecasters separate from the
+pack at all.
+
+The practical consequence: read the RMSE rows of \S\ref{sec:tables} as
+``CSDI $\approx$ TimeDiT (raw) $\approx$ LS4 $<$ Chronos-2 $<$ TimesFM $\ll$
+SBTS'', and treat the bolded cell among the leading three as arbitrary. The
+CRPS, coverage and miss rows are the ones that discriminate. The win counts
+printed under each table are recomputed from the shipped artefacts every build,
+never assumed.
 
 \textbf{The cost.} The reproducibility report's published Chronos-2 / TimesFM
-RMSE cells are now \emph{superseded, not reproduced} --- a re-run will no longer
-match them, by design. That is the correct trade: one internally consistent
-table is worth more than fidelity to a column the report itself never
-recomputed. This is recorded in GUIDELINE E16b.
+\emph{rv} cell is now \emph{superseded, not reproduced}: rv reports (B) and is
+labelled MAE, so a re-run will not match the report's rv column, by design. The
+cum and step cells, having moved to (A), agree with the report's Table 8
+convention again. That is the correct trade: one internally consistent table,
+with both aggregations preserved in the JSON for anyone who needs the other.
+This is recorded in GUIDELINE E16b.
 
 \clearpage
 \section{The five cross-method tables}
@@ -307,7 +375,7 @@ tables} (\texttt{build\_cross\_tables.py}), reading the same
 Quantity / metric & CSDI & TimeDiT (raw) & LS4 & SBTS & Chronos-2 & TimesFM & Oracle & RW & Winner \\
 \midrule
 \multicolumn{10}{l}{\textbf{cum ($M\times H$ trajectory)}} \\
-RMSE $\downarrow$ & \textbf{0.04131} & 0.04142 & 0.04149 & 0.04158 & 0.04168 & 0.04276 & 0.04154 & 0.04796 & \textbf{CSDI} \\
+RMSE $\downarrow$ & 0.04919 & \textbf{0.04890} & 0.04906 & 0.04916 & 0.04921 & 0.05094 & 0.04924 & 0.05670 & \textbf{TimeDiT (raw)} \\
 CRPS $\downarrow$ & 0.02548 & \textbf{0.02531} & 0.02544 & 0.02544 & 0.02624 & 0.02722 & 0.02539 & 0.02946 & \textbf{TimeDiT (raw)} \\
 coverage$_{50}$ ($\to$0.50) & 0.4571 & \textbf{0.5105} & 0.4764 & 0.4839 & 0.4050 & 0.4664 & 0.4875 & 0.4719 & \textbf{TimeDiT (raw)} \\
 coverage$_{90}$ ($\to$0.90) & 0.8629 & \textbf{0.8957} & 0.8691 & 0.8805 & 0.7905 & 0.8177 & 0.8919 & 0.8553 & \textbf{TimeDiT (raw)} \\
@@ -317,7 +385,7 @@ lower miss$_{90}$ ($\to$0.05) & 0.07764 & \textbf{0.04840} & 0.06476 & 0.05554 &
 upper miss$_{90}$ ($\to$0.05) & 0.05945 & \textbf{0.05591} & 0.06616 & 0.06396 & 0.1135 & 0.08966 & 0.05078 & 0.06134 & \textbf{TimeDiT (raw)} \\
 \addlinespace
 \multicolumn{10}{l}{\textbf{step ($M\times H$)}} \\
-RMSE $\downarrow$ & \textbf{0.01176} & 0.01177 & 0.01176 & 0.01180 & 0.01227 & 0.01267 & 0.01176 & 0.01185 & \textbf{CSDI} \\
+RMSE $\downarrow$ & \textbf{0.01244} & 0.01245 & 0.01245 & 0.01249 & 0.01295 & 0.01332 & 0.01245 & 0.01253 & \textbf{CSDI} \\
 CRPS $\downarrow$ & 0.006780 & \textbf{0.006766} & 0.006794 & 0.006812 & 0.01272 & 0.01473 & 0.006765 & 0.006874 & \textbf{TimeDiT (raw)} \\
 coverage$_{50}$ ($\to$0.50) & 0.4510 & 0.4811 & 0.4656 & \textbf{0.4813} & 0.9449 & 0.9479 & 0.4849 & 0.5157 & \textbf{SBTS} \\
 coverage$_{90}$ ($\to$0.90) & 0.8602 & \textbf{0.8854} & 0.8591 & 0.8782 & 0.9970 & 0.9949 & 0.8869 & 0.8866 & \textbf{TimeDiT (raw)} \\
@@ -338,7 +406,7 @@ upper miss$_{90}$ ($\to$0.05) & 0.1230 & \textbf{0.06445} & 0.1621 & 0.08398 & 0
 \bottomrule
 \end{tabular}
 \end{center}
-\noindent\textbf{Winners (of 18 ranked rows = 6 ranked metrics $\times$ 3 quantities):} TimeDiT (raw) 14 $\cdot$ CSDI 2 $\cdot$ SBTS 2.
+\noindent\textbf{Winners (of 18 ranked rows = 6 ranked metrics $\times$ 3 quantities):} TimeDiT (raw) 15 $\cdot$ SBTS 2 $\cdot$ CSDI 1.
 \end{landscape}
 \begin{landscape}
 \subsection{Bank size $N = 16\,384$}
@@ -348,7 +416,7 @@ upper miss$_{90}$ ($\to$0.05) & 0.1230 & \textbf{0.06445} & 0.1621 & 0.08398 & 0
 Quantity / metric & CSDI & TimeDiT (raw) & LS4 & SBTS & Chronos-2 & TimesFM & Oracle & RW & Winner \\
 \midrule
 \multicolumn{10}{l}{\textbf{cum ($M\times H$ trajectory)}} \\
-RMSE $\downarrow$ & \textbf{0.04142} & 0.04156 & 0.04150 & 0.04234 & 0.04168 & 0.04276 & 0.04155 & 0.04796 & \textbf{CSDI} \\
+RMSE $\downarrow$ & 0.04915 & \textbf{0.04901} & 0.04903 & 0.04996 & 0.04921 & 0.05094 & 0.04923 & 0.05670 & \textbf{TimeDiT (raw)} \\
 CRPS $\downarrow$ & 0.02543 & \textbf{0.02534} & 0.02542 & 0.02610 & 0.02624 & 0.02722 & 0.02535 & 0.02946 & \textbf{TimeDiT (raw)} \\
 coverage$_{50}$ ($\to$0.50) & 0.4604 & \textbf{0.5103} & 0.4755 & 0.4694 & 0.4050 & 0.4664 & 0.4859 & 0.4719 & \textbf{TimeDiT (raw)} \\
 coverage$_{90}$ ($\to$0.90) & 0.8694 & \textbf{0.8952} & 0.8685 & 0.8644 & 0.7905 & 0.8177 & 0.8884 & 0.8553 & \textbf{TimeDiT (raw)} \\
@@ -358,7 +426,7 @@ lower miss$_{90}$ ($\to$0.05) & 0.07318 & \textbf{0.04651} & 0.06458 & 0.06787 &
 upper miss$_{90}$ ($\to$0.05) & \textbf{0.05743} & 0.05829 & 0.06689 & 0.06769 & 0.1135 & 0.08966 & 0.05432 & 0.06134 & \textbf{CSDI} \\
 \addlinespace
 \multicolumn{10}{l}{\textbf{step ($M\times H$)}} \\
-RMSE $\downarrow$ & \textbf{0.01176} & 0.01177 & 0.01176 & 0.01192 & 0.01227 & 0.01267 & 0.01176 & 0.01185 & \textbf{CSDI} \\
+RMSE $\downarrow$ & 0.01245 & 0.01245 & \textbf{0.01245} & 0.01261 & 0.01295 & 0.01332 & 0.01245 & 0.01253 & \textbf{LS4} \\
 CRPS $\downarrow$ & 0.006777 & \textbf{0.006768} & 0.006788 & 0.006930 & 0.01272 & 0.01473 & 0.006761 & 0.006874 & \textbf{TimeDiT (raw)} \\
 coverage$_{50}$ ($\to$0.50) & 0.4493 & \textbf{0.4818} & 0.4648 & 0.4751 & 0.9449 & 0.9479 & 0.4810 & 0.5157 & \textbf{TimeDiT (raw)} \\
 coverage$_{90}$ ($\to$0.90) & 0.8639 & \textbf{0.8843} & 0.8630 & 0.8624 & 0.9970 & 0.9949 & 0.8862 & 0.8866 & \textbf{TimeDiT (raw)} \\
@@ -379,7 +447,7 @@ upper miss$_{90}$ ($\to$0.05) & 0.1152 & \textbf{0.06836} & 0.1582 & 0.08984 & 0
 \bottomrule
 \end{tabular}
 \end{center}
-\noindent\textbf{Winners (of 18 ranked rows = 6 ranked metrics $\times$ 3 quantities):} TimeDiT (raw) 14 $\cdot$ CSDI 3 $\cdot$ SBTS 1.
+\noindent\textbf{Winners (of 18 ranked rows = 6 ranked metrics $\times$ 3 quantities):} TimeDiT (raw) 15 $\cdot$ CSDI 1 $\cdot$ LS4 1 $\cdot$ SBTS 1.
 \end{landscape}
 \begin{landscape}
 \subsection{Bank size $N = 65\,536$}
@@ -389,7 +457,7 @@ upper miss$_{90}$ ($\to$0.05) & 0.1152 & \textbf{0.06836} & 0.1582 & 0.08984 & 0
 Quantity / metric & CSDI & TimeDiT (raw) & LS4 & SBTS & Chronos-2 & TimesFM & Oracle & RW & Winner \\
 \midrule
 \multicolumn{10}{l}{\textbf{cum ($M\times H$ trajectory)}} \\
-RMSE $\downarrow$ & \textbf{0.04130} & 0.04161 & 0.04148 & 0.04389 & 0.04168 & 0.04276 & 0.04140 & 0.04796 & \textbf{CSDI} \\
+RMSE $\downarrow$ & 0.04912 & 0.04909 & \textbf{0.04900} & 0.05207 & 0.04921 & 0.05094 & 0.04910 & 0.05670 & \textbf{LS4} \\
 CRPS $\downarrow$ & 0.02535 & \textbf{0.02533} & 0.02536 & 0.02768 & 0.02624 & 0.02722 & 0.02524 & 0.02946 & \textbf{TimeDiT (raw)} \\
 coverage$_{50}$ ($\to$0.50) & 0.4670 & \textbf{0.5046} & 0.4717 & 0.4256 & 0.4050 & 0.4664 & 0.4886 & 0.4719 & \textbf{TimeDiT (raw)} \\
 coverage$_{90}$ ($\to$0.90) & 0.8738 & \textbf{0.8970} & 0.8685 & 0.8198 & 0.7905 & 0.8177 & 0.8887 & 0.8553 & \textbf{TimeDiT (raw)} \\
@@ -399,7 +467,7 @@ lower miss$_{90}$ ($\to$0.05) & 0.07147 & \textbf{0.04761} & 0.06500 & 0.08795 &
 upper miss$_{90}$ ($\to$0.05) & \textbf{0.05469} & 0.05536 & 0.06647 & 0.09229 & 0.1135 & 0.08966 & 0.05444 & 0.06134 & \textbf{CSDI} \\
 \addlinespace
 \multicolumn{10}{l}{\textbf{step ($M\times H$)}} \\
-RMSE $\downarrow$ & \textbf{0.01175} & 0.01177 & 0.01177 & 0.01228 & 0.01227 & 0.01267 & 0.01176 & 0.01185 & \textbf{CSDI} \\
+RMSE $\downarrow$ & \textbf{0.01244} & 0.01245 & 0.01246 & 0.01297 & 0.01295 & 0.01332 & 0.01245 & 0.01253 & \textbf{CSDI} \\
 CRPS $\downarrow$ & 0.006770 & \textbf{0.006762} & 0.006786 & 0.007304 & 0.01272 & 0.01473 & 0.006754 & 0.006874 & \textbf{TimeDiT (raw)} \\
 coverage$_{50}$ ($\to$0.50) & 0.4486 & \textbf{0.4765} & 0.4667 & 0.4406 & 0.9449 & 0.9479 & 0.4820 & 0.5157 & \textbf{TimeDiT (raw)} \\
 coverage$_{90}$ ($\to$0.90) & 0.8639 & \textbf{0.8810} & 0.8627 & 0.8183 & 0.9970 & 0.9949 & 0.8864 & 0.8866 & \textbf{TimeDiT (raw)} \\
@@ -420,7 +488,7 @@ upper miss$_{90}$ ($\to$0.05) & 0.1191 & \textbf{0.06836} & 0.1582 & 0.1094 & 0 
 \bottomrule
 \end{tabular}
 \end{center}
-\noindent\textbf{Winners (of 18 ranked rows = 6 ranked metrics $\times$ 3 quantities):} TimeDiT (raw) 14 $\cdot$ CSDI 3 $\cdot$ LS4 1.
+\noindent\textbf{Winners (of 18 ranked rows = 6 ranked metrics $\times$ 3 quantities):} TimeDiT (raw) 14 $\cdot$ CSDI 2 $\cdot$ LS4 2.
 \end{landscape}
 \begin{landscape}
 \subsection{Bank size $N = 262\,144$}
@@ -430,7 +498,7 @@ upper miss$_{90}$ ($\to$0.05) & 0.1191 & \textbf{0.06836} & 0.1582 & 0.1094 & 0 
 Quantity / metric & CSDI & TimeDiT (raw) & LS4 & SBTS & Chronos-2 & TimesFM & Oracle & RW & Winner \\
 \midrule
 \multicolumn{10}{l}{\textbf{cum ($M\times H$ trajectory)}} \\
-RMSE $\downarrow$ & \textbf{0.04138} & 0.04152 & 0.04149 & 0.04540 & 0.04168 & 0.04276 & 0.04136 & 0.04796 & \textbf{CSDI} \\
+RMSE $\downarrow$ & 0.04911 & \textbf{0.04891} & 0.04897 & 0.05373 & 0.04921 & 0.05094 & 0.04898 & 0.05670 & \textbf{TimeDiT (raw)} \\
 CRPS $\downarrow$ & 0.02541 & \textbf{0.02528} & 0.02536 & 0.02987 & 0.02624 & 0.02722 & 0.02524 & 0.02946 & \textbf{TimeDiT (raw)} \\
 coverage$_{50}$ ($\to$0.50) & 0.4644 & \textbf{0.5010} & 0.4723 & 0.3552 & 0.4050 & 0.4664 & 0.4904 & 0.4719 & \textbf{TimeDiT (raw)} \\
 coverage$_{90}$ ($\to$0.90) & 0.8691 & \textbf{0.8972} & 0.8696 & 0.7396 & 0.7905 & 0.8177 & 0.8922 & 0.8553 & \textbf{TimeDiT (raw)} \\
@@ -440,7 +508,7 @@ lower miss$_{90}$ ($\to$0.05) & 0.07501 & \textbf{0.04675} & 0.06653 & 0.1324 & 
 upper miss$_{90}$ ($\to$0.05) & \textbf{0.05591} & 0.05609 & 0.06384 & 0.1280 & 0.1135 & 0.08966 & 0.05231 & 0.06134 & \textbf{CSDI} \\
 \addlinespace
 \multicolumn{10}{l}{\textbf{step ($M\times H$)}} \\
-RMSE $\downarrow$ & \textbf{0.01176} & 0.01177 & 0.01177 & 0.01290 & 0.01227 & 0.01267 & 0.01176 & 0.01185 & \textbf{CSDI} \\
+RMSE $\downarrow$ & \textbf{0.01245} & 0.01245 & 0.01245 & 0.01360 & 0.01295 & 0.01332 & 0.01245 & 0.01253 & \textbf{CSDI} \\
 CRPS $\downarrow$ & 0.006771 & \textbf{0.006760} & 0.006784 & 0.008009 & 0.01272 & 0.01473 & 0.006752 & 0.006874 & \textbf{TimeDiT (raw)} \\
 coverage$_{50}$ ($\to$0.50) & 0.4529 & \textbf{0.4753} & 0.4653 & 0.3699 & 0.9449 & 0.9479 & 0.4825 & 0.5157 & \textbf{TimeDiT (raw)} \\
 coverage$_{90}$ ($\to$0.90) & 0.8638 & \textbf{0.8822} & 0.8645 & 0.7321 & 0.9970 & 0.9949 & 0.8849 & 0.8866 & \textbf{TimeDiT (raw)} \\
@@ -461,7 +529,7 @@ upper miss$_{90}$ ($\to$0.05) & 0.1152 & \textbf{0.06836} & 0.1426 & 0.1523 & 0 
 \bottomrule
 \end{tabular}
 \end{center}
-\noindent\textbf{Winners (of 18 ranked rows = 6 ranked metrics $\times$ 3 quantities):} TimeDiT (raw) 14 $\cdot$ CSDI 3 $\cdot$ LS4 1.
+\noindent\textbf{Winners (of 18 ranked rows = 6 ranked metrics $\times$ 3 quantities):} TimeDiT (raw) 15 $\cdot$ CSDI 2 $\cdot$ LS4 1.
 \end{landscape}
 \begin{landscape}
 \subsection{Bank size $N = 1\,000\,000$}
@@ -471,7 +539,7 @@ upper miss$_{90}$ ($\to$0.05) & 0.1152 & \textbf{0.06836} & 0.1426 & 0.1523 & 0 
 Quantity / metric & CSDI & TimeDiT (raw) & LS4 & SBTS & Chronos-2 & TimesFM & Oracle & RW & Winner \\
 \midrule
 \multicolumn{10}{l}{\textbf{cum ($M\times H$ trajectory)}} \\
-RMSE $\downarrow$ & \textbf{0.04144} & 0.04145 & 0.04145 & 0.04674 & 0.04168 & 0.04276 & 0.04148 & 0.04796 & \textbf{CSDI} \\
+RMSE $\downarrow$ & 0.04925 & \textbf{0.04888} & 0.04894 & 0.05523 & 0.04921 & 0.05094 & 0.04911 & 0.05670 & \textbf{TimeDiT (raw)} \\
 CRPS $\downarrow$ & 0.02544 & \textbf{0.02521} & 0.02534 & 0.03179 & 0.02624 & 0.02722 & 0.02525 & 0.02946 & \textbf{TimeDiT (raw)} \\
 coverage$_{50}$ ($\to$0.50) & 0.4624 & \textbf{0.5072} & 0.4688 & 0.3001 & 0.4050 & 0.4664 & 0.4891 & 0.4719 & \textbf{TimeDiT (raw)} \\
 coverage$_{90}$ ($\to$0.90) & 0.8682 & \textbf{0.8983} & 0.8682 & 0.6575 & 0.7905 & 0.8177 & 0.8941 & 0.8553 & \textbf{TimeDiT (raw)} \\
@@ -481,7 +549,7 @@ lower miss$_{90}$ ($\to$0.05) & 0.07599 & \textbf{0.04572} & 0.06757 & 0.1738 & 
 upper miss$_{90}$ ($\to$0.05) & \textbf{0.05579} & 0.05597 & 0.06427 & 0.1687 & 0.1135 & 0.08966 & 0.05127 & 0.06134 & \textbf{CSDI} \\
 \addlinespace
 \multicolumn{10}{l}{\textbf{step ($M\times H$)}} \\
-RMSE $\downarrow$ & \textbf{0.01176} & 0.01178 & 0.01176 & 0.01350 & 0.01227 & 0.01267 & 0.01176 & 0.01185 & \textbf{CSDI} \\
+RMSE $\downarrow$ & 0.01245 & 0.01246 & \textbf{0.01245} & 0.01421 & 0.01295 & 0.01332 & 0.01244 & 0.01253 & \textbf{LS4} \\
 CRPS $\downarrow$ & 0.006767 & \textbf{0.006760} & 0.006778 & 0.008688 & 0.01272 & 0.01473 & 0.006750 & 0.006874 & \textbf{TimeDiT (raw)} \\
 coverage$_{50}$ ($\to$0.50) & 0.4532 & \textbf{0.4761} & 0.4672 & 0.3082 & 0.9449 & 0.9479 & 0.4816 & 0.5157 & \textbf{TimeDiT (raw)} \\
 coverage$_{90}$ ($\to$0.90) & 0.8640 & \textbf{0.8806} & 0.8640 & 0.6479 & 0.9970 & 0.9949 & 0.8864 & 0.8866 & \textbf{TimeDiT (raw)} \\
@@ -502,7 +570,7 @@ upper miss$_{90}$ ($\to$0.05) & 0.1191 & \textbf{0.07422} & 0.1504 & 0.2031 & 0 
 \bottomrule
 \end{tabular}
 \end{center}
-\noindent\textbf{Winners (of 18 ranked rows = 6 ranked metrics $\times$ 3 quantities):} TimeDiT (raw) 14 $\cdot$ CSDI 3 $\cdot$ LS4 1.
+\noindent\textbf{Winners (of 18 ranked rows = 6 ranked metrics $\times$ 3 quantities):} TimeDiT (raw) 15 $\cdot$ LS4 2 $\cdot$ CSDI 1.
 \end{landscape}
 \clearpage
 \section{Figures}
