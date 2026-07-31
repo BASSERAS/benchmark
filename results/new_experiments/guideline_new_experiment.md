@@ -92,6 +92,32 @@ land on the PDF's `train.npy` digest).
 > digest the PDF pins**. The only assurance is that they were run **unchanged** (PDF §7
 > item 7), which is a statement about *us*, not about *them*. If the upstream repository
 > ever becomes reachable, `diff` these two files first.
+>
+> **Action item, open:** request the upstream SHA-256 for the six named implementation files
+> from the protocol author. Until then this gap cannot be closed locally — no amount of
+> local checking substitutes for a digest we did not compute ourselves.
+
+**Local digests of the vendored tree, recorded so that future drift is detectable.** These
+are *our* bytes, not the PDF's — they prove nothing about upstream fidelity. What they do is
+turn a silent edit into a visible one:
+
+```bash
+cd dataset/Heston/new_experiments
+sha256sum protocol/experiments/scripts/*.py protocol/experiments/path_dt_experiments/*.py
+```
+
+| Vendored file | Local SHA-256 (2026-07-31) | Functionally verified? |
+|---|---|---|
+| `scripts/generate_drawdown_memory_dataset.py` | `98d7020fab8f80fe…` | ✅ via A's three `.npy` digests |
+| `scripts/generate_heston_parameter_mixture_dataset.py` | `dfae150083 72b273…` | ✅ via B's three `.npy` digests |
+| `path_dt_experiments/heston_mixture.py` | `383791c93c02163c…` | ✅ transitively, same as above |
+| `scripts/fit_heston_mixture_oracle.py` | `52258e7024 52abf0…` | ✅ via `gate_report.json` |
+| `scripts/evaluate_drawdown_memory.py` | `f498f6f8813cc1cb…` | ❌ **nothing** |
+| `scripts/evaluate_heston_parameter_mixture.py` | `28e65f029cde2283…` | ❌ **nothing** |
+| `path_dt_experiments/__init__.py` | `e3b0c44298fc1c14…` | n/a — empty file (that digest *is* the empty string; §10 row 2) |
+
+Re-run the block above before any submission. Any change here, against a `git status` on
+`protocol/` that is clean, means something outside git touched the tree.
 
 > ### ⛔ Never edit anything under `protocol/`
 > PDF §7 checklist item 7 requires: *"The supplied evaluator scripts were run unchanged."*
@@ -175,7 +201,8 @@ The three properties that make this hard:
    still drives volatility at step 90, long after it has left every short-window statistic.
 
 Consequently `future_rv` depends on `early_hit` (a drawdown in steps `0..history_cutoff`)
-**even after conditioning on** `recent_rv`, `current_drawdown` and `current_log_return`.
+**even after conditioning on** `recent_rv`, `current_drawdown` and `current_log_return`
+(which, despite its name, is the *level* X₆₄ — see the misnomer warning at the end of §2.4).
 That residual dependence is what the headline metric measures.
 
 ### 2.2 Frozen configuration
@@ -237,7 +264,7 @@ the generated bank respectively). Measured values on `test.npy` are given as the
 | `future_rv_hit_mean` | mean future realised vol among hit paths | 0.426855 |
 | `future_rv_hit_gap` | `hit_mean − no_hit_mean` — the raw memory signal | 0.223872 |
 | `early_hit_future_rv_correlation` | correlation of `early_hit` with `future_rv` | 0.808360 |
-| `baseline_r2` | R² of `future_rv ~ 1 + recent_rv + current_drawdown + current_log_return` | 0.385467 |
+| `baseline_r2` | R² of `future_rv ~ 1 + recent_rv + current_drawdown + current_log_return` (see the misnomer warning below) | 0.385467 |
 | `augmented_r2` | R² of the same **+ `early_hit`** | 0.673990 |
 | `early_history_incremental_r2` | `augmented_r2 − baseline_r2` ← **the headline number** | **0.288523** |
 | `early_hit_standardized_coefficient` | the `early_hit` coefficient in the standardized augmented fit | 1.498698 |
@@ -245,6 +272,34 @@ the generated bank respectively). Measured values on `test.npy` are given as the
 Note the evaluator's own `configuration` block renames three manifest fields:
 `history_cutoff`→`history_cutoff`, `future_horizon`→`horizon`, `split_index`→`split`,
 `drawdown_threshold`→`threshold`, plus `annualization: 250.0`.
+
+> ### ⚠️ `current_log_return` is **not** a return — it is the level `X₆₄`
+>
+> `evaluate_drawdown_memory.py:72` builds the feature dictionary with
+>
+> ```python
+> "current_drawdown":   drawdown[:, split],
+> "current_log_return": log_paths[:, split],     # split = 64
+> ```
+>
+> `log_paths` is `X_n = log(S_n / S_0)` (line 56), so `log_paths[:, 64]` is **X₆₄, the
+> cumulative log-price level at the split** — not a one-step return, and not
+> `X₆₄ − X₆₃`. Checked: the key never escapes the evaluator's in-memory feature dict — it
+> appears in no output JSON and in no `tools/` table, so this warning is the only place a
+> reader will meet it. The value is **correct**: PDF §2.2 defines the baseline design matrix as
+> `B = [1, z(V_recent), z(D₆₄), z(X₆₄)]`, and the third standardised column is unambiguously
+> the level. Only the *name* is wrong.
+>
+> **Do not "fix" it.** PDF §7 item 7 requires the evaluator scripts to run unchanged, and the
+> provenance argument in §0.1 rests on the vendored tree being byte-identical to what was
+> committed at `ba7c748`. Renaming the key would silently invalidate that, and would also
+> break every downstream JSON path (`target_memory.baseline_r2` is computed from this dict).
+>
+> **What it costs if you get it wrong.** A reimplementer who takes the name literally and
+> feeds `returns[:, 63]` in its place builds a different baseline design matrix, gets a
+> different `baseline_r2`, and therefore a different
+> `early_history_incremental_r2` — the headline number of Experiment A. The names differ by
+> one word; the metric differs materially.
 
 **`errors`** — 9 absolute-difference keys, all *lower is better*, all target 0:
 
@@ -312,7 +367,38 @@ At `N = 8192` this yields **exactly 1024 paths per regime**, every split. Confir
 | `mean_heston.npy` | — | (8192, 128) | reference baseline |
 | `whole_path_bootstrap.npy` | — | (8192, 128) | reference baseline |
 
-The two baselines are **degenerate references, not competitors**:
+> ### ⚠️ These two files appear **nowhere in the protocol PDF**
+>
+> Searched the PDF text for `mean_heston`, `whole_path_bootstrap`, `bootstrap` and
+> `degenerate`: **zero hits.** They are emitted by the canonical generator but are not
+> named in the protocol, not pinned by any of §6's ten digests, and not referenced by
+> either evaluator. The label "degenerate baselines" below is **this repo's reading**, not
+> the PDF's language, and is offered as an interpretation rather than a citation.
+>
+> **Exact construction**, from
+> `protocol/experiments/scripts/generate_heston_parameter_mixture_dataset.py:69–79`:
+>
+> ```python
+> mean_heston = simulate_fixed_heston(num_paths=args.num_paths, seed=3,
+>     theta=float(np.mean(THETA_LEVELS)), xi=float(np.mean(XI_LEVELS)),
+>     rho=float(np.mean(RHO_LEVELS)))                        # -> mean_heston.npy
+> indices = np.random.default_rng(4).choice(len(train), size=args.num_paths, replace=True)
+> np.save(..., np.asarray(train[indices]))                   # -> whole_path_bootstrap.npy
+> ```
+>
+> Note `mean_heston` sits at the *mean* of each 2-point level set, which corresponds to **no
+> regime** of the 8-point mixture — it is off-lattice by construction.
+>
+> **Did either feed any reported number? No — verified by grep, not assumed.**
+> `grep -rn "mean_heston\|whole_path_bootstrap"` over the whole repo returns hits in only
+> three places: the generator that writes them, `manifest.json`'s `mean_heston_parameters`
+> block (parameters, not the bank), and this guideline's prose. **No scoring script, no
+> aggregation tool, no README table, and no `pdf_metrics/*.json` reads either array.** They
+> are inert scaffolding on disk. Had a hit turned up in a scoring path, that would have been
+> a protocol deviation to escalate, not a paragraph to write.
+
+With that declared, the two baselines are usable as **degenerate references, not
+competitors**:
 
 - `mean_heston.npy` — a single Heston with the mixture-mean parameters. Its observable
   statistics look plausible, but its `regime_proportion_tvd` is terrible. It is the
@@ -321,6 +407,9 @@ The two baselines are **degenerate references, not competitors**:
   statistic and perfect on TVD, and **zero novelty**. It is the *canonical memorisation
   failure*. It exists so that nobody mistakes a good TVD for a good model without also
   checking `novelty`.
+
+Neither is scored in this deliverable. A method that wants them as sanity anchors must score
+them explicitly and say so.
 
 ### 3.3 The oracle and its gate
 
@@ -333,6 +422,21 @@ python protocol/experiments/scripts/fit_heston_mixture_oracle.py \
     --output-dir experiment_B/oracle \
     --workers    16          # ← override the default 24, see §9
 ```
+
+⚠️ **Always pass `--workers` explicitly, and always pass the same value.** Two independent
+reasons, both measured:
+
+1. The script's default is **24**, which exceeds this machine's 16-physical-core hard cap.
+   Relying on the default violates the environment rule on a shared box.
+2. `--workers` becomes `n_jobs` on the `ExtraTreesClassifier`, and `predict_proba` accumulates
+   its 500 trees through `Parallel(..., require="sharedmem")`. The summation order therefore
+   depends on the thread count, probabilities differ in the last ULP, and any path sitting
+   within one ULP of the strict `max_prob < 0.6` test flips category. That is the entire cause
+   of the ±1/8192 jitter in `low_confidence_fraction` documented in `experiment_B/LS4/README.md`
+   §1.4. **Pinning the worker count is what makes that diagnostic reproducible.** No primary
+   metric is affected — `regime_proportion_tvd` goes through `argmax`, and the
+   Wasserstein/RMSE metrics are continuous — but the diagnostic will wander if you let the
+   default float.
 
 `ExtraTreesClassifier(n_estimators=500, min_samples_leaf=2, max_features=0.7,
 class_weight="balanced", random_state=42)` over **77 observable price-path features**,
@@ -350,6 +454,33 @@ trained on `oracle_train` (32768) and gated on `oracle_validation` (8192).
 
 Artefacts: `experiment_B/oracle/oracle.joblib` (~554 MB, **gitignored** — see §10) and
 `gate_report.json` (committed). If the gate fails, **stop**: no Experiment B number is valid.
+
+> ### 🚦 MANDATORY preflight — the canonical scripts leave two holes around this gate
+>
+> ```bash
+> python results/new_experiments/tools/check_oracle_gate.py \
+>     --gate-report dataset/Heston/new_experiments/experiment_B/oracle/gate_report.json \
+>     --oracle      dataset/Heston/new_experiments/experiment_B/oracle/oracle.joblib
+> ```
+>
+> **Run this before every `evaluate_heston_parameter_mixture.py` invocation.** Non-zero exit
+> means do not score. Both holes were read from the vendored source, not inferred:
+>
+> * **Gap 1 — artefacts survive a failed gate.** `fit_heston_mixture_oracle.py` writes
+>   `oracle.joblib` at **line 79** and `gate_report.json` at **lines 80–83**, and only then
+>   raises at **lines 85–89**. A fit that fails the gate therefore leaves a fully loadable
+>   model and a fully formed report on disk. **A present `oracle.joblib` is not evidence the
+>   gate passed.**
+> * **Gap 2 — the evaluator never re-checks.**
+>   `evaluate_heston_parameter_mixture.py:232` copies the report into its payload with
+>   `"oracle_gate": json.loads(args.oracle_gate_report.read_text(...))` and asserts nothing
+>   about the accuracy. The gate is verified once, at fit time, in a different process.
+>
+> Neither may be patched — PDF §7 item 7 requires the canonical scripts to run unchanged — so
+> the check lives outside them, in `tools/`. Beyond the ≥ 0.90 assertion it re-derives the
+> accuracy from the confusion matrix's trace (a hand-edited accuracy field cannot pass),
+> rejects a fit run with a laxer local `--minimum-accuracy`, and flags the Gap-1 state where
+> the blob is newer than the report.
 
 ### 3.4 Evaluator
 
@@ -423,15 +554,86 @@ This is the core of the protocol. Violating it silently invalidates everything.
 | `oracle_*`, `oracle.joblib`, `gate_report.json` | ❌ | ❌ | evaluator only |
 | `perfect_floor/*` | ❌ | ❌ | evaluator only |
 
-### Practical enforcement
+### 4.1 Every off-limits artefact, by name
 
-Every training script **must** carry this guard (copy verbatim):
+The table above uses globs. Globs are how a file gets read by accident. Here is the complete
+list, taken from `ls` on both dataset directories, so there is no pattern to mis-expand:
+
+**Experiment A** — `dataset/Heston/new_experiments/experiment_A/`
+
+| File | What it is | Generator may read |
+|---|---|---|
+| `train.npy` | prices, 8192 × 128 | ✅ **the only one** |
+| `disc.npy` | prices, validation split | ❌ (model selection only, never fitting) |
+| `test.npy` | prices, held out | ❌ |
+| `train_sigma.npy` | **latent σₙ path**, 8192 × 127 | ❌ **never** |
+| `disc_sigma.npy` | **latent σₙ path** | ❌ **never** |
+| `test_sigma.npy` | **latent σₙ path** | ❌ **never** |
+
+**Experiment B** — `dataset/Heston/new_experiments/experiment_B/`
+
+| File | What it is | Generator may read |
+|---|---|---|
+| `train.npy` | prices, 8192 × 128 | ✅ **the only one** |
+| `disc.npy` / `test.npy` | prices | ❌ / ❌ |
+| `train_labels.npy` | **true regime label** per path | ❌ **never** |
+| `disc_labels.npy` | **true regime label** | ❌ **never** |
+| `test_labels.npy` | **true regime label** | ❌ **never** |
+| `oracle_train.npy` (32768 × 128) | oracle fitting split | ❌ **never** — scorer only |
+| `oracle_train_labels.npy` | labels for the above | ❌ **never** |
+| `oracle_validation.npy` | oracle gate split | ❌ **never** — scorer only |
+| `oracle_validation_labels.npy` | labels for the above | ❌ **never** |
+| `oracle/oracle.joblib`, `oracle/gate_report.json` | the scoring instrument | ❌ **never** |
+| `mean_heston.npy`, `whole_path_bootstrap.npy` | degenerate reference banks, **absent from the PDF** — see the warning box in §3.2 | ❌ (not a model's output) |
+
+**The PDF is explicit on both counts, and the sentences are short enough to quote in full:**
+
+> §2.1: *"The latent σₙ arrays are saved only for benchmark diagnostics and must not be
+> supplied to a model."*
+>
+> §3.1: *"The generator receives prices only. In particular, it must not receive (θ, ξ, ρ),
+> regime labels, variance paths, or oracle probabilities."*
+
+And §7 checklist item 3 makes it an attestation: *"No latent volatility, regime label, oracle
+output, or competing-model result was used."*
+
+### 4.2 Practical enforcement — and exactly how far it goes
+
+Every training script **must** carry this guard. It is at
+`results/new_experiments/experiment_A/LS4/code/train_ls4_experiment.py:78–80`, copied verbatim:
 
 ```python
 data_path = os.path.abspath(a.data)
 if os.path.basename(data_path) != "train.npy":
     raise SystemExit(f"firewall: generators may only read train.npy, got {data_path}")
 ```
+
+**Is there an equivalent guard on the Experiment B side? Yes — checked, not assumed.**
+`experiment_B/LS4/code/train_ls4_experiment.py` is **byte-identical** to Experiment A's
+(`diff` returns empty); the same file serves both experiments and is selected by
+`--experiment A|B`, so the guard is at the same lines in both. A new method must not split
+these into two divergent copies.
+
+> #### ⚠️ What this guard does **not** do
+>
+> It is a **filename** check, not a content check. Stated plainly so nobody mistakes it for
+> proof:
+>
+> * It stops the realistic accident — `--data …/test.npy`, `--data …/train_sigma.npy`, a
+>   copy-pasted path from the wrong experiment. That is what it is for, and it works.
+> * It does **not** stop `cp test.npy /tmp/train.npy && --data /tmp/train.npy`. Any file
+>   named `train.npy` passes.
+> * It does **not** constrain any *other* route into the model: a second `np.load` elsewhere
+>   in the script, an environment variable, a preprocessing artefact fitted upstream on a
+>   withheld split, or a hyperparameter chosen by looking at `test.npy` on a plot. **None of
+>   those are covered by any code in this repo.**
+>
+> The firewall is therefore enforced by *one string comparison plus reviewer discipline*.
+> The auditable part is the record, not the check: `weights/seed_<q>_config.json` stores the
+> resolved `data` path and the scaler statistics fitted from it, so a reader can verify after
+> the fact which file the standardizer saw. For LS4 that check is independently corroborated —
+> A's and B's fitted (μ, σ) differ (100.1362…/11.9280… vs 100.0971…/11.5164…), which is only
+> possible if the two runs read two different files.
 
 Additional rules:
 
@@ -820,6 +1022,28 @@ starts directly at Stage 1 — but LS4 still trains **5 fresh seeds on Experimen
 
 ## 6. File Structure
 
+### 6.0 What every file you will meet actually is
+
+Read this before the trees below. A reader landing in `dataset/Heston/new_experiments/`
+cannot tell by looking which files are the protocol's, which this repo produced, which are
+inert, and which are simply not there. Four roles, and the distinction matters because only
+the first is authoritative:
+
+| Role | Files | What it means for you |
+|---|---|---|
+| **① PDF-canonical, digest-pinned** | `experiment_A/{train,disc,test}.npy`, `experiment_A/manifest.json`, `experiment_B/{train,disc,test}.npy`, `experiment_B/manifest.json`, `experiment_B/oracle/oracle.joblib`, `experiment_B/oracle/gate_report.json` — **ten files, and exactly these ten** | PDF §6 publishes a SHA-256 for each. Verify before you trust anything. Current status: 6 `.npy` ✅ bit-for-bit, 2 `manifest.json` ❌ ULP-only, `oracle.joblib` ❌ pickle bytes, `gate_report.json` ✅ — see §11.1 |
+| **② Canonical code, named but NOT pinned** | the six script paths PDF §6 lists under "Authoritative implementations", vendored under `protocol/` | **No digest exists for any of them.** Four are verified functionally (§0.1); the two evaluators are verified by nothing. ⛔ never edit |
+| **③ Generated by this repo** | everything under `results/new_experiments/`, plus `*/perfect_floor/*` | Reproducible from ① + ② by the commands in §13. Not authoritative; if it disagrees with ①, ③ is wrong |
+| **④ Diagnostic / inert, produced but unused** | `*_sigma.npy`, `*_labels.npy`, `oracle_train*`, `oracle_validation*` (scorer-only, off-limits to generators — §4.1); `mean_heston.npy`, `whole_path_bootstrap.npy` (absent from the PDF entirely — §3.2) | Present on disk, feeds no reported number. Reading any of them into a generator voids the run |
+| **⑤ Gitignored — must be regenerated** | `experiment_B/oracle/oracle.joblib` only (`.gitignore:54`, ~554 MB > GitHub's 100 MiB cap) | A fresh clone **cannot score Experiment B** until you refit it (§3.3). Everything else, including all ten `.npy` banks, is committed normally — there is no LFS (§10 row 7) |
+
+> **Where the tooling lives: `results/new_experiments/tools/`, never `protocol/`.**
+> This is stated explicitly because looking for it in the wrong place costs real time.
+> `protocol/` contains **only** the six vendored canonical scripts and is frozen; it holds no
+> aggregation, no plotting, no layout checker, no repair script, no gate preflight. Everything
+> this repo wrote to *drive* the protocol is in `tools/`. If you are about to add a helper
+> under `protocol/`, you are about to invalidate §7 item 7 — put it in `tools/`.
+
 ### 6.1 Dataset side (shared, one-time)
 
 ```
@@ -864,6 +1088,7 @@ results/new_experiments/
 │   ├── plot_losses.py                           README § 4 figure: loss_convergence.png
 │   ├── write_generation_manifest.py             PDF §1.4 artefact, no README section
 │   ├── check_method_layout.py                   §6.6 — verifies a method dir matches this tree
+│   ├── check_oracle_gate.py                     §3.3 — MANDATORY preflight before scoring B
 │   └── apply_s0_repair.py                       §11.5 — applies AND audits the S0 repair
 └── experiment_<A|B>/
     ├── perfect_floor/                           method-neutral sibling
@@ -1545,6 +1770,344 @@ Experiment B rather than Experiment A's remaining seed 4.
 | 5 | Perfect-floor seeds are **1000–1004** (`IND_SEED_BASE = 1000` from `metrics/compute_perfect_recovery.py`), disjoint from protocol seeds 0/1/2/100/101. | convention |
 | 6 | `plot_diagnostics.py` draws a **Heston-theory** curve that is invalid for both new DGPs. It is inside a try/except (`TB = None` on failure). Suppress it or caption it as non-applicable. | known |
 | 7 | **No Git LFS** (decision reversed 2026-07-30). Add no new LFS entries. The 8192×128 `float64` banks are ~8 MB each and **are committed normally**; only artefacts over GitHub's 100 MiB per-file cap get an explicit `.gitignore` entry — currently just `oracle.joblib`. | policy |
+| 9 | **Scoring-artefact filenames differ from PDF §1.4's recommendation.** The PDF suggests `seed_<q>/metrics_validation.json` and `seed_<q>/metrics_test.json`; this repo writes `pdf_metrics/seed_<q>_<experiment>.json` (test side) and `pdf_metrics_validation/seed_<q>_<experiment>.json` (validation side). §1.4 says **"Recommended layout"**, so this is permitted, not a breach — but it was previously undeclared, which is the actual defect. Rationale for the split-by-directory form: it keeps the two scoring passes separable by a glob, which is what lets `aggregate_pdf_metrics.py --subdir` render the test and validation columns with the *same* code instead of hand-copying one of them (§11.4). The per-seed content is identical either way; only the paths differ. A method porting in must use the repo's form — `check_method_layout.py` enforces it. | **declared** — permitted, non-default |
+| 10 | **Neither evaluator script has any published digest.** PDF §6's "Authoritative implementations" list names six script paths and pins **none** of them; the ten digests it does publish are all data/artefact files. `evaluate_drawdown_memory.py` and `evaluate_heston_parameter_mixture.py` are additionally covered by no functional check (§0.1) — unlike the two generators and the oracle fitter, which are verified transitively through the data and gate digests they reproduce. The only assurances are a single vendoring commit and a clean `git status` on `protocol/`. **Action item: request the upstream digests from the protocol author.** | **open** — unresolvable locally |
+
+---
+
+### 10.1 PDF ambiguities — where the text admits two readings
+
+The eight items below are **not defects in this repo**. Each is a place where the protocol
+PDF is under-specified and implementation had to pick a reading. Every pick is defensible;
+none is *forced* by the text — except A1, which turns out to be forced by an identity the PDF
+states one sentence later. They are recorded so that an independent reimplementation
+producing different numbers can **locate** the disagreement instead of hunting for it.
+
+Each entry gives: the PDF sentence, what it leaves open, the canonical code that settles it
+(`file:line`), and — where it could be measured — **the size of the swing**. Values below were
+computed, not estimated; the commands are inline and re-runnable.
+
+| # | Where | What is undefined | Measured blast radius |
+|---|---|---|---|
+| **A1** | §2.3 `sd(a)` | `ddof` | **none — forced by the PDF itself** |
+| **A2** | §2.4 pooled ACF | which count divides the numerator | **largest: 15 % of a headline metric** |
+| **A3** | §4 novelty | search precision, tie-break | integer tie-order only |
+| **A4** | §2.4 block RV | 127 ∤ {2, 4, 8, 16} | 12 % of each path dropped at 16 blocks |
+| **A5** | §3.3 π<sup>gen</sup>, π<sup>test</sup> | hard vs soft assignment | ±1/8192 jitter (§1.4 of the B README) |
+| **A6** | §1.4 S₀ tolerance | no number given | resolved exactly; boundary case unadjudicable |
+| **A7** | §3.1 initial variance | burn-in unspecified | changes the DGP, not the comparison |
+| **A8** | §1.5 "model selection" | required, or merely permitted? | changes the competitive frame |
+
+---
+
+#### A1 — `sd(a)` in §2.3 does not state `ddof`, but the next sentence pins it
+
+The PDF writes:
+
+> Let z(a) = (a − ā)/ sd(a), calculated separately within the evaluated bank.
+
+`sd` is never defined. Population (ddof = 0) and sample (ddof = 1) are both ordinary readings.
+
+**What the code does:** `evaluate_drawdown_memory.py:78` and `:83` call bare `.std()` — numpy's
+default **ddof = 0** — for both the response and every regressor column.
+
+**Why this one is not really open.** The PDF continues, immediately:
+
+> Because Y has unit empirical variance, the implementation uses R²_C = 1 − mean[(Y − Ŷ_C)²]
+
+That identity is **only true under ddof = 0**. Measured:
+
+```bash
+python - <<'PY'
+import numpy as np
+y = np.random.default_rng(0).standard_normal(8192)
+for d in (0, 1):
+    ys = (y - y.mean()) / y.std(ddof=d)
+    print('ddof', d, '-> empirical var of Y =', float(np.mean((ys - ys.mean())**2)))
+PY
+# ddof 0 -> 0.9999999999999998      <-- the identity holds
+# ddof 1 -> 0.9998779296874998      <-- off by 1/8192 = 1.22e-4; every R2 biased
+```
+
+A reimplementation choosing ddof = 1 would silently bias **every** `R²` and therefore
+`early_history_incremental_r2_error`. The PDF under-specifies the definition and then
+over-determines it one line later. **Adopted reading: ddof = 0 — forced, not chosen.**
+
+---
+
+#### A2 — the pooled-ACF normalisation. This is the big one.
+
+PDF §2.4 writes:
+
+> ACF_Q(ℓ) = mean_{i,n}[(Q_{i,n} − Q̄)(Q_{i,n+ℓ} − Q̄)] ⁄ mean_{i,n}[(Q_{i,n} − Q̄)²]
+> where Q̄ is the global mean across all paths and times.
+
+Both means carry the **same** subscript `i,n`, but they cannot range over the same index set:
+the numerator has `N·(T−ℓ)` valid pairs, the denominator has `N·T` terms. The notation does
+not say which count divides the numerator.
+
+**What the code does** — `evaluate_drawdown_memory.py:30-34` and
+`evaluate_heston_parameter_mixture.py:42-46` divide by the **available-pair** count `N·(T−ℓ)`:
+
+```python
+def pooled_acf(values, lags):
+    centered = values - values.mean()
+    variance = np.mean(centered * centered)          # N*T terms
+    return np.asarray(
+        [np.mean(centered[:, :-lag] * centered[:, lag:]) / variance for lag in lags]
+    )                                                # N*(T-lag) terms
+```
+
+The alternative — divide the numerator by `N·T` as well, which is the textbook *biased* ACF
+estimator and what most reference implementations do — is an equally faithful reading of the
+same formula. The two differ by exactly `(T−ℓ)/T`, which at the protocol's top lag ℓ = 50 with
+T = 127 is **0.6063**: a 39 % attenuation at the long end.
+
+**Measured, on the Experiment A test bank:**
+
+```bash
+python - <<'PY'
+import numpy as np
+def acf(q, lags, mode):
+    c = q - q.mean(); v = np.mean(c * c)
+    if mode == 'literal':                       # as implemented
+        return np.array([np.mean(c[:, :-l] * c[:, l:]) / v for l in lags])
+    return np.array([(c[:, :-l] * c[:, l:]).sum() / c.size / v for l in lags])   # N*T
+tgt = np.load('dataset/Heston/new_experiments/experiment_A/test.npy')
+gen = np.load('results/new_experiments/experiment_A/LS4/generated_paths/'
+              'seed_0/generated_paths_8192x128.npy')
+lags = np.arange(1, 51)
+for mode in ('literal', 'NT'):
+    a = acf(np.abs(np.diff(np.log(gen), axis=1)), lags, mode)
+    b = acf(np.abs(np.diff(np.log(tgt), axis=1)), lags, mode)
+    print(mode, 'abs_return_acf_rmse_lags_1_50 = %.6f' % np.sqrt(np.mean((a - b)**2)))
+PY
+# literal abs_return_acf_rmse_lags_1_50 = 0.018115
+# NT      abs_return_acf_rmse_lags_1_50 = 0.015340
+```
+
+Two things to read off this:
+
+1. **The literal reading is what produced our committed numbers.** `0.018115` reproduces the
+   committed `seed_0` value `0.01811` to five decimals. The convention is confirmed by
+   measurement, not assumed.
+2. **The ambiguity is the same size as the entire seed-to-seed spread.** The swing is
+   0.018115 → 0.015340, i.e. **−15.3 %**; the five committed seeds span `0.01221 … 0.01811`.
+   A reimplementation adopting the other reading lands *inside* our own seed band while
+   measuring a different quantity. Nothing in the reported numbers would reveal it.
+
+**Adopted reading: numerator over `N·(T−ℓ)`, exactly as the canonical code writes it.** This
+is the single largest reimplementation risk in the protocol, and it is invisible to every
+downstream check.
+
+---
+
+#### A3 — novelty: exact index, inexact arithmetic, undeclared dependency
+
+PDF §4 says only:
+
+> Let s_train be the scalar standard deviation of all training returns. For every generated
+> return path g_i, find …
+
+It does not specify search precision, dtype, or tie-breaking.
+
+**What the code does** (`evaluate_heston_parameter_mixture.py:70-84`):
+
+```python
+def novelty(train_returns, query_returns):
+    import faiss                                     # <-- lazy import, undeclared dependency
+    scale = max(float(train_returns.std()), 1e-12)
+    train = np.ascontiguousarray((train_returns / scale).astype(np.float32))   # <-- float32
+    query = np.ascontiguousarray((query_returns / scale).astype(np.float32))
+    index = faiss.IndexFlatL2(train.shape[1])        # exact brute force, no ANN
+    index.add(train)
+    distance, neighbors = index.search(query, 1)
+```
+
+Three separate readings live in those six lines:
+
+- **The search is exact.** `IndexFlatL2` is brute-force L2 — no approximation, no `nprobe`-style
+  knob. Nothing to get wrong here.
+- **The arithmetic is not.** Lines 74–75 cast to **float32** after scaling. Precision is bounded
+  by float32 distance accumulation, not by the index. A float64 reimplementation (e.g.
+  `sklearn.neighbors.NearestNeighbors`) gets marginally different distances.
+- **`distinct_nearest_training_paths` (line 83) is tie-sensitive.** It counts unique argmin
+  indices. Exact float32 ties break by faiss's internal scan order, which no spec covers. The
+  two RMSE outputs are continuous and robust; this integer is not.
+
+**`faiss` is declared nowhere in this repo** — no `requirements.txt`, no `pyproject.toml`, no
+`setup.py`. Because the import is inside the function, the evaluator loads fine and then dies
+at novelty time. Installed here: **faiss 1.14.3**. Record the version when reporting; it is
+part of the measurement apparatus.
+
+---
+
+#### A4 — "equal blocks" when 127 is divisible by none of them
+
+PDF §2.4 asks for:
+
+> mean, standard deviation, minimum, and maximum block realized volatility for 2, 4, 8, and
+> 16 equal blocks
+
+A 128-step price path yields **127** log returns. 127 is prime. There are no equal blocks.
+
+**What the code does** (`heston_mixture.py:170-175`): floor-divide, truncate the tail.
+
+```python
+for num_blocks in (2, 4, 8, 16):
+    block_length = returns.shape[1] // num_blocks
+    blocked = returns[:, : num_blocks * block_length].reshape(...)
+```
+
+**Measured drop, per configuration:**
+
+| blocks | block length | returns used | **returns discarded** |
+|---|---|---|---|
+| 2 | 63 | 126 | 1 |
+| 4 | 31 | 124 | 3 |
+| 8 | 15 | 120 | 7 |
+| 16 | **7** | 112 | **15 (11.8 % of the path)** |
+
+At 16 blocks the **last 15 returns never enter the statistic**. Padding, a ragged final block,
+or truncating from the *front* are all equally consistent with the phrase "equal blocks".
+Front-vs-back is not cosmetic: variance mean-reverts from `v₀ = θ` in both DGPs (see A7), so
+early and late returns have measurably different dispersion.
+
+**Adopted reading: floor-divide, drop the tail, exactly as the canonical code does.**
+
+---
+
+#### A5 — π<sup>gen</sup> and π<sup>test</sup>: hard assignment, in a script that also uses soft
+
+PDF §3.3 asks for regime proportions without saying whether the oracle posterior is hardened
+first.
+
+**What the code does** (`evaluate_heston_parameter_mixture.py:89-91`) — **hard**:
+
+```python
+probabilities = classifier.predict_proba(features)
+prediction = np.argmax(probabilities, axis=1)
+proportions = np.bincount(prediction, minlength=8).astype(np.float64) / len(prediction)
+```
+
+Three lines later, for the *parameter* samples, the very same function goes **soft**
+(line 94): `probabilities @ parameter_values_by_label(name)`. The canonical script therefore
+uses both conventions inside one function body. That inconsistency is upstream, not ours — but
+it means "the obvious reading" points in two directions depending on which line you read first.
+
+**This is also the mechanism behind the ±1/8192 jitter** documented in §1.4 of the Experiment B
+README: `argmax` is a strict threshold, so a posterior sitting on a near-tie moves an entire
+path between regimes under a reduction-order change. A soft reading would exhibit no jitter at
+all — and would report different numbers.
+
+---
+
+#### A6 — "ordinary floating-point tolerance" is not a number
+
+PDF §1.4, repeated as checklist item 5:
+
+> • begin at S0 = 100, up to ordinary floating-point tolerance;
+
+No threshold is given. `1e-15`? `1e-7`? `1e-4`?
+
+**Adopted reading: the strictest one — exact equality.** Verified on all ten committed banks:
+
+```bash
+python - <<'PY'
+import numpy as np, glob
+for exp in ('experiment_A', 'experiment_B'):
+    for f in sorted(glob.glob(f'results/new_experiments/{exp}/LS4/generated_paths/seed_*/*.npy')):
+        p = np.load(f)
+        print(exp, f.split('/')[-2], p[:, 0].min(), p[:, 0].max())
+PY
+# every line: 100.0 100.0
+```
+
+`S[:,0].min() == S[:,0].max() == 100.0` **exactly**, both experiments, all five seeds. This is
+achieved by the declared repair `S ← 100·S/S[:, :1]` (`tools/apply_s0_repair.py`), recorded in
+every manifest under `numerical_repair` with `residual_s0_max_relative_deviation: 0.0`. The raw
+pre-repair deviation reached **3.5 × 10⁻²** (§11.5, deviation 8) — which fails under any reading
+of "floating-point tolerance", so *our* case never touched the ambiguous boundary.
+
+**The boundary itself remains unadjudicable.** A submitter whose raw banks sit at, say, `1e-6`
+relative deviation cannot determine from the text whether repair is required. We can only say
+that we took the reading under which the question does not arise.
+
+---
+
+#### A7 — no burn-in: every path starts at the variance mean, not at stationarity
+
+PDF §3.1 specifies the Heston dynamics and the 8-regime parameter grid. It says nothing about
+initialising the variance process.
+
+**What the code does** — `heston_mixture.py:64` (mixture DGP) and `:102` (single-regime):
+
+```python
+variance = theta.copy()                                              # line 64
+variance = np.full(int(num_paths), float(theta), dtype=np.float64)   # line 102
+```
+
+`v₀ = θ` **exactly**, and the Euler loop steps immediately. Every path therefore starts at the
+*mean* of the variance process's stationary law rather than at a draw from it. Consequence: the
+variance process is not stationary over roughly the first `1/κ` of the path, and early realized
+volatility is systematically **less dispersed** than late. This interacts directly with A4 —
+which end of the path gets truncated is not a neutral choice.
+
+**Why it does not corrupt the comparison:** the target bank comes from this same code, so target
+and generated are scored against the same transient. It is a property of the DGP, not a bias in
+the metric.
+
+**Why it still matters:** a reimplementation that draws `v₀` from the stationary law, or burns
+in for `k/κ` steps, is simulating a **different DGP**. Its *target* statistics will differ from
+ours, so its perfect floor and every ratio against that floor differ too. This ambiguity is not
+detectable by comparing model scores — only by comparing target statistics.
+
+---
+
+#### A8 — a split allocated to "model selection", in which we selected nothing
+
+PDF §1.5 is titled **"Replications and model selection"**, and the split table assigns:
+
+| Split | Protocol seed | Paths | Stated purpose |
+|---|---|---|---|
+| Validation (`disc`) | 2 | 8192 | **Model selection** |
+
+§1.5 then says:
+
+> Use the official implementation and recommended configuration whenever it applies. Any tuning
+> must be specified before final evaluation and performed only with the training and validation
+> splits.
+
+This *permits* selection. Whether it *expects* it is not decidable from the text.
+
+**What we did: no selection whatsoever.**
+
+- LS4 runs the released `solar_weekly` preset unchanged — every manifest carries
+  `"hyperparameter_origin": "official-default"`.
+- The **final-epoch** model generates. No checkpoint is chosen by any criterion; there is no
+  early stopping and no best-epoch tracking.
+- No hyperparameter, seed, or architecture was picked using `disc.npy`.
+- `disc.npy` is read at exactly **one** place in the whole pipeline —
+  `compute_metrics_experiment.py:70-71`, as the "real" class for the A18/A19 discriminative
+  scores — and `train_ls4_experiment.py:16` names it explicitly in the forbidden-reads list.
+
+So the split the PDF allocates for selection is used by us purely as an **evaluation input**.
+
+**This is compliant** — "recommended configuration whenever it applies" is exactly what we did,
+and it is the most conservative position available with respect to the §1.3 information
+firewall. But it has a consequence worth stating plainly: **our reported numbers carry no
+selection variance.** A competing submission that legitimately tunes on `disc.npy` is scored
+under the same rule book while playing a materially different game, and no field in the manifest
+schema surfaces the difference. When comparing methods, read `hyperparameter_origin` before
+reading scores.
+
+---
+
+**Summary.** Of the eight, A1 is closed by the PDF itself, A6 is closed by taking the strictest
+available reading, and A5 / A7 / A8 are consequential but visible to anyone who looks. **A2 is
+the one to worry about**: a 15 % swing in a headline metric, arising from a subscript that reads
+identically under both interpretations, with no downstream diagnostic that would expose a
+mismatch. A4 is second: 12 % of every path silently discarded at the finest block resolution.
 
 ---
 

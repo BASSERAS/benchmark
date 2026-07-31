@@ -69,9 +69,72 @@ block been annotated by hand as "constant", that one real deviation would have b
 **The oracle gate passed.** PDF §3.2 requires an ExtraTrees regime classifier (500 trees,
 `min_samples_leaf=2`, `max_features=0.7`, `random_state=42`, 77 path features) to reach at
 least **0.90** eight-regime accuracy on held-out data before any mixture metric may be
-believed. Achieved: **0.909423828125** on 8192 validation paths. Scoring below is therefore
-**valid**. Per-parameter state accuracy: theta 0.9829, xi 0.9556, rho 0.9565. The gate block is
-excluded from the table (identical in every file, it describes the oracle, not the model).
+believed. Achieved: **0.909423828125** on 8192 validation paths — a margin of **+0.00942**
+over the gate, i.e. 77 paths of 8192. Scoring below is therefore **valid**. Per-parameter state
+accuracy: theta 0.9829, xi 0.9556, rho 0.9565. The gate block is excluded from the table
+(identical in every file, it describes the oracle, not the model).
+
+> ### ⚠️ The scoring instrument is a **locally refit** object, and its digest does not match
+>
+> **The mismatch, stated first.** PDF §6 pins `oracle.joblib` at `54c3f2c9…`. The copy on this
+> machine is **`a36d64eb…`**. It does not match, and every mixture metric in this README —
+> all eleven `mixture_fidelity.*` rows, the four PRIMARY metrics, `regime_proportion_tvd`,
+> every `*_max_probability` and `*_low_confidence_fraction` — was produced by that local
+> object, not by the PDF's.
+>
+> **Why.** A pickled `ExtraTreesClassifier` embeds scikit-learn and joblib version strings,
+> pickle protocol, and per-object memory layout. It is not byte-reproducible across
+> environments by construction, and no `random_state` fixes that. Environment here: numpy
+> 2.4.6, scikit-learn 1.9.0, joblib 1.5.3, Python 3.12.3.
+>
+> **It is also not obtainable by cloning.** `oracle.joblib` is ~554 MB and is gitignored
+> (`.gitignore:54`). Only `gate_report.json` is tracked. A third party must refit it.
+>
+> **The functional clearance, stated second.** `gate_report.json` matches the PDF's
+> `7bd779b9…` **byte-for-byte** — including all 64 cells of the 8 × 8 confusion matrix over
+> 8192 held-out paths, `eight_regime_accuracy = 0.909423828125`, and the three per-parameter
+> accuracies. A different forest does not land on 64 identical integer cell counts on held-out
+> data. The blob's bytes differ; the classifier does not.
+>
+> **Refit command** (note `--workers 16`; the script's default of **24 exceeds this machine's
+> 16-core cap**, and the worker count is also the knob behind the `low_confidence_fraction`
+> jitter documented in §1.4 — pin it, always):
+>
+> ```bash
+> cd dataset/Heston/new_experiments
+> OMP_NUM_THREADS=16 taskset -c 0-15 python protocol/experiments/scripts/fit_heston_mixture_oracle.py \
+>   --data-dir experiment_B --output-dir experiment_B/oracle --workers 16
+> sha256sum experiment_B/oracle/gate_report.json   # must be 7bd779b9…
+> ```
+
+> ### ⚠️ Two gaps around the gate — a stale `oracle.joblib` is **not** evidence it passed
+>
+> **Gap 1 — artefacts survive a failed gate.** In
+> `protocol/experiments/scripts/fit_heston_mixture_oracle.py`, the model is written at **line
+> 79** and the report at **lines 80–83**, but the accuracy check that raises `RuntimeError` is
+> at **lines 85–89** — *after* both writes. A fit that fails the gate therefore leaves a fully
+> loadable `oracle.joblib` and a fully formed `gate_report.json` on disk, indistinguishable
+> from a passing pair to anything downstream.
+>
+> **Gap 2 — the evaluator never re-checks.**
+> `protocol/experiments/scripts/evaluate_heston_parameter_mixture.py:232` does
+> `"oracle_gate": json.loads(args.oracle_gate_report.read_text(...))` — it copies the report
+> into its output payload and asserts nothing about the accuracy. The gate is verified once,
+> at fit time, in a different process, and never again.
+>
+> Neither script may be edited: PDF §7 item 7 requires them to run unchanged. So the check is
+> external and **mandatory before every scoring run**:
+>
+> ```bash
+> python ../../tools/check_oracle_gate.py \
+>   --gate-report ../../../../dataset/Heston/new_experiments/experiment_B/oracle/gate_report.json \
+>   --oracle      ../../../../dataset/Heston/new_experiments/experiment_B/oracle/oracle.joblib
+> ```
+>
+> It asserts `eight_regime_accuracy ≥ 0.90`, re-derives the accuracy from the confusion
+> matrix's trace (so a hand-edited accuracy field cannot pass), rejects a fit run with a laxer
+> local `--minimum-accuracy`, and flags the Gap-1 state where the blob is newer than the
+> report. Exit non-zero means **do not score**.
 
 <!-- model seeds: 5 | floor seeds: 5 -->
 | Metric | LS4 (mean ± std) | 95% CI half-width | Perfect floor (mean ± std) |
@@ -249,12 +312,13 @@ claim: there is no validation/test gap to explain.
 | Hyperparameters | **Official defaults**, not validation-selected. No tuning was performed; `disc.npy` was used for scoring only. |
 | Trainable parameters | 2,146,857 |
 | Training time | 1424 s per seed on average (≈24 min; range 1328–1539 s) |
-| Generation time | 9.4 s per seed |
+| Generation time | 9.4 s per seed on average (range 9.2–9.9 s) |
 | Hardware | 1 × A100-SXM4-80GB, 8 pinned cores of 2 × AMD EPYC 7763 |
 | Independent retraining | **5 separate trainings, one per seed** — not one model sampled five times. Evidence: the five `weights/seed_<q>_model.pt` have five distinct MD5s; each `weights/seed_<q>_config.json` records `"experiment": "B"` and `"data": …/experiment_B/train.npy`; the five loss curves are 100 epochs each with distinct final losses. Checkpoint mtimes are sequential ≈25 min apart (09:24, 09:49, 10:15, 10:37, 11:01). Cross-experiment check: all **10** A+B checkpoints are mutually distinct. |
 | Trained on this experiment's own data | **Yes** — `dataset/Heston/new_experiments/experiment_B/train.npy` (MD5 `7713b823…`), a different file from Experiment A's. Independent corroboration: the standardizer fitted on it gives μ = 100.09714689788022, σ = 11.516370009298313, which differ from A's (μ = 100.13621639651069, σ = 11.927961375843996) — the two runs cannot have shared a training set. |
 | Failed / unstable runs | **0** — all 5 seeds ran 100/100 epochs, no NaN in any bank, no seed replaced or dropped. One observation recorded rather than smoothed over: seed 2's *last-epoch* total loss spikes to −0.5683 against its own epoch-92 minimum of −1.1118 (seeds 0/1/3/4 finish at −1.101/−1.071/−0.958/−1.079). This does **not** reach the bank: generation uses the **EMA** weights (`ema_lamb = 0.99`, `train_ls4_experiment.py:154` selects `ema_model.module`), and a single-epoch excursion is damped by the EMA's ≈100-step memory. Seed 2 is also not an outlier in the headline metric — its regime-proportion TVD is 0.258911, mid-pack among 0.245483 / 0.243164 / **0.258911** / 0.335815 / 0.250977, where the worst seed is 3, not 2. Reported here because PDF §1.5 requires unstable behaviour to be surfaced, not because it changed a result. |
-| Oracle gate | **PASS** — 0.909423828125 ≥ 0.90 required (PDF §3.2) |
+| Oracle gate | **PASS** — 0.909423828125 ≥ 0.90 required (PDF §3.2), margin +0.00942 (77 of 8192 paths). Re-asserted externally by `tools/check_oracle_gate.py` before every scoring run, because the canonical scripts check it only once at fit time and write their artefacts *before* raising — see §1. |
+| Scoring instrument | **Locally refit `oracle.joblib`** — digest `a36d64eb…` ≠ PDF `54c3f2c9…`, and the file is gitignored so a clone does not contain it. Functional clearance is `gate_report.json` matching the PDF byte-for-byte over all 64 confusion cells. Full disclosure in §1. |
 | Declared post-hoc transformation (§1.3) | **`S ← 100·S/S[:,:1]`**, applied once to every bank. LS4 generates in standardized *price* space with no `t = 0` anchor, so raw `S₀` deviated by up to 3.5 × 10⁻² — beyond §1.4's "ordinary floating-point tolerance". The repair preserves every log-return to 1e-12, so the path law is untouched. Recorded per seed in `generation_manifest.json → numerical_repair`. **The repair is now committed code (`tools/apply_s0_repair.py`), but for Experiment B it is *not* re-derivable, and this row says so rather than borrowing Experiment A's evidence.** B's banks were first committed (`f54d87f`) already repaired, so no pre-repair copy survives in history, and generation cannot be replayed from `seed_N_model.pt` alone — the torch RNG state at generation time depends on the whole training run. What *is* re-measured from disk: `S₀ == 100.0` exactly on all 5 banks, and the map is a per-path rescaling, hence log-return-invariant to 1.776 × 10⁻¹⁵. Experiment A, whose raw banks were kept, is re-derived bit-for-bit 5/5; B is the weaker case and the asymmetry is deliberate to record. |
 | Known non-conformance | **None.** All §1.4 bullets hold: finite, strictly positive, 8192 × 128, `float64`, `S₀ == 100.0` exactly — re-measured from each array on disk by `write_generation_manifest.py`, not asserted. |
 
@@ -267,7 +331,37 @@ jitter in the count of paths sitting within float noise of the strict `max_prob 
 threshold. The averaged target statistics (`target_mean_max_probability`,
 `target_mean_posterior_entropy`, `target_regime_proportions`) are **bit-identical** across all
 five, and a controlled re-run reproduces 1408 twice. Magnitude: 1.2 × 10⁻⁴ on one raw
-diagnostic; **no effect on any primary metric**. The cause was not isolated and is not claimed.
+diagnostic; **no effect on any primary metric**.
+
+**The cause has since been isolated.** It is non-deterministic floating-point reduction order
+inside `ExtraTreesClassifier.predict_proba`. Read from the installed scikit-learn 1.9.0,
+`sklearn/ensemble/_forest.py`:
+
+```python
+Parallel(n_jobs=n_jobs, verbose=self.verbose, require="sharedmem")(
+    delayed(_accumulate_prediction)(e.predict_proba, X, all_proba, lock)
+```
+
+All 500 trees accumulate into one shared `all_proba` buffer under a lock, so the **summation
+order depends on thread scheduling**, not on any seed. Different `n_jobs`, or the same `n_jobs`
+under different machine load, give summed probabilities that differ in the last ULP.
+`low_confidence_fraction` is then computed against a *strict* threshold —
+`evaluate_heston_parameter_mixture.py:103`, `float(np.mean(probabilities.max(axis=1) < 0.6))`
+— so a path whose max probability sits within one ULP of 0.6 flips category with the order.
+One path flipping is exactly 1/8192 = 1.22 × 10⁻⁴, which is precisely the observed jitter.
+
+**Material consequence: zero primary metrics are affected, and that is structural, not lucky.**
+No primary metric is threshold-based. `regime_proportion_tvd` goes through
+`np.argmax(probabilities, axis=1)` (line 90), which is invariant to a last-ULP perturbation
+unless two classes tie to within one ULP — not observed in any of the ten scored banks. The
+Wasserstein and RMSE metrics are continuous functions of the probabilities, so a 1-ULP input
+change moves them by ~1 ULP. `low_confidence_fraction` is a *diagnostic*, not a scored
+quantity: it appears in no PRIMARY panel and in no headline claim.
+
+**Reproduction condition:** pin the worker count. Fixing `--workers` (hence `n_jobs`) to one
+value makes the diagnostic reproducible run-to-run. Use `--workers 16` everywhere — see the
+refit command in §1; the script's default of 24 exceeds this machine's 16-core cap, and
+changing it between refits is what makes this number move.
 
 *Reproduce:* `python ../../tools/aggregate_pdf_metrics.py --model-dir . --floor-dir ../perfect_floor --pattern '*_heston_mixture.json' --label LS4 --exclude-prefix oracle_gate sources configuration`
 

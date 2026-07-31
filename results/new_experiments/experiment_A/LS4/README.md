@@ -111,6 +111,16 @@ perfectly (2.6× floor — it gets drawdowns right), and misses the *conditional
 one to two orders of magnitude. The hit-gap error is the worst at 49× floor. §1.2 decomposes
 why.
 
+**The two design matrices behind `early_history_incremental_r2`.** PDF §2.2:
+`B = [1, z(V_recent), z(D₆₄), z(X₆₄)]` gives `baseline_r2`; `A = [B, z(early_hit)]` gives
+`augmented_r2`; the primary metric is their difference. One warning, because it will bite
+anyone who reads the evaluator source: the third baseline column is emitted under the key
+**`current_log_return`**, but `evaluate_drawdown_memory.py:72` assigns it `log_paths[:, 64]`
+— that is **X₆₄, a cumulative log-price *level*, not a return**. The value is right (it is
+exactly what PDF §2.2 asks for); the name is a canonical-script misnomer. It may **not** be
+corrected in place — PDF §7 item 7 requires the evaluator to run unchanged. Substituting an
+actual return there changes `baseline_r2` and therefore changes the headline number.
+
 ### 1.2 Headline — raw diagnostics behind the primary panel
 
 ⚠️ These are **raw group means and R² values, not errors**. Protocol PDF §5 lists group means
@@ -124,14 +134,14 @@ undershooting. Only the `*_error` forms in §1.1 are minimisation targets.
 | `early_hit_standardized_coefficient` | 1.4987 | 1.08214 ± 0.048 | 1.51798 ± 0.0125 | under-responsive |
 | `future_rv_hit_gap` | 0.223872 | 0.173494 ± 0.00241 | 0.223988 ± 0.00125 | gap 23 % too small |
 | `future_rv_hit_mean` | 0.426855 | 0.415608 ± 0.00299 | 0.427455 ± 0.000421 | −2.6 % (close) |
-| `future_rv_no_hit_mean` | 0.202984 | **0.242114 ± 0.000655** | 0.203467 ± 0.000875 | **+19 %, ≈53 σ off** |
+| `future_rv_no_hit_mean` | 0.202984 | **0.242114 ± 0.000655** | 0.203467 ± 0.000875 | **+19 %, 59.7 σ off** |
 
 **What LS4 actually learned.** It is not Markovian: 0.170 of incremental R² is far above the
 0.0 a memoryless generator would produce, and `early_hit_future_rv_correlation` reaches 0.696
 against a target of 0.808. But the *decomposition* of the miss is unambiguous. Stressed paths
 are almost right (`hit_mean` off by 2.6 %); calm paths are badly wrong (`no_hit_mean` off by
-+19 %, with a per-seed std of 0.000655 — that is roughly **53 σ**, a systematic bias, not
-sampling noise). LS4 learned that *an early drawdown precedes high volatility*. It did not
++19 %, with a per-seed std of 0.000655 — that is **59.7 σ**, a systematic bias, not sampling
+noise). LS4 learned that *an early drawdown precedes high volatility*. It did not
 learn that *the absence of one implies sustained calm*. That is exactly the failure the
 half-life-60-vs-window-20 design was built to expose: sustaining low volatility for 32+ steps
 requires carrying state further back than the recent window, and LS4's latent state decays
@@ -180,8 +190,8 @@ it is the cleanest available evidence that no tuning leaked into the reported ru
 | Official code + revision | **Yes** — `methods/LS4/code`, released `solar_weekly` preset, at benchmark revision `27df71e`; experiment wrapper `code/train_ls4_experiment.py` committed as `ba7c748` |
 | Hyperparameters | **Official defaults**, not validation-selected. No tuning was performed; `disc.npy` was used for scoring only. |
 | Trainable parameters | 2,146,857 |
-| Training time | 1874 s per seed (≈31 min) |
-| Generation time | 8.5 s per seed |
+| Training time | **1643 s per seed on average** (≈27 min; range 958.7–2349.0 s, 2.45× spread). PDF §5 asks for training time in the comparison table, and the honest number there is the mean over the five seeds — not seed 0's 1874 s. The 2.45× spread is GPU contention, not instability: all five seeds ran the full 100 epochs with no NaN and a min-ELBO spread of 0.6 % (per-seed table in §4). |
+| Generation time | **9.1 s per seed on average** (range 8.5–10.6 s) |
 | Hardware | 1 × A100-SXM4-80GB, 8 pinned cores of 2 × AMD EPYC 7763 |
 | Failed / unstable runs | **0** — all 5 seeds ran 100/100 epochs, no NaN in any bank |
 | Declared post-hoc transformation (§1.3) | **`S ← 100·S/S[:,:1]`**, applied once to every bank. LS4 generates in standardized *price* space with no `t = 0` anchor, so raw `S₀` deviated by up to 1.4 × 10⁻² — beyond §1.4's "ordinary floating-point tolerance". The repair preserves every log-return to 1e-12, so the path law is untouched; the four primary metrics above are **bit-identical** pre- and post-repair, as predicted by the evaluators' `log(S/S[:,:1])` normalization and then verified. Recorded per seed in `generation_manifest.json → numerical_repair`. **The repair is now committed code and is fully audited:** `tools/apply_s0_repair.py --raw-dir`, run against the pre-repair banks preserved in commit `ba7c748`, re-derives all **5/5** scored banks **bit-for-bit** (max log-return perturbation 1.776 × 10⁻¹⁵). The spelling is load-bearing — `100.0 * S / S[:, :1]`, multiply first; the three other algebraically identical orderings differ by 2.8 × 10⁻¹⁴ and re-derive nothing. |
@@ -206,7 +216,7 @@ never 0, which would silently flatter the method.
 > excellent: A18 discriminative (GRU) 0.00638 and A19 predictive (GRU) 0.04641 sit **at or
 > below the perfect floor** — a GRU discriminator cannot separate LS4's paths from real ones
 > any better than it separates two independent draws of the true DGP. Yet §1 shows LS4
-> recovers only 59 % of the memory signal and carries a ≈53 σ bias in `future_rv_no_hit_mean`.
+> recovers only 59 % of the memory signal and carries a 59.7 σ bias in `future_rv_no_hit_mean`.
 >
 > Both are correct. A1–A32 measure *marginal and short-lag* structure, and LS4 gets those
 > nearly right. The protocol evaluator measures a *conditional, 32-step-delayed* dependence
