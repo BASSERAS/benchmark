@@ -15,11 +15,17 @@
 Neither method uses a log-return transform, a quantile map, or **path shadowing**. Both were
 trained on `train.npy` only.
 
-**Verdict, one line: LS4 wins Experiment A, and not narrowly.** Across the protocol evaluator
-LS4 takes 17 metrics, CSDI 1, with 3 ties and 9 rows that are constants rather than contests.
-On the standard battery the margin is wider still: A1–A34 goes 32–2 to LS4, and the curve-shape
-suite goes 31–0. The single metric CSDI wins outright on the protocol suite is
-`generated_memory.future_rv_no_hit_mean`.
+**Verdict, one line: LS4 wins Experiment A, and not narrowly.** Across the protocol
+evaluator's *fidelity* metrics LS4 takes **13 and CSDI none**, with 3 ties. A further 5 rows
+are raw diagnostics the PDF forbids scoring (§4, §5) and 9 are constants rather than contests.
+On our own battery — a separate suite, not the protocol's — the margin is wider still: A1–A34
+goes 32–2 to LS4 and the curve-shape suite 31–0.
+
+**CSDI does not win a single contested fidelity metric in Experiment A.** An earlier revision
+of this page reported "LS4 17, CSDI 1" and named `generated_memory.future_rv_no_hit_mean` as
+CSDI's win. That row is a **group mean**, which PDF §5 lists among the raw diagnostics that are
+not fidelity metrics and must not be winner-selected. Correcting it removes CSDI's only entry
+from the column — a materially different claim about identical numbers.
 
 **But neither method solves the experiment.** On the four PRIMARY metrics the protocol PDF
 designates, the best method is still 2.6× to 49× worse than a fresh draw from the true DGP. The
@@ -50,10 +56,23 @@ the clearest example. Three PDF rows fall this way.
 
 **How `Winner` is decided.** Not by "smaller number wins". Each metric is scored by distance to
 its own reference: error/distance metrics reference 0; a `generated_memory.X` row references its
-own `target_memory.X` row (the oracle's reading of `test.npy`); a `novelty.*` row references the
-**perfect floor**, because being *further* from the training set than a real DGP draw is not a
-virtue any more than being nearer is. `target_memory.*` rows are constants computed from
-`test.npy` alone, identical in every column, and get no winner at all.
+own `target_memory.X` row (the oracle's reading of `test.npy`). `target_memory.*` rows are
+constants computed from `test.npy` alone, identical in every column, and get no winner at all.
+
+**Some rows are deliberately left unscored.** The PDF names a class of quantities that carry a
+value but no direction, and forbids turning them into a contest:
+
+- §4 — novelty "does not have a universal monotone 'better' direction and must not be combined
+  with fidelity metrics into a score."
+- §5 — "All displayed fidelity metrics are errors or distances, so lower is better, **except
+  explicitly identified raw diagnostics such as standard-deviation ratio, posterior confidence,
+  group means, and novelty.**"
+- §3.3 — oracle posterior entropy, maximum probability and low-confidence fraction "are
+  diagnostics, not separate winner-selection criteria."
+
+Those rows print their values and the word `diagnostic` with the clause that exempts them, and
+they are excluded from every tally on this page. In Experiment A that covers 5 rows:
+`novelty.*` and `generated_memory.future_rv_{hit,no_hit}_mean`.
 
 ### 1.1 PRIMARY panel
 
@@ -82,9 +101,14 @@ fifths. The paired CI (±0.0312 on a difference of 0.109) excludes zero comforta
 per-seed-consistent gap, not sampling noise.
 
 **CSDI's banks sit measurably closer to the training set than a real DGP draw does.** This is
-the one finding that is not a simple "LS4 is better":
+the one finding that is not a simple "LS4 is better". **It also has no winner column, here or
+anywhere on this page.** PDF §4: these values "diagnose exact or near-exact memorization. They
+do not have a universal monotone 'better' direction and must not be combined with fidelity
+metrics into a score." The `Perfect floor` column below is a *reference point for reading the
+numbers*, not a target to be scored against — being far from it is neither a win nor a loss,
+it is a fact about the sample that the reader must interpret.
 
-| Novelty metric | CSDI | LS4 | Perfect floor |
+| Novelty metric (diagnostic — §4, not scored) | CSDI | LS4 | Perfect floor |
 |---|---|---|---|
 | `distinct_nearest_training_paths` | 1266 ± 19.8 | 1596.4 ± 33.1 | 1600.8 ± 11.5 |
 | `mean_standardized_nearest_train_path_rmse` | 0.804888 ± 0.0052 | 0.949641 ± 0.00608 | 0.937306 ± 0.000826 |
@@ -97,46 +121,56 @@ memorisation** — no generated path is a copy of a training path — but it mea
 diversity is lower than the data it was fit on, and any downstream use that depends on tail
 coverage should account for it.
 
-**CSDI's one win is a real one.** `generated_memory.future_rv_no_hit_mean` (target 0.202984):
-CSDI 0.220232, LS4 0.242114. CSDI is nearer, the paired CI (±0.00624 on 0.0219) excludes zero.
-The quiet-regime volatility level is the one piece of the structure CSDI places better.
+**The one row where CSDI sits nearer the target is a group mean, and it is not a win.** On
+`generated_memory.future_rv_no_hit_mean` (target 0.202984) CSDI reads 0.220232 and LS4 0.242114,
+so CSDI is closer; the paired CI (±0.00624 on a difference of 0.0219) excludes zero, so the
+ordering is per-seed consistent. PDF §5 nonetheless lists **group means** among the raw
+diagnostics that are *not* fidelity metrics, so the row carries `diagnostic (§5 group mean)` in
+the table below and no `Winner`. **Reading it as a win would also be wrong on the merits.** The
+companion row `generated_memory.future_rv_hit_mean` (target 0.426855) goes the other way — CSDI
+0.361101, LS4 0.415608 — and the two together say the same thing as
+`errors.future_rv_hit_gap_error`, which CSDI loses: CSDI compresses the distance between the two
+regimes from both sides at once (gap 0.1409 against a target of 0.2240; LS4 reaches 0.1735).
+Landing nearer on the quiet-regime level is a by-product of that compression, not better
+placement of it. This is exactly why the PDF forbids scoring the two levels separately from the
+gap they define.
 
 ### 1.3 Full table
 
 <!-- BEGIN GENERATED: experiment A table pdf -->
 <table>
-<tr><th rowspan="2">Metric</th><th>Diffusion</th><th>VAE</th><th rowspan="2">Perfect</th><th rowspan="2">Mean diff</th><th rowspan="2">Paired 95% CI</th><th rowspan="2">Winner</th></tr>
+<tr><th rowspan="2">Metric</th><th>Diffusion</th><th>VAE</th><th rowspan="2">Perfect</th><th rowspan="2">Seedwise differences</th><th rowspan="2">Mean diff</th><th rowspan="2">Paired 95% CI</th><th rowspan="2">Winner</th></tr>
 <tr><th>CSDI</th><th>LS4</th></tr>
-<tr><td><code>errors.abs_return_acf_rmse_lags_1_50</code></td><td>0.0189235 ± 0.000518</td><td><b>0.0144903 ± 0.0024</b></td><td>0.00156102 ± 0.000141</td><td>0.00443316 ± 0.00289</td><td>±0.00359</td><td>LS4</td></tr>
-<tr><td><code>errors.early_history_incremental_r2_error</code></td><td>0.227474 ± 0.0151</td><td><b>0.118178 ± 0.0154</b></td><td>0.00641167 ± 0.00544</td><td>0.109296 ± 0.0252</td><td>±0.0312</td><td>LS4</td></tr>
-<tr><td><code>errors.early_hit_rate_error</code></td><td>0.161279 ± 0.0182</td><td><b>0.0081543 ± 0.00691</b></td><td>0.00310059 ± 0.00224</td><td>0.153125 ± 0.0171</td><td>±0.0212</td><td>LS4</td></tr>
-<tr><td><code>errors.excess_kurtosis_error</code></td><td>0.59727 ± 0.0408</td><td><b>0.302096 ± 0.158</b></td><td>0.023094 ± 0.0118</td><td>0.295175 ± 0.188</td><td>±0.233</td><td>LS4</td></tr>
-<tr><td><code>errors.future_rv_hit_gap_error</code></td><td>0.0830031 ± 0.00635</td><td><b>0.0503776 ± 0.00241</b></td><td>0.00102294 ± 0.000516</td><td>0.0326255 ± 0.0076</td><td>±0.00943</td><td>LS4</td></tr>
-<tr><td><code>errors.future_rv_wasserstein</code></td><td>0.0576958 ± 0.00278</td><td><b>0.0119597 ± 0.00142</b></td><td>0.00123331 ± 0.00021</td><td>0.0457361 ± 0.003</td><td>±0.00372</td><td>LS4</td></tr>
-<tr><td><code>errors.return_std_error</code></td><td>0.00290882 ± 0.000109</td><td><b>0.000202294 ± 0.00012</b></td><td>2.79631e-05 ± 1.44e-05</td><td>0.00270652 ± 0.00014</td><td>±0.000174</td><td>LS4</td></tr>
-<tr><td><code>errors.squared_return_acf_rmse_lags_1_50</code></td><td>0.00867602 ± 0.00106</td><td>0.00776208 ± 0.00602</td><td>0.00161632 ± 0.000193</td><td>0.000913942 ± 0.00665</td><td>±0.00826</td><td><i>tie</i></td></tr>
-<tr><td><code>errors.terminal_log_price_ks</code></td><td>0.0414307 ± 0.00992</td><td>0.0247803 ± 0.00912</td><td>0.0120117 ± 0.00319</td><td>0.0166504 ± 0.0177</td><td>±0.022</td><td><i>tie</i></td></tr>
-<tr><td><code>generated_memory.augmented_r2</code></td><td>0.453933 ± 0.0163</td><td><b>0.548288 ± 0.0087</b></td><td>0.673625 ± 0.00375</td><td>-0.094355 ± 0.0182</td><td>±0.0226</td><td>LS4</td></tr>
-<tr><td><code>generated_memory.baseline_r2</code></td><td>0.392884 ± 0.00864</td><td>0.377943 ± 0.0139</td><td>0.380345 ± 0.00425</td><td>0.0149406 ± 0.0129</td><td>±0.0161</td><td><i>tie</i></td></tr>
-<tr><td><code>generated_memory.early_history_incremental_r2</code></td><td>0.0610487 ± 0.0151</td><td><b>0.170344 ± 0.0154</b></td><td>0.29328 ± 0.00726</td><td>-0.109296 ± 0.0252</td><td>±0.0312</td><td>LS4</td></tr>
-<tr><td><code>generated_memory.early_hit_future_rv_correlation</code></td><td>0.57039 ± 0.0256</td><td><b>0.695678 ± 0.0117</b></td><td>0.809204 ± 0.00274</td><td>-0.125287 ± 0.0308</td><td>±0.0383</td><td>LS4</td></tr>
-<tr><td><code>generated_memory.early_hit_rate</code></td><td>0.468359 ± 0.0182</td><td><b>0.636279 ± 0.0087</b></td><td>0.626538 ± 0.00224</td><td>-0.16792 ± 0.0225</td><td>±0.0279</td><td>LS4</td></tr>
-<tr><td><code>generated_memory.early_hit_standardized_coefficient</code></td><td>0.614215 ± 0.0757</td><td><b>1.08214 ± 0.048</b></td><td>1.51798 ± 0.0125</td><td>-0.46792 ± 0.104</td><td>±0.13</td><td>LS4</td></tr>
-<tr><td><code>generated_memory.future_rv_hit_gap</code></td><td>0.140868 ± 0.00635</td><td><b>0.173494 ± 0.00241</b></td><td>0.223988 ± 0.00125</td><td>-0.0326255 ± 0.0076</td><td>±0.00943</td><td>LS4</td></tr>
-<tr><td><code>generated_memory.future_rv_hit_mean</code></td><td>0.361101 ± 0.00224</td><td><b>0.415608 ± 0.00299</b></td><td>0.427455 ± 0.000421</td><td>-0.0545071 ± 0.00343</td><td>±0.00425</td><td>LS4</td></tr>
-<tr><td><code>generated_memory.future_rv_no_hit_mean</code></td><td><b>0.220232 ± 0.00509</b></td><td>0.242114 ± 0.000655</td><td>0.203467 ± 0.000875</td><td>-0.0218817 ± 0.00503</td><td>±0.00624</td><td>CSDI</td></tr>
-<tr><td><code>novelty.distinct_nearest_training_paths</code></td><td>1266 ± 19.8</td><td><b>1596.4 ± 33.1</b></td><td>1600.8 ± 11.5</td><td>-330.4 ± 28.2</td><td>±35</td><td>LS4</td></tr>
-<tr><td><code>novelty.mean_standardized_nearest_train_path_rmse</code></td><td>0.804888 ± 0.0052</td><td><b>0.949641 ± 0.00608</b></td><td>0.937306 ± 0.000826</td><td>-0.144753 ± 0.00903</td><td>±0.0112</td><td>LS4</td></tr>
-<tr><td><code>novelty.median_standardized_nearest_train_path_rmse</code></td><td>0.840909 ± 0.0075</td><td><b>0.988202 ± 0.00971</b></td><td>0.989367 ± 0.00106</td><td>-0.147293 ± 0.0144</td><td>±0.0179</td><td>LS4</td></tr>
-<tr><td><code>target_memory.augmented_r2</code></td><td>0.67399 ± 0</td><td>0.67399 ± 0</td><td>0.67399 ± 0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
-<tr><td><code>target_memory.baseline_r2</code></td><td>0.385467 ± 0</td><td>0.385467 ± 0</td><td>0.385467 ± 0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
-<tr><td><code>target_memory.early_history_incremental_r2</code></td><td>0.288523 ± 0</td><td>0.288523 ± 0</td><td>0.288523 ± 0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
-<tr><td><code>target_memory.early_hit_future_rv_correlation</code></td><td>0.80836 ± 0</td><td>0.80836 ± 0</td><td>0.80836 ± 0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
-<tr><td><code>target_memory.early_hit_rate</code></td><td>0.629639 ± 0</td><td>0.629639 ± 0</td><td>0.629639 ± 0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
-<tr><td><code>target_memory.early_hit_standardized_coefficient</code></td><td>1.4987 ± 0</td><td>1.4987 ± 0</td><td>1.4987 ± 0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
-<tr><td><code>target_memory.future_rv_hit_gap</code></td><td>0.223872 ± 0</td><td>0.223872 ± 0</td><td>0.223872 ± 0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
-<tr><td><code>target_memory.future_rv_hit_mean</code></td><td>0.426855 ± 0</td><td>0.426855 ± 0</td><td>0.426855 ± 0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
-<tr><td><code>target_memory.future_rv_no_hit_mean</code></td><td>0.202984 ± 0</td><td>0.202984 ± 0</td><td>0.202984 ± 0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>errors.abs_return_acf_rmse_lags_1_50</code></td><td>0.0189235 ± 0.000518</td><td><b>0.0144903 ± 0.0024</b></td><td>0.00156102 ± 0.000141</td><td>-8.005e-05, +0.006656, +0.007086, +0.003526, +0.004978</td><td>0.00443316 ± 0.00289</td><td>±0.00359</td><td>LS4</td></tr>
+<tr><td><code>errors.early_history_incremental_r2_error</code></td><td>0.227474 ± 0.0151</td><td><b>0.118178 ± 0.0154</b></td><td>0.00641167 ± 0.00544</td><td>+0.09389, +0.1202, +0.1052, +0.08103, +0.1462</td><td>0.109296 ± 0.0252</td><td>±0.0312</td><td>LS4</td></tr>
+<tr><td><code>errors.early_hit_rate_error</code></td><td>0.161279 ± 0.0182</td><td><b>0.0081543 ± 0.00691</b></td><td>0.00310059 ± 0.00224</td><td>+0.1439, +0.1561, +0.1696, +0.1287, +0.1674</td><td>0.153125 ± 0.0171</td><td>±0.0212</td><td>LS4</td></tr>
+<tr><td><code>errors.excess_kurtosis_error</code></td><td>0.59727 ± 0.0408</td><td><b>0.302096 ± 0.158</b></td><td>0.023094 ± 0.0118</td><td>-0.01828, +0.3813, +0.3317, +0.4804, +0.3007</td><td>0.295175 ± 0.188</td><td>±0.233</td><td>LS4</td></tr>
+<tr><td><code>errors.future_rv_hit_gap_error</code></td><td>0.0830031 ± 0.00635</td><td><b>0.0503776 ± 0.00241</b></td><td>0.00102294 ± 0.000516</td><td>+0.0337, +0.0359, +0.02921, +0.02199, +0.04233</td><td>0.0326255 ± 0.0076</td><td>±0.00943</td><td>LS4</td></tr>
+<tr><td><code>errors.future_rv_wasserstein</code></td><td>0.0576958 ± 0.00278</td><td><b>0.0119597 ± 0.00142</b></td><td>0.00123331 ± 0.00021</td><td>+0.04186, +0.0438, +0.04959, +0.04715, +0.04628</td><td>0.0457361 ± 0.003</td><td>±0.00372</td><td>LS4</td></tr>
+<tr><td><code>errors.return_std_error</code></td><td>0.00290882 ± 0.000109</td><td><b>0.000202294 ± 0.00012</b></td><td>2.79631e-05 ± 1.44e-05</td><td>+0.002797, +0.00257, +0.002847, +0.002778, +0.002542</td><td>0.00270652 ± 0.00014</td><td>±0.000174</td><td>LS4</td></tr>
+<tr><td><code>errors.squared_return_acf_rmse_lags_1_50</code></td><td>0.00867602 ± 0.00106</td><td>0.00776208 ± 0.00602</td><td>0.00161632 ± 0.000193</td><td>-0.01034, +0.00432, +0.006376, +0.0003482, +0.003862</td><td>0.000913942 ± 0.00665</td><td>±0.00826</td><td><i>tie</i></td></tr>
+<tr><td><code>errors.terminal_log_price_ks</code></td><td>0.0414307 ± 0.00992</td><td>0.0247803 ± 0.00912</td><td>0.0120117 ± 0.00319</td><td>-0.009521, +0.01501, +0.03601, +0.01196, +0.02979</td><td>0.0166504 ± 0.0177</td><td>±0.022</td><td><i>tie</i></td></tr>
+<tr><td><code>generated_memory.augmented_r2</code></td><td>0.453933 ± 0.0163</td><td><b>0.548288 ± 0.0087</b></td><td>0.673625 ± 0.00375</td><td>-0.09516, -0.1102, -0.08462, -0.06908, -0.1127</td><td>-0.094355 ± 0.0182</td><td>±0.0226</td><td>LS4</td></tr>
+<tr><td><code>generated_memory.baseline_r2</code></td><td>0.392884 ± 0.00864</td><td>0.377943 ± 0.0139</td><td>0.380345 ± 0.00425</td><td>-0.001275, +0.01004, +0.02056, +0.01195, +0.03343</td><td>0.0149406 ± 0.0129</td><td>±0.0161</td><td><i>tie</i></td></tr>
+<tr><td><code>generated_memory.early_history_incremental_r2</code></td><td>0.0610487 ± 0.0151</td><td><b>0.170344 ± 0.0154</b></td><td>0.29328 ± 0.00726</td><td>-0.09389, -0.1202, -0.1052, -0.08103, -0.1462</td><td>-0.109296 ± 0.0252</td><td>±0.0312</td><td>LS4</td></tr>
+<tr><td><code>generated_memory.early_hit_future_rv_correlation</code></td><td>0.57039 ± 0.0256</td><td><b>0.695678 ± 0.0117</b></td><td>0.809204 ± 0.00274</td><td>-0.1213, -0.1443, -0.1154, -0.082, -0.1635</td><td>-0.125287 ± 0.0308</td><td>±0.0383</td><td>LS4</td></tr>
+<tr><td><code>generated_memory.early_hit_rate</code></td><td>0.468359 ± 0.0182</td><td><b>0.636279 ± 0.0087</b></td><td>0.626538 ± 0.00224</td><td>-0.1439, -0.1561, -0.1823, -0.1577, -0.1996</td><td>-0.16792 ± 0.0225</td><td>±0.0279</td><td>LS4</td></tr>
+<tr><td><code>generated_memory.early_hit_standardized_coefficient</code></td><td>0.614215 ± 0.0757</td><td><b>1.08214 ± 0.048</b></td><td>1.51798 ± 0.0125</td><td>-0.4317, -0.5235, -0.4417, -0.3326, -0.6101</td><td>-0.46792 ± 0.104</td><td>±0.13</td><td>LS4</td></tr>
+<tr><td><code>generated_memory.future_rv_hit_gap</code></td><td>0.140868 ± 0.00635</td><td><b>0.173494 ± 0.00241</b></td><td>0.223988 ± 0.00125</td><td>-0.0337, -0.0359, -0.02921, -0.02199, -0.04233</td><td>-0.0326255 ± 0.0076</td><td>±0.00943</td><td>LS4</td></tr>
+<tr><td><code>generated_memory.future_rv_hit_mean</code></td><td>0.361101 ± 0.00224</td><td>0.415608 ± 0.00299</td><td>0.427455 ± 0.000421</td><td>-0.05304, -0.05382, -0.05456, -0.05097, -0.06015</td><td>-0.0545071 ± 0.00343</td><td>±0.00425</td><td><i>diagnostic (§5 group mean)</i></td></tr>
+<tr><td><code>generated_memory.future_rv_no_hit_mean</code></td><td>0.220232 ± 0.00509</td><td>0.242114 ± 0.000655</td><td>0.203467 ± 0.000875</td><td>-0.01934, -0.01792, -0.02535, -0.02898, -0.01782</td><td>-0.0218817 ± 0.00503</td><td>±0.00624</td><td><i>diagnostic (§5 group mean)</i></td></tr>
+<tr><td><code>novelty.distinct_nearest_training_paths</code></td><td>1266 ± 19.8</td><td>1596.4 ± 33.1</td><td>1600.8 ± 11.5</td><td>-328, -306, -327, -313, -378</td><td>-330.4 ± 28.2</td><td>±35</td><td><i>diagnostic (§4 novelty)</i></td></tr>
+<tr><td><code>novelty.mean_standardized_nearest_train_path_rmse</code></td><td>0.804888 ± 0.0052</td><td>0.949641 ± 0.00608</td><td>0.937306 ± 0.000826</td><td>-0.1332, -0.1398, -0.1548, -0.1431, -0.1528</td><td>-0.144753 ± 0.00903</td><td>±0.0112</td><td><i>diagnostic (§4 novelty)</i></td></tr>
+<tr><td><code>novelty.median_standardized_nearest_train_path_rmse</code></td><td>0.840909 ± 0.0075</td><td>0.988202 ± 0.00971</td><td>0.989367 ± 0.00106</td><td>-0.1245, -0.145, -0.1605, -0.1478, -0.1587</td><td>-0.147293 ± 0.0144</td><td>±0.0179</td><td><i>diagnostic (§4 novelty)</i></td></tr>
+<tr><td><code>target_memory.augmented_r2</code></td><td>0.67399 ± 0</td><td>0.67399 ± 0</td><td>0.67399 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>target_memory.baseline_r2</code></td><td>0.385467 ± 0</td><td>0.385467 ± 0</td><td>0.385467 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>target_memory.early_history_incremental_r2</code></td><td>0.288523 ± 0</td><td>0.288523 ± 0</td><td>0.288523 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>target_memory.early_hit_future_rv_correlation</code></td><td>0.80836 ± 0</td><td>0.80836 ± 0</td><td>0.80836 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>target_memory.early_hit_rate</code></td><td>0.629639 ± 0</td><td>0.629639 ± 0</td><td>0.629639 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>target_memory.early_hit_standardized_coefficient</code></td><td>1.4987 ± 0</td><td>1.4987 ± 0</td><td>1.4987 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>target_memory.future_rv_hit_gap</code></td><td>0.223872 ± 0</td><td>0.223872 ± 0</td><td>0.223872 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>target_memory.future_rv_hit_mean</code></td><td>0.426855 ± 0</td><td>0.426855 ± 0</td><td>0.426855 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>target_memory.future_rv_no_hit_mean</code></td><td>0.202984 ± 0</td><td>0.202984 ± 0</td><td>0.202984 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
 </table>
 <!-- END GENERATED -->
 
@@ -342,6 +376,24 @@ vacuous.
 the same frozen evaluator. It is the best score any generator can achieve, and it is *not* zero,
 because the evaluator compares two finite 8192-path samples. A method at 50× floor is 50× worse
 than knowing the answer.
+
+### 5.1 PDF §5 disclosure — what every comparison table must state
+
+PDF §5 lists six items a comparison table is required to state. All six, for the tables in
+Sections 1–3 of this page:
+
+| # | §5 requirement | Value |
+|---|---|---|
+| 1 | Exact training, validation and test files | train `dataset/Heston/new_experiments/experiment_A/train.npy` · validation `…/experiment_A/disc.npy` · test `…/experiment_A/test.npy` (+ `test_sigma.npy`, evaluator-only). Floor: `…/experiment_A/perfect_floor/floor_seed100{0..4}.npy` |
+| 2 | Generated bank size and all model seeds | 8192 × 128 per seed, one bank per seed, seeds **0, 1, 2, 3, 4** for both methods (aligned — this is what makes the paired interval valid) |
+| 3 | Official code, and its revision | Both **yes**. CSDI `methods/CSDI` @ `4189d37`. LS4 `methods/LS4/code` @ `27df71e`, experiment wrapper `train_ls4_experiment.py` @ `ba7c748`. Recorded per bank in `generation_manifest.json → model.official_implementation / model.source_revision` |
+| 4 | Hyperparameters: defaults or validation-selected | **Defaults.** `hyperparameter_origin = "official-default"` in all 10 manifests. CSDI released `base.yaml`, LS4 released `solar_weekly` preset. No hyperparameter was tuned on `disc.npy`; `disc.npy` was used only for early stopping / model selection |
+| 5 | Trainable parameters, training time, generation time, hardware | CSDI 412,945 params, 2387 s train, 15.6 s generate per seed. LS4 2,146,857 params, 1643 s train, 9.1 s generate per seed. Hardware: 1× A100-SXM4-80GB per run, 8 cores pinned, 2× AMD EPYC 7763 host, at most two runs concurrent |
+| 6 | Number and reason for failed runs | **Zero.** `failure_information.failed_or_unstable = false`, `first_nan_epoch = null`, `nan_in_bank = false` in all 10 manifests. No seed was replaced, retried or dropped (§1.5) |
+
+Every cell above is read from the artefacts, not from prose: `python tools/check_pdf5_disclosure.py --experiment A`
+re-derives items 3, 4 and 6 from the ten `generation_manifest.json` files and fails if this
+table disagrees with them.
 
 ---
 

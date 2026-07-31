@@ -15,10 +15,14 @@ Producers invoked (unmodified, via their documented CLI flags):
 * ``make_metrics_tables.py``    -- battery tables A (A1-A34) and B (curve-shape measures).
 
 "Winner" is decided by distance to a per-metric *reference*, never by "smaller number wins":
-an error metric references 0, a ``std_ratio`` references 1, a ``generated_*`` quantity
-references its own ``target_*`` row, and a novelty metric references the perfect floor (being
-*further* from the training set than a real DGP draw is not a virtue, and neither is being
-nearer). Metrics with no defined reference -- the ``target_*`` constants -- get no winner.
+an error/distance metric references 0 and a ``generated_*`` quantity references its own
+``target_*`` row. Metrics with no defined reference get no winner, and there are two kinds:
+
+* ``target_*`` constants -- a reading of ``test.npy`` alone, identical in both columns;
+* the PDF's **raw diagnostics** -- novelty (S4), oracle posterior confidence (S3.3), and the
+  ``std_ratio`` / group-mean / raw-proportion family (S5). These have a value but no direction.
+  They render as ``diagnostic (<clause>)`` and are excluded from every tally, because S4 is
+  explicit that they "must not be combined with fidelity metrics into a score".
 
 For PDF metrics the winner is additionally gated on the paired 95 % CI excluding zero. Two
 means far apart with a CI straddling zero are reported as a tie, which is what the producer's
@@ -86,14 +90,56 @@ def mean_of(cell):
     return float(m.group(1)) if m else None
 
 
+# --------------------------------------------------------------------------------------
+# PDF-declared RAW DIAGNOSTICS. These carry a value but MUST NOT carry a winner.
+#
+#   §5  "All displayed fidelity metrics are errors or distances, so lower is better,
+#        except explicitly identified raw diagnostics such as standard-deviation ratio,
+#        posterior confidence, group means, and novelty."
+#   §4  novelty "does not have a universal monotone 'better' direction and must not be
+#        combined with fidelity metrics into a score."
+#   §3.3 "Oracle posterior entropy, maximum probability, and low-confidence fraction are
+#        diagnostics, not separate winner-selection criteria."
+#
+# Scoring these is not a cosmetic error. In Experiment A the *only* row CSDI won was
+# `generated_memory.future_rv_no_hit_mean` -- a group mean, i.e. a raw diagnostic. Counting
+# it turned "LS4 wins every contested fidelity metric" into "17-1", which is a materially
+# different claim about the same numbers.
+DIAGNOSTIC = [
+    (re.compile(r"^novelty\."),                              "§4 novelty"),
+    (re.compile(r"^mixture_fidelity\.generated_"
+                r"(low_confidence_fraction|mean_max_probability|mean_posterior_entropy)$"),
+                                                             "§3.3 posterior confidence"),
+    (re.compile(r"\.std_ratio$"),                            "§5 std-deviation ratio"),
+    (re.compile(r"^generated_memory\.future_rv_(hit|no_hit)_mean$"), "§5 group mean"),
+    # The fidelity quantity built from these is regime_proportion_tvd; scoring each bin
+    # separately would count the same disagreement eight more times.
+    (re.compile(r"^mixture_fidelity\.generated_regime_proportions\."), "§5 raw proportion"),
+]
+
+
+def diagnostic_of(key):
+    """Return the PDF clause making ``key`` a raw diagnostic, or None if it is a fidelity metric."""
+    for pat, why in DIAGNOSTIC:
+        if pat.search(key):
+            return why
+    return None
+
+
 def pdf_reference(key, means, floor):
-    """The value a metric *should* take, against which both methods are measured."""
-    if key.startswith("target_"):
+    """The value a metric *should* take, against which both methods are measured.
+
+    Returns None for anything that must not be scored: constants, and every raw diagnostic.
+    """
+    # A target row is a reading of `test.npy` alone. It is identical in both columns and is not
+    # a contest. Experiment A names them `target_memory.*` (leading segment), Experiment B names
+    # them `mixture_fidelity.target_*` (second segment) -- a `key.startswith("target_")` test
+    # catches only the first, so all 11 of B's target rows fell through to reference 0.0, tied
+    # against themselves, and were counted as 11 spurious "ties". Match any segment.
+    if any(seg.startswith("target_") for seg in key.split(".")):
         return None                                   # a constant, not a contest
-    if key.startswith("novelty."):
-        return floor.get(key)                         # the DGP's own novelty, not more or less
-    if key.endswith(".std_ratio"):
-        return 1.0                                    # dispersion match
+    if diagnostic_of(key):
+        return None                                   # reported, never scored (§4/§3.3/§5)
     if key.startswith("generated_memory.") or "generated_" in key:
         target = key.replace("generated_", "target_")
         return means.get(target)                      # match the oracle's own reading
@@ -168,12 +214,16 @@ def table_pdf(exp):
     means = {k: mean_of(v[1]) for k, v in per[a_key].items()}
     floor = {k: mean_of(v[3]) for k, v in per[a_key].items()}
 
-    out = ["<table>", header(["Mean diff", "Paired 95% CI"])]
+    # PDF §5 requires the five seedwise differences *and* the paired interval for
+    # aligned-seed model-vs-model comparisons. Dropping the per-seed column and keeping
+    # only the summary would satisfy neither the sentence nor its purpose.
+    out = ["<table>", header(["Seedwise differences", "Mean diff", "Paired 95% CI"])]
     for key, row in per[a_key].items():
         other = per[b_key].get(key)
         if other is None:
             continue
         pr = paired.get(key)
+        seedwise = pr[3] if pr else "—"
         diff = pr[4] if pr else "—"
         ci = pr[5] if pr else "—"
         # A CI whose half-width covers the mean difference straddles zero: not a real gap.
@@ -181,11 +231,15 @@ def table_pdf(exp):
         if pr:
             d, h = mean_of(pr[4]), mean_of(pr[5].lstrip("±"))
             straddles = (d is None or h is None or abs(d) <= h)
+        why = diagnostic_of(key)
         ref = pdf_reference(key, means, floor)
         win, ba, bb = decide(ref, mean_of(row[1]), mean_of(other[1]), tie=straddles)
+        if why:
+            win = f'<i>diagnostic ({why})</i>'
         out.append(f"<tr><td><code>{key}</code></td>"
                    f"<td>{cell(row[1], ba)}</td><td>{cell(other[1], bb)}</td>"
-                   f"<td>{row[3]}</td><td>{diff}</td><td>{ci}</td><td>{win}</td></tr>")
+                   f"<td>{row[3]}</td><td>{seedwise}</td><td>{diff}</td><td>{ci}</td>"
+                   f"<td>{win}</td></tr>")
     out.append("</table>")
     return "\n".join(out)
 

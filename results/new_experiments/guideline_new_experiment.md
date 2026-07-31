@@ -796,6 +796,47 @@ from the CSV header so any method's loss schema plots. It clips each panel's y-r
 post-epoch-5 data, because epoch-0 values sit one to two orders of magnitude above convergence and
 otherwise compress every later epoch into a flat line.
 
+### Two more, for the comparison READMEs only
+
+These do not serve a method README and were added when the cross-method pages were built. Full
+specification in **§7A**.
+
+```bash
+# merge two methods' producer output into the fenced comparison tables, in place
+python make_comparison_tables.py --inject ../README.md
+python make_comparison_tables.py --inject ../experiment_A/README.md
+
+# re-derive the six PDF §5 mandatory statements from the 10 manifests of an experiment
+python check_pdf5_disclosure.py --experiment A
+python check_pdf5_disclosure.py --experiment A --readme README.md
+
+# every number a hand-written table restates must equal the generated block on the same page
+python check_prose_cells.py --all
+```
+
+`make_comparison_tables.py` never computes a metric. It shells out to `aggregate_pdf_metrics.py`
+and `make_metrics_tables.py` — the same producers `check_readme_values.py` verifies the method
+READMEs against — parses their Markdown, and merges the two columns. That indirection is the
+point: a comparison cell **cannot** disagree with the method-README cell it mirrors, because both
+come from one producer invocation. What the tool adds on top is the `Winner` decision, and that
+is where the PDF's prohibitions live: its `DIAGNOSTIC` table is the machine-readable form of the
+§4 / §3.3 / §5 "report but do not score" rule (§7A.3).
+
+`check_pdf5_disclosure.py` closes the other gap. §5's six mandatory statements are prose, prose
+rots, and nothing else in the tree checks it. The tool re-reads all ten `generation_manifest.json`
+files of an experiment, refuses if any configuration field varies across the five seeds, and
+requires each derived value to appear literally in the README. A brace-expanded path
+(`experiment_{A,B}/train.npy`) fails it deliberately — see §7A.5.
+
+`check_prose_cells.py` closes the last one. `--inject` rewrites only what lies between the
+fences, so the *hand-written* tables that quote a few rows for emphasis are unprotected, and both
+of the defects in §7A.7 C6/C7 lived there. The tool parses every generated `<tr>` on a page,
+parses every Markdown pipe table outside the fences, resolves a quoted leaf name
+(`distinct_nearest_training_paths`) to its full dotted key by unique suffix match, and requires
+byte equality. Emphasis is normalised on both sides — HTML `<b>` and Markdown `**` are markup,
+not data — and a leaf name matching two keys is skipped rather than guessed at. Restating a
+number is allowed; restating it differently is not.
+
 ---
 
 ## 5. Methodology — Exactly How This Was Run
@@ -1090,7 +1131,10 @@ results/new_experiments/
 │   ├── check_method_layout.py                   §6.6 — verifies a method dir matches this tree
 │   ├── check_readme_values.py                   §6.7 — every README cell vs a fresh regeneration
 │   ├── check_oracle_gate.py                     §3.3 — MANDATORY preflight before scoring B
-│   └── apply_s0_repair.py                       §11.5 — applies AND audits the S0 repair
+│   ├── apply_s0_repair.py                       §11.5 — applies AND audits the S0 repair
+│   ├── make_comparison_tables.py                §7A.2 — the fenced cross-method blocks
+│   ├── check_pdf5_disclosure.py                 §7A.5 — the six §5 statements vs 10 manifests
+│   └── check_prose_cells.py                     §7A.6 — hand-written cells vs generated blocks
 └── experiment_<A|B>/
     ├── perfect_floor/                           method-neutral sibling
     │   ├── pdf_metrics/seed_{0..4}_*.json       floor scored by the PDF evaluator vs test.npy
@@ -1728,6 +1772,260 @@ both reproduced 1408 exactly). The correct output was to bound the effect (1.2 �
 diagnostic, zero effect on any primary metric) and write **"The cause was not isolated and is not
 claimed."** An unexplained anomaly, bounded and disclosed, is a result. A plausible story with no
 evidence is a liability.
+
+---
+
+## 7A. The Comparison README — a second, different document class
+
+Everything above §7 specifies the **method** README (`experiment_X/<METHOD>/README.md`): one
+method, measured against the perfect floor. There is a second class, and until 2026-07-31 this
+guideline said nothing about it, which is exactly why the first version of it violated the PDF
+in four places at once. The class is:
+
+| Page | Scope | Sections |
+|---|---|---|
+| `results/new_experiments/README.md` | both experiments, **PDF metrics only** | 2 — one comparison table per experiment |
+| `experiment_A/README.md`, `experiment_B/README.md` | one experiment, **all metrics** | 5 — PDF · A1–A34 · curve-shape · stylised curves · dataset |
+
+It is a different class because it makes a *different kind of claim*. A method README says "this
+method is N× the floor". A comparison README says "**method X beats method Y**" — and the PDF
+constrains that second sentence far more tightly than the first.
+
+### 7A.1 Section order — non-negotiable
+
+**Experiment-level** (`experiment_{A,B}/README.md`), exactly five sections in this order:
+
+```
+## 1. PDF metrics — protocol evaluator      <- the protocol's own suite, first and standalone
+### 1.1 PRIMARY panel                        <- the four metrics §2/§3 designate, with ×floor
+### 1.x <experiment-specific interpretation> <- where the methods actually diverge
+### 1.N Full table                            <- generated, fenced
+## 2. A1–A34, cross-method (mean ± std, 5 seeds)
+## 3. Curve-shape metrics, cross-method (mean ± std, 5 seeds)
+## 4. Stylised curves
+## 5. Dataset description
+### 5.1 PDF §5 disclosure                     <- the six mandatory statements, see 7A.5
+```
+
+**Top level** (`results/new_experiments/README.md`), exactly two sections — the Experiment A PDF
+table and the Experiment B PDF table — plus the `Winner`-column legend, the §5 disclosure and the
+regeneration commands. **No battery tables, no plots, no path shadowing.** The point of the page
+is that a reader who only trusts the protocol can stop there.
+
+### 7A.2 Tables are injected, not pasted
+
+§7.0's generating rule applies with a twist: a comparison table merges *two* producers' output,
+so there is no single `*Reproduce:*` command to diff against. Instead every generated block is
+fenced and rewritten in place:
+
+```markdown
+<!-- BEGIN GENERATED: experiment A table pdf -->
+<table>…</table>
+<!-- END GENERATED -->
+```
+
+```bash
+python tools/make_comparison_tables.py --inject README.md
+python tools/make_comparison_tables.py --inject experiment_A/README.md
+python tools/make_comparison_tables.py --inject experiment_B/README.md
+```
+
+`--inject` **must be idempotent** — run it twice and the second run must be a no-op. The tool
+asserts this itself by counting fences before and after substitution and refusing to write if the
+count changed. That assertion exists because an earlier version silently ate every
+`<!-- END GENERATED -->` (see §7A.7 C1) and the damage was invisible until the *next* run tried to
+swallow the rest of the file.
+
+### 7A.3 The `Winner` column — four outcomes, and two of them are "no contest"
+
+A comparison README is the only place a `Winner` exists, so it is the only place the PDF's
+scoring prohibitions can be violated. Every row resolves to exactly one of:
+
+| Outcome | When | Rendered |
+|---|---|---|
+| a method name | reference-distance differs **and** the paired 95 % CI excludes 0 | `LS4` / `CSDI`, winning cell bold |
+| `tie` | the paired CI contains 0, however far apart the means | `<i>tie</i>` |
+| `—` | the row is a **constant** | `—` |
+| `diagnostic (§…)` | the row is a **raw diagnostic** | `<i>diagnostic (§4 novelty)</i>` |
+
+**Constants.** Any key with a `target_*` segment is one reading of `test.npy`, printed twice. Test
+**every dotted segment**, not just the first: Experiment A names them `target_memory.*` but
+Experiment B names them `mixture_fidelity.target_*`, and a `key.startswith("target_")` test misses
+all eleven of B's — which then tie against themselves and inflate the tie count by eleven.
+
+**Raw diagnostics — the rule that was violated.** The PDF names a class of quantities that must
+be *reported* and must not be *scored*:
+
+| Clause | Text | Keys it covers |
+|---|---|---|
+| §4 | novelty "does not have a universal monotone 'better' direction and **must not be combined with fidelity metrics into a score**" | `novelty.*` |
+| §3.3 | posterior entropy, max probability, low-confidence fraction "are diagnostics, **not separate winner-selection criteria**" | `mixture_fidelity.generated_{mean_posterior_entropy,mean_max_probability,low_confidence_fraction}` |
+| §5 | "lower is better, **except explicitly identified raw diagnostics such as standard-deviation ratio, posterior confidence, group means, and novelty**" | `*.std_ratio`, `generated_memory.future_rv_hit_mean`, `generated_memory.future_rv_no_hit_mean` |
+| §5 (same clause, by construction) | a raw component of a fidelity metric is not itself a fidelity metric | `mixture_fidelity.generated_regime_proportions.*` — the fidelity quantity built from these is `regime_proportion_tvd`; scoring the eight bins too counts one disagreement nine times |
+
+This list is implemented as `DIAGNOSTIC` in `tools/make_comparison_tables.py`, each entry paired
+with the clause string that gets printed. **Add to that list, never to the prose.**
+
+### 7A.4 Why this is not a cosmetic rule
+
+Both headline claims changed when the diagnostics were removed from the tally:
+
+| | Before (diagnostics scored) | After (§4/§3.3/§5 honoured) |
+|---|---|---|
+| Experiment A | LS4 17, CSDI 1, 3 ties | **LS4 13, CSDI 0**, 3 ties, 5 diagnostics, 9 constants |
+| Experiment B | LS4 17, CSDI 15, 19 ties | **CSDI 10, LS4 8**, 5 ties, 17 diagnostics, 11 constants |
+
+CSDI's single Experiment-A "win" was `generated_memory.future_rv_no_hit_mean` — a **group mean**,
+which §5 names explicitly. Removing it turns "LS4 wins nearly everything" into "**CSDI does not
+take a single contested fidelity metric**". And Experiment B's tally **reverses sign**: the page
+said LS4 led; the protocol's own rules say CSDI does. Same numbers, opposite claim.
+
+**And no aggregate score.** §3.4: *"No aggregate score should be constructed after seeing model
+results."* A win-count is defensible only as a count of independently-decided rows, stated as
+such, next to the PRIMARY panel that the protocol actually asks about. It is never a weighted
+index, never a sum, and never the headline on its own.
+
+### 7A.5 The §5 disclosure block — mandatory, and machine-checked
+
+§5 requires **six statements alongside every comparison table** (full list in §11.6). A
+comparison README carries them in a `### 5.1 PDF §5 disclosure` table, and they are re-derived
+from the artefacts rather than trusted:
+
+```bash
+python tools/check_pdf5_disclosure.py --experiment A
+python tools/check_pdf5_disclosure.py --experiment B
+python tools/check_pdf5_disclosure.py --experiment A --readme README.md
+python tools/check_pdf5_disclosure.py --experiment B --readme README.md
+```
+
+The checker reads all ten `generation_manifest.json` files of an experiment, asserts each
+configuration field is **constant across the five seeds** (if it is not, the five banks are not
+five samples of one experiment and no aggregate over them means anything), and then requires the
+derived value to appear literally in the README:
+
+| §5 item | Derived from | Failure it catches |
+|---|---|---|
+| 1 files | `data_files.{train,validation,test}` | README names a file the run did not read |
+| 2 bank size + seeds | `output_contract.shape`, `seeds.generation_seed` | a seed silently missing → §1.5 violation |
+| 3 official code + revision | `model.{official_implementation,source_revision}` | stale commit hash after a rebase |
+| 4 defaults vs validation-selected | `hyperparameter_origin` | undisclosed tuning on `disc.npy` |
+| 5 params / times / hardware | `model.trainable_parameters`, `compute`, `hardware` | hand-typed timing drift |
+| 6 failed runs | `failure_information.{failed_or_unstable,nan_in_bank}` | a replaced seed not reported |
+
+Write the disclosure in prose shorthand at your peril: `experiment_{A,B}/{train,disc,test}.npy`
+reads fine to a human and fails the checker, because the literal string `train.npy` never
+appears. **Spell the filenames out.** That is not pedantry — a brace expansion is exactly the
+notation that lets a wrong path hide.
+
+### 7A.6 Verification chain before committing a comparison README
+
+```bash
+cd results/new_experiments
+# 1. every method README still agrees with its producers, cell for cell
+for e in A B; do for m in CSDI LS4; do
+  python tools/check_readme_values.py --root experiment_$e/$m \
+      --floor experiment_$e/perfect_floor --experiment $e
+done; done
+# 2. the six §5 statements agree with the 20 manifests
+for e in A B; do
+  python tools/check_pdf5_disclosure.py --experiment $e
+  python tools/check_pdf5_disclosure.py --experiment $e --readme README.md
+done
+# 3. every fenced block is byte-identical to fresh tool output, and --inject is idempotent
+for f in README.md experiment_A/README.md experiment_B/README.md; do
+  python tools/make_comparison_tables.py --inject $f
+  python tools/make_comparison_tables.py --inject $f      # must produce no further git diff
+done
+git diff --stat
+# 4. every number a hand-written table restates equals the generated block on the same page
+python tools/check_prose_cells.py --all
+```
+
+Step 3 running twice is the whole test for the fences: a second `--inject` that changes the file
+means they are damaged, and a damaged fence eats the document.
+
+Step 4 exists because steps 1–3 cover only what is *inside* the fences. It is the only automated
+guard on the hand-written tables, and it caught a real error the first time it was run — see
+C7 below.
+
+### 7A.7 Errors met building the comparison READMEs — do not repeat them
+
+**C1 — A regex that destroyed the fence it was supposed to preserve.**
+```python
+BLOCK = re.compile(r"(<!-- BEGIN GENERATED: experiment (?P<exp>[AB]) table (?P<tbl>pdf|A|B) -->\n)"
+                   r".*?(\n<!-- END GENERATED -->)", re.DOTALL)
+...  m.group(1) + build(...) + m.group(3)      # group 3 is `tbl`, not the closing fence
+```
+Named groups also consume numbered slots, so the closing fence was group **4**. Every
+`<!-- END GENERATED -->` was overwritten with the literal `pdf` / `A` / `B` — visible only as
+`</table>pdf` — and the next `--inject` would have swallowed the remainder of each file.
+**Check:** name every group, index by name only, and assert the fence count is unchanged after
+substitution.
+
+**C2 — Scoring the PDF's raw diagnostics.** 22 rows carried a `Winner` they must not have (§4,
+§3.3, §5). See §7A.3 and §7A.4. **Check:** the tally printed in the prose must equal the count
+of method-named `Winner` cells in the generated block — recount it from the file, never from
+memory.
+
+**C3 — `key.startswith("target_")` missing eleven constants.** Experiment B nests them under
+`mixture_fidelity.`. They scored against themselves, tied, and were reported as 11 of "19 ties".
+**Check:** test every dotted segment.
+
+**C4 — Prose arithmetic that does not add up.** "Of the 30 contested rows: LS4 wins 17, CSDI 1,
+3 are ties, and 9 are constants" — 17+1+3 = 21, not 30, and the 9 constants were already excluded
+from the 30. **Check:** the four counts must sum to the row count of the generated table.
+
+**C5 — A verification script with the wrong column offset.** The cell cross-checker reported 62
+"NOT FOUND" cells, all in battery table B, all attributed to one method. Cause: table B carries an
+extra leading `Plot` column, so `OFF = {"pdf": 1, "A": 1, "B": 2}`. A checker that fails
+*everywhere in one stratum* is reporting its own bug, not the document's. **Check:** before
+believing a mass failure, verify the checker against a cell you have read with your own eyes.
+
+**C6 — Fixing the table and leaving the prose.** After C2 was fixed, `experiment_A/README.md`
+carried both the corrected verdict ("CSDI does not win a single contested fidelity metric") and,
+sixty lines below, a surviving paragraph headed **"CSDI's one win is a real one"** naming the
+very row the fix had just unscored. The generated block was right; the hand-written narrative
+built on the old block was not. **The tool cannot reach the prose** — `--inject` rewrites only
+what lies between the fences, so every scoring change silently invalidates an unknown amount of
+surrounding text. **Check:** after any change to `pdf_reference()` or `DIAGNOSTIC`, grep the
+whole README for each affected metric key and re-read every hand-written sentence that mentions
+it. Two rules make this tractable:
+
+- a metric that renders as `diagnostic (…)` may be *discussed* in prose, but the words "win",
+  "wins", "beats" and "better" must not attach to it;
+- when a diagnostic is genuinely interesting, say what it means instead of who won. The
+  replacement paragraph reports that CSDI lands nearer the target on
+  `generated_memory.future_rv_no_hit_mean` (0.220232 vs LS4 0.242114, target 0.202984) **and**
+  that its companion `generated_memory.future_rv_hit_mean` goes the other way (CSDI 0.361101,
+  LS4 0.415608, target 0.426855), so the pair simply restates
+  `errors.future_rv_hit_gap_error` — which CSDI loses. Reporting one level without its partner
+  was not merely a formatting violation, it inverted the finding.
+
+**C7 — A hand-written table with a `Perfect floor` column and no exemption notice.** §1.2 of
+both experiment READMEs quotes the three `novelty.*` rows in Markdown, outside any fence. The
+generated block marks them `diagnostic (§4 novelty)`; the hand-written copy showed CSDI, LS4 and
+the floor side by side with nothing saying they are unscored, which reads as an invitation to
+pick a winner. **Check:** any hand-written restatement of a diagnostic must carry the exemption
+in its own header. The convention adopted is a header cell reading
+`Novelty metric (diagnostic — §4, not scored)`, plus a sentence stating that the floor column is
+a reference point for reading the numbers, not a target to be scored against.
+
+While applying that convention, the same table in Experiment B turned out to carry **floor
+standard deviations that exist nowhere in the artefacts** — `± 122`, `± 0.0263`, `± 0.0685`
+against a generated block reading `± 24.5`, `± 0.00181`, `± 0.00338`. The means were right, so
+the row looked plausible and had survived every review. `check_readme_values.py` did not catch it
+because that tool validates the *method* READMEs; the comparison pages' free text was
+unguarded. **This is why `check_prose_cells.py` now exists** (§4, §7A.6 step 4): a number quoted
+outside the fences is a number nobody is checking, and in this repository every such number has
+eventually been wrong.
+
+**C8 — A checker that failed only on the winning cells.** `check_prose_cells.py`'s first run
+reported four failures, all in Experiment A, all on LS4, all of the form
+`'**0.0081543 ± 0.00691**'` vs `'0.0081543 ± 0.00691'`. The generated blocks mark the better
+method with HTML `<b>`, the hand-written tables with Markdown `**`, and the normaliser stripped
+only the first. Same lesson as C5, one stratum later: **a failure confined to one stratum is the
+checker's bug until proved otherwise.** Emphasis is markup, not data — normalise both dialects
+before comparing.
 
 ---
 
@@ -2581,6 +2879,9 @@ Also from §5, and easy to violate by accident:
   explicitly identified raw diagnostics such as standard-deviation ratio, posterior
   confidence, group means, and novelty." Those must be visually marked as raw, or a reader
   will minimise `std_ratio` (target 1.0) and `distinct_nearest_training_paths` (raw count).
+  **In a comparison README this is stronger than a formatting rule: a raw diagnostic must
+  carry no `Winner` at all** and must be excluded from every tally. See §7A.3 for the exact
+  key list and §7A.4 for the two headline claims that changed once it was obeyed.
 
 #### The paired-interval clause — read its scope before you obey it
 
@@ -2638,10 +2939,16 @@ would have called a perfectly consistent difference "inside the noise".
 ### 11.7 Things the PDF forbids that are easy to do anyway
 
 * **Do not build an aggregate score for Experiment B after seeing results** (§3.4). The
-  four primary metrics are a panel, not a sum.
+  four primary metrics are a panel, not a sum. A cross-method win-count is only admissible as
+  a count of independently-decided rows, stated as such and never as the headline (§7A.4).
 * **Do not combine novelty with fidelity** (§4). Novelty has no monotone "better"
   direction — it is a memorisation check, reported beside the fidelity metrics, never
-  folded into them.
+  folded into them. In a comparison table that means **no `Winner` cell on a `novelty.*`
+  row**, not merely "no aggregate". Scoring novelty against the perfect floor looks
+  principled and is still a violation: the clause forbids a direction, not just a weighting.
+* **Do not declare a winner on a raw diagnostic** (§5, §3.3). `*.std_ratio`, the oracle
+  posterior-confidence block, group means such as `generated_memory.future_rv_no_hit_mean`,
+  and the raw `generated_regime_proportions.*` bins are all reported, none are scored (§7A.3).
 * **Do not treat `early_history_incremental_r2` as "higher is better"** (§2.3). It is a
   two-sided target: matching 0.2885 is the goal; overshooting is as wrong as undershooting.
   Only the `*_error` form is a "lower is better" quantity.
@@ -2931,6 +3238,9 @@ check_method_layout.py       --root --experiment
 check_readme_values.py       --root --floor --experiment
 check_oracle_gate.py         --gate-report --oracle --minimum-accuracy
 apply_s0_repair.py           --model-dir --seeds --raw-dir --apply --anchor-exact
+make_comparison_tables.py    --inject [README]            (comparison pages only; see 7A)
+check_pdf5_disclosure.py     --experiment --readme        (comparison pages only; see 7A.5)
+check_prose_cells.py         --readme | --all             (comparison pages only; see 7A.6)
 ```
 
 **The `--exclude-prefix` lists differ between experiments** and are not interchangeable:

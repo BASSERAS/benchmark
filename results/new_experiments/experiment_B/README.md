@@ -16,11 +16,20 @@ Both methods use identical architecture, hyperparameters and wrapper as in Exper
 the training data differs. Neither uses a log-return transform, a quantile map, or **path
 shadowing**.
 
-**Verdict, one line: Experiment B is a genuine split, unlike Experiment A.** The protocol
-evaluator goes LS4 17, CSDI 15, with **19 ties** — more ties than either method has wins, which
-is itself the headline. The standard battery goes 22–12 to LS4, but the curve-shape suite
-**reverses to 24–7 for CSDI**. A single winner cannot be declared here without saying which
-suite you are reading, and Section 1 is the one the protocol asks about.
+**Verdict, one line: Experiment B is a genuine split, unlike Experiment A.** The 51-row protocol
+table decomposes as **11 constants, 17 raw diagnostics the PDF forbids scoring (§4, §3.3, §5),
+and 23 contested fidelity metrics**. Of those 23, **CSDI takes 10, LS4 8, and 5 are ties**. The
+standard battery goes 22–12 to LS4, but the curve-shape suite **reverses to 24–7 for CSDI**. A
+single winner cannot be declared here without saying which suite you are reading, and Section 1
+is the one the protocol asks about.
+
+**On the fidelity metrics CSDI leads, narrowly.** An earlier revision of this page reported
+"LS4 17, CSDI 15, 19 ties". That count included `novelty.*`, the oracle posterior-confidence
+block, every `*.std_ratio`, and the eight raw regime proportions — quantities PDF §4/§3.3/§5
+name as raw diagnostics that must not be winner-selected or folded into a score. It also
+counted the 11 `mixture_fidelity.target_*` constants as "ties", which they are not: they are one
+number read off `test.npy` and printed twice. Removing both classes does not merely shrink the
+tally, it **reverses its sign**. A 10–8 split over 23 rows is not a result; read §1.1.
 
 **Both methods fail the mixture in the same place, and it is not where the Feller ratio
 predicts.** Both over-weight the low vol-of-vol regimes by 43–52 % and starve the high vol-of-vol
@@ -40,17 +49,41 @@ Produced by `dataset/Heston/new_experiments/protocol/experiments/scripts/evaluat
 field and refuses to pair otherwise. The `Mean diff` and `Paired 95% CI` columns are the PDF §5
 quantity itself.
 
-**Read the CI before the means — on this experiment it changes the answer.** 19 of the 51
-contested rows have a paired CI that contains zero, including `regime_proportion_tvd`
-(means 0.330 vs 0.267, but CI ±0.0584 on a difference of 0.0635) and the leverage-curve RMSE.
-Those rows are reported as `tie` in `Winner` regardless of how far apart the means look. On
-Experiment A only 3 rows fell this way; here the two methods are genuinely close on a third of
-the suite and the seedwise noise swamps the gap.
+**Read the CI before the means — on this experiment it changes the answer.** 5 of the 23 scored
+rows have a paired CI that contains zero, and they include two of the four PRIMARY metrics:
+`regime_proportion_tvd` (means 0.330 vs 0.267, but CI ±0.0584 on a difference of 0.0635) and
+the leverage-curve RMSE (±0.00492 on −0.00271). Those rows are reported as `tie` in `Winner`
+regardless of how far apart the means look. **Half the panel the protocol actually asks about
+is undecided at 5 seeds** — that, not the 10–8, is the headline of Section 1.
 
 **How `Winner` is decided.** By distance to a per-metric reference, not "smaller wins":
-error/distance/TVD/Wasserstein metrics reference 0; a `*.std_ratio` references 1; a
-`generated_*` quantity references its own `target_*` row (the oracle's reading of `test.npy`);
-`novelty.*` references the **perfect floor**. `target_*` rows are constants and get no winner.
+error/distance/TVD/Wasserstein metrics reference 0; a `generated_*` quantity references its own
+`target_*` row (the oracle's reading of `test.npy`). `target_*` rows are constants and get no
+winner.
+
+**Some rows are deliberately left unscored.** The PDF names a class of quantities that carry a
+value but no direction, and forbids turning them into a contest:
+
+- §4 — novelty "does not have a universal monotone 'better' direction and must not be combined
+  with fidelity metrics into a score."
+- §3.3 — oracle posterior entropy, maximum probability and low-confidence fraction "are
+  diagnostics, not separate winner-selection criteria."
+- §5 — "All displayed fidelity metrics are errors or distances, so lower is better, **except
+  explicitly identified raw diagnostics such as standard-deviation ratio, posterior confidence,
+  group means, and novelty.**"
+
+Those rows print their values and the word `diagnostic` with the clause that exempts them, and
+they are excluded from every tally on this page. In Experiment B that covers **17 of the 51
+rows**: 3 `novelty.*`, 3 posterior-confidence, 3 `*.std_ratio`, and the 8 raw
+`generated_regime_proportions.*` bins — the last because the fidelity quantity built from them
+is `regime_proportion_tvd`, and scoring each bin as well would count the same disagreement
+eight more times.
+
+**And no aggregate score is built.** PDF §3.4: *"No aggregate score should be constructed after
+seeing model results."* The 10–8 above is a count of independently-decided rows, reported so a
+reader can see the split; it is not a weighted index, and the four PRIMARY metrics of §1.1 are
+the panel the protocol actually asks about. The same clause is why the two 51-row and 34-row
+suites in Sections 2 and 3 are labelled as *our* battery and kept out of the protocol verdict.
 
 > ⚠️ **The oracle used to score both methods is a local refit, not the PDF's artefact.**
 > `oracle.joblib` on this machine hashes to `a36d64eb…`; the PDF records `54c3f2c9…`. The file
@@ -139,10 +172,13 @@ The θ split is where they diverge, and they diverge *oppositely*: CSDI over-pro
 low-mean-reversion-level regimes, LS4 the high ones. That is what makes θ the one parameter LS4
 wins in §1.1 and ξ, ρ the two CSDI wins.
 
-### 1.3 Where CSDI wins outside the mixture
+### 1.3 Outside the mixture: a 2–2 split with one very large margin
 
 The `observable_fidelity.*` block is not about the mixture at all — it is the ordinary
-stylised-facts check, and CSDI takes it decisively:
+stylised-facts check. **The row count is 2–2 with 2 ties; the magnitudes are not.** CSDI's two
+wins are on the volatility-clustering autocorrelations and one of them is a factor of 9.5; LS4's
+two are on marginal-scale quantities with margins under 3×. Counting rows here would hide the
+whole story, which is why this page reports the interval next to every row:
 
 | Metric | CSDI | LS4 | Paired 95% CI | Winner |
 |---|---|---|---|---|
@@ -158,13 +194,21 @@ excludes zero by an order of magnitude. This is the finding that drives the 24�
 Section 3, and it is the exact opposite of what happened on Experiment A, where LS4 won the
 same metric.
 
-**Novelty** goes the other way, as on Experiment A but more sharply:
+**Novelty** separates them sharply too — but it has **no winner column, here or anywhere on this
+page**. PDF §4: these values "diagnose exact or near-exact memorization. They do not have a
+universal monotone 'better' direction and must not be combined with fidelity metrics into a
+score." Read as a description of where each method's bank sits relative to the training set,
+not as a contest:
 
-| Novelty metric | CSDI | LS4 | Perfect floor |
+| Novelty metric (diagnostic — §4, not scored) | CSDI | LS4 | Perfect floor |
 |---|---|---|---|
-| `distinct_nearest_training_paths` | 2323.6 ± 41.2 | 3055.2 ± 248 | 2941.8 ± 122 |
-| `mean_standardized_nearest_train_path_rmse` | 0.568307 ± 0.0122 | 0.913301 ± 0.0866 | 0.808363 ± 0.0263 |
-| `median_standardized_nearest_train_path_rmse` | 0.470814 ± 0.018 | 0.926082 ± 0.116 | 0.716746 ± 0.0685 |
+| `distinct_nearest_training_paths` | 2323.6 ± 41.2 | 3055.2 ± 248 | 2941.8 ± 24.5 |
+| `mean_standardized_nearest_train_path_rmse` | 0.568307 ± 0.0122 | 0.913301 ± 0.0866 | 0.808363 ± 0.00181 |
+| `median_standardized_nearest_train_path_rmse` | 0.470814 ± 0.018 | 0.926082 ± 0.116 | 0.716746 ± 0.00338 |
+
+The `Perfect floor` column is a reference point for reading the numbers, not a target to be
+scored against; distance from it is neither a win nor a loss. Every value above is copied from
+the §1.4 generated block, where these three rows render as `diagnostic (§4 novelty)`.
 
 CSDI's paths sit **34 % nearer the training set than a genuine DGP draw does** (median 0.471 vs
 floor 0.717). LS4 straddles the floor. Again this is a concentration signature, not memorisation
@@ -175,59 +219,59 @@ not of the dataset.
 
 <!-- BEGIN GENERATED: experiment B table pdf -->
 <table>
-<tr><th rowspan="2">Metric</th><th>Diffusion</th><th>VAE</th><th rowspan="2">Perfect</th><th rowspan="2">Mean diff</th><th rowspan="2">Paired 95% CI</th><th rowspan="2">Winner</th></tr>
+<tr><th rowspan="2">Metric</th><th>Diffusion</th><th>VAE</th><th rowspan="2">Perfect</th><th rowspan="2">Seedwise differences</th><th rowspan="2">Mean diff</th><th rowspan="2">Paired 95% CI</th><th rowspan="2">Winner</th></tr>
 <tr><th>CSDI</th><th>LS4</th></tr>
-<tr><td><code>mixture_fidelity.generated_low_confidence_fraction</code></td><td>0.4104 ± 0.0102</td><td><b>0.37334 ± 0.0141</b></td><td>0.174683 ± 0.00361</td><td>0.0370605 ± 0.0202</td><td>±0.025</td><td>LS4</td></tr>
-<tr><td><code>mixture_fidelity.generated_mean_max_probability</code></td><td>0.641929 ± 0.00439</td><td><b>0.666752 ± 0.00569</b></td><td>0.792255 ± 0.00126</td><td>-0.0248226 ± 0.0083</td><td>±0.0103</td><td>LS4</td></tr>
-<tr><td><code>mixture_fidelity.generated_mean_posterior_entropy</code></td><td>0.911906 ± 0.0109</td><td><b>0.856733 ± 0.0131</b></td><td>0.600259 ± 0.00188</td><td>0.055173 ± 0.0206</td><td>±0.0256</td><td>LS4</td></tr>
-<tr><td><code>mixture_fidelity.generated_regime_proportions.0</code></td><td>0.296851 ± 0.01</td><td><b>0.189526 ± 0.0394</b></td><td>0.123315 ± 0.00119</td><td>0.107324 ± 0.0452</td><td>±0.0561</td><td>LS4</td></tr>
-<tr><td><code>mixture_fidelity.generated_regime_proportions.1</code></td><td>0.279663 ± 0.0114</td><td><b>0.196851 ± 0.0411</b></td><td>0.125098 ± 0.000986</td><td>0.0828125 ± 0.0449</td><td>±0.0558</td><td>LS4</td></tr>
-<tr><td><code>mixture_fidelity.generated_regime_proportions.2</code></td><td><b>0.0312012 ± 0.00275</b></td><td>0.00078125 ± 0.000557</td><td>0.118506 ± 0.00137</td><td>0.0304199 ± 0.00255</td><td>±0.00316</td><td>CSDI</td></tr>
-<tr><td><code>mixture_fidelity.generated_regime_proportions.3</code></td><td><b>0.0351074 ± 0.00172</b></td><td>0.00168457 ± 0.000698</td><td>0.118774 ± 0.000707</td><td>0.0334229 ± 0.00169</td><td>±0.0021</td><td>CSDI</td></tr>
-<tr><td><code>mixture_fidelity.generated_regime_proportions.4</code></td><td><b>0.0773926 ± 0.00431</b></td><td>0.195288 ± 0.0291</td><td>0.135107 ± 0.00329</td><td>-0.117896 ± 0.032</td><td>±0.0397</td><td>CSDI</td></tr>
-<tr><td><code>mixture_fidelity.generated_regime_proportions.5</code></td><td><b>0.073999 ± 0.00335</b></td><td>0.194507 ± 0.0136</td><td>0.13186 ± 0.00173</td><td>-0.120508 ± 0.0165</td><td>±0.0205</td><td>CSDI</td></tr>
-<tr><td><code>mixture_fidelity.generated_regime_proportions.6</code></td><td>0.0964844 ± 0.0103</td><td>0.110791 ± 0.0212</td><td>0.123413 ± 0.00377</td><td>-0.0143066 ± 0.0283</td><td>±0.0351</td><td><i>tie</i></td></tr>
-<tr><td><code>mixture_fidelity.generated_regime_proportions.7</code></td><td>0.109302 ± 0.0086</td><td>0.110571 ± 0.0176</td><td>0.123926 ± 0.00261</td><td>-0.00126953 ± 0.0171</td><td>±0.0212</td><td><i>tie</i></td></tr>
-<tr><td><code>mixture_fidelity.parameters.rho.mean_error</code></td><td>0.0226021 ± 0.0195</td><td>0.0180758 ± 0.0118</td><td>0.00217876 ± 0.0024</td><td>0.00452632 ± 0.0269</td><td>±0.0333</td><td><i>tie</i></td></tr>
-<tr><td><code>mixture_fidelity.parameters.rho.q05_error</code></td><td><b>0.0099726 ± 0.00234</b></td><td>0.0980166 ± 0.0245</td><td>0.0007326 ± 0.000494</td><td>-0.088044 ± 0.0241</td><td>±0.03</td><td>CSDI</td></tr>
-<tr><td><code>mixture_fidelity.parameters.rho.q95_error</code></td><td><b>0.0144606 ± 0.00559</b></td><td>0.0939972 ± 0.00958</td><td>0.000924 ± 0.000753</td><td>-0.0795366 ± 0.0138</td><td>±0.0171</td><td>CSDI</td></tr>
-<tr><td><code>mixture_fidelity.parameters.rho.std_ratio</code></td><td><b>0.85191 ± 0.00828</b></td><td>0.752922 ± 0.0256</td><td>0.998133 ± 0.00167</td><td>0.0989881 ± 0.0288</td><td>±0.0358</td><td>CSDI</td></tr>
-<tr><td><code>mixture_fidelity.parameters.rho.support_normalized_wasserstein</code></td><td><b>0.0751098 ± 0.00394</b></td><td>0.112548 ± 0.011</td><td>0.00293792 ± 0.00066</td><td>-0.0374381 ± 0.0127</td><td>±0.0158</td><td>CSDI</td></tr>
-<tr><td><code>mixture_fidelity.parameters.rho.wasserstein</code></td><td><b>0.148717 ± 0.0078</b></td><td>0.222845 ± 0.0218</td><td>0.00581707 ± 0.00131</td><td>-0.0741274 ± 0.0252</td><td>±0.0313</td><td>CSDI</td></tr>
-<tr><td><code>mixture_fidelity.parameters.theta.mean_error</code></td><td>0.0128947 ± 0.000916</td><td><b>0.00890553 ± 0.00366</b></td><td>0.000118867 ± 8.97e-05</td><td>0.00398917 ± 0.00309</td><td>±0.00384</td><td>LS4</td></tr>
-<tr><td><code>mixture_fidelity.parameters.theta.q05_error</code></td><td><b>3.46945e-19 ± 7.76e-19</b></td><td>0.000138667 ± 3.48e-05</td><td>0 ± 0</td><td>-0.000138667 ± 3.48e-05</td><td>±4.32e-05</td><td>CSDI</td></tr>
-<tr><td><code>mixture_fidelity.parameters.theta.q95_error</code></td><td>0.000837333 ± 2.39e-05</td><td><b>6.4e-05 ± 5.84e-05</b></td><td>2.77556e-18 ± 6.21e-18</td><td>0.000773333 ± 7.54e-05</td><td>±9.36e-05</td><td>LS4</td></tr>
-<tr><td><code>mixture_fidelity.parameters.theta.std_ratio</code></td><td>0.8367 ± 0.00879</td><td><b>0.919967 ± 0.017</b></td><td>0.999393 ± 0.00205</td><td>-0.0832668 ± 0.0163</td><td>±0.0203</td><td>LS4</td></tr>
-<tr><td><code>mixture_fidelity.parameters.theta.support_normalized_wasserstein</code></td><td>0.161236 ± 0.0114</td><td><b>0.114659 ± 0.0387</b></td><td>0.00237222 ± 0.000584</td><td>0.046577 ± 0.0318</td><td>±0.0395</td><td>LS4</td></tr>
-<tr><td><code>mixture_fidelity.parameters.theta.wasserstein</code></td><td>0.0128989 ± 0.000915</td><td><b>0.00917275 ± 0.0031</b></td><td>0.000189777 ± 4.68e-05</td><td>0.00372616 ± 0.00255</td><td>±0.00316</td><td>LS4</td></tr>
-<tr><td><code>mixture_fidelity.parameters.xi.mean_error</code></td><td><b>0.105508 ± 0.00579</b></td><td>0.179389 ± 0.0252</td><td>0.00209811 ± 0.00139</td><td>-0.0738813 ± 0.0263</td><td>±0.0327</td><td>CSDI</td></tr>
-<tr><td><code>mixture_fidelity.parameters.xi.q05_error</code></td><td>0.0056275 ± 0.00102</td><td><b>0.00235 ± 0.000945</b></td><td>0.0001225 ± 0.000125</td><td>0.0032775 ± 0.00184</td><td>±0.00228</td><td>LS4</td></tr>
-<tr><td><code>mixture_fidelity.parameters.xi.q95_error</code></td><td>0.0556775 ± 0.00377</td><td>0.0602775 ± 0.0388</td><td>0.00025 ± 0.000177</td><td>-0.0046 ± 0.0407</td><td>±0.0505</td><td><i>tie</i></td></tr>
-<tr><td><code>mixture_fidelity.parameters.xi.std_ratio</code></td><td>0.677446 ± 0.00693</td><td>0.724715 ± 0.0599</td><td>1.00183 ± 0.000666</td><td>-0.0472692 ± 0.0637</td><td>±0.0791</td><td><i>tie</i></td></tr>
-<tr><td><code>mixture_fidelity.parameters.xi.support_normalized_wasserstein</code></td><td><b>0.179548 ± 0.00443</b></td><td>0.239191 ± 0.0337</td><td>0.00360015 ± 0.00129</td><td>-0.059643 ± 0.0349</td><td>±0.0433</td><td>CSDI</td></tr>
-<tr><td><code>mixture_fidelity.parameters.xi.wasserstein</code></td><td><b>0.134661 ± 0.00332</b></td><td>0.179393 ± 0.0252</td><td>0.00270012 ± 0.000969</td><td>-0.0447323 ± 0.0262</td><td>±0.0325</td><td>CSDI</td></tr>
-<tr><td><code>mixture_fidelity.regime_proportion_tvd</code></td><td>0.33042 ± 0.0143</td><td><b>0.26687 ± 0.039</b></td><td>0.00847168 ± 0.00129</td><td>0.0635498 ± 0.0471</td><td>±0.0584</td><td>LS4</td></tr>
-<tr><td><code>mixture_fidelity.target_low_confidence_fraction</code></td><td>0.171899 ± 5.46e-05</td><td>0.171875 ± 8.63e-05</td><td>0.171875 ± 0</td><td>2.44141e-05 ± 0.000134</td><td>±0.000166</td><td><i>tie</i></td></tr>
-<tr><td><code>mixture_fidelity.target_mean_max_probability</code></td><td>0.792163 ± 0</td><td>0.792163 ± 0</td><td>0.792163 ± 0</td><td>0 ± 0</td><td>±0</td><td><i>tie</i></td></tr>
-<tr><td><code>mixture_fidelity.target_mean_posterior_entropy</code></td><td>0.600794 ± 0</td><td>0.600794 ± 0</td><td>0.600794 ± 0</td><td>0 ± 0</td><td>±0</td><td><i>tie</i></td></tr>
-<tr><td><code>mixture_fidelity.target_regime_proportions.0</code></td><td>0.123169 ± 0</td><td>0.123169 ± 0</td><td>0.123169 ± 0</td><td>0 ± 0</td><td>±0</td><td><i>tie</i></td></tr>
-<tr><td><code>mixture_fidelity.target_regime_proportions.1</code></td><td>0.122925 ± 0</td><td>0.122925 ± 0</td><td>0.122925 ± 0</td><td>0 ± 0</td><td>±0</td><td><i>tie</i></td></tr>
-<tr><td><code>mixture_fidelity.target_regime_proportions.2</code></td><td>0.119629 ± 0</td><td>0.119629 ± 0</td><td>0.119629 ± 0</td><td>0 ± 0</td><td>±0</td><td><i>tie</i></td></tr>
-<tr><td><code>mixture_fidelity.target_regime_proportions.3</code></td><td>0.120361 ± 0</td><td>0.120361 ± 0</td><td>0.120361 ± 0</td><td>0 ± 0</td><td>±0</td><td><i>tie</i></td></tr>
-<tr><td><code>mixture_fidelity.target_regime_proportions.4</code></td><td>0.133057 ± 0</td><td>0.133057 ± 0</td><td>0.133057 ± 0</td><td>0 ± 0</td><td>±0</td><td><i>tie</i></td></tr>
-<tr><td><code>mixture_fidelity.target_regime_proportions.5</code></td><td>0.130249 ± 0</td><td>0.130249 ± 0</td><td>0.130249 ± 0</td><td>0 ± 0</td><td>±0</td><td><i>tie</i></td></tr>
-<tr><td><code>mixture_fidelity.target_regime_proportions.6</code></td><td>0.124268 ± 0</td><td>0.124268 ± 0</td><td>0.124268 ± 0</td><td>0 ± 0</td><td>±0</td><td><i>tie</i></td></tr>
-<tr><td><code>mixture_fidelity.target_regime_proportions.7</code></td><td>0.126343 ± 0</td><td>0.126343 ± 0</td><td>0.126343 ± 0</td><td>0 ± 0</td><td>±0</td><td><i>tie</i></td></tr>
-<tr><td><code>novelty.distinct_nearest_training_paths</code></td><td>2323.6 ± 41.2</td><td><b>3055.2 ± 248</b></td><td>2941.8 ± 24.5</td><td>-731.6 ± 282</td><td>±350</td><td>LS4</td></tr>
-<tr><td><code>novelty.mean_standardized_nearest_train_path_rmse</code></td><td>0.568307 ± 0.0122</td><td><b>0.913301 ± 0.0866</b></td><td>0.808363 ± 0.00181</td><td>-0.344994 ± 0.0956</td><td>±0.119</td><td>LS4</td></tr>
-<tr><td><code>novelty.median_standardized_nearest_train_path_rmse</code></td><td>0.470814 ± 0.018</td><td><b>0.926082 ± 0.116</b></td><td>0.716746 ± 0.00338</td><td>-0.455268 ± 0.127</td><td>±0.158</td><td>LS4</td></tr>
-<tr><td><code>observable_fidelity.abs_return_acf_rmse_lags_1_50</code></td><td><b>0.011025 ± 0.00362</b></td><td>0.104407 ± 0.00656</td><td>0.0034538 ± 0.00121</td><td>-0.0933824 ± 0.00695</td><td>±0.00863</td><td>CSDI</td></tr>
-<tr><td><code>observable_fidelity.excess_kurtosis_error</code></td><td>2.55432 ± 0.737</td><td>2.71879 ± 0.223</td><td>0.143903 ± 0.185</td><td>-0.164467 ± 0.858</td><td>±1.07</td><td><i>tie</i></td></tr>
-<tr><td><code>observable_fidelity.leverage_curve_rmse_lags_0_20</code></td><td>0.0058035 ± 0.00238</td><td>0.00851555 ± 0.00264</td><td>0.00389969 ± 0.000993</td><td>-0.00271205 ± 0.00397</td><td>±0.00492</td><td><i>tie</i></td></tr>
-<tr><td><code>observable_fidelity.realized_volatility_wasserstein</code></td><td>0.0586454 ± 0.00303</td><td><b>0.0368266 ± 0.00187</b></td><td>0.00154572 ± 0.000216</td><td>0.0218187 ± 0.00328</td><td>±0.00407</td><td>LS4</td></tr>
-<tr><td><code>observable_fidelity.return_std_error</code></td><td>0.00403557 ± 0.000194</td><td><b>0.00149136 ± 0.000247</b></td><td>6.30604e-05 ± 3.92e-05</td><td>0.00254421 ± 0.000426</td><td>±0.000529</td><td>LS4</td></tr>
-<tr><td><code>observable_fidelity.squared_return_acf_rmse_lags_1_50</code></td><td><b>0.0169132 ± 0.00344</b></td><td>0.0369782 ± 0.00749</td><td>0.00729821 ± 0.00266</td><td>-0.020065 ± 0.00718</td><td>±0.00891</td><td>CSDI</td></tr>
-<tr><td><code>observable_fidelity.terminal_log_price_ks</code></td><td>0.0449219 ± 0.0105</td><td>0.0519287 ± 0.0171</td><td>0.0102539 ± 0.00242</td><td>-0.00700684 ± 0.0237</td><td>±0.0294</td><td><i>tie</i></td></tr>
+<tr><td><code>mixture_fidelity.generated_low_confidence_fraction</code></td><td>0.4104 ± 0.0102</td><td>0.37334 ± 0.0141</td><td>0.174683 ± 0.00361</td><td>+0.03967, +0.01172, +0.03857, +0.02832, +0.06702</td><td>0.0370605 ± 0.0202</td><td>±0.025</td><td><i>diagnostic (§3.3 posterior confidence)</i></td></tr>
+<tr><td><code>mixture_fidelity.generated_mean_max_probability</code></td><td>0.641929 ± 0.00439</td><td>0.666752 ± 0.00569</td><td>0.792255 ± 0.00126</td><td>-0.02461, -0.01574, -0.02304, -0.02235, -0.03837</td><td>-0.0248226 ± 0.0083</td><td>±0.0103</td><td><i>diagnostic (§3.3 posterior confidence)</i></td></tr>
+<tr><td><code>mixture_fidelity.generated_mean_posterior_entropy</code></td><td>0.911906 ± 0.0109</td><td>0.856733 ± 0.0131</td><td>0.600259 ± 0.00188</td><td>+0.05053, +0.0264, +0.05518, +0.05973, +0.08403</td><td>0.055173 ± 0.0206</td><td>±0.0256</td><td><i>diagnostic (§3.3 posterior confidence)</i></td></tr>
+<tr><td><code>mixture_fidelity.generated_regime_proportions.0</code></td><td>0.296851 ± 0.01</td><td>0.189526 ± 0.0394</td><td>0.123315 ± 0.00119</td><td>+0.1195, +0.1326, +0.1276, +0.02698, +0.13</td><td>0.107324 ± 0.0452</td><td>±0.0561</td><td><i>diagnostic (§5 raw proportion)</i></td></tr>
+<tr><td><code>mixture_fidelity.generated_regime_proportions.1</code></td><td>0.279663 ± 0.0114</td><td>0.196851 ± 0.0411</td><td>0.125098 ± 0.000986</td><td>+0.1036, +0.1283, +0.09753, +0.01013, +0.07446</td><td>0.0828125 ± 0.0449</td><td>±0.0558</td><td><i>diagnostic (§5 raw proportion)</i></td></tr>
+<tr><td><code>mixture_fidelity.generated_regime_proportions.2</code></td><td>0.0312012 ± 0.00275</td><td>0.00078125 ± 0.000557</td><td>0.118506 ± 0.00137</td><td>+0.02869, +0.03345, +0.03015, +0.02734, +0.03247</td><td>0.0304199 ± 0.00255</td><td>±0.00316</td><td><i>diagnostic (§5 raw proportion)</i></td></tr>
+<tr><td><code>mixture_fidelity.generated_regime_proportions.3</code></td><td>0.0351074 ± 0.00172</td><td>0.00168457 ± 0.000698</td><td>0.118774 ± 0.000707</td><td>+0.03394, +0.03235, +0.03162, +0.03601, +0.0332</td><td>0.0334229 ± 0.00169</td><td>±0.0021</td><td><i>diagnostic (§5 raw proportion)</i></td></tr>
+<tr><td><code>mixture_fidelity.generated_regime_proportions.4</code></td><td>0.0773926 ± 0.00431</td><td>0.195288 ± 0.0291</td><td>0.135107 ± 0.00329</td><td>-0.1414, -0.1434, -0.1254, -0.0647, -0.1146</td><td>-0.117896 ± 0.032</td><td>±0.0397</td><td><i>diagnostic (§5 raw proportion)</i></td></tr>
+<tr><td><code>mixture_fidelity.generated_regime_proportions.5</code></td><td>0.073999 ± 0.00335</td><td>0.194507 ± 0.0136</td><td>0.13186 ± 0.00173</td><td>-0.1163, -0.1326, -0.1272, -0.09351, -0.1329</td><td>-0.120508 ± 0.0165</td><td>±0.0205</td><td><i>diagnostic (§5 raw proportion)</i></td></tr>
+<tr><td><code>mixture_fidelity.generated_regime_proportions.6</code></td><td>0.0964844 ± 0.0103</td><td>0.110791 ± 0.0212</td><td>0.123413 ± 0.00377</td><td>-0.03101, -0.04236, -0.02087, +0.03101, -0.008301</td><td>-0.0143066 ± 0.0283</td><td>±0.0351</td><td><i>diagnostic (§5 raw proportion)</i></td></tr>
+<tr><td><code>mixture_fidelity.generated_regime_proportions.7</code></td><td>0.109302 ± 0.0086</td><td>0.110571 ± 0.0176</td><td>0.123926 ± 0.00261</td><td>+0.00293, -0.008301, -0.01343, +0.02673, -0.01428</td><td>-0.00126953 ± 0.0171</td><td>±0.0212</td><td><i>diagnostic (§5 raw proportion)</i></td></tr>
+<tr><td><code>mixture_fidelity.parameters.rho.mean_error</code></td><td>0.0226021 ± 0.0195</td><td>0.0180758 ± 0.0118</td><td>0.00217876 ± 0.0024</td><td>+0.01707, -0.01054, +0.01646, -0.0342, +0.03385</td><td>0.00452632 ± 0.0269</td><td>±0.0333</td><td><i>tie</i></td></tr>
+<tr><td><code>mixture_fidelity.parameters.rho.q05_error</code></td><td><b>0.0099726 ± 0.00234</b></td><td>0.0980166 ± 0.0245</td><td>0.0007326 ± 0.000494</td><td>-0.0792, -0.07722, -0.07326, -0.131, -0.07956</td><td>-0.088044 ± 0.0241</td><td>±0.03</td><td>CSDI</td></tr>
+<tr><td><code>mixture_fidelity.parameters.rho.q95_error</code></td><td><b>0.0144606 ± 0.00559</b></td><td>0.0939972 ± 0.00958</td><td>0.000924 ± 0.000753</td><td>-0.07626, -0.08484, -0.0792, -0.09768, -0.0597</td><td>-0.0795366 ± 0.0138</td><td>±0.0171</td><td>CSDI</td></tr>
+<tr><td><code>mixture_fidelity.parameters.rho.std_ratio</code></td><td>0.85191 ± 0.00828</td><td>0.752922 ± 0.0256</td><td>0.998133 ± 0.00167</td><td>+0.08511, +0.1026, +0.1005, +0.1426, +0.06418</td><td>0.0989881 ± 0.0288</td><td>±0.0358</td><td><i>diagnostic (§5 std-deviation ratio)</i></td></tr>
+<tr><td><code>mixture_fidelity.parameters.rho.support_normalized_wasserstein</code></td><td><b>0.0751098 ± 0.00394</b></td><td>0.112548 ± 0.011</td><td>0.00293792 ± 0.00066</td><td>-0.03101, -0.03933, -0.0393, -0.05602, -0.02153</td><td>-0.0374381 ± 0.0127</td><td>±0.0158</td><td>CSDI</td></tr>
+<tr><td><code>mixture_fidelity.parameters.rho.wasserstein</code></td><td><b>0.148717 ± 0.0078</b></td><td>0.222845 ± 0.0218</td><td>0.00581707 ± 0.00131</td><td>-0.06141, -0.07787, -0.07782, -0.1109, -0.04263</td><td>-0.0741274 ± 0.0252</td><td>±0.0313</td><td>CSDI</td></tr>
+<tr><td><code>mixture_fidelity.parameters.theta.mean_error</code></td><td>0.0128947 ± 0.000916</td><td><b>0.00890553 ± 0.00366</b></td><td>0.000118867 ± 8.97e-05</td><td>+0.002126, +0.001534, +0.004594, +0.009121, +0.002571</td><td>0.00398917 ± 0.00309</td><td>±0.00384</td><td>LS4</td></tr>
+<tr><td><code>mixture_fidelity.parameters.theta.q05_error</code></td><td><b>3.46945e-19 ± 7.76e-19</b></td><td>0.000138667 ± 3.48e-05</td><td>0 ± 0</td><td>-0.00016, -0.0001333, -0.00016, -8e-05, -0.00016</td><td>-0.000138667 ± 3.48e-05</td><td>±4.32e-05</td><td>CSDI</td></tr>
+<tr><td><code>mixture_fidelity.parameters.theta.q95_error</code></td><td>0.000837333 ± 2.39e-05</td><td><b>6.4e-05 ± 5.84e-05</b></td><td>2.77556e-18 ± 6.21e-18</td><td>+0.0008, +0.0008267, +0.0008, +0.00064, +0.0008</td><td>0.000773333 ± 7.54e-05</td><td>±9.36e-05</td><td>LS4</td></tr>
+<tr><td><code>mixture_fidelity.parameters.theta.std_ratio</code></td><td>0.8367 ± 0.00879</td><td>0.919967 ± 0.017</td><td>0.999393 ± 0.00205</td><td>-0.0747, -0.06207, -0.1046, -0.08247, -0.09249</td><td>-0.0832668 ± 0.0163</td><td>±0.0203</td><td><i>diagnostic (§5 std-deviation ratio)</i></td></tr>
+<tr><td><code>mixture_fidelity.parameters.theta.support_normalized_wasserstein</code></td><td>0.161236 ± 0.0114</td><td><b>0.114659 ± 0.0387</b></td><td>0.00237222 ± 0.000584</td><td>+0.02663, +0.0192, +0.05747, +0.09738, +0.03221</td><td>0.046577 ± 0.0318</td><td>±0.0395</td><td>LS4</td></tr>
+<tr><td><code>mixture_fidelity.parameters.theta.wasserstein</code></td><td>0.0128989 ± 0.000915</td><td><b>0.00917275 ± 0.0031</b></td><td>0.000189777 ± 4.68e-05</td><td>+0.002131, +0.001536, +0.004597, +0.00779, +0.002577</td><td>0.00372616 ± 0.00255</td><td>±0.00316</td><td>LS4</td></tr>
+<tr><td><code>mixture_fidelity.parameters.xi.mean_error</code></td><td><b>0.105508 ± 0.00579</b></td><td>0.179389 ± 0.0252</td><td>0.00209811 ± 0.00139</td><td>-0.06628, -0.05164, -0.06251, -0.1194, -0.06958</td><td>-0.0738813 ± 0.0263</td><td>±0.0327</td><td>CSDI</td></tr>
+<tr><td><code>mixture_fidelity.parameters.xi.q05_error</code></td><td>0.0056275 ± 0.00102</td><td><b>0.00235 ± 0.000945</b></td><td>0.0001225 ± 0.000125</td><td>+0.003887, +0.0025, +0.00425, +0.0005, +0.00525</td><td>0.0032775 ± 0.00184</td><td>±0.00228</td><td>LS4</td></tr>
+<tr><td><code>mixture_fidelity.parameters.xi.q95_error</code></td><td>0.0556775 ± 0.00377</td><td>0.0602775 ± 0.0388</td><td>0.00025 ± 0.000177</td><td>+0.0055, +0.01489, +0.01775, -0.07689, +0.01575</td><td>-0.0046 ± 0.0407</td><td>±0.0505</td><td><i>tie</i></td></tr>
+<tr><td><code>mixture_fidelity.parameters.xi.std_ratio</code></td><td>0.677446 ± 0.00693</td><td>0.724715 ± 0.0599</td><td>1.00183 ± 0.000666</td><td>-0.0693, -0.07311, -0.08112, +0.06645, -0.07927</td><td>-0.0472692 ± 0.0637</td><td>±0.0791</td><td><i>diagnostic (§5 std-deviation ratio)</i></td></tr>
+<tr><td><code>mixture_fidelity.parameters.xi.support_normalized_wasserstein</code></td><td><b>0.179548 ± 0.00443</b></td><td>0.239191 ± 0.0337</td><td>0.00360015 ± 0.00129</td><td>-0.04541, -0.03369, -0.04727, -0.121, -0.05082</td><td>-0.059643 ± 0.0349</td><td>±0.0433</td><td>CSDI</td></tr>
+<tr><td><code>mixture_fidelity.parameters.xi.wasserstein</code></td><td><b>0.134661 ± 0.00332</b></td><td>0.179393 ± 0.0252</td><td>0.00270012 ± 0.000969</td><td>-0.03406, -0.02527, -0.03545, -0.09077, -0.03811</td><td>-0.0447323 ± 0.0262</td><td>±0.0325</td><td>CSDI</td></tr>
+<tr><td><code>mixture_fidelity.regime_proportion_tvd</code></td><td>0.33042 ± 0.0143</td><td><b>0.26687 ± 0.039</b></td><td>0.00847168 ± 0.00129</td><td>+0.08105, +0.1003, +0.08838, -0.01758, +0.06555</td><td>0.0635498 ± 0.0471</td><td>±0.0584</td><td>LS4</td></tr>
+<tr><td><code>mixture_fidelity.target_low_confidence_fraction</code></td><td>0.171899 ± 5.46e-05</td><td>0.171875 ± 8.63e-05</td><td>0.171875 ± 0</td><td>+0, +0, -0.0001221, +0, +0.0002441</td><td>2.44141e-05 ± 0.000134</td><td>±0.000166</td><td>—</td></tr>
+<tr><td><code>mixture_fidelity.target_mean_max_probability</code></td><td>0.792163 ± 0</td><td>0.792163 ± 0</td><td>0.792163 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>mixture_fidelity.target_mean_posterior_entropy</code></td><td>0.600794 ± 0</td><td>0.600794 ± 0</td><td>0.600794 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>mixture_fidelity.target_regime_proportions.0</code></td><td>0.123169 ± 0</td><td>0.123169 ± 0</td><td>0.123169 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>mixture_fidelity.target_regime_proportions.1</code></td><td>0.122925 ± 0</td><td>0.122925 ± 0</td><td>0.122925 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>mixture_fidelity.target_regime_proportions.2</code></td><td>0.119629 ± 0</td><td>0.119629 ± 0</td><td>0.119629 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>mixture_fidelity.target_regime_proportions.3</code></td><td>0.120361 ± 0</td><td>0.120361 ± 0</td><td>0.120361 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>mixture_fidelity.target_regime_proportions.4</code></td><td>0.133057 ± 0</td><td>0.133057 ± 0</td><td>0.133057 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>mixture_fidelity.target_regime_proportions.5</code></td><td>0.130249 ± 0</td><td>0.130249 ± 0</td><td>0.130249 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>mixture_fidelity.target_regime_proportions.6</code></td><td>0.124268 ± 0</td><td>0.124268 ± 0</td><td>0.124268 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>mixture_fidelity.target_regime_proportions.7</code></td><td>0.126343 ± 0</td><td>0.126343 ± 0</td><td>0.126343 ± 0</td><td>+0, +0, +0, +0, +0</td><td>0 ± 0</td><td>±0</td><td>—</td></tr>
+<tr><td><code>novelty.distinct_nearest_training_paths</code></td><td>2323.6 ± 41.2</td><td>3055.2 ± 248</td><td>2941.8 ± 24.5</td><td>-857, -900, -832, -229, -840</td><td>-731.6 ± 282</td><td>±350</td><td><i>diagnostic (§4 novelty)</i></td></tr>
+<tr><td><code>novelty.mean_standardized_nearest_train_path_rmse</code></td><td>0.568307 ± 0.0122</td><td>0.913301 ± 0.0866</td><td>0.808363 ± 0.00181</td><td>-0.3879, -0.4028, -0.381, -0.1749, -0.3785</td><td>-0.344994 ± 0.0956</td><td>±0.119</td><td><i>diagnostic (§4 novelty)</i></td></tr>
+<tr><td><code>novelty.median_standardized_nearest_train_path_rmse</code></td><td>0.470814 ± 0.018</td><td>0.926082 ± 0.116</td><td>0.716746 ± 0.00338</td><td>-0.4927, -0.5415, -0.5072, -0.2303, -0.5047</td><td>-0.455268 ± 0.127</td><td>±0.158</td><td><i>diagnostic (§4 novelty)</i></td></tr>
+<tr><td><code>observable_fidelity.abs_return_acf_rmse_lags_1_50</code></td><td><b>0.011025 ± 0.00362</b></td><td>0.104407 ± 0.00656</td><td>0.0034538 ± 0.00121</td><td>-0.09792, -0.09759, -0.08375, -0.09939, -0.08826</td><td>-0.0933824 ± 0.00695</td><td>±0.00863</td><td>CSDI</td></tr>
+<tr><td><code>observable_fidelity.excess_kurtosis_error</code></td><td>2.55432 ± 0.737</td><td>2.71879 ± 0.223</td><td>0.143903 ± 0.185</td><td>+0.1462, +1.048, -0.2785, -1.303, -0.435</td><td>-0.164467 ± 0.858</td><td>±1.07</td><td><i>tie</i></td></tr>
+<tr><td><code>observable_fidelity.leverage_curve_rmse_lags_0_20</code></td><td>0.0058035 ± 0.00238</td><td>0.00851555 ± 0.00264</td><td>0.00389969 ± 0.000993</td><td>-0.002668, -0.008303, +0.001146, -0.004635, +0.0008995</td><td>-0.00271205 ± 0.00397</td><td>±0.00492</td><td><i>tie</i></td></tr>
+<tr><td><code>observable_fidelity.realized_volatility_wasserstein</code></td><td>0.0586454 ± 0.00303</td><td><b>0.0368266 ± 0.00187</b></td><td>0.00154572 ± 0.000216</td><td>+0.01961, +0.02329, +0.0269, +0.01912, +0.02017</td><td>0.0218187 ± 0.00328</td><td>±0.00407</td><td>LS4</td></tr>
+<tr><td><code>observable_fidelity.return_std_error</code></td><td>0.00403557 ± 0.000194</td><td><b>0.00149136 ± 0.000247</b></td><td>6.30604e-05 ± 3.92e-05</td><td>+0.002508, +0.002832, +0.002988, +0.001878, +0.002515</td><td>0.00254421 ± 0.000426</td><td>±0.000529</td><td>LS4</td></tr>
+<tr><td><code>observable_fidelity.squared_return_acf_rmse_lags_1_50</code></td><td><b>0.0169132 ± 0.00344</b></td><td>0.0369782 ± 0.00749</td><td>0.00729821 ± 0.00266</td><td>-0.01147, -0.03117, -0.01768, -0.02129, -0.01871</td><td>-0.020065 ± 0.00718</td><td>±0.00891</td><td>CSDI</td></tr>
+<tr><td><code>observable_fidelity.terminal_log_price_ks</code></td><td>0.0449219 ± 0.0105</td><td>0.0519287 ± 0.0171</td><td>0.0102539 ± 0.00242</td><td>-0.01465, -0.01831, +0.01819, -0.03662, +0.01636</td><td>-0.00700684 ± 0.0237</td><td>±0.0294</td><td><i>tie</i></td></tr>
 </table>
 <!-- END GENERATED -->
 
@@ -431,6 +475,28 @@ scores, so a generator that could read them would trivially pass.
 the same frozen evaluator and the same oracle. It is the best score any generator can achieve
 and it is *not* zero, because the evaluator compares two finite 8192-path samples — the floor's
 own regime-proportion TVD is 0.00847, not 0.
+
+### 5.1 PDF §5 disclosure — what every comparison table must state
+
+PDF §5 lists six items a comparison table is required to state. All six, for the tables in
+Sections 1–3 of this page:
+
+| # | §5 requirement | Value |
+|---|---|---|
+| 1 | Exact training, validation and test files | train `dataset/Heston/new_experiments/experiment_B/train.npy` · validation `…/experiment_B/disc.npy` · test `…/experiment_B/test.npy` (+ `test_labels.npy` and `oracle.joblib`, evaluator-only). Floor: `…/experiment_B/perfect_floor/floor_seed100{0..4}.npy` |
+| 2 | Generated bank size and all model seeds | 8192 × 128 per seed, one bank per seed, seeds **0, 1, 2, 3, 4** for both methods (aligned — this is what makes the paired interval valid) |
+| 3 | Official code, and its revision | Both **yes**. CSDI `methods/CSDI` @ `4189d37`. LS4 `methods/LS4/code` @ `27df71e`, experiment wrapper `train_ls4_experiment.py` @ `ba7c748`. Recorded per bank in `generation_manifest.json → model.official_implementation / model.source_revision` |
+| 4 | Hyperparameters: defaults or validation-selected | **Defaults, and identical to Experiment A.** `hyperparameter_origin = "official-default"` in all 10 manifests. CSDI released `base.yaml`, LS4 released `solar_weekly` preset. Nothing was retuned for the mixture; only the training data differs |
+| 5 | Trainable parameters, training time, generation time, hardware | CSDI 412,945 params, 3044 s train, 13.1 s generate per seed. LS4 2,146,857 params, 1424 s train, 9.4 s generate per seed. Hardware: 1× A100-SXM4-80GB per run, 8 cores pinned, 2× AMD EPYC 7763 host, at most two runs concurrent |
+| 6 | Number and reason for failed runs | **Zero.** `failure_information.failed_or_unstable = false`, `first_nan_epoch = null`, `nan_in_bank = false` in all 10 manifests. No seed was replaced, retried or dropped (§1.5) |
+
+A seventh disclosure the PDF does not require but this experiment does: **the scoring oracle is
+a local refit** (`a36d64eb…` against the PDF's `54c3f2c9…`), documented in the callout at the
+top of Section 1.
+
+Every cell above is read from the artefacts, not from prose: `python tools/check_pdf5_disclosure.py --experiment B`
+re-derives items 3, 4 and 6 from the ten `generation_manifest.json` files and fails if this
+table disagrees with them.
 
 ---
 
