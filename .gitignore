@@ -52,3 +52,13 @@ results/Heston/preprocessing_with_log_returns/TimeDiT/baseline_no_preproc/weight
 # the gate accuracy in oracle/gate_report.json (tracked); the blob is refit locally
 # via protocol/experiments/scripts/fit_heston_mixture_oracle.py --workers 16.
 dataset/Heston/new_experiments/experiment_B/oracle/oracle.joblib
+
+# LS4 upstream-reproduction run outputs — 621 MiB of checkpoints, samples and
+# TensorBoard events left over from the NN5/Monash reproduction runs used to
+# validate the vendored LS4 code before the Heston work. They are EVIDENCE, kept
+# on disk deliberately, but they must never be swept into a commit: a concurrent
+# process stages this repo, and a stray `git add -A` would push 621 MiB of
+# regenerable artefacts. Reproduce with code/reference/train.py on the matching
+# configs/monash/*.yaml. The tracked reference/ tree (45 files: code, configs,
+# LICENSE, README) is unaffected.
+methods/LS4/code/reference/outputs_*
