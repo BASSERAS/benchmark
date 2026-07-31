@@ -579,7 +579,7 @@ Do **not** silently change any of these — a different choice = a different, no
 
 | # | Ambiguity | Choice | Why |
 |---|-----------|--------|-----|
-| E15 | Are cum / one-step returns scalars or trajectories? | **H-dimensional trajectories over offsets u=1…H.** `cum_u = logS[s+u]−logS[s]`, `step_u = logS[s+u]−logS[s+u−1]`; RMSE/CRPS/coverage/width are computed at every u and **averaged over u=1…H** before the query bootstrap. RV stays the scalar `√Σr²`. | §2/§3.1/§3.3 define cum & step as h-indexed running trajectories aggregated over all future times — **not** a single terminal point. The earlier build scored cum only at h=H and step only at h=1, which (a) answered an easier single-horizon question and (b) made the "terminal RMSE" diagnostic **identical** to cum RMSE by construction (the M-tagged identity bug). Trajectory scoring fixes both; terminal (h=H) RMSE is now a genuinely distinct diagnostic. |
+| E15 | Are cum / one-step returns scalars or trajectories? | **H-dimensional trajectories over offsets u=1…H.** `cum_u = logS[s+u]−logS[s]`, `step_u = logS[s+u]−logS[s+u−1]`; RMSE/CRPS/coverage/width are computed at every u and **averaged over u=1…H** before the query bootstrap. RV stays the scalar `√Σr²`. | §2/§3.1/§3.3 define cum & step as h-indexed running trajectories aggregated over all future times — **not** a single terminal point. The earlier build scored cum only at h=H and step only at h=1, which (a) answered an easier single-horizon question and (b) made the "terminal RMSE" diagnostic **identical** to cum RMSE by construction (the M-tagged identity bug). Trajectory scoring fixes both; terminal (h=H) MAE is now a genuinely distinct diagnostic — and note it *is* an MAE (`mean_q|e_q|`) despite the `terminal_rmse` JSON key, see §10.4 item 8. |
 | E16 | How does the query bootstrap interact with the horizon average? | Per-query metric = **mean over u** of the per-(query,u) value; the 2000-resample bootstrap then resamples **queries** (not (query,u) pairs). | Keeps the bootstrap unit = the 512 independent query paths (D13); horizons within a query are not independent so they are averaged, not resampled. |
 | E16b | How does RMSE aggregate across queries? | **Two aggregations of the same per-query squared error are emitted, and every row reports the one its label claims.** With `se_q = (1/H)Σ_u se_{q,u}` (E16), `path_shadowing_pdf.py::METRIC_MAP` writes **both** keys for every quantity: `"rmse"` = `mean_q(√se_q)` (root *inside*, `_agg` kind `rmse`) and `"rmse_textbook"` = `√(mean_q se_q)` (root *last*, `_agg` kind `rmse_last`); `_boot_ci` branches on the same kind so each key gets its own CI. Routing to the tables is **one** table — `build_cross_tables.PS_METRIC_KEY`, always read through `build_cross_tables._ps_key(qn, metric)`: **cum/step → `rmse_textbook`**, labelled `RMSE ↓`; **rv → `rmse`**, labelled `MAE ↓` (`PS_METRIC_LABEL`). `_ps_value`, the Winner ranking, the oracle/RW columns and `report/build_report.py::ps_table` all go through `_ps_key`, so the README table, the winner column and the LaTeX report cannot drift apart. **Changed in two steps.** *2026-07-30:* the single convention was flipped from `√(mean_q se_q)` to `mean_q(√se_q)` to match the reproducibility report (Tables 1–5); by Jensen `mean(√·) ≤ √(mean ·)` so every cell dropped (CSDI cum 0.0493 → 0.0414) — old and new numbers must never be mixed in one table. *2026-07-31:* the second key was added and cum/step routed to it, because for those H=32 quantities `se_q` is **already** the mean over u, so `√(mean_q se_q)` = `√(mean over every (q,u) pair)` = the genuine textbook RMSE, whereas `mean_q(√se_q)` is an *average of per-path horizon-RMS values* — a real statistic, but not an RMSE. rv keeps the root-inside key because at H=1 it collapses **exactly to MAE**, which is what its label now says. | Both conventions are defensible; naming one thing while computing another is not. Emitting both keys instead of replacing one means the reproducibility report's published column (Tables 1–5) survives byte-for-byte in every artefact while the tables show the textbook form — the JSON is a strict superset, no consumer broke. The re-run was controlled leaf-by-leaf against `/tmp/ps_before/`: generators **901 leaves identical, 99 added (all `rmse_textbook`), 0 removed, 10 changed — all `elapsed_sec`**; forecasters 93/95 identical, 9 added, 1 changed (`ft_time_sec`). That proves the aggregation was the sole change. It also let all **15** previously hand-typed historical RMSE cells be deleted from `report/build_report.py` (`HISTORICAL_OLD_RMSE`, `FORECASTER_PRE_FIX`): `rmse_textbook` reproduces the 9 generator cells to every printed digit and the 6 forecaster cells bit-for-bit at float64 — so **10.2 now holds with zero exceptions**. **The switch is not rank-preserving: a measured 7 of 10 cum/step winner cells move** (`report/build_report.py::rmse_winner_moves`, computed never quoted). That is not an artefact — it is the finding: @1M cum the top three are CSDI 0.049253 / LS4 0.048944 / TimeDiT (raw) 0.048875, a spread of 3.8×10⁻⁴ against a CI width of ≈6.3×10⁻³ — **17× wider**, every interval containing every other point estimate. The cum/step RMSE ordering among those three is noise and must not be read as a ranking; CRPS, coverage and miss-rate are the discriminating rows. (SBTS, 13 % worse, *is* separated.) `forecaster/pdf_bridge.py` used to pin Chronos-2 / TimesFM to the old `√(mean_q se_q)` via a local `_metrics_frozen_rmse()`. **Removed 2026-07-31:** the bridge now calls `P.metrics_with_ci` directly, so forecasters, generators, the Heston oracle and the RW floor share one byte-identical code path. That exception was not benign — `_ps_winner_idx` ranks *all* `PS_MODELS` including the forecasters, so the Winner column was ranking forecaster cells inflated by a measured 18.0 % (cum) / 5.6 % (step) / 5.0 % (rv) against un-inflated generator ones, while the README footnote simultaneously told readers those cells were not comparable. (The rv inflation is 5 %, **not** the generators' 28 % — the ratio tracks per-path error dispersion, which differs between retrieval and direct forecasting, so it must never substitute for recomputing.) |
 
@@ -828,10 +828,15 @@ block. Structure, in order:
    `method / oracle` CRPS; last two cols = unique-candidate fraction and mean prefix distance. Follow
    with the sweep-reading paragraph (cum/step flat across the 244× increase = saturates ~4k; only RV
    improves; the method↔oracle RV gap constant = law-mismatch not finite-bank).
-8. **Diagnostics table (1M bank)** — `| terminal (h=H) RMSE | prefix dist mean/median/p95 | unique-cand
-   frac | RV mean bias |`, one data row, cells `method / oracle`. Note terminal (h=H) RMSE is a genuine
+8. **Diagnostics table (1M bank)** — `| terminal (h=H) MAE | prefix dist mean/median/p95 | unique-cand
+   frac | RV mean bias |`, one data row, cells `method / oracle`. Note terminal (h=H) MAE is a genuine
    single-horizon diagnostic **distinct** from horizon-averaged cum RMSE (the M-tagged identity bug is
-   fixed). Point to `path_shadowing/pdf_summary.json` for all CIs.
+   fixed). **Label it MAE, not RMSE** — the driver computes `float(np.abs(pred_term_mean −
+   y_term).mean())`, a mean *absolute* error, even though the JSON key is still `terminal_rmse`
+   (`path_shadowing_pdf.py` ~L349, and `forecaster/pdf_bridge.py` L92). It is the h = H analogue of the
+   rv MAE row, **not** the textbook RMSE of E16b. Renaming the key would require re-running every bank,
+   so the key stays and the *label* carries the truth. Point to `path_shadowing/pdf_summary.json` for
+   all CIs.
 9. **`<!-- PS-PDF-TABLE-END -->` marker**, then the driver/bank-builder links and the two `pdf_*.png`
    plot embeds.
 
@@ -985,6 +990,17 @@ Invariants the renderer enforces — preserve them if you touch it:
    so — otherwise the repetition reads as a copy-paste bug.
 4. **Winner excludes the oracle and the RW floor**; the two `width` rows are diagnostic and select no
    winner (width without its coverage is meaningless). 18 ranked rows = 6 ranked metrics x 3 quantities.
+   **`PS_EXTRA_ROWS` + the `"min-uncounted"` rule.** A quantity may carry extra rows spliced in by
+   `ps_rows(qn)` directly after its RMSE row. The only current entry is
+   `"rv": [("rmse_textbook", "RMSE ↓ (true, root-last)†", "min-uncounted")]` — the rv **true RMSE**,
+   added 2026-07-31. At H = 1 the two keys are two standard statistics of the *same* 512-vector of
+   errors (MAE = `mean_q|e_q|`, RMSE = `√(mean_q e_q²)`), so both are worth showing, but ranking both
+   would **double-count rv** against cum and step and silently reweight the sweep summary. Hence the
+   rule: `_ps_winner_idx` still returns the argmin, the cell is still bolded and the winner named
+   (rendered `<i>Name</i>†`, italic + dagger, never `<b>`), but the row is **not** added to `wins`.
+   The denominator stays **18**; verified byte-identical win-counts across all five banks before and
+   after the row landed. Adding a *counted* row means editing `PS_METRICS` and updating every "of 18"
+   claim in the README, the sweep summary and the report — do not do it casually.
 5. **Layout.** The four sub-1M tables go in collapsed `<details>` blocks whose `<summary>` carries the
    win-count; the **1M table is the expanded headline**, and all prose below it quotes 1M numbers.
 6. A **win-count summary table** (`bank | winners | the sweep-sensitive metric`) follows the five tables.
@@ -999,6 +1015,34 @@ small-bank win as the headline reports an artefact.
 **A method with no PS bank yet** (TimeDiT's case at time of writing) stays **out** of `PS_MODELS` and gets an
 explicit blockquote in the README's PS intro stating why, linking its per-method README. Never a row of
 `-` placeholders, and never a silent omission.
+
+#### 10.2.1 The two injectors — nothing is pasted by hand any more
+
+Pasting stdout is still a manual step, and manual steps rot. Two scripts close that gap; run **both**
+after any change to `build_cross_tables.py`:
+
+| script | target | span it replaces |
+|--------|--------|------------------|
+| [`inject_readme_ps.py`](inject_readme_ps.py) | experiment `README.md` | the four collapsed `<details>` sweep tables + the expanded 1M headline + the `<!-- PS strict win-counts` comment |
+| [`render_method_ps.py`](render_method_ps.py) | `{CSDI,LS4,SBTS,TimeDiT}/README.md` | the three per-method *method vs oracle vs RW* tables at the 1M bank |
+
+Both **detect their bounds, never hardcode line numbers** — an earlier throwaway revision of the first
+one pinned literal indices, which is exactly what mangles a file the moment a row is added above the
+block. `inject_readme_ps.py` anchors on the first `<details>` following the "nested prefixes of the same
+1M bank" paragraph and ends at the win-count comment. `render_method_ps.py` starts at the
+`**Cumulative return` heading and ends **the moment the third markdown table closes** — *not* at the
+next prose heading. That distinction is load-bearing: TimeDiT carries a bank-size sweep and a
+diagnostics table between its rv table and its "Reading it" paragraph, and a heading-based end marker
+silently swallowed both on the first run. Prose is never touched by either script.
+
+`render_method_ps.py` shares `ps_rows` / `_ps_key` / `_ps_winner_idx` with the cross-method renderer, so
+the per-method tables cannot disagree with the root README again — they *did* disagree between
+2026-07-30 and 2026-07-31, showing root-inside cum/step while the root table showed textbook. Row labels
+are compact (`ROW_LABEL`) because the per-method header already states the direction; only the dagger
+survives, and the per-method preamble must explain what it means.
+
+**Both are idempotent** — a second run must report the identical replaced span and line count. Check it;
+a drifting span means the bound detection has broken.
 
 
 ---
@@ -1031,7 +1075,7 @@ explicit blockquote in the README's PS intro stating why, linking its per-method
 - [ ] Per-method README written (mirror the main benchmark's).
 - [ ] **All metric tables cross-checked against `pdf_summary.json` / `seed_N_metrics.json`** — every quantity has its full metric set, none dropped (M9).
 - [ ] 1M bank left **on disk and gitignored — NOT pushed** (`<METHOD>/path_shadowing/bank/*.npy`); it is regenerable via `gen_banks.py --seed 0`, which is why shipping it is unnecessary. Do **not** add a new `.gitattributes` LFS line (the LS4/CSDI/SBTS entries are historical; that decision was reversed). No plain-blob push, no `--force` (M10).
-- [ ] **Method registered in [`build_cross_tables.py`](build_cross_tables.py)** — `AB_MODELS` + `PS_MODELS` (in model-family column position, `"gen"` vs `"fc"` kind); the experiment README's A/B/PS tables regenerated from its stdout, **PS emitted with `--all-bank-sizes`** (5 nested-prefix tables, 1M expanded as the headline) **and the sweep summary re-emitted with `--which PSSUM`** (it carries the win-counts, so a new method changes it). No hand-typed cells (§10.2).
+- [ ] **Method registered in [`build_cross_tables.py`](build_cross_tables.py)** — `AB_MODELS` + `PS_MODELS` (in model-family column position, `"gen"` vs `"fc"` kind); the experiment README's A/B/PS tables regenerated from its stdout, **PS emitted with `--all-bank-sizes`** (5 nested-prefix tables, 1M expanded as the headline) **and the sweep summary re-emitted with `--which PSSUM`** (it carries the win-counts, so a new method changes it). No hand-typed cells (§10.2). **Then run both injectors** — `python inject_readme_ps.py` (experiment README) and `python render_method_ps.py` (all four per-method READMEs) — and re-run each once more to confirm the replaced span is identical (§10.2.1).
 - [ ] **End-of-run report** delivered in the §10.1 structure; new traps recorded as `M<n>` in §0.2 first.
 - [ ] Everything lives under the two `preprocessing_with_log_returns/` folders; no reference file
       touched.

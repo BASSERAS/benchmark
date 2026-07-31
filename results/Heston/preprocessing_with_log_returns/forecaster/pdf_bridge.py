@@ -89,8 +89,12 @@ def score_forecaster(ens_price, name, out_path, extra_meta=None):
 
     # diagnostics comparable to eval_bank's
     pred_term_mean = Y["cum"][:, :, -1].mean(axis=1)
-    # Root-inside, matching the RMSE convention above and eval_bank's terminal_rmse.
-    # Terminal cum is a scalar per query (H=1), so mean_q(sqrt(se_q)) == mean_q(|e_q|).
+    # This is an MAE, not an RMSE -- mean_q(|e_q|), matching eval_bank's terminal_rmse
+    # bit-for-bit. Terminal cum is a scalar per query (H=1), so the root-inside form
+    # mean_q(sqrt(se_q)) collapses to mean_q(|e_q|); the textbook sqrt(mean_q(se_q))
+    # reported for cum/step (GUIDELINE E16b) is a DIFFERENT, larger number. The key
+    # name is kept as `terminal_rmse` only because renaming it would invalidate every
+    # bank JSON already on disk; the READMEs label the cell "terminal (h=H) MAE".
     term_rmse = float(np.abs(pred_term_mean - q_quant["cum"][:, -1]).mean())
     rv_bias = float(Y["rv"].mean() - q_quant["rv"].mean())
 

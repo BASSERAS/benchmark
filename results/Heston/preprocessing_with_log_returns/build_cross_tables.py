@@ -308,6 +308,26 @@ PS_METRIC_LABEL = {
     ("rv", "rmse"): "MAE ↓",
 }
 
+# ── extra per-quantity rows, appended after the standard PS_METRICS block ────
+#
+# rv is a SCALAR per query, so the two aggregations of its error are two
+# genuinely different, standard statistics of the same 512-vector e_q:
+#
+#     MAE  = (1/m) Σ_q |e_q|              ("rmse"          root inside)
+#     RMSE = √( (1/m) Σ_q e_q² )          ("rmse_textbook" root last)
+#
+# Both are worth reading: RMSE/MAE > 1 measures how heavy the error tail is, and
+# for rv it runs ~1.28 — i.e. rv errors are far more dispersed than the near-1.06
+# ratio the step quantity shows. The MAE row alone hides that.
+#
+# Rule "min-uncounted": the best value is still bolded and named, but the row is
+# NOT added to the 18-row win total. Ranking both norms of the SAME error vector
+# would count rv twice and quietly reweight the sweep summary. The Winner cell is
+# marked † and the README/report footnote says so.
+PS_EXTRA_ROWS = {
+    "rv": [("rmse_textbook", "RMSE ↓ (true, root-last)†", "min-uncounted")],
+}
+
 
 def ps_bank_sizes():
     """The GUIDELINE §9.1 nested-prefix sweep, read from the data rather than
@@ -343,12 +363,30 @@ def _ps_value(path, kind, qn, metric, bank_size):
 
 
 def _ps_winner_idx(vals, rule):
-    """rule: 'min' -> argmin; float target -> closest; 'diag' -> None (no winner)."""
-    if rule == "min":
+    """rule: 'min' / 'min-uncounted' -> argmin; float target -> closest;
+    'diag' -> None (no winner). 'min-uncounted' still returns an index (so the
+    cell is bolded and named) but callers must not add it to the win total —
+    see PS_EXTRA_ROWS."""
+    if rule in ("min", "min-uncounted"):
         return int(np.argmin(vals))
     if rule == "diag":
         return None
     return int(np.argmin([abs(v - rule) for v in vals]))
+
+
+def ps_rows(qn):
+    """The metric rows rendered for one quantity: the standard PS_METRICS block
+    with any PS_EXTRA_ROWS for that quantity spliced in directly after the RMSE
+    row, so the two aggregations of the same error sit side by side. One
+    definition, used by the cross-method tables, the per-method tables and the
+    LaTeX report."""
+    extra = list(PS_EXTRA_ROWS.get(qn, []))
+    out = []
+    for row in PS_METRICS:
+        out.append(row)
+        if row[0] == "rmse":
+            out += extra
+    return out
 
 
 def render_PS_strict(bank_size=1000000):
@@ -394,17 +432,22 @@ def render_PS_strict(bank_size=1000000):
 
     for qn, qlabel in PS_QUANT:
         out.append('  <tr><td colspan="%d"><b>%s</b></td></tr>' % (ncol, qlabel))
-        for metric, mlabel, rule in PS_METRICS:
+        for metric, mlabel, rule in ps_rows(qn):
             vals = [_ps_value(p, k, qn, metric, bank_size) for p, k in paths_kinds]
             wi = _ps_winner_idx(vals, rule)
-            if wi is not None:
+            if wi is not None and rule != "min-uncounted":
                 wins[model_names[wi]] += 1
             cells = "".join(RT.cell(RT.fmt(v), bold=(wi is not None and i == wi))
                             for i, v in enumerate(vals))
             mk = _ps_key(qn, metric)
             ov = RT.fmt(oracle_q[qn][mk]["value"])
             rv = RT.fmt(rw_q[qn][mk]["value"])
-            win_cell = f"<b>{model_names[wi]}</b>" if wi is not None else "—"
+            if wi is None:
+                win_cell = "—"
+            elif rule == "min-uncounted":
+                win_cell = f"<i>{model_names[wi]}</i>†"   # named, not counted
+            else:
+                win_cell = f"<b>{model_names[wi]}</b>"
             label = PS_METRIC_LABEL.get((qn, metric), mlabel)
             out.append(f'  <tr><td>{label}</td>{cells}'
                        f'<td>{ov}</td><td>{rv}</td><td>{win_cell}</td></tr>')

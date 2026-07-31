@@ -1,0 +1,295 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.0cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{float}
+% 10 columns (metric + 4 generators + 2 forecasters + oracle + RW + winner)
+% overflow A4 portrait by ~170pt at \small. Landscape absorbs it without
+% shrinking the type; the definitions page stays portrait.
+\usepackage{pdflscape}
+\setlength{\parskip}{0.5em}
+\setlength{\emergencystretch}{3em}
+\sloppy
+\pagestyle{empty}
+\title{\textbf{Strict path shadowing --- cross-method comparison}\\[0.3em]
+\large Five nested-prefix bank sizes, one 1\,000\,000-path bank}
+\author{\texttt{results/Heston/preprocessing\_with\_log\_returns}\\
+BASSERAS/benchmark}
+\date{31 July 2026}
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+
+
+\section*{How RMSE and MAE are aggregated}
+
+Fix a query path $q\in\{1,\dots,m\}$ ($m=512$) and a horizon offset
+$u\in\{1,\dots,H\}$ ($H=32$). The forecast is the mean over the $K=256$ retrieved
+continuations, so the per-cell squared error and its horizon average are
+%
+\[
+se_{q,u}=\Bigl(\tfrac{1}{K}\textstyle\sum_{k=1}^{K}\hat Y_{q,u,k}-y_{q,u}\Bigr)^{2},
+\qquad
+se_{q}=\frac{1}{H}\sum_{u=1}^{H}se_{q,u}.
+\]
+
+There are two ways to finish, and they are \emph{not} equal. Taking the root last
+gives the textbook RMSE; taking it inside first gives the mean of per-path
+root-mean-square errors:
+%
+\[
+\underbrace{\text{RMSE}=\sqrt{\frac{1}{m}\sum_{q=1}^{m}se_{q}}}_{\text{root last --- reported below}}
+\qquad\qquad
+\underbrace{\frac{1}{m}\sum_{q=1}^{m}\sqrt{se_{q}}}_{\text{root inside}} .
+\]
+
+Because $\sqrt{\cdot}$ is concave, Jensen's inequality makes the root-inside form
+\emph{always} the smaller of the two; it is a real statistic, but it is not an
+RMSE. \textbf{The \texttt{cum} and \texttt{step} rows below report the textbook
+(root-last) form.}
+
+\paragraph{Why \texttt{rv} gets two rows.} Horizon realised volatility is a
+\emph{scalar} per query ($H=1$), so the inner mean collapses and the two
+aggregations above reduce to two different standard norms of the same
+512-vector of signed errors $e_q$:
+%
+\[
+\text{MAE}=\frac{1}{m}\sum_{q=1}^{m}\lvert e_q\rvert,
+\qquad\qquad
+\text{RMSE}=\sqrt{\frac{1}{m}\sum_{q=1}^{m}e_q^{2}} .
+\]
+%
+Both are listed. For CSDI at the 1\,000\,000-path bank they are
+\textbf{0.01373} and \textbf{0.01772} --- a ratio of
+1.29, against 1.06 for \texttt{step}. That ratio is a
+direct read-out of how much of the error sits in the tail: it equals 1 when
+every query errs by the same amount and grows with error dispersion. rv is the
+quantity where the generators separate, and it is also the quantity whose error
+distribution is the most skewed --- which is exactly why quoting one norm and
+labelling it the other is not a cosmetic issue.
+
+\paragraph{Reading the tables.} Lower is better everywhere except coverage,
+whose target is the nominal level. \emph{Oracle} is the Heston ground-truth
+ceiling (retrieval from the true data-generating process, size-matched to the
+bank); \emph{RW} is the random-walk floor. The Winner column ranks the
+generators and forecasters only --- never the oracle or the floor --- and the
+two \texttt{width} rows are diagnostic, so they name no winner. That leaves
+\textbf{18 ranked rows} per table ($6$ ranked metrics $\times$ $3$ quantities).
+
+$^{\dagger}$ The rv root-last RMSE row is bolded and its winner named in
+\emph{italics}, but it is \textbf{not counted} in the 18-row total: ranking two
+norms of one error vector would double-count rv against \texttt{cum} and
+\texttt{step}.
+\clearpage
+
+\begin{landscape}
+\section*{Bank size $N = 4\,096$}
+\noindent\textbf{Winners (of 18 ranked rows):} TimeDiT (raw) 15, SBTS 2, CSDI 1.
+\begin{center}\small
+\begin{tabular}{lrrrrrrrrl}
+\toprule
+Quantity / metric & CSDI & TimeDiT (raw) & LS4 & SBTS & Chronos-2 & TimesFM & Oracle & RW & Winner \\
+\midrule
+\multicolumn{10}{l}{\textbf{cum ($M\times H$ trajectory)}} \\
+RMSE $\downarrow$ & 0.04919 & \textbf{0.04890} & 0.04906 & 0.04916 & 0.04921 & 0.05094 & 0.04924 & 0.05670 & \textbf{TimeDiT (raw)} \\
+CRPS $\downarrow$ & 0.02548 & \textbf{0.02531} & 0.02544 & 0.02544 & 0.02624 & 0.02722 & 0.02539 & 0.02946 & \textbf{TimeDiT (raw)} \\
+coverage$_{50}$ ($\to$0.50) & 0.4571 & \textbf{0.5105} & 0.4764 & 0.4839 & 0.4050 & 0.4664 & 0.4875 & 0.4719 & \textbf{TimeDiT (raw)} \\
+coverage$_{90}$ ($\to$0.90) & 0.8629 & \textbf{0.8957} & 0.8691 & 0.8805 & 0.7905 & 0.8177 & 0.8919 & 0.8553 & \textbf{TimeDiT (raw)} \\
+width$_{50}$ (diag) & 0.05070 & 0.05901 & 0.05376 & 0.05536 & 0.04454 & 0.05477 & 0.05573 & 0.06286 & --- \\
+width$_{90}$ (diag) & 0.1318 & 0.1488 & 0.1353 & 0.1439 & 0.1166 & 0.1348 & 0.1462 & 0.1520 & --- \\
+lower miss$_{90}$ ($\to$0.05) & 0.07764 & \textbf{0.04840} & 0.06476 & 0.05554 & 0.09595 & 0.09265 & 0.05731 & 0.08331 & \textbf{TimeDiT (raw)} \\
+upper miss$_{90}$ ($\to$0.05) & 0.05945 & \textbf{0.05591} & 0.06616 & 0.06396 & 0.1135 & 0.08966 & 0.05078 & 0.06134 & \textbf{TimeDiT (raw)} \\
+\addlinespace
+\multicolumn{10}{l}{\textbf{step ($M\times H$)}} \\
+RMSE $\downarrow$ & \textbf{0.01244} & 0.01245 & 0.01245 & 0.01249 & 0.01295 & 0.01332 & 0.01245 & 0.01253 & \textbf{CSDI} \\
+CRPS $\downarrow$ & 0.006780 & \textbf{0.006766} & 0.006794 & 0.006812 & 0.01272 & 0.01473 & 0.006765 & 0.006874 & \textbf{TimeDiT (raw)} \\
+coverage$_{50}$ ($\to$0.50) & 0.4510 & 0.4811 & 0.4656 & \textbf{0.4813} & 0.9449 & 0.9479 & 0.4849 & 0.5157 & \textbf{SBTS} \\
+coverage$_{90}$ ($\to$0.90) & 0.8602 & \textbf{0.8854} & 0.8591 & 0.8782 & 0.9970 & 0.9949 & 0.8869 & 0.8866 & \textbf{TimeDiT (raw)} \\
+width$_{50}$ (diag) & 0.01321 & 0.01429 & 0.01359 & 0.01434 & 0.06405 & 0.07667 & 0.01434 & 0.01602 & --- \\
+width$_{90}$ (diag) & 0.03524 & 0.03794 & 0.03530 & 0.03769 & 0.1609 & 0.1801 & 0.03828 & 0.03968 & --- \\
+lower miss$_{90}$ ($\to$0.05) & 0.07098 & \textbf{0.05573} & 0.07233 & 0.05890 & 0.001770 & 0.002319 & 0.05676 & 0.05933 & \textbf{TimeDiT (raw)} \\
+upper miss$_{90}$ ($\to$0.05) & 0.06885 & \textbf{0.05884} & 0.06860 & 0.06287 & 0.001221 & 0.002808 & 0.05634 & 0.05408 & \textbf{TimeDiT (raw)} \\
+\addlinespace
+\multicolumn{10}{l}{\textbf{rv ($M$ scalar)}} \\
+MAE $\downarrow$ & 0.01458 & \textbf{0.01364} & 0.01516 & 0.01420 & 0.2198 & 0.2570 & 0.01381 & 0.01509 & \textbf{TimeDiT (raw)} \\
+RMSE $\downarrow$ (true, root-last)$^{\dagger}$ & 0.01875 & \textbf{0.01711} & 0.01926 & 0.01779 & 0.2307 & 0.2865 & 0.01727 & 0.01876 & \textit{TimeDiT (raw)}$^{\dagger}$ \\
+CRPS $\downarrow$ & 0.01055 & \textbf{0.009653} & 0.01098 & 0.01010 & 0.1913 & 0.2291 & 0.009777 & 0.01168 & \textbf{TimeDiT (raw)} \\
+coverage$_{50}$ ($\to$0.50) & 0.4609 & \textbf{0.4805} & 0.4121 & 0.4805 & 0 & 0 & 0.5059 & 0.2344 & \textbf{TimeDiT (raw)} \\
+coverage$_{90}$ ($\to$0.90) & 0.8594 & \textbf{0.8945} & 0.7812 & 0.8652 & 0 & 0.001953 & 0.9141 & 0.5332 & \textbf{TimeDiT (raw)} \\
+width$_{50}$ (diag) & 0.02220 & 0.02273 & 0.02027 & 0.02287 & 0.06861 & 0.06689 & 0.02404 & 0.01202 & --- \\
+width$_{90}$ (diag) & 0.05413 & 0.05489 & 0.04837 & 0.05458 & 0.1651 & 0.1610 & 0.05753 & 0.02873 & --- \\
+lower miss$_{90}$ ($\to$0.05) & 0.01758 & 0.04102 & 0.05664 & \textbf{0.05078} & 1.000 & 0.9980 & 0.02734 & 0.2891 & \textbf{SBTS} \\
+upper miss$_{90}$ ($\to$0.05) & 0.1230 & \textbf{0.06445} & 0.1621 & 0.08398 & 0 & 0 & 0.05859 & 0.1777 & \textbf{TimeDiT (raw)} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{landscape}
+\begin{landscape}
+\section*{Bank size $N = 16\,384$}
+\noindent\textbf{Winners (of 18 ranked rows):} TimeDiT (raw) 15, CSDI 1, LS4 1, SBTS 1.
+\begin{center}\small
+\begin{tabular}{lrrrrrrrrl}
+\toprule
+Quantity / metric & CSDI & TimeDiT (raw) & LS4 & SBTS & Chronos-2 & TimesFM & Oracle & RW & Winner \\
+\midrule
+\multicolumn{10}{l}{\textbf{cum ($M\times H$ trajectory)}} \\
+RMSE $\downarrow$ & 0.04915 & \textbf{0.04901} & 0.04903 & 0.04996 & 0.04921 & 0.05094 & 0.04923 & 0.05670 & \textbf{TimeDiT (raw)} \\
+CRPS $\downarrow$ & 0.02543 & \textbf{0.02534} & 0.02542 & 0.02610 & 0.02624 & 0.02722 & 0.02535 & 0.02946 & \textbf{TimeDiT (raw)} \\
+coverage$_{50}$ ($\to$0.50) & 0.4604 & \textbf{0.5103} & 0.4755 & 0.4694 & 0.4050 & 0.4664 & 0.4859 & 0.4719 & \textbf{TimeDiT (raw)} \\
+coverage$_{90}$ ($\to$0.90) & 0.8694 & \textbf{0.8952} & 0.8685 & 0.8644 & 0.7905 & 0.8177 & 0.8884 & 0.8553 & \textbf{TimeDiT (raw)} \\
+width$_{50}$ (diag) & 0.05197 & 0.05936 & 0.05375 & 0.05538 & 0.04454 & 0.05477 & 0.05606 & 0.06286 & --- \\
+width$_{90}$ (diag) & 0.1348 & 0.1484 & 0.1357 & 0.1410 & 0.1166 & 0.1348 & 0.1446 & 0.1520 & --- \\
+lower miss$_{90}$ ($\to$0.05) & 0.07318 & \textbf{0.04651} & 0.06458 & 0.06787 & 0.09595 & 0.09265 & 0.05731 & 0.08331 & \textbf{TimeDiT (raw)} \\
+upper miss$_{90}$ ($\to$0.05) & \textbf{0.05743} & 0.05829 & 0.06689 & 0.06769 & 0.1135 & 0.08966 & 0.05432 & 0.06134 & \textbf{CSDI} \\
+\addlinespace
+\multicolumn{10}{l}{\textbf{step ($M\times H$)}} \\
+RMSE $\downarrow$ & 0.01245 & 0.01245 & \textbf{0.01245} & 0.01261 & 0.01295 & 0.01332 & 0.01245 & 0.01253 & \textbf{LS4} \\
+CRPS $\downarrow$ & 0.006777 & \textbf{0.006768} & 0.006788 & 0.006930 & 0.01272 & 0.01473 & 0.006761 & 0.006874 & \textbf{TimeDiT (raw)} \\
+coverage$_{50}$ ($\to$0.50) & 0.4493 & \textbf{0.4818} & 0.4648 & 0.4751 & 0.9449 & 0.9479 & 0.4810 & 0.5157 & \textbf{TimeDiT (raw)} \\
+coverage$_{90}$ ($\to$0.90) & 0.8639 & \textbf{0.8843} & 0.8630 & 0.8624 & 0.9970 & 0.9949 & 0.8862 & 0.8866 & \textbf{TimeDiT (raw)} \\
+width$_{50}$ (diag) & 0.01326 & 0.01431 & 0.01365 & 0.01444 & 0.06405 & 0.07667 & 0.01437 & 0.01602 & --- \\
+width$_{90}$ (diag) & 0.03534 & 0.03781 & 0.03544 & 0.03709 & 0.1609 & 0.1801 & 0.03807 & 0.03968 & --- \\
+lower miss$_{90}$ ($\to$0.05) & 0.07104 & \textbf{0.05719} & 0.06995 & 0.06750 & 0.001770 & 0.002319 & 0.05762 & 0.05933 & \textbf{TimeDiT (raw)} \\
+upper miss$_{90}$ ($\to$0.05) & 0.06506 & \textbf{0.05847} & 0.06702 & 0.07013 & 0.001221 & 0.002808 & 0.05621 & 0.05408 & \textbf{TimeDiT (raw)} \\
+\addlinespace
+\multicolumn{10}{l}{\textbf{rv ($M$ scalar)}} \\
+MAE $\downarrow$ & 0.01421 & \textbf{0.01341} & 0.01470 & 0.01414 & 0.2198 & 0.2570 & 0.01347 & 0.01509 & \textbf{TimeDiT (raw)} \\
+RMSE $\downarrow$ (true, root-last)$^{\dagger}$ & 0.01829 & \textbf{0.01686} & 0.01875 & 0.01764 & 0.2307 & 0.2865 & 0.01689 & 0.01876 & \textit{TimeDiT (raw)}$^{\dagger}$ \\
+CRPS $\downarrow$ & 0.01028 & \textbf{0.009484} & 0.01066 & 0.01009 & 0.1913 & 0.2291 & 0.009513 & 0.01168 & \textbf{TimeDiT (raw)} \\
+coverage$_{50}$ ($\to$0.50) & 0.4570 & \textbf{0.4883} & 0.4199 & 0.4629 & 0 & 0 & 0.4961 & 0.2344 & \textbf{TimeDiT (raw)} \\
+coverage$_{90}$ ($\to$0.90) & 0.8691 & \textbf{0.8926} & 0.7871 & 0.8574 & 0 & 0.001953 & 0.9141 & 0.5332 & \textbf{TimeDiT (raw)} \\
+width$_{50}$ (diag) & 0.02189 & 0.02217 & 0.01990 & 0.02194 & 0.06861 & 0.06689 & 0.02286 & 0.01202 & --- \\
+width$_{90}$ (diag) & 0.05318 & 0.05322 & 0.04786 & 0.05252 & 0.1651 & 0.1610 & 0.05559 & 0.02873 & --- \\
+lower miss$_{90}$ ($\to$0.05) & 0.01562 & 0.03906 & 0.05469 & \textbf{0.05273} & 1.000 & 0.9980 & 0.03125 & 0.2891 & \textbf{SBTS} \\
+upper miss$_{90}$ ($\to$0.05) & 0.1152 & \textbf{0.06836} & 0.1582 & 0.08984 & 0 & 0 & 0.05469 & 0.1777 & \textbf{TimeDiT (raw)} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{landscape}
+\begin{landscape}
+\section*{Bank size $N = 65\,536$}
+\noindent\textbf{Winners (of 18 ranked rows):} TimeDiT (raw) 14, CSDI 2, LS4 2.
+\begin{center}\small
+\begin{tabular}{lrrrrrrrrl}
+\toprule
+Quantity / metric & CSDI & TimeDiT (raw) & LS4 & SBTS & Chronos-2 & TimesFM & Oracle & RW & Winner \\
+\midrule
+\multicolumn{10}{l}{\textbf{cum ($M\times H$ trajectory)}} \\
+RMSE $\downarrow$ & 0.04912 & 0.04909 & \textbf{0.04900} & 0.05207 & 0.04921 & 0.05094 & 0.04910 & 0.05670 & \textbf{LS4} \\
+CRPS $\downarrow$ & 0.02535 & \textbf{0.02533} & 0.02536 & 0.02768 & 0.02624 & 0.02722 & 0.02524 & 0.02946 & \textbf{TimeDiT (raw)} \\
+coverage$_{50}$ ($\to$0.50) & 0.4670 & \textbf{0.5046} & 0.4717 & 0.4256 & 0.4050 & 0.4664 & 0.4886 & 0.4719 & \textbf{TimeDiT (raw)} \\
+coverage$_{90}$ ($\to$0.90) & 0.8738 & \textbf{0.8970} & 0.8685 & 0.8198 & 0.7905 & 0.8177 & 0.8887 & 0.8553 & \textbf{TimeDiT (raw)} \\
+width$_{50}$ (diag) & 0.05283 & 0.05886 & 0.05369 & 0.05231 & 0.04454 & 0.05477 & 0.05630 & 0.06286 & --- \\
+width$_{90}$ (diag) & 0.1354 & 0.1480 & 0.1353 & 0.1309 & 0.1166 & 0.1348 & 0.1448 & 0.1520 & --- \\
+lower miss$_{90}$ ($\to$0.05) & 0.07147 & \textbf{0.04761} & 0.06500 & 0.08795 & 0.09595 & 0.09265 & 0.05688 & 0.08331 & \textbf{TimeDiT (raw)} \\
+upper miss$_{90}$ ($\to$0.05) & \textbf{0.05469} & 0.05536 & 0.06647 & 0.09229 & 0.1135 & 0.08966 & 0.05444 & 0.06134 & \textbf{CSDI} \\
+\addlinespace
+\multicolumn{10}{l}{\textbf{step ($M\times H$)}} \\
+RMSE $\downarrow$ & \textbf{0.01244} & 0.01245 & 0.01246 & 0.01297 & 0.01295 & 0.01332 & 0.01245 & 0.01253 & \textbf{CSDI} \\
+CRPS $\downarrow$ & 0.006770 & \textbf{0.006762} & 0.006786 & 0.007304 & 0.01272 & 0.01473 & 0.006754 & 0.006874 & \textbf{TimeDiT (raw)} \\
+coverage$_{50}$ ($\to$0.50) & 0.4486 & \textbf{0.4765} & 0.4667 & 0.4406 & 0.9449 & 0.9479 & 0.4820 & 0.5157 & \textbf{TimeDiT (raw)} \\
+coverage$_{90}$ ($\to$0.90) & 0.8639 & \textbf{0.8810} & 0.8627 & 0.8183 & 0.9970 & 0.9949 & 0.8864 & 0.8866 & \textbf{TimeDiT (raw)} \\
+width$_{50}$ (diag) & 0.01330 & 0.01423 & 0.01367 & 0.01400 & 0.06405 & 0.07667 & 0.01441 & 0.01602 & --- \\
+width$_{90}$ (diag) & 0.03542 & 0.03760 & 0.03538 & 0.03433 & 0.1609 & 0.1801 & 0.03807 & 0.03968 & --- \\
+lower miss$_{90}$ ($\to$0.05) & 0.07001 & \textbf{0.05884} & 0.07025 & 0.08905 & 0.001770 & 0.002319 & 0.05658 & 0.05933 & \textbf{TimeDiT (raw)} \\
+upper miss$_{90}$ ($\to$0.05) & 0.06610 & \textbf{0.06012} & 0.06708 & 0.09265 & 0.001221 & 0.002808 & 0.05701 & 0.05408 & \textbf{TimeDiT (raw)} \\
+\addlinespace
+\multicolumn{10}{l}{\textbf{rv ($M$ scalar)}} \\
+MAE $\downarrow$ & 0.01393 & \textbf{0.01327} & 0.01448 & 0.01432 & 0.2198 & 0.2570 & 0.01314 & 0.01509 & \textbf{TimeDiT (raw)} \\
+RMSE $\downarrow$ (true, root-last)$^{\dagger}$ & 0.01796 & \textbf{0.01672} & 0.01850 & 0.01815 & 0.2307 & 0.2865 & 0.01657 & 0.01876 & \textit{TimeDiT (raw)}$^{\dagger}$ \\
+CRPS $\downarrow$ & 0.01007 & \textbf{0.009409} & 0.01048 & 0.01058 & 0.1913 & 0.2291 & 0.009330 & 0.01168 & \textbf{TimeDiT (raw)} \\
+coverage$_{50}$ ($\to$0.50) & 0.4551 & \textbf{0.4902} & 0.4141 & 0.4258 & 0 & 0 & 0.4980 & 0.2344 & \textbf{TimeDiT (raw)} \\
+coverage$_{90}$ ($\to$0.90) & 0.8652 & \textbf{0.8945} & 0.7910 & 0.8262 & 0 & 0.001953 & 0.9199 & 0.5332 & \textbf{TimeDiT (raw)} \\
+width$_{50}$ (diag) & 0.02148 & 0.02197 & 0.01961 & 0.02067 & 0.06861 & 0.06689 & 0.02259 & 0.01202 & --- \\
+width$_{90}$ (diag) & 0.05219 & 0.05302 & 0.04666 & 0.04806 & 0.1651 & 0.1610 & 0.05502 & 0.02873 & --- \\
+lower miss$_{90}$ ($\to$0.05) & 0.01562 & 0.03711 & \textbf{0.05078} & 0.06445 & 1.000 & 0.9980 & 0.02930 & 0.2891 & \textbf{LS4} \\
+upper miss$_{90}$ ($\to$0.05) & 0.1191 & \textbf{0.06836} & 0.1582 & 0.1094 & 0 & 0 & 0.05078 & 0.1777 & \textbf{TimeDiT (raw)} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{landscape}
+\begin{landscape}
+\section*{Bank size $N = 262\,144$}
+\noindent\textbf{Winners (of 18 ranked rows):} TimeDiT (raw) 15, CSDI 2, LS4 1.
+\begin{center}\small
+\begin{tabular}{lrrrrrrrrl}
+\toprule
+Quantity / metric & CSDI & TimeDiT (raw) & LS4 & SBTS & Chronos-2 & TimesFM & Oracle & RW & Winner \\
+\midrule
+\multicolumn{10}{l}{\textbf{cum ($M\times H$ trajectory)}} \\
+RMSE $\downarrow$ & 0.04911 & \textbf{0.04891} & 0.04897 & 0.05373 & 0.04921 & 0.05094 & 0.04898 & 0.05670 & \textbf{TimeDiT (raw)} \\
+CRPS $\downarrow$ & 0.02541 & \textbf{0.02528} & 0.02536 & 0.02987 & 0.02624 & 0.02722 & 0.02524 & 0.02946 & \textbf{TimeDiT (raw)} \\
+coverage$_{50}$ ($\to$0.50) & 0.4644 & \textbf{0.5010} & 0.4723 & 0.3552 & 0.4050 & 0.4664 & 0.4904 & 0.4719 & \textbf{TimeDiT (raw)} \\
+coverage$_{90}$ ($\to$0.90) & 0.8691 & \textbf{0.8972} & 0.8696 & 0.7396 & 0.7905 & 0.8177 & 0.8922 & 0.8553 & \textbf{TimeDiT (raw)} \\
+width$_{50}$ (diag) & 0.05267 & 0.05879 & 0.05349 & 0.04573 & 0.04454 & 0.05477 & 0.05706 & 0.06286 & --- \\
+width$_{90}$ (diag) & 0.1344 & 0.1480 & 0.1350 & 0.1137 & 0.1166 & 0.1348 & 0.1460 & 0.1520 & --- \\
+lower miss$_{90}$ ($\to$0.05) & 0.07501 & \textbf{0.04675} & 0.06653 & 0.1324 & 0.09595 & 0.09265 & 0.05548 & 0.08331 & \textbf{TimeDiT (raw)} \\
+upper miss$_{90}$ ($\to$0.05) & \textbf{0.05591} & 0.05609 & 0.06384 & 0.1280 & 0.1135 & 0.08966 & 0.05231 & 0.06134 & \textbf{CSDI} \\
+\addlinespace
+\multicolumn{10}{l}{\textbf{step ($M\times H$)}} \\
+RMSE $\downarrow$ & \textbf{0.01245} & 0.01245 & 0.01245 & 0.01360 & 0.01295 & 0.01332 & 0.01245 & 0.01253 & \textbf{CSDI} \\
+CRPS $\downarrow$ & 0.006771 & \textbf{0.006760} & 0.006784 & 0.008009 & 0.01272 & 0.01473 & 0.006752 & 0.006874 & \textbf{TimeDiT (raw)} \\
+coverage$_{50}$ ($\to$0.50) & 0.4529 & \textbf{0.4753} & 0.4653 & 0.3699 & 0.9449 & 0.9479 & 0.4825 & 0.5157 & \textbf{TimeDiT (raw)} \\
+coverage$_{90}$ ($\to$0.90) & 0.8638 & \textbf{0.8822} & 0.8645 & 0.7321 & 0.9970 & 0.9949 & 0.8849 & 0.8866 & \textbf{TimeDiT (raw)} \\
+width$_{50}$ (diag) & 0.01332 & 0.01425 & 0.01367 & 0.01230 & 0.06405 & 0.07667 & 0.01444 & 0.01602 & --- \\
+width$_{90}$ (diag) & 0.03547 & 0.03759 & 0.03538 & 0.02975 & 0.1609 & 0.1801 & 0.03806 & 0.03968 & --- \\
+lower miss$_{90}$ ($\to$0.05) & 0.07080 & \textbf{0.05811} & 0.06830 & 0.1332 & 0.001770 & 0.002319 & 0.05829 & 0.05933 & \textbf{TimeDiT (raw)} \\
+upper miss$_{90}$ ($\to$0.05) & 0.06543 & \textbf{0.05969} & 0.06720 & 0.1347 & 0.001221 & 0.002808 & 0.05682 & 0.05408 & \textbf{TimeDiT (raw)} \\
+\addlinespace
+\multicolumn{10}{l}{\textbf{rv ($M$ scalar)}} \\
+MAE $\downarrow$ & 0.01379 & \textbf{0.01305} & 0.01433 & 0.01487 & 0.2198 & 0.2570 & 0.01306 & 0.01509 & \textbf{TimeDiT (raw)} \\
+RMSE $\downarrow$ (true, root-last)$^{\dagger}$ & 0.01780 & \textbf{0.01647} & 0.01832 & 0.01899 & 0.2307 & 0.2865 & 0.01642 & 0.01876 & \textit{TimeDiT (raw)}$^{\dagger}$ \\
+CRPS $\downarrow$ & 0.009987 & \textbf{0.009273} & 0.01038 & 0.01155 & 0.1913 & 0.2291 & 0.009256 & 0.01168 & \textbf{TimeDiT (raw)} \\
+coverage$_{50}$ ($\to$0.50) & 0.4609 & \textbf{0.4902} & 0.4277 & 0.3496 & 0 & 0 & 0.4922 & 0.2344 & \textbf{TimeDiT (raw)} \\
+coverage$_{90}$ ($\to$0.90) & 0.8672 & \textbf{0.8926} & 0.8105 & 0.7500 & 0 & 0.001953 & 0.9180 & 0.5332 & \textbf{TimeDiT (raw)} \\
+width$_{50}$ (diag) & 0.02140 & 0.02177 & 0.01929 & 0.01770 & 0.06861 & 0.06689 & 0.02231 & 0.01202 & --- \\
+width$_{90}$ (diag) & 0.05196 & 0.05261 & 0.04621 & 0.04149 & 0.1651 & 0.1610 & 0.05430 & 0.02873 & --- \\
+lower miss$_{90}$ ($\to$0.05) & 0.01758 & 0.03906 & \textbf{0.04688} & 0.09766 & 1.000 & 0.9980 & 0.03125 & 0.2891 & \textbf{LS4} \\
+upper miss$_{90}$ ($\to$0.05) & 0.1152 & \textbf{0.06836} & 0.1426 & 0.1523 & 0 & 0 & 0.05078 & 0.1777 & \textbf{TimeDiT (raw)} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{landscape}
+\begin{landscape}
+\section*{Bank size $N = 1\,000\,000$}
+\noindent\textbf{Winners (of 18 ranked rows):} TimeDiT (raw) 15, LS4 2, CSDI 1.
+\begin{center}\small
+\begin{tabular}{lrrrrrrrrl}
+\toprule
+Quantity / metric & CSDI & TimeDiT (raw) & LS4 & SBTS & Chronos-2 & TimesFM & Oracle & RW & Winner \\
+\midrule
+\multicolumn{10}{l}{\textbf{cum ($M\times H$ trajectory)}} \\
+RMSE $\downarrow$ & 0.04925 & \textbf{0.04888} & 0.04894 & 0.05523 & 0.04921 & 0.05094 & 0.04911 & 0.05670 & \textbf{TimeDiT (raw)} \\
+CRPS $\downarrow$ & 0.02544 & \textbf{0.02521} & 0.02534 & 0.03179 & 0.02624 & 0.02722 & 0.02525 & 0.02946 & \textbf{TimeDiT (raw)} \\
+coverage$_{50}$ ($\to$0.50) & 0.4624 & \textbf{0.5072} & 0.4688 & 0.3001 & 0.4050 & 0.4664 & 0.4891 & 0.4719 & \textbf{TimeDiT (raw)} \\
+coverage$_{90}$ ($\to$0.90) & 0.8682 & \textbf{0.8983} & 0.8682 & 0.6575 & 0.7905 & 0.8177 & 0.8941 & 0.8553 & \textbf{TimeDiT (raw)} \\
+width$_{50}$ (diag) & 0.05285 & 0.05901 & 0.05359 & 0.04003 & 0.04454 & 0.05477 & 0.05719 & 0.06286 & --- \\
+width$_{90}$ (diag) & 0.1348 & 0.1486 & 0.1349 & 0.09761 & 0.1166 & 0.1348 & 0.1465 & 0.1520 & --- \\
+lower miss$_{90}$ ($\to$0.05) & 0.07599 & \textbf{0.04572} & 0.06757 & 0.1738 & 0.09595 & 0.09265 & 0.05463 & 0.08331 & \textbf{TimeDiT (raw)} \\
+upper miss$_{90}$ ($\to$0.05) & \textbf{0.05579} & 0.05597 & 0.06427 & 0.1687 & 0.1135 & 0.08966 & 0.05127 & 0.06134 & \textbf{CSDI} \\
+\addlinespace
+\multicolumn{10}{l}{\textbf{step ($M\times H$)}} \\
+RMSE $\downarrow$ & 0.01245 & 0.01246 & \textbf{0.01245} & 0.01421 & 0.01295 & 0.01332 & 0.01244 & 0.01253 & \textbf{LS4} \\
+CRPS $\downarrow$ & 0.006767 & \textbf{0.006760} & 0.006778 & 0.008688 & 0.01272 & 0.01473 & 0.006750 & 0.006874 & \textbf{TimeDiT (raw)} \\
+coverage$_{50}$ ($\to$0.50) & 0.4532 & \textbf{0.4761} & 0.4672 & 0.3082 & 0.9449 & 0.9479 & 0.4816 & 0.5157 & \textbf{TimeDiT (raw)} \\
+coverage$_{90}$ ($\to$0.90) & 0.8640 & \textbf{0.8806} & 0.8640 & 0.6479 & 0.9970 & 0.9949 & 0.8864 & 0.8866 & \textbf{TimeDiT (raw)} \\
+width$_{50}$ (diag) & 0.01338 & 0.01428 & 0.01368 & 0.01071 & 0.06405 & 0.07667 & 0.01449 & 0.01602 & --- \\
+width$_{90}$ (diag) & 0.03550 & 0.03758 & 0.03538 & 0.02568 & 0.1609 & 0.1801 & 0.03815 & 0.03968 & --- \\
+lower miss$_{90}$ ($\to$0.05) & 0.07062 & \textbf{0.05884} & 0.06921 & 0.1762 & 0.001770 & 0.002319 & 0.05725 & 0.05933 & \textbf{TimeDiT (raw)} \\
+upper miss$_{90}$ ($\to$0.05) & 0.06543 & \textbf{0.06061} & 0.06683 & 0.1758 & 0.001221 & 0.002808 & 0.05634 & 0.05408 & \textbf{TimeDiT (raw)} \\
+\addlinespace
+\multicolumn{10}{l}{\textbf{rv ($M$ scalar)}} \\
+MAE $\downarrow$ & 0.01373 & \textbf{0.01295} & 0.01426 & 0.01541 & 0.2198 & 0.2570 & 0.01291 & 0.01509 & \textbf{TimeDiT (raw)} \\
+RMSE $\downarrow$ (true, root-last)$^{\dagger}$ & 0.01772 & \textbf{0.01637} & 0.01819 & 0.01972 & 0.2307 & 0.2865 & 0.01625 & 0.01876 & \textit{TimeDiT (raw)}$^{\dagger}$ \\
+CRPS $\downarrow$ & 0.009938 & \textbf{0.009179} & 0.01032 & 0.01241 & 0.1913 & 0.2291 & 0.009143 & 0.01168 & \textbf{TimeDiT (raw)} \\
+coverage$_{50}$ ($\to$0.50) & 0.4746 & \textbf{0.4883} & 0.4102 & 0.2930 & 0 & 0 & 0.4727 & 0.2344 & \textbf{TimeDiT (raw)} \\
+coverage$_{90}$ ($\to$0.90) & 0.8633 & \textbf{0.8945} & 0.7988 & 0.6641 & 0 & 0.001953 & 0.9238 & 0.5332 & \textbf{TimeDiT (raw)} \\
+width$_{50}$ (diag) & 0.02115 & 0.02155 & 0.01914 & 0.01493 & 0.06861 & 0.06689 & 0.02217 & 0.01202 & --- \\
+width$_{90}$ (diag) & 0.05138 & 0.05213 & 0.04589 & 0.03608 & 0.1651 & 0.1610 & 0.05411 & 0.02873 & --- \\
+lower miss$_{90}$ ($\to$0.05) & 0.01758 & 0.03125 & \textbf{0.05078} & 0.1328 & 1.000 & 0.9980 & 0.02930 & 0.2891 & \textbf{LS4} \\
+upper miss$_{90}$ ($\to$0.05) & 0.1191 & \textbf{0.07422} & 0.1504 & 0.2031 & 0 & 0 & 0.04688 & 0.1777 & \textbf{TimeDiT (raw)} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{landscape}
+\end{document}

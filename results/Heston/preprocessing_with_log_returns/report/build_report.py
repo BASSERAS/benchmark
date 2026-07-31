@@ -72,6 +72,7 @@ def rmse_of(method, qn, key, bank_size=1000000):
 LATEX_LABEL = {
     "RMSE ↓": r"RMSE $\downarrow$",
     "MAE ↓": r"MAE $\downarrow$",
+    "RMSE ↓ (true, root-last)†": r"RMSE $\downarrow$ (true, root-last)$^{\dagger}$",
     "CRPS ↓": r"CRPS $\downarrow$",
     "coverage₅₀ (→0.50)": r"coverage$_{50}$ ($\to$0.50)",
     "coverage₉₀ (→0.90)": r"coverage$_{90}$ ($\to$0.90)",
@@ -146,10 +147,15 @@ def ps_table(bank_size):
         if qi:
             rows.append(r"\addlinespace")
         rows.append(r"\multicolumn{%d}{l}{\textbf{%s}} \\" % (ncol, lbl(qlabel)))
-        for metric, mlabel, rule in B.PS_METRICS:
+        # ps_rows(), not PS_METRICS: it splices in PS_EXTRA_ROWS (the rv true
+        # root-last RMSE) right after the RMSE row, exactly as the README does.
+        for metric, mlabel, rule in B.ps_rows(qn):
             vals = [B._ps_value(p, k, qn, metric, bank_size) for p, k in paths_kinds]
             wi = B._ps_winner_idx(vals, rule)
-            if wi is not None:
+            # "min-uncounted" rows are bolded and named but excluded from the
+            # 18-row total -- ranking both norms of one rv error vector would
+            # double-count rv against cum and step. See GUIDELINE 10.2 item 4.
+            if wi is not None and rule != "min-uncounted":
                 wins[names[wi]] += 1
             cells = []
             for i, v in enumerate(vals):
@@ -161,7 +167,12 @@ def ps_table(bank_size):
             mk = B._ps_key(qn, metric)
             ov = RT.fmt(oracle_q[qn][mk]["value"])
             rv = RT.fmt(rw_q[qn][mk]["value"])
-            win = r"\textbf{%s}" % tex_escape(names[wi]) if wi is not None else "---"
+            if wi is None:
+                win = "---"
+            elif rule == "min-uncounted":
+                win = r"\textit{%s}$^{\dagger}$" % tex_escape(names[wi])
+            else:
+                win = r"\textbf{%s}" % tex_escape(names[wi])
             # Same per-quantity label override the README uses (rv "RMSE" -> "MAE"),
             # read from build_cross_tables so the two renderers cannot diverge.
             mlab = B.PS_METRIC_LABEL.get((qn, metric), mlabel)
