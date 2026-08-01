@@ -41,8 +41,11 @@ import subprocess
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 
-# Method -> the model-family label the comparison header groups it under.
-FAMILIES = [("CSDI", "Diffusion"), ("LS4", "VAE")]
+# Method -> the model-family label the comparison header groups it under. Order fixes the
+# column order of every generated table. Adding a method here is the only edit needed: the
+# header, the winner logic and the pairwise section below are all written for N columns.
+FAMILIES = [("CSDI", "Diffusion"), ("TimeDiT", "Diffusion Transformer"), ("LS4", "VAE")]
+METHODS = [m for m, _ in FAMILIES]
 
 # Experiment -> the glob that selects that experiment's evaluator output.
 PATTERN = {"A": "*_drawdown_memory.json", "B": "*_heston_mixture.json"}
@@ -155,16 +158,35 @@ def battery_reference(label):
     return 0.0
 
 
-def decide(ref, a, b, tie=False):
-    """Return (winner_text, bold_a, bold_b). ``tie`` forces a draw regardless of distance."""
-    if ref is None or a is None or b is None:
-        return "—", False, False
-    da, db = abs(a - ref), abs(b - ref)
-    if tie or da == db:
-        return "<i>tie</i>", False, False
-    if da < db:
-        return FAMILIES[0][0], True, False
-    return FAMILIES[1][0], False, True
+def rank(ref, values):
+    """Method indices ordered by distance to ``ref``, closest first, or None if unscorable.
+
+    Separated from ``decide`` because the PDF section-5 gate needs to know *which two* methods
+    are being separated before it can look up their paired interval. With two columns that is
+    trivially the only pair; with three it is the best and the runner-up, and picking the wrong
+    pair would gate the winner on an interval computed for a comparison nobody is claiming.
+    """
+    if ref is None or any(v is None for v in values):
+        return None
+    return sorted(range(len(values)), key=lambda i: abs(values[i] - ref))
+
+
+def decide(ref, values, tie=False):
+    """Return (winner_text, [bold flag per method]). ``tie`` forces a draw regardless of distance.
+
+    A shared closest distance is a tie: with N columns the winner must be *strictly* closer to
+    the reference than every other method, otherwise the table would award a win on a
+    floating-point coincidence.
+    """
+    order = rank(ref, values)
+    if order is None:
+        return "—", [False] * len(values)
+    d = [abs(v - ref) for v in values]
+    best = order[0]
+    if tie or sum(1 for x in d if x == d[best]) > 1:
+        return "<i>tie</i>", [False] * len(values)
+    bold = [i == best for i in range(len(values))]
+    return METHODS[best], bold
 
 
 def cell(text, bold):
@@ -201,46 +223,84 @@ def table_pdf(exp):
             "--exclude-prefix", "configuration", "oracle_gate"]))
         per[method] = {r[0].strip("`"): r for r in rows}
 
-    paired, _h = parse_md_table(run([
-        os.path.join(HERE, "aggregate_pdf_metrics.py"),
-        "--model-dir", f"experiment_{exp}/{FAMILIES[0][0]}",
-        "--paired-dir", f"experiment_{exp}/{FAMILIES[1][0]}",
-        "--label", FAMILIES[0][0], "--paired-label", FAMILIES[1][0],
-        "--pattern", pat,
-        "--exclude-prefix", "configuration", "oracle_gate", "sources"]))
-    paired = {r[0].strip("`"): r for r in paired}
+    # PDF §5 requires the seedwise differences and the paired interval for *aligned-seed
+    # model-vs-model* comparisons. With N methods there are N(N-1)/2 such comparisons and the
+    # clause is about each of them, so every pair is produced -- not just the pair that happens
+    # to decide the winner.
+    pairs = [(METHODS[i], METHODS[j])
+             for i in range(len(METHODS)) for j in range(i + 1, len(METHODS))]
+    paired = {}
+    for left, right in pairs:
+        rows, _h = parse_md_table(run([
+            os.path.join(HERE, "aggregate_pdf_metrics.py"),
+            "--model-dir", f"experiment_{exp}/{left}",
+            "--paired-dir", f"experiment_{exp}/{right}",
+            "--label", left, "--paired-label", right,
+            "--pattern", pat,
+            "--exclude-prefix", "configuration", "oracle_gate", "sources"]))
+        paired[(left, right)] = {r[0].strip("`"): r for r in rows}
 
-    a_key, b_key = FAMILIES[0][0], FAMILIES[1][0]
+    a_key = METHODS[0]
     means = {k: mean_of(v[1]) for k, v in per[a_key].items()}
     floor = {k: mean_of(v[3]) for k, v in per[a_key].items()}
 
-    # PDF §5 requires the five seedwise differences *and* the paired interval for
-    # aligned-seed model-vs-model comparisons. Dropping the per-seed column and keeping
-    # only the summary would satisfy neither the sentence nor its purpose.
-    out = ["<table>", header(["Seedwise differences", "Mean diff", "Paired 95% CI"])]
+    # With exactly two methods the single pair's three columns ride along in the main table,
+    # which is how every committed comparison README already reads. With three or more, that
+    # would add 3*N(N-1)/2 columns to a table that is already wide, so the pairwise blocks are
+    # emitted as their own tables underneath instead. Same numbers, same producer, same clause.
+    inline = len(METHODS) == 2
+    extra = ["Seedwise differences", "Mean diff", "Paired 95% CI"] if inline else []
+
+    out = ["<table>", header(extra)]
     for key, row in per[a_key].items():
-        other = per[b_key].get(key)
-        if other is None:
+        others = [per[m].get(key) for m in METHODS[1:]]
+        if any(o is None for o in others):
             continue
-        pr = paired.get(key)
-        seedwise = pr[3] if pr else "—"
-        diff = pr[4] if pr else "—"
-        ci = pr[5] if pr else "—"
-        # A CI whose half-width covers the mean difference straddles zero: not a real gap.
-        straddles = True
-        if pr:
-            d, h = mean_of(pr[4]), mean_of(pr[5].lstrip("±"))
-            straddles = (d is None or h is None or abs(d) <= h)
+        rows_all = [row] + others
+        values = [mean_of(r[1]) for r in rows_all]
         why = diagnostic_of(key)
         ref = pdf_reference(key, means, floor)
-        win, ba, bb = decide(ref, mean_of(row[1]), mean_of(other[1]), tie=straddles)
+
+        # Gate the winner on the paired interval of the two methods actually being separated.
+        order = rank(ref, values)
+        straddles = True
+        pr_win = None
+        if order is not None and len(order) >= 2:
+            best, second = METHODS[order[0]], METHODS[order[1]]
+            pr_win = paired.get((best, second)) or paired.get((second, best))
+            pr_win = pr_win.get(key) if pr_win else None
+            if pr_win:
+                d, h = mean_of(pr_win[4]), mean_of(pr_win[5].lstrip("±"))
+                # A CI whose half-width covers the mean difference straddles zero: not a real gap.
+                straddles = (d is None or h is None or abs(d) <= h)
+
+        win, bolds = decide(ref, values, tie=straddles)
         if why:
             win = f'<i>diagnostic ({why})</i>'
-        out.append(f"<tr><td><code>{key}</code></td>"
-                   f"<td>{cell(row[1], ba)}</td><td>{cell(other[1], bb)}</td>"
-                   f"<td>{row[3]}</td><td>{seedwise}</td><td>{diff}</td><td>{ci}</td>"
-                   f"<td>{win}</td></tr>")
+        cells = "".join(f"<td>{cell(r[1], b)}</td>" for r, b in zip(rows_all, bolds))
+        tail = ""
+        if inline:
+            pr = paired[(METHODS[0], METHODS[1])].get(key)
+            tail = (f"<td>{pr[3] if pr else '—'}</td><td>{pr[4] if pr else '—'}</td>"
+                    f"<td>{pr[5] if pr else '—'}</td>")
+        out.append(f"<tr><td><code>{key}</code></td>{cells}"
+                   f"<td>{row[3]}</td>{tail}<td>{win}</td></tr>")
     out.append("</table>")
+
+    if not inline:
+        for left, right in pairs:
+            out.append(f"\n<p><b>Paired, aligned-seed: {left} vs {right}</b> "
+                       f"(PDF §5, seedwise differences and paired 95% CI)</p>")
+            out.append("<table>")
+            out.append(f"<tr><th>Metric</th><th>Seedwise differences</th>"
+                       f"<th>Mean diff</th><th>Paired 95% CI</th></tr>")
+            for key in per[a_key]:
+                pr = paired[(left, right)].get(key)
+                if not pr:
+                    continue
+                out.append(f"<tr><td><code>{key}</code></td><td>{pr[3]}</td>"
+                           f"<td>{pr[4]}</td><td>{pr[5]}</td></tr>")
+            out.append("</table>")
     return "\n".join(out)
 
 
@@ -287,17 +347,18 @@ def table_battery(exp, which):
             if method == FAMILIES[0][0]:
                 order.append((key, display))
 
-    a_key, b_key = FAMILIES[0][0], FAMILIES[1][0]
+    a_key = METHODS[0]
     lead = 2 if which == "B" else 1                    # leading label columns
-    ncol = lead + 4
+    ncol = lead + len(METHODS) + 2                     # + Perfect + Winner
     out = ["<table>"]
     out.append(header([], first_col="Plot", lead_extra=["Measure"]) if which == "B"
                else header([]))
     for key, display in order:
         row = per[a_key][key]
-        other = per[b_key].get(key)
-        if other is None:
+        others = [per[m].get(key) for m in METHODS[1:]]
+        if any(o is None for o in others):
             continue
+        rows_all = [row] + others
         is_section = row[0].startswith("**") and row[0].endswith("**") and \
             all(c == "" for c in row[1:])
         if is_section:
@@ -305,10 +366,10 @@ def table_battery(exp, which):
                        f"</td></tr>")
             continue
         ref = battery_reference(" ".join(x for x in key if x))
-        win, ba, bb = decide(ref, mean_of(row[lead]), mean_of(other[lead]))
+        win, bolds = decide(ref, [mean_of(r[lead]) for r in rows_all])
         lead_cells = "".join(f"<td>{md_bold(unescape(x))}</td>" for x in display)
-        out.append(f"<tr>{lead_cells}"
-                   f"<td>{cell(row[lead], ba)}</td><td>{cell(other[lead], bb)}</td>"
+        val_cells = "".join(f"<td>{cell(r[lead], b)}</td>" for r, b in zip(rows_all, bolds))
+        out.append(f"<tr>{lead_cells}{val_cells}"
                    f"<td>{row[-1]}</td><td>{win}</td></tr>")
     out.append("</table>")
     return "\n".join(out)

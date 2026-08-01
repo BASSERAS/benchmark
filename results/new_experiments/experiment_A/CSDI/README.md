@@ -417,7 +417,11 @@ results/new_experiments/experiment_A/CSDI/
 │       ├── metadata.json            raw run record written by the trainer
 │       └── generation_manifest.json PDF §1.4 mandatory manifest (§1.4 above)
 ├── raw_banks/
-│   └── seed_{0..4}_raw.npy          pre-repair banks, kept so the S₀ repair stays auditable
+│   └── generated_paths/seed_{0..4}/
+│       └── generated_paths_8192x128.npy    pre-repair banks, kept so the S₀ repair stays
+│                                           auditable. The nesting mirrors generated_paths/
+│                                           because that is the layout `apply_s0_repair.py
+│                                           --raw-dir` resolves each seed against.
 ├── losses/
 │   ├── seed_{0..4}_losses.csv       per-epoch loss + lr
 │   ├── seed_{0..4}_losses_steps.csv per-step loss

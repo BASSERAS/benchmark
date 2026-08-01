@@ -37,6 +37,7 @@
     "lr": 0.001,
     "n_layers": 4,
     "s4_type": "s4",
+    "seq_len": 128,
     "weight_decay": 0.0,
     "z_dim": 5
   },

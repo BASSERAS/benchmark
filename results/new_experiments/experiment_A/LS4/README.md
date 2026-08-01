@@ -379,7 +379,7 @@ results/new_experiments/experiment_A/LS4/
 ├── code/
 │   ├── train_ls4_experiment.py      train + generate 8192×128, one seed per call
 │   ├── compute_metrics_experiment.py  A1–A34 + B suite  (--experiment A --source model --seeds 5)
-│   └── logs/                        expA_seed{0..4}.log, metrics_A_model.log
+│   └── logs/                        expA_seed{0..4}.log, metrics_A_model.log, tables_A.md
 ├── weights/
 │   ├── seed_{0..4}_model.pt         EMA weights
 │   └── seed_{0..4}_config.json      exact hyperparameters actually used

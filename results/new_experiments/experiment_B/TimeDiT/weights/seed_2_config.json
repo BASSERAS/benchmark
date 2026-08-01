@@ -1,0 +1,33 @@
+{
+  "method": "TimeDiT",
+  "variant": "TimeDiT DiT-S (paper reimplementation)",
+  "experiment": "B",
+  "seed": 2,
+  "data": "/home/tbasseras/benchmark/dataset/Heston/new_experiments/experiment_B/train.npy",
+  "model_size": "S",
+  "hidden_size": 384,
+  "depth": 12,
+  "num_heads": 6,
+  "learn_sigma": false,
+  "schedule": "linear",
+  "T": 1000,
+  "sampler": "ddpm_fixed",
+  "lr": 0.0003,
+  "weight_decay": 0.0,
+  "ema": 0.0,
+  "grad_clip": 1.0,
+  "batch_size": 256,
+  "n_steps": 15000,
+  "n_train": 8192,
+  "seq_len": 128,
+  "feature_size": 1,
+  "scaler": "minmax_then_znorm",
+  "minmax": [
+    22.91188230938678,
+    358.87610143627353
+  ],
+  "scaler_mu": 0.22974251481031127,
+  "scaler_sigma": 0.03427856108971181,
+  "paper_hyperparams": true,
+  "params": 32463745
+}

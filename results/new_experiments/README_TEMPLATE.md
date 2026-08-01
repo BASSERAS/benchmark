@@ -109,7 +109,7 @@ reader who reads nothing else will read.>
 | Item | Value |
 |---|---|
 | Model seeds | `0, 1, 2, 3, 4` |
-| **Independent retraining** | <5 distinct checkpoint MD5s; per-seed config; 5 distinct 100-epoch loss curves; all 10 A+B checkpoints mutually distinct> |
+| **Independent retraining** | <5 distinct checkpoint MD5s; per-seed config; 5 distinct loss curves; all 10 A+B checkpoints mutually distinct. State the curve length in the method's OWN training unit — LS4 and CSDI run 100 epochs, TimeDiT runs 15 000 optimiser steps logged as 150 blocks of 100 and has no epoch at all. Do not copy "100-epoch" from another method's README: `losses/seed_<q>_losses.csv` carries an `epoch` column for every method because `check_method_layout.py` requires that column, so the header is not evidence of what the unit means.> |
 | **Trained on this experiment's own data** | <`train.npy` MD5 …; fitted scaler mu/sigma, which DIFFER from the other experiment's — the one check that does not trust the config file> |
 | Failed / unstable runs | <PDF §1.5: "Failed or unstable seeds must be reported and must not be silently replaced." If a seed's final-epoch loss spiked, say so, say whether generation uses EMA weights, and give that seed's rank on the primary metric.> |
 | Evaluator | <script, unchanged> |
@@ -181,6 +181,15 @@ reader who reads nothing else will read.>
 | Seed | Final loss | Min loss | Epoch of min |
 |---|---|---|---|
 <PASTE — five rows, read from losses/seed_N_losses.csv, not from memory.>
+
+<!-- Rename the last column to the method's real training unit if "epoch" is a
+     fiction for it. TimeDiT has no epoch: it trains 15 000 optimiser steps and
+     writes one row per 100-step block, so the honest header is "Block of min
+     (100 steps)". The CSV column is still called `epoch` because
+     check_method_layout.py requires that name -- match the METHOD, not the CSV.
+     A method that also emits a per-step curve (losses/seed_<q>_losses_steps.csv)
+     must list that file in the §5 tree too; check_readme_tree.py enforces it. -->
+
 
 ---
 

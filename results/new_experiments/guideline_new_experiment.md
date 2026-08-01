@@ -802,11 +802,15 @@ These do not serve a method README and were added when the cross-method pages we
 specification in **§7A**.
 
 ```bash
-# merge two methods' producer output into the fenced comparison tables, in place
+# merge every method's producer output into the fenced comparison tables, in place.
+# The methods are discovered on disk, so a new method directory joins the tables with no
+# edit here; but note that with 3+ methods the paired columns move out of the main table
+# into one pairwise block per pair, which is what check_prose_cells.py had to learn.
 python make_comparison_tables.py --inject ../README.md
 python make_comparison_tables.py --inject ../experiment_A/README.md
 
-# re-derive the six PDF §5 mandatory statements from the 10 manifests of an experiment
+# re-derive the six PDF §5 mandatory statements from every manifest of an experiment
+# (5 seeds x however many methods exist -- 15 at three methods)
 python check_pdf5_disclosure.py --experiment A
 python check_pdf5_disclosure.py --experiment A --readme README.md
 
@@ -1133,7 +1137,7 @@ results/new_experiments/
 │   ├── check_oracle_gate.py                     §3.3 — MANDATORY preflight before scoring B
 │   ├── apply_s0_repair.py                       §11.5 — applies AND audits the S0 repair
 │   ├── make_comparison_tables.py                §7A.2 — the fenced cross-method blocks
-│   ├── check_pdf5_disclosure.py                 §7A.5 — the six §5 statements vs 10 manifests
+│   ├── check_pdf5_disclosure.py                 §7A.5 — the six §5 statements vs every manifest
 │   └── check_prose_cells.py                     §7A.6 — hand-written cells vs generated blocks
 └── experiment_<A|B>/
     ├── perfect_floor/                           method-neutral sibling
@@ -1633,6 +1637,21 @@ The tree from §6.2, as a fenced block, plus a `Tool | Produces` table mapping e
 Every file that exists on disk must appear in the tree, including the ones the README does not
 display inline (the 10 PCA/t-SNE figures). A file present but undocumented reads as an oversight.
 
+Check this with `tools/check_readme_tree.py`, never by eye — see checklist item 18. Brace
+notation (`seed_{0..4}`, `seed_{0..4}_{disc,pred}_{gru,mlp}_loss.csv`) lets one line stand for
+twenty files, which is what makes the omission invisible: a reader scanning for a name finds the
+line and moves on without noticing the twenty-first file has no line at all.
+
+Two conventions the tree may use, both accepted by the checker:
+
+* **Inline children.** `logs/` lists its contents in the comment column rather than as indented
+  child lines. This keeps the tree readable when a directory holds only logs.
+* **Nested raw banks.** `raw_banks/` mirrors `generated_paths/` — write
+  `raw_banks/generated_paths/seed_<q>/generated_paths_8192x128.npy`, not
+  `raw_banks/seed_<q>_raw.npy`. The nesting is not cosmetic: it is the layout
+  `apply_s0_repair.py --raw-dir` resolves each seed against, so the flat form names files that
+  do not exist.
+
 ### 7.7 Figure specification
 
 **The full figure inventory — 13 per method per experiment.** Exactly three are displayed inline;
@@ -1922,11 +1941,11 @@ notation that lets a wrong path hide.
 ```bash
 cd results/new_experiments
 # 1. every method README still agrees with its producers, cell for cell
-for e in A B; do for m in CSDI LS4; do
+for e in A B; do for m in CSDI TimeDiT LS4; do
   python tools/check_readme_values.py --root experiment_$e/$m \
       --floor experiment_$e/perfect_floor --experiment $e
 done; done
-# 2. the six §5 statements agree with the 20 manifests
+# 2. the six §5 statements agree with every manifest (30 at three methods)
 for e in A B; do
   python tools/check_pdf5_disclosure.py --experiment $e
   python tools/check_pdf5_disclosure.py --experiment $e --readme README.md
@@ -2066,7 +2085,18 @@ before comparing.
       filling the placeholders — 5 sections in order, PDF metrics first (§7.1).
 - [ ] 17. **Re-run every `*Reproduce:*` command in the README and require an empty diff** (§7.0).
       This is the check that catches hand-edited cells; it is the single most valuable step here.
-- [ ] 18. Verify every figure link resolves and every file on disk appears in the §5 tree (§7.7).
+- [ ] 18. Verify every figure link resolves, then **machine-check the §5 tree** (§7.6/§7.7):
+      ```bash
+      python ../../tools/check_readme_tree.py --method experiment_<X>/<Method>
+      ```
+      Do not do this by eye. The trees use `seed_{0..4}` and `{disc,pred}_{gru,mlp}`, so one
+      line stands for up to twenty files and a missing twenty-first is invisible to a reader.
+      The tool expands the brace notation and compares both directions against
+      `git ls-files --cached --others --exclude-standard`, so it fails on an artefact nobody
+      documented *and* on a tree entry that names a file which was never produced. Both have
+      happened: `tables_A.md` was absent from two committed trees, and the CSDI trees claimed
+      `raw_banks/seed_{0..4}_raw.npy` when the repair tool writes
+      `raw_banks/generated_paths/seed_<q>/generated_paths_8192x128.npy`.
 - [ ] 19. Re-read every number quoted in *prose* from its JSON — not from memory (§7.10 E5).
 - [ ] 20. Check every `metadata.json` for `gen_has_nan: false` and `first_nan_epoch: null`,
       and re-measure the §1.4 output contract from the arrays on disk (finite, > 0, shape,
@@ -2849,6 +2879,27 @@ analytic invariance of the map, not a re-derivation.
 > `S₀ == 100` (which the PDF states with no tolerance), use `--anchor-exact`, which divides
 > first and is exact by construction because `x / x` is exactly `1.0`.
 >
+> **TimeDiT is that method — measure, do not assume.** LS4 and CSDI land on the anchor exactly
+> under the declared multiply-first form, so it is easy to copy their queue and never think
+> about this. TimeDiT's banks leave a residual of **1.421e-14**, `check_contract`'s
+> `np.all(a[:, 0] == 100.0)` fails, and `apply_s0_repair.py` exits **1** — at post-processing
+> step 1 of 9, i.e. after every hour of GPU time has already been spent. Catch it by smoke-testing
+> the wrapper on a few hundred paths *before* queueing the real runs; the residual shows up
+> identically at 512 paths and at 8192.
+>
+> Switching forms means **three** edits, not one, and they must agree:
+> 1. `apply_s0_repair.py --apply --anchor-exact` (the write);
+> 2. `apply_s0_repair.py --raw-dir … --anchor-exact` (the strong audit — a different flag here
+>    compares two *different* maps and the audit fails for a reason that has nothing to do
+>    with the bank);
+> 3. `write_generation_manifest.py --repair s0_renormalization_anchor_exact`, which records
+>    `S ← 100·(S/S[:, 0])` instead of `S ← 100·S/S[:, 0]`. Leaving this at the default writes a
+>    manifest asserting a formula that does not reproduce the committed artefact — undetectable
+>    from the manifest alone, which is exactly why it must not be left to memory.
+>
+> The two forms differ by at most **1.8e-15** in log returns, so no reported metric moves; the
+> choice decides only whether the anchor is exact and which spelling the manifest must declare.
+>
 > **A new method must keep its raw banks** and commit them, or at minimum run
 > `apply_s0_repair.py --raw-dir` once and paste the output. Experiment B is the cautionary
 > tale: five minutes of foresight would have made it as auditable as A.
@@ -3247,6 +3298,23 @@ check_prose_cells.py         --readme | --all             (comparison pages only
 
 * A: `--exclude-prefix configuration sources`
 * B: `--exclude-prefix oracle_gate sources configuration`
+
+Use those two forms in the README's `*Reproduce:*` lines. The queue scripts
+(`run_csdi_queue.sh:129,133`, `run_timedit_queue.sh:180,184`) instead pass one list,
+`configuration oracle_gate`, to both experiments. That looks like a defect and is not one:
+measured on CSDI, the queue's list and the per-experiment list above produce a **byte-identical
+table** in both experiments. The reason is that `sources` holds three strings only — the
+absolute paths of the generated, train and test arrays — and `aggregate_pdf_metrics.py` flattens
+numeric leaves, so a string-only block is dropped whether or not it is named.
+
+Two consequences, and the second is the one that matters:
+
+* the queue-emitted `code/logs/tables_<X>.md` can be pasted straight into README §1 and will
+  still satisfy §8 item 17's empty-diff requirement against the `*Reproduce:*` command;
+* that is a **measured coincidence, not an invariant**. The moment any evaluator adds a numeric
+  field under `sources`, the two lists diverge and the paste silently gains a row the
+  `*Reproduce:*` command does not emit. Do not "harmonise" the two by editing the README to
+  match the queue — re-run the `*Reproduce:*` command and diff, which is what catches it.
 
 ---
 

@@ -42,6 +42,7 @@ MARKUP = re.compile(r"</?(?:b|i|code|sub|sup)>")
 # method is added, and a positional checker would then compare the wrong pair of numbers.
 HEADER_ALIASES = {
     "csdi": "CSDI",
+    "timedit": "TimeDiT",
     "ls4": "LS4",
     "perfect": "Perfect",
     "perfect floor": "Perfect",
@@ -78,6 +79,14 @@ def generated_rows(text):
         methods = [h for h in named if HEADER_ALIASES[h.lower()] != "Perfect"]
         perfect = [h for h in named if HEADER_ALIASES[h.lower()] == "Perfect"]
         layout = [HEADER_ALIASES[h.lower()] for h in methods + perfect]
+        # A table with no recognisable method column carries no cell a prose row could quote,
+        # so it must not contribute to `seen` either. With three or more methods the pairwise
+        # PDF-section-5 blocks ('Metric | Seedwise differences | Mean diff | Paired 95% CI')
+        # repeat every metric key once per pair; counting them made *every* key look ambiguous
+        # and silently emptied this checker -- it reported "no generated rows found" on a file
+        # that had thirty of them.
+        if not layout:
+            continue
         for m in ROW.finditer(table):
             key = m.group("key")
             cells = [strip(c) for c in CELL.findall(m.group("rest"))]
@@ -89,31 +98,51 @@ def generated_rows(text):
 def prose_tables(text):
     """Every hand-written Markdown pipe table, as ``(headers, [(cells, offset)])``.
 
-    Rows inside a ``<table>`` are generated and skipped. A row counts as data only if one of its
-    cells is a backticked token, which is how this repository writes a metric name; anything else
-    starts a new header.
+    Rows inside a ``<table>`` are generated and skipped. Tables are found by Markdown's own
+    grammar -- a header row, a ``|---|---|`` separator, then the consecutive pipe rows that
+    follow -- and not by guessing which rows look like data.
+
+    The earlier version decided a row was data only if one of its cells began with a backtick,
+    and treated every other row as the start of a new header. That silently deleted whole
+    tables. Experiment B's PRIMARY panel labels its rows 'Regime proportion TVD' rather than
+    '`mixture_fidelity.regime_proportion_tvd`', so each row was reclassified as a header, the
+    table never reached the comparison loop, and three stale floor standard deviations sat on
+    the page through a passing run of this checker. A row that cannot be resolved to a metric
+    must be *reported* as unverified -- which the caller already does, by name -- but it must
+    never be invisible.
     """
     generated_spans = [m.span() for m in re.finditer(r"<table>.*?</table>", text, re.DOTALL)]
 
     def in_generated(pos):
         return any(a <= pos < b for a, b in generated_spans)
 
-    tables, current, headers = [], [], None
+    rows = []
     for m in re.finditer(r"^\|(?P<row>.*)\|[ \t]*$", text, re.M):
         if in_generated(m.start()):
             continue
         cells = [c.strip() for c in m.group("row").split("|")]
-        if set("".join(cells)) <= set("-: "):          # the |---|---| separator
-            continue
-        if not any(c.startswith("`") for c in cells):
-            if current:
-                tables.append((headers, current))
-                current = []
-            headers = cells
-            continue
-        current.append((cells, m.start()))
+        joined = "".join(cells)
+        is_sep = bool(joined) and set(joined) <= set("-: ")
+        rows.append((cells, m.start(), m.end(), is_sep))
+
+    # Group into runs of physically adjacent lines: a blank line, or any prose, ends a table.
+    runs, current = [], []
+    for row in rows:
+        if current and row[1] != current[-1][2] + 1:
+            runs.append(current)
+            current = []
+        current.append(row)
     if current:
-        tables.append((headers, current))
+        runs.append(current)
+
+    tables = []
+    for run in runs:
+        if len(run) < 3 or not run[1][3]:      # header, separator, and at least one body row
+            continue
+        headers = run[0][0]
+        body = [(cells, start) for cells, start, _end, is_sep in run[2:] if not is_sep]
+        if body:
+            tables.append((headers, body))
     return tables
 
 
@@ -126,7 +155,7 @@ def check(readme_rel):
     if not gen:
         raise SystemExit(f"{readme_rel}: no generated rows found -- has --inject been run?")
 
-    problems, compared, skipped = [], 0, 0
+    problems, compared, skipped = [], 0, []
 
     for headers, rows in prose_tables(text):
         if not headers:
@@ -148,7 +177,13 @@ def check(readme_rel):
             # when more than one key matches.
             matches = [k for k in gen if k == name or k.endswith("." + name)]
             if len(matches) != 1:
-                skipped += 1
+                # Record *what* was skipped, not just how many. A bare count is unfalsifiable:
+                # "1 prose rows unmatched" reads identically whether the skipped row is a
+                # provenance line ('Source', 0 matches -- the real case in both experiment
+                # READMEs) or a metric whose name became ambiguous and is therefore silently
+                # no longer verified. Only the second is a defect, and the count cannot
+                # distinguish them.
+                skipped.append(f"{name} ({len(matches)} matches)")
                 continue
             key = matches[0]
             for i, col in mapping.items():
@@ -166,7 +201,9 @@ def check(readme_rel):
 
     print(f"=== hand-written cells vs generated blocks: {readme_rel} ===")
     print(f"  {len(gen)} unambiguous generated rows, {compared} prose cells compared, "
-          f"{skipped} prose rows unmatched")
+          f"{len(skipped)} prose rows unmatched")
+    for name in skipped:
+        print(f"  note unmatched, NOT verified: {name}")
     for line in problems:
         print(line)
     if problems:

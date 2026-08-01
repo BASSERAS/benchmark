@@ -519,7 +519,8 @@ regimes enough to matter. Training took 1328–1539 s per seed.
 experiment_B/LS4/
 ├── code/
 │   ├── train_ls4_experiment.py          training + generation (identical to Experiment A)
-│   └── compute_metrics_experiment.py    A1–A34 + B battery runner
+│   ├── compute_metrics_experiment.py    A1–A34 + B battery runner
+│   └── logs/                            expB_seed{0..4}.log, metrics_B_model.log, tables_B.md
 ├── generated_paths/
 │   └── seed_<q>/
 │       ├── generated_paths_8192x128.npy the bank (float64, S0 = 100 exactly)

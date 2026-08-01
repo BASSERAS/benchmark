@@ -1,0 +1,93 @@
+{
+  "compute": {
+    "epochs_max": 150,
+    "epochs_run": 150,
+    "generation_time_sec": 2931.9,
+    "run_date": "2026-08-01",
+    "training_time_sec": 4780.8
+  },
+  "data_files": {
+    "test": "dataset/Heston/new_experiments/experiment_B/test.npy",
+    "train": "dataset/Heston/new_experiments/experiment_B/train.npy",
+    "validation": "dataset/Heston/new_experiments/experiment_B/disc.npy"
+  },
+  "experiment": "B",
+  "failure_information": {
+    "failed_or_unstable": false,
+    "first_nan_epoch": null,
+    "nan_in_bank": false,
+    "reason": null
+  },
+  "hardware": {
+    "cores_pinned": 4,
+    "cpu": "2x AMD EPYC 7763",
+    "gpu": "A100-SXM4-80GB",
+    "gpus_used": 1,
+    "note": "One GPU per run, 4 pinned cores per run. Up to four runs concurrently during a time-boxed 4-GPU grant (expired 2026-08-01 02:38); two thereafter. 4x4 = 16 cores, the standing cap."
+  },
+  "hyperparameter_origin": "paper-reproduction-selected (Sine+Stocks HP search in methods/TimeDiT/paper_reimplementation; no tuning on Heston, train.npy or disc.npy)",
+  "hyperparameters": {
+    "T": 1000,
+    "batch_size": 256,
+    "depth": 12,
+    "ema": 0.0,
+    "feature_size": 1,
+    "grad_clip": 1.0,
+    "hidden_size": 384,
+    "learn_sigma": false,
+    "lr": 0.0003,
+    "model_size": "S",
+    "n_steps": 15000,
+    "n_train": 8192,
+    "num_heads": 6,
+    "sampler": "ddpm_fixed",
+    "schedule": "linear",
+    "seq_len": 128,
+    "weight_decay": 0.0
+  },
+  "model": {
+    "name": "TimeDiT",
+    "official_implementation": false,
+    "reimplementation_basis": "arXiv:2409.02322 App. C -- no official release; DiT-S backbone reimplemented from facebookresearch/DiT",
+    "source_path": "methods/TimeDiT/code",
+    "source_revision": "1312f00",
+    "trainable_parameters": 32463745,
+    "variant": "TimeDiT DiT-S (paper reimplementation)"
+  },
+  "numerical_repair": {
+    "applied": true,
+    "declared_under": "PDF \u00a71.3 (post-hoc transformation, declared) and \u00a71.4 (model-specific numerical repair)",
+    "operation": "S <- 100 * (S / S[:, 0])",
+    "operator_order": "divide-first (apply_s0_repair.py --anchor-exact). The declared multiply-first form leaves a 1.4e-14 residual on this method's banks, which fails PDF \u00a71.4's \"begin at S0 = 100\" -- stated with no tolerance. Divide-first is exact by construction because x / x is exactly 1.0. The two forms differ by at most 1.8e-15 in log returns, so the choice does not touch the path law; it only decides whether the anchor is exact.",
+    "reason": "PDF \u00a71.4 and \u00a77 checklist item 5 require every bank to begin at S0 = 100; the raw generator emits prices in standardized price space and is not anchored at t = 0.",
+    "residual_s0_max_relative_deviation": 0.0
+  },
+  "output_contract": {
+    "all_finite": true,
+    "all_strictly_positive": true,
+    "dtype": "float64",
+    "dtype_is_float32_or_float64": true,
+    "s0_max_relative_deviation": 0.0,
+    "s0_within_floating_point_tolerance": true,
+    "shape": [
+      8192,
+      128
+    ]
+  },
+  "preprocessing": {
+    "description": "Two-stage affine map of raw prices, both stages fitted on train.npy: first x -> (x - min) / (max - min) onto [0,1], then z -> (z - mu) / sigma. Inverted in the same order before saving the bank, with the [0,1] stage clipped to its own range. No log-return transform, no quantile map, no dimensionality reduction.",
+    "fitted_on": "train.npy only (PDF \u00a71.3)",
+    "minmax": [
+      22.91188230938678,
+      358.87610143627353
+    ],
+    "mu": 0.22974251481031127,
+    "sigma": 0.03427856108971181,
+    "transform": "minmax_then_znorm"
+  },
+  "seeds": {
+    "generation_seed": 4,
+    "shared_rng_stream": true,
+    "training_seed": 4
+  }
+}

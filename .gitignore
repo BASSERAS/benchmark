@@ -53,6 +53,20 @@ results/Heston/preprocessing_with_log_returns/TimeDiT/baseline_no_preproc/weight
 # via protocol/experiments/scripts/fit_heston_mixture_oracle.py --workers 16.
 dataset/Heston/new_experiments/experiment_B/oracle/oracle.joblib
 
+# new_experiments TimeDiT model checkpoints — same model, same instruction, same cap as
+# the preprocessing_with_log_returns block above. DiT-S at 32,463,745 fp32 params
+# serialises to 130,100,902 bytes = 124.1 MiB per file; 10 files (2 experiments x 5 seeds)
+# = 1.21 GiB, every one of them over GitHub's 100 MiB per-file HARD cap, and LFS was ruled
+# out on 2026-07-30 ("add no new ones").
+# Theo, 2026-07-31: "save the checkpoints inside the disk and do not push them ... they
+# just do not appear in the github". They REMAIN ON DISK, so the READMEs' evidence of five
+# independent retrainings (5 distinct MD5s per experiment) stays verifiable locally with:
+#   md5sum weights/seed_*_model.pt | sort -u | wc -l   ->  5
+# Regenerable: code/train_timedit_experiment.py --seed N (deterministic).
+# The small seed_N_config.json recipe files stay tracked, as for the other methods.
+results/new_experiments/experiment_A/TimeDiT/weights/*.pt
+results/new_experiments/experiment_B/TimeDiT/weights/*.pt
+
 # LS4 upstream-reproduction run outputs — 621 MiB of checkpoints, samples and
 # TensorBoard events left over from the NN5/Monash reproduction runs used to
 # validate the vendored LS4 code before the Heston work. They are EVIDENCE, kept

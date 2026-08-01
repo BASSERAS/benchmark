@@ -28,8 +28,28 @@
   "hyperparameter_origin": "official-default",
   "hyperparameters": {
     "batch_size": 16,
+    "beta_end": 0.5,
+    "beta_start": 0.0001,
+    "channels": 64,
+    "diffusion_embedding_dim": 128,
     "epochs": 200,
+    "featureemb": 16,
+    "is_linear": false,
+    "is_unconditional": 1,
+    "layers": 4,
     "lr": 0.001,
+    "lr_gamma": 0.1,
+    "lr_milestones": [
+      150,
+      180
+    ],
+    "nheads": 8,
+    "num_steps": 50,
+    "schedule": "quad",
+    "seq_length": 128,
+    "side_dim": 144,
+    "target_dim": 1,
+    "timeemb": 128,
     "weight_decay": 1e-06
   },
   "model": {
