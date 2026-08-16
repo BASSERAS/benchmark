@@ -41,8 +41,11 @@ waited=0
 while :; do
   missing=()
   for s in "${SEEDS[@]}"; do
-    [[ -f "$RUNS/seed_$s/volatility_only_online_mp/checkpoint_evaluations/step_2500/metrics.json" ]] \
-      || missing+=("$s")
+    # COMPLETE.json is written last by the trainer. Do NOT key this on the
+    # step_2500 evaluation: that lands mid-run (training continues to 3000),
+    # and the exporter refuses a run tree without COMPLETE.json, so an early
+    # trigger silently drops the seed from the export.
+    [[ -f "$RUNS/seed_$s/COMPLETE.json" ]] || missing+=("$s")
   done
   (( ${#missing[@]} == 0 )) && break
   if (( waited % 600 == 0 )); then

@@ -357,11 +357,42 @@ bash run_confirm.sh <tag> ...                                    # fill seeds 1,
 /home/tbasseras/gpu-venv/bin/python rank_confirm.py <tag> ...    # rank on fresh seeds 1/3/4
 ```
 
-Every run in that chain sets `BENCHMARK_HESTON_EVAL=heston_S_valdisc_8192x128.npy`. The
-reported configuration is the paper's own: the search confirmed that no shortlisted variant
-beat it on the unbiased seeds by more than the noise floor, so the paper hyperparameters were
-kept unchanged. Search outputs live in `runs/hpsearch/` and `runs/hpsearch_confirm/` and are
-**not** part of any reported number.
+Every run in that chain sets `BENCHMARK_HESTON_EVAL=heston_S_valdisc_8192x128.npy`, so no
+search decision ever touched `heston_S_disc` or `heston_S_test`.
+
+**14 trials were run on seed 0.** Score = mean over the five paper columns of ours ÷ paper;
+below 1.000 means the trial beats the published Deep-MKV-TS row on average. Full table in
+[`runs/hpsearch/RANKING.md`](runs/hpsearch/RANKING.md); the head of it:
+
+| Rank | Trial | SWD | RV W₁ | \|r\| ACF | Early-future | MDD W₁ | Score |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 1 | `lambda100_kappa200_absacf0.50` | 0.0457 | 0.0139 | 0.0142 | 0.0052 | 0.0153 | **0.722** |
+| 2 | `kappa200_absacf0.50` | 0.0433 | 0.0169 | 0.0173 | 0.0120 | 0.0128 | 0.848 |
+| 3 | `jointvol1.0` | 0.0456 | 0.0228 | 0.0147 | 0.0126 | 0.0147 | 0.930 |
+| … | … | | | | | | |
+| 11 | `baseline` *(the paper config, what this reproduction reports)* | 0.0420 | 0.0196 | 0.0217 | 0.0254 | 0.0115 | 1.074 |
+| 14 | `kappa200_absacf0.50_jointvol0.5` | 0.0467 | 0.0208 | 0.0237 | 0.0275 | 0.0162 | 1.198 |
+
+**Several variants beat the paper configuration on validation**, the best by ~33 %
+(0.722 vs 1.074), driven mostly by the early-future column (0.0052 vs 0.0254). A confirmation
+run over fresh seeds {1, 3, 4} for the top two tags is what decides whether that margin
+survives outside seed 0; it writes `runs/hpsearch_confirm/`, `RANKING_CONFIRM.md` and
+`ranking_confirm.json`.
+
+> **⚠️ Why the reported numbers still use the paper configuration.** Everything in §4 and
+> everything Deep-MKV-TS contributes to the benchmark is the **paper's own hyperparameters**
+> (rank 11 above), not the search winner. Two reasons, both deliberate:
+>
+> 1. **This section is a reproduction.** Its job is to show that the published Table 1 is
+>    reproducible, which requires running the published configuration. Substituting a tuned
+>    variant would answer a different question.
+> 2. **Benchmark fairness.** Every other method in `benchmark/methods/` is run at its authors'
+>    published settings. Entering a locally-tuned Deep-MKV-TS against untuned baselines would
+>    produce a comparison not worth publishing.
+>
+> The search is recorded here for completeness and to be explicit that a better configuration
+> exists on validation. Search outputs live in `runs/hpsearch/` and `runs/hpsearch_confirm/`
+> and are **not** part of any reported number.
 
 ---
 
