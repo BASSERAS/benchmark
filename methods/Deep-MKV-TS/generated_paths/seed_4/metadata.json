@@ -1,0 +1,17 @@
+{
+  "bank_seed": 70004,
+  "date": "2026-08-16",
+  "gen_time_sec": null,
+  "gpu": "A100-SXM4-80GB",
+  "max_val": 141.53343200683594,
+  "method": "Deep-MKV-TS",
+  "min_val": 36.1042366027832,
+  "reported_checkpoint_step": 2500,
+  "seed": 4,
+  "shape": [
+    8192,
+    128
+  ],
+  "source": "paper_reimplementation/runs/seed_4/volatility_only_online_mp/checkpoint_evaluations/step_2500/validation_bank.npy",
+  "train_time_sec": 1398.8859419029905
+}

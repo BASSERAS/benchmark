@@ -1,0 +1,39 @@
+{
+  "created_utc": "2026-08-09T00:00:00Z",
+  "objective": "Seed-zero screen of volatility-only Deep MKV from a price-calibrated Guyon reference on the persistent Heston mixture.",
+  "task": "persistent_mixture",
+  "seed": 0,
+  "physical_drift": "zero",
+  "method": "online source-stage volatility-only Deep MKV",
+  "reference": {
+    "kind": "guyon_lekeufack_price_realized_volatility",
+    "observations": "log prices only",
+    "forward_realized_volatility_window": 20,
+    "calibration_fraction": 0.8,
+    "optimization_steps": 500,
+    "activity_update_during_generation": "structural_variance"
+  },
+  "configuration": {
+    "lambda_scale": 50.0,
+    "kappa_scale": 100.0,
+    "eta": 2.0,
+    "abs_return_acf_weight": 0.25,
+    "squared_return_acf_weight": 0.125,
+    "source_joint_volatility_weight": 0.0,
+    "adjoint_weight_Y": 0.0,
+    "adjoint_noise_weight_Z": 1.0,
+    "learning_rate": 0.0015,
+    "gradient_clip_norm": null,
+    "training_steps": 3000,
+    "checkpoint_steps": [500, 1000, 1500, 2000, 2500, 3000],
+    "validation_bank_paths": 8192,
+    "validation_bank_seed": 70000,
+    "path_derivative_backend": "autograd",
+    "drift_adjoint_backend": "none"
+  },
+  "selection_scope": "validation_only",
+  "common_random_numbers": true,
+  "multiseed_expansion_authorized": false,
+  "test_split_access_authorized": false,
+  "test_split_loaded": false
+}

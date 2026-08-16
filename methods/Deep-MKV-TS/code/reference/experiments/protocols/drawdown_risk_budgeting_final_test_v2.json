@@ -1,0 +1,153 @@
+{
+  "bootstrap": {
+    "confidence_level": 0.95,
+    "num_replicates": 5000,
+    "seed": 20260805,
+    "session_block_length": 5
+  },
+  "calibration": {
+    "coverage_level": 0.9,
+    "method": "finite_sample_split_conformal_realized_to_predicted_drawdown_ratio",
+    "selection_note": "All safety factors are fit separately on the locked 2025 validation sessions and frozen before protected test scoring.",
+    "validation_report": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_final_validation_v2/report.json",
+    "validation_report_sha256": "b274a5a77b7181d51c7afca3d6ac265672ed87ffc755421c0f6bc30f084f126a"
+  },
+  "crisis_stress_test": {
+    "protocol": "us_iran_2026_war",
+    "recalibration_authorized": false,
+    "windows": [
+      "matched_prewar",
+      "war",
+      "initial_recovery",
+      "late_june_reescalation"
+    ]
+  },
+  "experiment": "drawdown_constrained_position_sizing_final_test_v2",
+  "external_methods_only": false,
+  "index": "ES",
+  "methods": {
+    "deep_seed0": {
+      "bank_kind": "generated_scenario_bank",
+      "bank_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/final_selected_real_evaluation_20260806/banks/ES/seed_0/validation_bank.npy",
+      "bank_sha256": "cac6022020c7e3b58ee0a92089d594d0acfdc3bd8e19359d343ba8ebb56d5aac"
+    },
+    "deep_seed1": {
+      "bank_kind": "generated_scenario_bank",
+      "bank_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/final_selected_real_evaluation_20260806/banks/ES/seed_1/validation_bank.npy",
+      "bank_sha256": "35fff5386d510a40ad4c54848590a7b94cc39af887b22dd1ec564e6e0c47585c"
+    },
+    "deep_seed3": {
+      "bank_kind": "generated_scenario_bank",
+      "bank_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/final_selected_real_evaluation_20260806/banks/ES/seed_3/validation_bank.npy",
+      "bank_sha256": "fa39cac150986a167bbbb5fab9d607529415bd1bf1b8abb59a31f17a4cc0e220"
+    },
+    "deep_seed4": {
+      "bank_kind": "generated_scenario_bank",
+      "bank_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/final_selected_real_evaluation_20260806/banks/ES/seed_4/validation_bank.npy",
+      "bank_sha256": "2566c9de580219a0fb748dce4d2a560446f511015136847917f4783913d7800c"
+    },
+    "historical_neighbor": {
+      "bank_kind": "training_sessions",
+      "bank_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/data/ICAIF_3Y/canonical_rth_128/ES/prices_train.npy",
+      "bank_sha256": "8e108156052015f53cc56b1907b5a9635caa3888d2a716adeb61dfa064153cd2"
+    },
+    "moving_block": {
+      "bank_kind": "generated_scenario_bank",
+      "bank_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/real_data_protocol/moving_block_bootstrap/ES/seed_0/primary_2026_holdout/generated_bank.npy",
+      "bank_sha256": "db862a405e1da2ba38b94ca8e0f9af74c5810432a5978a21185e76e928f66caa"
+    },
+    "reference_seed0": {
+      "bank_kind": "generated_scenario_bank",
+      "bank_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/final_selected_real_evaluation_20260806/reference_banks/ES/seed_0/validation_bank.npy",
+      "bank_sha256": "99ecd259ba50f5ed22257f126ca048bab95c3eab6b5720cd6683a346d8132622"
+    },
+    "reference_seed1": {
+      "bank_kind": "generated_scenario_bank",
+      "bank_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/final_selected_real_evaluation_20260806/reference_banks/ES/seed_1/validation_bank.npy",
+      "bank_sha256": "9f6b0a60ed9bb2747a6b87df45be4c7fdcb9917997efb956a4abdb4436a12678"
+    },
+    "reference_seed3": {
+      "bank_kind": "generated_scenario_bank",
+      "bank_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/final_selected_real_evaluation_20260806/reference_banks/ES/seed_3/validation_bank.npy",
+      "bank_sha256": "c5976acf0580972fe0b2fa34d5b9bb6d796dedd6cb74f488b32075ff94020226"
+    },
+    "reference_seed4": {
+      "bank_kind": "generated_scenario_bank",
+      "bank_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/final_selected_real_evaluation_20260806/reference_banks/ES/seed_4/validation_bank.npy",
+      "bank_sha256": "b676a0d6812b333447b18d2917951618da3a6cbf3e68f580911e54dbda47e5c8"
+    },
+    "sbts": {
+      "bank_kind": "generated_scenario_bank",
+      "bank_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/real_data_protocol/SBTS/ES/seed_0/primary_2026_holdout/generated_bank.npy",
+      "bank_sha256": "623afa87c3f3d512e1a6bfe29c81fc14b4d35f6e188a61dffa9b0abab7d421d0"
+    },
+    "whole_session": {
+      "bank_kind": "generated_scenario_bank",
+      "bank_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/real_data_protocol/whole_session_bootstrap/ES/seed_0/primary_2026_holdout/generated_bank.npy",
+      "bank_sha256": "beb0dc2c06f331de74da2b52b9fc580f63f43cd32e914ebd3d4ca243cf705020"
+    }
+  },
+  "ours_authorized": true,
+  "primary_method": "deep_seed0",
+  "protected_test_access_authorized": true,
+  "test_data": {
+    "dates_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/data/ICAIF_3Y/canonical_rth_128/ES/dates_test.npy",
+    "dates_sha256": "5d343975ced99b314d605bfd741b9cf19daa8801635e5c95068c013c03363f07",
+    "prices_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/data/ICAIF_3Y/canonical_rth_128/ES/prices_test.npy",
+    "prices_sha256": "e7fabbbba22b601e89adcf222ee3da2cdf99eb7b7dd7f7f5b47458453f446d69"
+  },
+  "validation_path_metrics": {
+    "deep_seed0": {
+      "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_final_validation_v2/deep_seed0/path_metrics.npz",
+      "sha256": "dee9731535d719042bef9af834c68969046d1d25f8ff86703a1f8b49ab350ee2"
+    },
+    "deep_seed1": {
+      "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_final_validation_v2/deep_seed1/path_metrics.npz",
+      "sha256": "207333e9ae7e6eb54f88d10ed00c8aed5bb73c9328e57db027ba52b68f567b1d"
+    },
+    "deep_seed3": {
+      "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_final_validation_v2/deep_seed3/path_metrics.npz",
+      "sha256": "88449169f50fbe344dac6e0d45d92c2196918d6272a41b067f1cdb3ad61e0fd6"
+    },
+    "deep_seed4": {
+      "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_final_validation_v2/deep_seed4/path_metrics.npz",
+      "sha256": "101fac66c55637690ea498e8b7c96f1faa433c3e892e1299f815dca414b6ea84"
+    },
+    "historical_neighbor": {
+      "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_final_validation_v2/historical_neighbor/path_metrics.npz",
+      "sha256": "8e2efd44a9c151bfb7c6878b3fa88db582ece634d9a2f2b090f2ec8296ceb41d"
+    },
+    "moving_block": {
+      "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_final_validation_v2/moving_block/path_metrics.npz",
+      "sha256": "3032d733b4207b683207fabd348b05bfb1a761759d753a7a2d3bdfd22e2282c4"
+    },
+    "reference_seed0": {
+      "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_final_validation_v2/reference_seed0/path_metrics.npz",
+      "sha256": "1b629831fda115a2ded6389367f16d7fb9d4b850e2f6d182b4e1313d07c8c3cc"
+    },
+    "reference_seed1": {
+      "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_final_validation_v2/reference_seed1/path_metrics.npz",
+      "sha256": "fc5178ee3fc4ff3bcda191ea9222ef90e2b06af7f0af202d0d30773cddeba435"
+    },
+    "reference_seed3": {
+      "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_final_validation_v2/reference_seed3/path_metrics.npz",
+      "sha256": "b192d985099580cf758197c8fbb5ad34106c253ba3aa7951bd1b18aeb2bd33e2"
+    },
+    "reference_seed4": {
+      "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_final_validation_v2/reference_seed4/path_metrics.npz",
+      "sha256": "800dfdf91908fb7e65a70faf50a5e61ce5c68bae732b742d4cbe0f16a6e684ea"
+    },
+    "sbts": {
+      "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_final_validation_v2/sbts/path_metrics.npz",
+      "sha256": "534d57a00572015618df7fbce7eae22f12385c4962a108edd3881090f9d7936e"
+    },
+    "whole_session": {
+      "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_final_validation_v2/whole_session/path_metrics.npz",
+      "sha256": "6d8afbc99c71e10ed323324f8050f4d632fb1930af422b28b720688e19057ed7"
+    }
+  },
+  "validation_protocol": {
+    "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/experiments/protocols/drawdown_risk_budgeting_validation_v1.json",
+    "sha256": "88d20c41271c5f03728ceaebcec0e43d7a20fe42951b552ab2d16284f140e62a"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "bootstrap": {
+    "confidence_level": 0.95,
+    "num_replicates": 2000,
+    "seed": 20260805
+  },
+  "canonical_root": "/home/samer/scenarios/deep-mkv-gen-path-dt/data/ICAIF_3Y/canonical_rth_128",
+  "decision_rule": {
+    "drawdown_quantile": 0.9,
+    "max_leverage": 5.0,
+    "min_leverage": 0.0,
+    "risk_budget": 0.01,
+    "safety_factor": 1.0
+  },
+  "drawdown_definition": "Maximum peak-to-trough decline of constant-notional futures P&L from the observed prefix endpoint, expressed as a fraction of capital before leverage.",
+  "economic_interpretation": "constant_futures_notional",
+  "experiment": "drawdown_constrained_position_sizing_validation_v1",
+  "index": "ES",
+  "prefix_matching": {
+    "exact_batch_size": 64,
+    "features": {
+      "acf_lags": [
+        1,
+        2,
+        5,
+        10
+      ],
+      "acf_weight": 1.0,
+      "last_returns": 32,
+      "max_path_points": 24,
+      "path_weight": 0.5,
+      "return_weight": 1.0,
+      "rolling_windows": [
+        5,
+        10,
+        20
+      ],
+      "vol_weight": 2.0
+    },
+    "future_horizon": 32,
+    "prefix_length": 65,
+    "search_backend": "auto",
+    "top_k": 256
+  },
+  "protected_test_or_event_access_authorized": false,
+  "safety_factor_frontier": [
+    0.5,
+    0.625,
+    0.75,
+    0.875,
+    1.0,
+    1.125,
+    1.25,
+    1.375,
+    1.5,
+    1.75,
+    2.0
+  ],
+  "scenario_bank_protocol": "primary_2026_holdout",
+  "selection_scope": "validation_only",
+  "success_rule": {
+    "primary": "The MP bank supports greater average leverage than the reference with a positive paired 95% interval, while the upper paired interval for its violation-rate increase is at most 0.02 and its mean violation excess does not increase.",
+    "secondary": "Alternatively, the MP bank lowers violations with a negative paired 95% interval while sacrificing no more than 0.10 average leverage.",
+    "statistical_and_economic_metrics_are_reported_separately": true
+  }
+}

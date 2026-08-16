@@ -1,0 +1,123 @@
+{
+  "columns": [
+    "SWD",
+    "RV W1",
+    "|r| ACF",
+    "Early-future",
+    "MDD W1"
+  ],
+  "generated_utc": "2026-08-16T16:27:18Z",
+  "metrics_total": 5,
+  "metrics_within_tolerance": 5,
+  "ours": {
+    "Deep-MKV-TS": {
+      "median": {
+        "absolute_return_acf_rmse": 0.013187258822844179,
+        "maximum_drawdown_w1_normalized": 0.02321883291859158,
+        "path_swd_normalized": 0.07365226454312682,
+        "prefix_future_rv_correlation_error": 0.017822053991505493,
+        "realized_volatility_w1_normalized": 0.012794587736321118
+      },
+      "per_seed": {
+        "0": {
+          "absolute_return_acf_rmse": 0.022973017180164926,
+          "maximum_drawdown_w1_normalized": 0.010256193313743651,
+          "path_swd_normalized": 0.05280723967466488,
+          "prefix_future_rv_correlation_error": 0.017959653966678868,
+          "realized_volatility_w1_normalized": 0.0209781776343958
+        },
+        "1": {
+          "absolute_return_acf_rmse": 0.012829518502773817,
+          "maximum_drawdown_w1_normalized": 0.021846369700466935,
+          "path_swd_normalized": 0.06546610203993804,
+          "prefix_future_rv_correlation_error": 0.010750032101544904,
+          "realized_volatility_w1_normalized": 0.012706523093449317
+        },
+        "3": {
+          "absolute_return_acf_rmse": 0.006440694209255773,
+          "maximum_drawdown_w1_normalized": 0.04226451271003208,
+          "path_swd_normalized": 0.08183842704631561,
+          "prefix_future_rv_correlation_error": 0.04126988340826798,
+          "realized_volatility_w1_normalized": 0.012882652379192921
+        },
+        "4": {
+          "absolute_return_acf_rmse": 0.01354499914291454,
+          "maximum_drawdown_w1_normalized": 0.024591296136716224,
+          "path_swd_normalized": 0.08393768722637852,
+          "prefix_future_rv_correlation_error": 0.01768445401633212,
+          "realized_volatility_w1_normalized": 0.011207181873874733
+        }
+      }
+    },
+    "Reference": {
+      "median": {
+        "absolute_return_acf_rmse": 0.048410405640189245,
+        "maximum_drawdown_w1_normalized": 0.02872200531273188,
+        "path_swd_normalized": 0.03813322842505118,
+        "prefix_future_rv_correlation_error": 0.10190278999549782,
+        "realized_volatility_w1_normalized": 0.05663247930797906
+      },
+      "per_seed": {
+        "0": {
+          "absolute_return_acf_rmse": 0.05118134730250308,
+          "maximum_drawdown_w1_normalized": 0.034405283516857794,
+          "path_swd_normalized": 0.03677882381773696,
+          "prefix_future_rv_correlation_error": 0.12017286328415405,
+          "realized_volatility_w1_normalized": 0.05947175680304696
+        },
+        "1": {
+          "absolute_return_acf_rmse": 0.04919127652656981,
+          "maximum_drawdown_w1_normalized": 0.027622458630462775,
+          "path_swd_normalized": 0.032811838888015143,
+          "prefix_future_rv_correlation_error": 0.11225654602649443,
+          "realized_volatility_w1_normalized": 0.05738874599525882
+        },
+        "3": {
+          "absolute_return_acf_rmse": 0.04762953475380868,
+          "maximum_drawdown_w1_normalized": 0.022228636096787383,
+          "path_swd_normalized": 0.03948763303236541,
+          "prefix_future_rv_correlation_error": 0.088335220209939,
+          "realized_volatility_w1_normalized": 0.054939905099706705
+        },
+        "4": {
+          "absolute_return_acf_rmse": 0.047502683317558664,
+          "maximum_drawdown_w1_normalized": 0.029821551995000986,
+          "path_swd_normalized": 0.055466707741554905,
+          "prefix_future_rv_correlation_error": 0.0915490339645012,
+          "realized_volatility_w1_normalized": 0.055876212620699306
+        }
+      }
+    }
+  },
+  "paper": {
+    "Deep-MKV-TS": [
+      0.062,
+      0.014,
+      0.016,
+      0.018,
+      0.022
+    ],
+    "Reference": [
+      0.06,
+      0.089,
+      0.068,
+      0.214,
+      0.059
+    ]
+  },
+  "reference_kind": "guyon_lekeufack_structural_likelihood",
+  "reference_note": "The Reference row is informational, not a reproduction target: the published row came from the `local_gaussian` reference, while this reimplementation uses the Guyon-Lekeufack reference that paper Section 2.1 describes. Only the Deep-MKV-TS row is scored against the paper.",
+  "scored_rows": [
+    "Deep-MKV-TS"
+  ],
+  "seeds": [
+    0,
+    1,
+    3,
+    4
+  ],
+  "tolerance": {
+    "absolute": 0.005,
+    "relative": 0.25
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "created_utc": "2026-08-09T00:00:00Z",
+  "objective": "Test whether targeted dependence features close the Heston metrics on which SBTS is stronger while preserving Deep MKV's path-law advantages.",
+  "task": "Heston",
+  "seed": 0,
+  "method": "online source-stage volatility-only Deep MKV with fixed fitted-reference drift and analytical path-dependent-drift adjoint",
+  "common_configuration": {
+    "reference_kind": "local_gaussian_complete_prefix",
+    "lambda_scale": 50.0,
+    "kappa_scale": 100.0,
+    "eta": 1.0,
+    "adjoint_weight_Y": 0.0,
+    "adjoint_noise_weight_Z": 1.0,
+    "learning_rate": 0.002,
+    "gradient_clip_norm": 5.0,
+    "training_steps": 3000,
+    "checkpoint_steps": [500, 1000, 1500, 2000, 2500, 3000],
+    "validation_bank_paths": 8192,
+    "validation_bank_seed": 70000,
+    "path_derivative_backend": "autograd",
+    "drift_adjoint_backend": "analytical_reference"
+  },
+  "historical_baseline": {
+    "abs_return_acf_weight": 0.25,
+    "squared_return_acf_weight": 0.125,
+    "source_joint_volatility_weight": 0.0
+  },
+  "arms": {
+    "acf_focused": {
+      "abs_return_acf_weight": 0.5,
+      "squared_return_acf_weight": 0.5,
+      "source_joint_volatility_weight": 0.0
+    },
+    "conditional_focused": {
+      "abs_return_acf_weight": 0.25,
+      "squared_return_acf_weight": 0.125,
+      "source_joint_volatility_weight": 1.0
+    },
+    "combined": {
+      "abs_return_acf_weight": 0.5,
+      "squared_return_acf_weight": 0.5,
+      "source_joint_volatility_weight": 1.0
+    }
+  },
+  "primary_metrics": [
+    "realized_volatility_w1_normalized",
+    "absolute_return_acf_rmse",
+    "squared_return_acf_rmse",
+    "prefix_high_low_future_rv_gap_error"
+  ],
+  "preservation_metrics": [
+    "path_swd_normalized",
+    "terminal_w1_normalized",
+    "maximum_drawdown_w1_normalized",
+    "prefix_future_rv_correlation_error",
+    "return_std_ratio",
+    "sigma_max_active_fraction"
+  ],
+  "selection_scope": "validation_only",
+  "common_random_numbers": true,
+  "multiseed_expansion_authorized": false,
+  "test_split_access_authorized": false,
+  "test_split_loaded": false
+}

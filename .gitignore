@@ -76,3 +76,14 @@ results/new_experiments/experiment_B/TimeDiT/weights/*.pt
 # configs/monash/*.yaml. The tracked reference/ tree (45 files: code, configs,
 # LICENSE, README) is unaffected.
 methods/LS4/code/reference/outputs_*
+
+# Deep-MKV-TS upstream run trees — 357 MiB of per-seed checkpoints (6 x step_*.pt),
+# per-checkpoint evaluation dumps (validation_bank.npy, 8192x128) and the
+# validation-only hyperparameter-search trials. Every number we report is exported
+# out of these trees into methods/Deep-MKV-TS/{generated_paths,weights,losses}/ and
+# paper_reimplementation/results/, all of which ARE tracked. The raw trees stay on
+# disk as evidence and are fully regenerable:
+#   methods/Deep-MKV-TS/paper_reimplementation/metric/run_reproduction.sh   (seeds 0,1,3,4)
+#   methods/Deep-MKV-TS/paper_reimplementation/metric/run_seed2.sh          (seed 2)
+# runs/hpsearch* in particular backs NO reported number (validation split only).
+methods/Deep-MKV-TS/paper_reimplementation/runs/

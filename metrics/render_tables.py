@@ -35,6 +35,11 @@ FAMILIES = [
     ("VAE",                [("TimeVAE", "TimeVAE"), ("TimeVQVAE", "TimeVQVAE"), ("LS4", "LS4")]),
     ("Schrödinger Bridge", [("SBTS", "SBTS")]),
     ("Fourier Flow",       [("FourierFlow", "Fourier Flow")]),
+    # Deep-MKV-TS learns an entropy-penalised volatility correction on top of a
+    # frozen path-dependent reference SDE (Guyon-Lekeufack). It is a McKean-Vlasov
+    # stochastic-control generator, not a GAN / diffusion / VAE / bridge / flow, so
+    # it opens its own family rather than being filed under an ill-fitting one.
+    ("McKean-Vlasov",      [("Deep-MKV-TS", "Deep-MKV-TS")]),
 ]
 # NOTE: Chronos-2 is NOT a generator - it is a conditional forecaster, used in
 # this benchmark only as a FORECASTER REFERENCE on the path-shadowing task

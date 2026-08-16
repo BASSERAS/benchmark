@@ -1,0 +1,80 @@
+{
+  "bootstrap": {
+    "confidence_level": 0.95,
+    "num_replicates": 5000,
+    "session_block_length": 5,
+    "seed": 20260805
+  },
+  "calibration": {
+    "coverage_level": 0.9,
+    "method": "finite_sample_split_conformal_realized_to_predicted_drawdown_ratio",
+    "validation_report": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_external_baselines_validation_v1/report.json",
+    "validation_report_sha256": "59b8c0ee1886db854b6dc41bede83eb7d326f1d0451c99d03fc73983eee30120"
+  },
+  "crisis_stress_test": {
+    "protocol": "us_iran_2026_war",
+    "recalibration_authorized": false,
+    "windows": [
+      "matched_prewar",
+      "war",
+      "initial_recovery",
+      "late_june_reescalation"
+    ]
+  },
+  "experiment": "drawdown_constrained_position_sizing_external_test_v1",
+  "external_methods_only": true,
+  "index": "ES",
+  "methods": {
+    "historical_neighbor": {
+      "bank_kind": "training_sessions",
+      "bank_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/data/ICAIF_3Y/canonical_rth_128/ES/prices_train.npy",
+      "bank_sha256": "8e108156052015f53cc56b1907b5a9635caa3888d2a716adeb61dfa064153cd2"
+    },
+    "moving_block": {
+      "bank_kind": "generated_scenario_bank",
+      "bank_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/real_data_protocol/moving_block_bootstrap/ES/seed_0/primary_2026_holdout/generated_bank.npy",
+      "bank_sha256": "db862a405e1da2ba38b94ca8e0f9af74c5810432a5978a21185e76e928f66caa"
+    },
+    "sbts": {
+      "bank_kind": "generated_scenario_bank",
+      "bank_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/real_data_protocol/SBTS/ES/seed_0/primary_2026_holdout/generated_bank.npy",
+      "bank_sha256": "623afa87c3f3d512e1a6bfe29c81fc14b4d35f6e188a61dffa9b0abab7d421d0"
+    },
+    "whole_session": {
+      "bank_kind": "generated_scenario_bank",
+      "bank_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/real_data_protocol/whole_session_bootstrap/ES/seed_0/primary_2026_holdout/generated_bank.npy",
+      "bank_sha256": "beb0dc2c06f331de74da2b52b9fc580f63f43cd32e914ebd3d4ca243cf705020"
+    }
+  },
+  "ours_authorized": false,
+  "primary_method": "sbts",
+  "protected_test_access_authorized": true,
+  "test_data": {
+    "dates_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/data/ICAIF_3Y/canonical_rth_128/ES/dates_test.npy",
+    "dates_sha256": "5d343975ced99b314d605bfd741b9cf19daa8801635e5c95068c013c03363f07",
+    "prices_path": "/home/samer/scenarios/deep-mkv-gen-path-dt/data/ICAIF_3Y/canonical_rth_128/ES/prices_test.npy",
+    "prices_sha256": "e7fabbbba22b601e89adcf222ee3da2cdf99eb7b7dd7f7f5b47458453f446d69"
+  },
+  "validation_path_metrics": {
+    "historical_neighbor": {
+      "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_external_baselines_validation_v1/historical_neighbor/path_metrics.npz",
+      "sha256": "8e2efd44a9c151bfb7c6878b3fa88db582ece634d9a2f2b090f2ec8296ceb41d"
+    },
+    "moving_block": {
+      "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_external_baselines_validation_v1/moving_block/path_metrics.npz",
+      "sha256": "3032d733b4207b683207fabd348b05bfb1a761759d753a7a2d3bdfd22e2282c4"
+    },
+    "sbts": {
+      "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_external_baselines_validation_v1/sbts/path_metrics.npz",
+      "sha256": "534d57a00572015618df7fbce7eae22f12385c4962a108edd3881090f9d7936e"
+    },
+    "whole_session": {
+      "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/runs/es_drawdown_risk_budgeting_external_baselines_validation_v1/whole_session/path_metrics.npz",
+      "sha256": "6d8afbc99c71e10ed323324f8050f4d632fb1930af422b28b720688e19057ed7"
+    }
+  },
+  "validation_protocol": {
+    "path": "/home/samer/scenarios/deep-mkv-gen-path-dt/experiments/protocols/drawdown_risk_budgeting_validation_v1.json",
+    "sha256": "88d20c41271c5f03728ceaebcec0e43d7a20fe42951b552ab2d16284f140e62a"
+  }
+}
