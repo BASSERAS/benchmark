@@ -373,15 +373,54 @@ below 1.000 means the trial beats the published Deep-MKV-TS row on average. Full
 | 11 | `baseline` *(the paper config, what this reproduction reports)* | 0.0420 | 0.0196 | 0.0217 | 0.0254 | 0.0115 | 1.074 |
 | 14 | `kappa200_absacf0.50_jointvol0.5` | 0.0467 | 0.0208 | 0.0237 | 0.0275 | 0.0162 | 1.198 |
 
-**Several variants beat the paper configuration on validation**, the best by ~33 %
-(0.722 vs 1.074), driven mostly by the early-future column (0.0052 vs 0.0254). A confirmation
-run over fresh seeds {1, 3, 4} for the top two tags is what decides whether that margin
-survives outside seed 0; it writes `runs/hpsearch_confirm/`, `RANKING_CONFIRM.md` and
-`ranking_confirm.json`.
+**Several variants beat the paper configuration on seed 0**, the best by ~33 %
+(0.722 vs 1.074), driven mostly by the early-future column (0.0052 vs 0.0254). But seed 0 is
+also the seed that *chose* the shortlist, so that margin is biased upward by the selection
+itself and cannot be taken at face value. The confirmation run below is what tests it.
+
+#### Confirmation on fresh seeds {1, 3, 4} — the margin does not survive
+
+`run_confirm.sh` filled seeds 1, 3 and 4 for the top two tags (6 runs, all complete) and
+`rank_confirm.py` re-ranked on those unbiased seeds only. Full output in
+[`runs/hpsearch_confirm/RANKING_CONFIRM.md`](runs/hpsearch_confirm/RANKING_CONFIRM.md):
+
+| Trial | Score(fresh) | Fresh per-seed (1 / 3 / 4) | Seeds beating paper | mean ± sd | t vs 1.0 |
+|---|---:|---|:---:|---|---:|
+| `lambda100_kappa200_absacf0.50` | **0.791** | 0.836 / **1.159** / 0.790 | 2 / 3 | 0.928 ± 0.201 | 0.62 |
+| `kappa200_absacf0.50` | 0.876 | 0.741 / 0.999 / 0.872 | **3 / 3** | 0.871 ± 0.129 | 1.74 |
+
+`RANKING_CONFIRM.md` declares `lambda100_kappa200_absacf0.50` the winner because 0.791 < 1.000.
+**That headline is weaker than it looks, in three specific ways:**
+
+1. **One of the three unbiased seeds is worse than the paper.** Seed 3 scores 1.159. The
+   nominal winner beats the published row on 2 of 3 seeds, not 3 of 3.
+2. **`Score(fresh)` is not the median of the per-seed scores.** It is `score(median of each
+   metric column)`, computed column by column, so different seeds can supply different columns
+   and the aggregate ends up more favourable than any typical seed. The median of the per-seed
+   scores is **0.836** and the mean is **0.928** — both materially worse than the reported
+   0.791.
+3. **The margin sits inside the noise.** With n = 3 the winner is 0.072 below 1.0 against an sd
+   of 0.201 (t = 0.62). `RANKING_CONFIRM.md`'s own stated bar is that "a margin smaller than
+   [the seed] range is seed noise, not an improvement" — the range is 0.722–1.159, i.e. 0.437
+   wide, against a margin of 0.209. **It fails its own test.**
+
+**The ranking also promotes the less robust of the two.** `kappa200_absacf0.50` beats the paper
+on *every* unbiased seed with two-thirds the spread (t = 1.74 vs 0.62). Ranking on a single
+point estimate rewards the config that drew one very good seed over the config that is
+consistently better. Neither is statistically separable from the paper at n = 3.
+
+> **One gap worth naming explicitly.** There is **no fresh-seed `valdisc` score for the paper
+> configuration**: `run_confirm.sh` only filled seeds for the two shortlisted tags, and
+> `run_reproduction.sh` sets no `BENCHMARK_HESTON_EVAL`, so §4's reproduction was scored on a
+> different split. The `baseline` 1.074 in the seed-0 table above is the *only* number for the
+> paper config on this split. Claims of the form "the tuned config beats our baseline by X %"
+> therefore **cannot** be made on the unbiased seeds — only "beats the *published* row", and
+> weakly. Closing that gap would mean running `baseline` on seeds 1/3/4 under
+> `BENCHMARK_HESTON_EVAL=heston_S_valdisc_8192x128.npy`; it was not done.
 
 > **⚠️ Why the reported numbers still use the paper configuration.** Everything in §4 and
 > everything Deep-MKV-TS contributes to the benchmark is the **paper's own hyperparameters**
-> (rank 11 above), not the search winner. Two reasons, both deliberate:
+> (rank 11 above), not the search winner. Three reasons, all deliberate:
 >
 > 1. **This section is a reproduction.** Its job is to show that the published Table 1 is
 >    reproducible, which requires running the published configuration. Substituting a tuned
@@ -389,10 +428,16 @@ survives outside seed 0; it writes `runs/hpsearch_confirm/`, `RANKING_CONFIRM.md
 > 2. **Benchmark fairness.** Every other method in `benchmark/methods/` is run at its authors'
 >    published settings. Entering a locally-tuned Deep-MKV-TS against untuned baselines would
 >    produce a comparison not worth publishing.
+> 3. **The tuned config is not demonstrably better.** As shown above, the confirmation run does
+>    not separate either shortlisted variant from the paper configuration at n = 3. Swapping in
+>    a config that fails its own noise test would trade a defensible number for an
+>    undefensible one.
 >
 > The search is recorded here for completeness and to be explicit that a better configuration
-> exists on validation. Search outputs live in `runs/hpsearch/` and `runs/hpsearch_confirm/`
-> and are **not** part of any reported number.
+> **may** exist — the seed-0 evidence was suggestive and the fresh-seed evidence is
+> inconclusive, which is not the same as a better configuration having been found. Search
+> outputs live in `runs/hpsearch/` and `runs/hpsearch_confirm/` and are **not** part of any
+> reported number.
 
 ---
 
