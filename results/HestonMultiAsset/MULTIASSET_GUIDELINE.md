@@ -8,7 +8,7 @@ and whose README carries a Path Shadowing MC section. **None of those three thin
 Where this file is silent, the root guideline applies. Where the two disagree, **this file wins
 for anything under `results/HestonMultiAsset/`**.
 
-[`README.md`](README.md) in this directory carries a five-step summary of the same process. That
+[`oldreadme.md`](oldreadme.md) in this directory carries a five-step summary of the same process. That
 file is **generated** by `tools/render_dataset_readme.py` and is deliberately kept short; this
 file is the full specification. If the two ever disagree, this one is authoritative and the
 generator's summary should be corrected.
@@ -338,45 +338,208 @@ Copy `SBTS/code/render_readme.py` into `<Method>/code/` and adapt it. **Every nu
 read from disk**, including the headline win-counts, so the prose cannot drift away from the
 tables it describes. A hand-typed number is a future lie.
 
+The normative reference for the display is the rendered artefact
+[`SBTS/README.md`](SBTS/README.md), not this document. Where the two disagree, the artefact wins
+and this section is the bug. Read it end to end before you adapt the renderer.
+
 ### 8.1 Section order — exact, no insertions, no reordering
 
-1. `# <Method> on Multi-Asset Heston (d = 8)` + paper citation + links to `code/README.md` and `../README.md`
-2. Hyperparameters blockquote — states which values are the paper's and which you re-tuned, and why
-3. `## Metrics A1-A34 + B, mean ± std across 5 seeds`
-4. `## B, Curve-Shape Metrics, mean ± std across 5 seeds`
-5. `## Stylised Facts Diagnostic (Multi-Asset Heston vs <Method>, seed 0, asset 0)`
-6. **`## <Method> Training Loss (5 seeds)`** ← the one section that differs from SBTS
-7. `## A18, Discriminative Classifier Training Loss`
-8. `## A19, Predictive Score Training Loss (TSTR)`
-9. `## File layout`
-10. `## Reproduce`
+| # | Heading emitted | Level | Notes |
+|---|---|---|---|
+| 1 | `# <Method> on Multi-Asset Heston (d = 8)` | `#` | title + citation + 3 links, no `---` after |
+| 2 | *(hyperparameter blockquote)* | — | not a heading; `>`-block, closed by `---` |
+| 3 | `## Metrics A1-A34 + B, mean ± std across 5 seeds` | `##` | the A table |
+| 4 | `## B, Curve-Shape Metrics, mean ± std across 5 seeds` | `##` | the B table |
+| 5 | `## Stylised Facts Diagnostic (Multi-Asset Heston vs <Method>, seed 0, asset 0)` | `##` | 8-panel figure |
+| 6 | `## <Method> Training Loss (5 seeds)` | `##` | **the one section that differs from SBTS** |
+| 7 | `## A18, Discriminative Classifier Training Loss` | `##` | BCE curves |
+| 8 | `## A19, Predictive Score Training Loss (TSTR)` | `##` | MAE curves |
+| 9 | `## File layout` | `##` | fenced tree |
+| 10 | `## Reproduce` | `##` | fenced bash, no `---` after |
 
-### 8.2 No Path Shadowing MC section
+**Exactly 8 `##` headings.** More means you added a section; fewer means you dropped one. A
+horizontal rule `---` separates sections 3 through 8 — i.e. it *follows* the hyperparameter
+block and each of sections 3-8, and does **not** follow the title or the final `## Reproduce`.
+Assert the count, do not eyeball it.
 
-PS-MC has not been run at d = 8. The root guideline's §6, and its README section 8, **do not
-apply here**. A section with no numbers behind it is a lie — omit it entirely rather than
-shipping an empty header.
+Section 6 is the **only** place a method may diverge from SBTS's page. Everything else is
+mechanical.
 
-### 8.3 Dataset-level material does not belong on the method page
+### 8.2 Section 1-2 — title, links, hyperparameter blockquote
 
-How the d = 8 metrics are scoped, the multi-asset Heston law itself, the floor, and the
-memorisation discussion live one level up in [`README.md`](README.md), shared by all methods.
-Link to it; do not duplicate it.
+```markdown
+# <Method> on Multi-Asset Heston (d = 8)
 
-### 8.4 Escape pipes in table cells
+**<Full method name>** (<Authors>, <Venue> <Year>, [arXiv:XXXX.XXXXX](https://arxiv.org/abs/XXXX.XXXXX))
+applied to 8 192 **multi-asset** Heston stochastic-volatility price paths
+(seq\_len = 252, **d = 8 correlated assets**).
 
-Curve names such as `ACF |r| lags 1-20` contain a raw `|`. Unescaped, it splits the markdown row
-into extra columns and silently produces a ragged table that **still renders**, so the eye does
-not catch it. Escape it, and assert rectangularity (§8.7).
+<one paragraph: what class of model this is, what it optimises, what it produces. State plainly
+whether it has weights. If it does, say where they are and how large.>
 
-### 8.5 A18/A19, not A13/A14
+See [`code/README.md`](code/README.md) for source and implementation details, and the
+dataset-level [`../oldreadme.md`](../oldreadme.md) for the multi-asset Heston law itself, the
+per-asset vs native metric scoping, and the memorisation diagnostic shared by all methods
+on this dataset.
 
-The canonical keys are `A18_disc_score_{gru,mlp}` and `A19_pred_score_{gru,mlp}`.
-`A13_mean_path_rmse` and `A14_ks_logreturns` are **different metrics** that already occupy those
-numbers. Two of the fifteen d = 1 method pages used A13/A14 for these headings and have been
-corrected; do not copy the old form.
+> **Hyperparameters:** `a=…`, `b=…`, `c=…`, `dt=1/252`.
+> <which are the paper's, named and dated where you got them>
+> <which are yours, and the *measured* evidence that forced the change>
+> Full sweep and criterion: [`losses/…json`](losses/…json), [`losses/…md`](losses/…md).
+```
 
-### 8.6 Section 6 — the NN delta
+Three rules that are easy to get wrong:
+
+- **`seq\_len` must be escaped.** A bare `seq_len` in prose starts a markdown italic run that
+  swallows text until the next underscore. Same for any `A18_disc_score_gru` written outside a
+  code span.
+- **Every hyperparameter is attributed to paper-or-you.** "We used h=0.31" is not attribution.
+  "`K` and `N_pi` are the author's values, confirmed 2026-07-27 for the d = 1 benchmark; **`h`
+  is ours**" is.
+- **A re-tuned hyperparameter must carry the quantified failure it avoids.** Not "the paper's
+  value works badly at d = 8" — that is unfalsifiable. SBTS writes: *40.8 % volatility error,
+  excess kurtosis 45.66 against a real 1.12, minimum price 0.0.* Three measured numbers, each
+  reproducible from the recorded sweep. If you cannot produce them, you did not do the sweep.
+
+If you re-tuned **nothing**, say so explicitly and name the hyperparameters you checked. Silence
+reads as "did not look".
+
+### 8.3 Number formatting — one function, applied everywhere
+
+All numeric cells go through a single `fmt()`. Reproduce it exactly; a renderer that formats
+the A table one way and the B table another produces a page that cannot be compared with itself.
+
+| Input | Rendered | Rule |
+|---|---|---|
+| `None` or `""` | `-` | missing, not zero |
+| `NaN` | `nan` | never silently blanked |
+| `0.0` | `0` | exact zero, no decimals |
+| `4.58e-05` | `4.58e-05` | `abs(v) < 1e-3` → `f"{v:.2e}"` |
+| `0.01811` | `0.01811` | otherwise 4 significant digits |
+| `1.0` | `1` | trailing zeros stripped |
+
+Mean cells are `f"{fmt(mean)} ± {fmt(std)}"` — one space either side of `±`, the literal U+00B1
+character, never `+/-`.
+
+Percentage rows carry `%` **inside every cell** (`3.317% ± 0.05786%`), not once in the column
+header. The B table mixes percent rows and bare-ratio rows in the same column, so a header-level
+unit would be wrong on half the rows.
+
+`nan` in a shipped table is a defect, not a formatting outcome. Trace it before you publish.
+
+### 8.4 Section 3 — the A table
+
+**Header, exactly 9 columns:**
+
+```
+| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
+```
+
+Build the seed columns from `len(seeds)`, never a hard-coded `range(5)`. A run that lost a seed
+must render 8 columns and be obviously wrong, not silently render an empty 9th.
+
+**Preceded by a scoping blockquote** naming the log-return convention, the A26 exception
+(price increments `ΔS_t`), and what `*(native d=8)*` means, with a link to
+`metrics_per_asset.csv`.
+
+**Category separator rows** partition the metrics: Fat Tail, Distribution, Temporal,
+Volatility, Heston Spec. They span the full width with empty cells:
+`| **, Fat Tail, ** | | | | | | | |`. See §8.10 before you "fix" that comma.
+
+**Direction arrows** suffix the metric label: ` ↓` lower-is-better, ` ↑` higher-is-better, and
+the empty string for a metric with no monotone direction (A28, whose target is 1.0, rendered
+`A28 Kurtosis Ratio (→ 1)`).
+
+**The native tag** ` *(native d=8)*` follows the arrow, on **exactly these 10 rows and no
+others**:
+
+```
+A6_path_mmd2   A7_terminal_mmd2   A8_increment_mmd2   A9_volatility_mmd
+A10_terminal_swd   A11_path_swd   A18_disc_score_gru   A18_disc_score_mlp
+A20_cov_error   A25_mean_rmse
+```
+
+Everything else is computed on each of the 8 univariate slices and averaged. **A19 is
+deliberately not native** — `predictive_score.py::_train_gru` targets `data_t[idx, 1:, :1]`,
+i.e. the first feature only, so a native run reports an asset-0 number under a multi-asset name.
+If you tag A19, you have shipped a mislabelled metric.
+
+**Three trailing blockquotes, in this order:**
+
+1. **Convention** — arrow legend, plus A28's perfect value.
+2. **Headline** — `**N of the M A-metric rows sit at or below the independent-draw floor**`
+   followed by the row names, then the largest remaining gaps as
+   `**<name>** (<value> vs floor <floor>, <ratio>×)`. Every one of those numbers is computed,
+   never typed. `M` is the number of *displayed* rows, not 34: several A-keys expand into two
+   rows (GRU/MLP) and the count must match what the reader can see.
+3. **Perfect floor** — what it is (§6), and explicitly what it is **not** (a permutation of the
+   test set).
+
+Then a short glossary walking A1-A5, A6-A11, A12-A17, A18, A19, A20, A21-A24, A25, A26-A32,
+A33-A34, saying for each block what it measures and — for the native ones — why a multivariate
+generalisation is meaningful there and nowhere else.
+
+### 8.5 Section 4 — the B table
+
+**Header, exactly 10 columns** — the A header plus `Measure` in position 2:
+
+```
+| Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
+```
+
+**Preceded by prose** defining the three sub-scores (curve `L`, first difference `L'`, second
+difference `L''`), stating that the curve is computed **per asset and averaged over the 8 assets
+before** the combination so the combination rules stay byte-identical to the d = 1 tree, and
+justifying why `% err`, `NRMSE` and both CVaR rows are **funct-only** (the derivative curves have
+near-zero true values, so relative error explodes into meaningless 10⁴-% figures).
+
+**Row structure:**
+
+- First data row is `grid_tvd` — one row, not five, measure label `grid_tvd 50×50 (%)`, plot
+  label `**Path comparison** *(50×50 path-cloud)*`.
+- Then **6 plots × 5 sublines** = 30 rows. Subline order is fixed:
+  `MSE`, `% err`, `NRMSE`, `CVaR₉₀`, `CVaR₉₅`.
+- The **Plot cell is bold on subline 1 and empty on sublines 2-5** — `|  | % err | …`. Two
+  spaces, not a repeated label. Repeating it makes the grouping unreadable.
+- Plot order: Log-return histogram, QQ plot, ACF \|r\|, ACF r², Rolling vol histogram,
+  Tail survival.
+
+**`ACF |r|` must be written `ACF \|r\|`.** An unescaped pipe splits the row into extra columns
+and produces a ragged table that *still renders*, so the eye does not catch it. This is check 2
+of §8.9 and it exists because the failure is invisible.
+
+**Two trailing blockquotes:** the headline (`**N of the 6 B plots** sit at or below the
+finite-sample floor on the deciding MSE row`, with the names or the literal `none`), and a
+cross-seed stability note. Deterministic methods should say why their seed spread is small;
+GAN-family methods must state whether any seed collapsed.
+
+### 8.6 Sections 5, 7, 8 — the figure sections
+
+Each is a heading, prose, then exactly one image link. The four link lines, verbatim:
+
+```markdown
+![Heston Diagnostics](plots/heston_diagnostics.png)
+![Training Loss](plots/loss_convergence.png)
+![Discriminative Classifier Loss](plots/disc_classifier_loss.png)
+![Predictive Score Loss](plots/pred_score_loss.png)
+```
+
+Two statements are **mandatory** in section 5's prose, because both correct a reading a reviewer
+will otherwise make:
+
+- The third (black dashed) curve is the **independent-draw floor, not a closed-form theory
+  curve** — `metrics/heston_theory.py` is hard-wired to the d = 1 parameters, so plotting it
+  over d = 8 data would be a fabricated reference. Where Real and the floor already disagree,
+  the gap is finite-sample noise, not a modelling failure.
+- **One asset is shown, not eight.** The metrics average over all 8; the figure is asset 0.
+  Pooling eight deliberately different volatilities (σ 0.0097-0.0165) into one histogram would
+  display the mixing, not the model.
+
+Section 8 must state that the archived A19 curves are **asset 0's** — the driver stores loss
+history only for `j == 0` — while the tabulated A19 score is the mean over all 8 assets. Omit
+that and the figure silently contradicts the table.
+
+### 8.7 Section 6 — the NN delta
 
 SBTS emits `## SBTS has no training loss` followed by a timing table. **Replace that whole block**
 with:
@@ -395,28 +558,99 @@ collapsed — and if one did, it stays in the 5-seed average.>
 <generation wall-clock table, read from losses/generation_time.csv>
 ```
 
-Both wall-clock tables are read from disk. Report the **actual** worker/GPU count per seed; if
-seeds were produced under different hardware, report the whole set, not row 0's value. SBTS hit
-exactly this: seed 0 ran on 16 workers and seeds 1-4 on 64, and a renderer that trusted row 0
-would have mislabelled four rows out of five.
+Both wall-clock tables are read from disk, with these columns:
 
-### 8.7 Structurally test the renderer before you trust it
+```
+| Seed | GPUs | Elapsed |     ← training,   from weights/seed_{i}_config.json
+| Seed | Workers | Elapsed |  ← generation, from losses/generation_time.csv
+```
+
+Report the **actual** worker/GPU count per seed. If seeds ran under different hardware, emit the
+distinct set in the prose (`"16 and 64"`), computed from the column — never `rows[0]["n_workers"]`.
+SBTS hit exactly this: seed 0 ran on 16 workers and seeds 1-4 on 64, and a renderer that trusted
+row 0 would have mislabelled four rows out of five. Give the total as well
+(SBTS: *"finishes in 2.9 h total"*), summed from the CSV.
+
+### 8.8 Sections 9-10 — file layout and Reproduce
+
+Section 9 is a fenced tree, annotated one line per entry, opening with the statement that the
+tree is **self-contained** — code, inputs, outputs and documentation side by side, unlike the
+d = 1 benchmark which splits `methods/<Method>/` from `results/Heston/<Method>/`.
+
+**A tree that lists a file which does not exist, or omits one that does, is a defect.** SBTS
+shipped exactly this bug: `code/README.md` was listed as a link target for weeks before the file
+was written. Generate the tree from `os.walk` if you can; if you hard-code it, add a test that
+every listed path exists.
+
+Section 10 is a fenced `bash` block, runnable top to bottom from `/home/tbasseras/benchmark`,
+with the **correct interpreter per line** — `/home/tbasseras/gpu-venv/bin/python` for anything
+touching torch, the method's own venv otherwise — and `CUDA_VISIBLE_DEVICES` set explicitly on
+every GPU command. It ends with the line that regenerates the page itself.
+
+### 8.9 Structurally test the renderer before you trust it
 
 Run the renderer against synthetic, schema-exact fixtures and assert:
 
 1. it writes a README at all;
 2. **every markdown table is rectangular** — count `|` per row, ignoring escaped `\|`;
-3. the 10 sections appear in the order of §8.1;
+3. the 10 sections appear in the order of §8.1, and there are **exactly 8 `##` headings**;
 4. no `Path Shadowing` / `PS-MC` / `path_shadowing` string anywhere;
 5. every image link resolves to a file that exists;
-6. `*(native d=8)*` appears on exactly 10 table rows and on no non-native row — count table rows
-   only, since the tag is also mentioned in the explanatory prose;
+6. `*(native d=8)*` appears on exactly 10 table rows and on no non-native row — **match only on
+   lines beginning with `|`**, since the tag is also mentioned in the explanatory prose (SBTS's
+   page contains 14 occurrences: 10 rows + 4 in prose, and a naive `grep -c` will report the
+   tag as broken when it is not);
 7. the headline win-counts are arithmetically consistent with the fixture inputs.
 
 Check 7 matters more than it looks. A direction table drives it, and two metrics are **not**
 "lower is better": `A33_sigma_corr` is `up`, and `A28_kurtosis_ratio` is scored `|x − 1|` because
 its perfect value is 1.0. Get either wrong and the headline silently inverts while still looking
 plausible.
+
+Then run one check the fixtures cannot give you — link resolution against the **real** tree:
+
+```bash
+cd results/HestonMultiAsset/<Method>
+grep -o '](\([^)h][^)]*\))' README.md | sed 's/^](//;s/)$//' | sort -u \
+  | while read -r p; do [ -e "$p" ] || echo "BROKEN: $p"; done
+```
+
+Every relative link must resolve. A dead link in a generated page is worse than in a hand-written
+one, because it will be regenerated dead forever.
+
+### 8.10 Two cosmetic defects are deliberate — do not fix them unilaterally
+
+The rendered pages contain two known typos, inherited verbatim from the committed d = 1 tree:
+
+- category separator rows render as `| **, Fat Tail, ** |` instead of `| **Fat Tail** |`;
+- the convention legend renders `↑ higher is better;, no monotone direction`.
+
+Both come from literal typos in `render_readme.py` (the category and arrow-legend format
+strings). They are **reproduced** at d = 8 on purpose, because the requirement is that the d = 8
+page display *exactly* as the d = 1 pages do. Fixing d = 8 alone breaks that; fixing both means
+restating fifteen already-committed pages in one sweep.
+
+If you fix them, fix all sixteen pages in a single commit and say so. Do not fix only yours.
+
+### 8.11 Pitfalls that have actually bitten
+
+- **No Path Shadowing MC section.** PS-MC has not been run at d = 8. The root guideline's §6, and
+  its README section 8, do not apply here. A section with no numbers behind it is a lie — omit
+  it entirely rather than shipping an empty header. Check 4 of §8.9 enforces this.
+- **A18/A19, not A13/A14.** The canonical keys are `A18_disc_score_{gru,mlp}` and
+  `A19_pred_score_{gru,mlp}`. `A13_mean_path_rmse` and `A14_ks_logreturns` are **different
+  metrics** that already occupy those numbers. Two of the fifteen d = 1 pages used A13/A14 for
+  these headings and have been corrected; do not copy the old form.
+- **Dataset-level material does not belong on the method page.** How the d = 8 metrics are
+  scoped, the multi-asset Heston law, the floor construction and the memorisation discussion live
+  one level up in [`oldreadme.md`](oldreadme.md), shared by all methods. Link to it; do not
+  duplicate it — two copies diverge, and the reader cannot tell which is stale.
+- **Do not claim a result that one seed produced.** Seed 0 of SBTS appeared to beat the floor on
+  A10 and A11; seed 1 flipped both signs, and the 5-seed mean (A10 1.355 ± 0.324 vs floor 1.141)
+  sits above it. The headline is computed from the **mean across all 5 seeds** for exactly this
+  reason. Never read a single seed as signal, and never hand-write a win into the prose.
+- **A20 goes in the headline whatever it says.** It is the only row that tests whether the
+  d(d−1)/2 spot correlations Σˢ survived generation, and it is the reason this dataset exists.
 
 ---
 
@@ -456,7 +690,7 @@ It auto-discovers every directory under `results/HestonMultiAsset/` except `tool
 the floor) and the memorisation table. **Adding a method requires no code change here** — just
 make sure your artefact filenames match §1, or the method is silently skipped.
 
-Re-run it after every method lands. Never hand-edit `README.md` in this directory; it is
+Re-run it after every method lands. Never hand-edit `oldreadme.md` in this directory; it is
 regenerated and your edit will be lost.
 
 ---

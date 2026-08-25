@@ -11,7 +11,7 @@ then simulates paths via Euler-Maruyama. The "model" *is* the training array plu
 `(h, K, N_pi)` — see [`weights/README.md`](weights/README.md).
 
 See [`code/README.md`](code/README.md) for source and implementation details, and the
-dataset-level [`../README.md`](../README.md) for the multi-asset Heston law itself, the
+dataset-level [`../oldreadme.md`](../oldreadme.md) for the multi-asset Heston law itself, the
 per-asset vs native metric scoping, and the memorisation diagnostic shared by all methods
 on this dataset.
 
@@ -83,7 +83,7 @@ on this dataset.
 | A34 Teacher-Sigma RMSE ↓ | 0.1006 ± 8.39e-05 | 0.1006 | 0.1008 | 0.1007 | 0.1006 | 0.1005 | 0.1013 |
 
 > **Convention:** ↓ lower is better; ↑ higher is better;, no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
-> **Headline:** **2 of the 36 A-metric rows sit at or below the independent-draw floor** — A19 Pred Score GRU, A34 Teacher-Sigma RMSE. The largest remaining gaps are **A23 ACF |r| Lag-1 Error** (0.005199 vs floor 0.001038, 5.0×); **A18 Disc Score GRU** (0.02658 vs floor 0.005523, 4.8×); **A21 ACF |r| Error (lags)** (0.004719 vs floor 0.001066, 4.4×); **A32 Vol-of-Vol Error** (4.80e-05 vs floor 1.14e-05, 4.2×). Since SBTS is currently the only generator on this dataset, the floor is the only honest reference; cross-method win-counts belong in the dataset-level [`../README.md`](../README.md) once a second method lands.
+> **Headline:** **2 of the 36 A-metric rows sit at or below the independent-draw floor** — A19 Pred Score GRU, A34 Teacher-Sigma RMSE. The largest remaining gaps are **A23 ACF |r| Lag-1 Error** (0.005199 vs floor 0.001038, 5.0×); **A18 Disc Score GRU** (0.02658 vs floor 0.005523, 4.8×); **A21 ACF |r| Error (lags)** (0.004719 vs floor 0.001066, 4.4×); **A32 Vol-of-Vol Error** (4.80e-05 vs floor 1.14e-05, 4.2×). Since SBTS is currently the only generator on this dataset, the floor is the only honest reference; cross-method win-counts belong in the dataset-level [`../oldreadme.md`](../oldreadme.md) once a second method lands.
 > **Perfect floor** is the *independent-draw* floor (GUIDELINE §5.4): five fresh draws from the *same* SDE with the *same* frozen per-asset parameters at seeds 1000-1004, scored with byte-identical metric code. It is **non-zero everywhere** — two independent 8 192-path draws never produce identical histograms, ACFs, quantiles or covariance matrices. It is **not** a permutation of the test set, which would preserve every column-wise statistic exactly, collapse most metrics to 0, and be a misleading target.
 > **A1-A5**: fat-tail block — kurtosis error, tail quantile / QQ errors on |log-returns|, Hill tail index. **A6-A11** *(native d=8)*: path-kernel distances on the full 8-dimensional tensor (MMD² on paths / terminal / increments / realized-vol; sliced-Wasserstein on terminal & full paths), the rows where a multivariate generalisation is genuinely meaningful.
 > **A12-A17**: distribution block, per asset then averaged. **A18** *(native d=8)*: discriminative classifier on all 8 channels at once, score = |accuracy − 0.5|. **A19**: TSTR MAE, deliberately **per-asset** — `predictive_score.py::_train_gru` targets `data_t[idx, 1:, :1]`, i.e. only the first feature, so a native run would silently report an asset-0-only number under a multi-asset name.

@@ -7,7 +7,7 @@ Implementation of **Schrödinger Bridge Time Series** for the multi-asset Heston
 
 The generated paths, metric tables and figures are on the method page
 [`../README.md`](../README.md). The dataset law, the metric scoping rules and the
-independent-draw floor are one level up in [`../../README.md`](../../README.md).
+independent-draw floor are one level up in [`../../oldreadme.md`](../../oldreadme.md).
 Requirements for adding a new method are in
 [`../../MULTIASSET_GUIDELINE.md`](../../MULTIASSET_GUIDELINE.md).
 
