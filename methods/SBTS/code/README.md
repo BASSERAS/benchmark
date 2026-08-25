@@ -124,7 +124,7 @@ CUDA_VISIBLE_DEVICES=0 \
 | Committed number | Interpreter + env | Command | Input file(s) scored | Output file |
 |------------------|-------------------|---------|----------------------|-------------|
 | Heston A1-A34 + B, per seed `i` | `gpu-venv`, `CUDA_VISIBLE_DEVICES=0` | `metrics/compute_all.py --method SBTS --dataset Heston` | `methods/SBTS/generated_paths/seed_i/generated_paths_8192x128.npy` (8192,128) vs the real Heston pool `dataset/Heston/heston_S_8192x128.npy` | `results/Heston/SBTS/seed_i_metrics.json` (A-metrics) + `curve_b_aggregate.json` (B curves) |
-| SBTS synthetic paths, per seed `i` | `sbts-venv`, `SBTS_NWORK=64` | `run_all.py` (seed `i`) | canonical Heston SDE params (no input file, simulated) | `methods/SBTS/generated_paths/seed_i/generated_paths_8192x128.npy` |
+| SBTS synthetic paths, per seed `i` | `sbts-venv`, `SBTS_NWORK=64` | `run_all.py` (seed `i`) | `dataset/Heston/heston_S_8192x128.npy` (8192,128), loaded at `run_all.py:45,58` and passed to `generate_paths(S_train, ...)`. This is the only input: SBTS never receives the Heston SDE parameters | `methods/SBTS/generated_paths/seed_i/generated_paths_8192x128.npy` |
 
 Each `results/Heston/SBTS/seed_i_metrics.json` is the sole source for that seed's column in every README A-table; the mean±std rows are aggregated across those 5 files.
 

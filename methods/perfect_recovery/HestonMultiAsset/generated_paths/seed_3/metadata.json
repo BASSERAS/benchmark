@@ -1,0 +1,24 @@
+{
+  "kind": "independent-draw perfect-recovery floor",
+  "note": "fresh true-Heston draw, identical frozen parameters, independent RNG seed -- NOT a permutation of the real data",
+  "guideline": "GUIDELINE 5.4",
+  "model": "Szimayer, Dimitroff & Lorenz (2011) parsimonious multi-asset Heston",
+  "parameter_source": "Ait-Sahalia & Kimmel (2007) JFE 83(2) Table 6, daily SPX, physical measure",
+  "per_asset_digest": "231da80bdedf22e9",
+  "run_seed": 3,
+  "draw_seed": 1003,
+  "ind_seed_base": 1000,
+  "shape": [
+    8192,
+    252,
+    8
+  ],
+  "dtype": "float64",
+  "S0": 100.0,
+  "dt": 0.003968253968253968,
+  "S_min": 25.409307593106824,
+  "S_max": 208.1577914706112,
+  "S0_exact": true,
+  "v_min": 0.0,
+  "generation_time_sec": 1.1
+}

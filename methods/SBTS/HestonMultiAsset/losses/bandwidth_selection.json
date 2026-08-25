@@ -1,0 +1,223 @@
+{
+  "method": "SBTS (Alouadi, Barreau, Carlier & Pham, ICAIF 2025, arXiv:2503.02943)",
+  "dataset": "HestonMultiAsset (d = 8, T = 252, dt = 1/252)",
+  "hyperparameters": {
+    "h": 0.31,
+    "K": 20,
+    "N_pi": 50,
+    "dt": 0.003968253968253968
+  },
+  "carried_from_author": {
+    "K": "20 - author value for the d = 1 length-128 Heston benchmark, unchanged",
+    "N_pi": "50 - author value, chosen for speed, low impact on quality",
+    "h": "NOT carried. The author's h = 0.05 is a d = 1 value and is catastrophic at d = 8."
+  },
+  "selected": {
+    "h": 0.31,
+    "why": "Largest bandwidth satisfying all three hard constraints, hence the least-memorising admissible choice (NNratio 0.215, the maximum among survivors). h = 0.35 is the cliff: volatility error jumps 1.20 -> 6.45 %, kurtosis error 3.42 -> 13.38 %, and every other stylised fact degrades simultaneously.",
+    "nn_ratio": 0.215,
+    "vol_err_pct": 1.2,
+    "kurt_err_pct": 3.42,
+    "corr_err": 0.0098,
+    "acf1_err": 0.0084,
+    "lev_err": 0.0033,
+    "min_price": 29.8
+  },
+  "criterion": {
+    "documented_in": "selection_criterion.md",
+    "split": "validation split (seed 3), NEVER test (seed 1)",
+    "hard_constraints": [
+      "min(S_gen) > 10, all prices finite and positive",
+      "mean absolute per-asset volatility error < 5 %",
+      "mean absolute per-asset excess-kurtosis error < 20 %"
+    ],
+    "primary_objective": "maximise NNratio = median NN(generated -> train) / median NN(val -> train) in log-return space; NNratio ~ 1 means no memorisation",
+    "tiebreak": "NNratio within 0.02 -> lowest mean cross-asset correlation error",
+    "why_not_ess": "ESS is degenerate: at K = 20 zero training paths lie inside the kernel support at d = 1 with the author's own h = 0.05 just as much as at d = 8, so ESS sits at its floor of 1 in both cases and cannot discriminate. See selection_criterion.md."
+  },
+  "sweeps": [
+    {
+      "name": "sweep 1 (exploratory, superseded)",
+      "split": "test (seed 1) - THIS LEAKS, retained only as coarse orientation, NOT the selection basis",
+      "M_simu": 128,
+      "K": 20,
+      "N_pi": 50,
+      "reference": {
+        "base_nn_test_to_train": 0.6864,
+        "mean_offdiag_corr_test": 0.4191,
+        "kurt_real": 1.121366701057113
+      },
+      "rows": [
+        {
+          "h": 0.05,
+          "nn_ratio": 0.11867373088271256,
+          "corr_err": 0.16472856115394105,
+          "vol_err_pct": 40.81444229740796,
+          "kurt_gen": 45.662880227039665,
+          "kurt_real": 1.121366701057113
+        },
+        {
+          "h": 0.25,
+          "nn_ratio": 0.16929185701549743,
+          "corr_err": 0.010100668721209976,
+          "vol_err_pct": 0.9943678434331225,
+          "kurt_gen": 1.10597525748227,
+          "kurt_real": 1.121366701057113
+        },
+        {
+          "h": 0.35,
+          "nn_ratio": 0.34252246966959693,
+          "corr_err": 0.009915992856987948,
+          "vol_err_pct": 4.621314827317616,
+          "kurt_gen": 1.1435529826063855,
+          "kurt_real": 1.121366701057113
+        },
+        {
+          "h": 0.5,
+          "nn_ratio": 0.9172889677217968,
+          "corr_err": 0.016982129821595388,
+          "vol_err_pct": 14.318991856278712,
+          "kurt_gen": 1.1734995105283825,
+          "kurt_real": 1.121366701057113
+        },
+        {
+          "h": 0.8,
+          "nn_ratio": 0.9616341123765935,
+          "corr_err": 0.011462897333095466,
+          "vol_err_pct": 7.387857820910752,
+          "kurt_gen": 1.1480039302010516,
+          "kurt_real": 1.121366701057113
+        }
+      ]
+    },
+    {
+      "name": "sweep 2 (selection basis)",
+      "split": "val(seed 3)",
+      "M_simu": 384,
+      "K": 20,
+      "N_pi": 50,
+      "reference": {
+        "base_nn_val_to_train": 0.6908054204848422,
+        "vol_per_asset": [
+          0.0105,
+          0.0142,
+          0.0124,
+          0.0164,
+          0.0118,
+          0.0146,
+          0.0111,
+          0.0097
+        ],
+        "kurt_per_asset": [
+          1.259,
+          1.318,
+          1.381,
+          0.486,
+          1.389,
+          0.848,
+          1.237,
+          1.02
+        ],
+        "acf1_abs_per_asset": [
+          0.1439,
+          0.1489,
+          0.1531,
+          0.0616,
+          0.1515,
+          0.0978,
+          0.1451,
+          0.1176
+        ],
+        "leverage_per_asset": [
+          -0.0448,
+          -0.0603,
+          -0.0712,
+          -0.0418,
+          -0.0775,
+          -0.0849,
+          -0.0417,
+          -0.063
+        ],
+        "mean_offdiag_corr": 0.4194
+      },
+      "columns": [
+        "h",
+        "nn_ratio",
+        "vol_err_pct",
+        "kurt_err_pct",
+        "corr_err",
+        "acf1_err",
+        "lev_err",
+        "min_price",
+        "sec"
+      ],
+      "rows": [
+        {
+          "h": 0.2,
+          "nn_ratio": 0.13935790161559178,
+          "vol_err_pct": 1.4660153609243691,
+          "kurt_err_pct": 4.0901591000978375,
+          "corr_err": 0.009177242064131605,
+          "acf1_err": 0.006629433355001977,
+          "lev_err": 0.0029422446361008084,
+          "min_price": 29.648548399960458,
+          "sec": 271.04240974097047
+        },
+        {
+          "h": 0.25,
+          "nn_ratio": 0.1673970190911144,
+          "vol_err_pct": 1.5762706126105628,
+          "kurt_err_pct": 7.770108263683172,
+          "corr_err": 0.007795046617578992,
+          "acf1_err": 0.00761281016459179,
+          "lev_err": 0.00494752573022532,
+          "min_price": 31.58780513730022,
+          "sec": 269.5821382669965
+        },
+        {
+          "h": 0.28,
+          "nn_ratio": 0.19016791897121038,
+          "vol_err_pct": 0.6400017931067201,
+          "kurt_err_pct": 8.231019205931423,
+          "corr_err": 0.008723626292132216,
+          "acf1_err": 0.008928375579013726,
+          "lev_err": 0.004446334050657269,
+          "min_price": 35.96759004679033,
+          "sec": 272.87264425691683
+        },
+        {
+          "h": 0.31,
+          "nn_ratio": 0.2147352101914647,
+          "vol_err_pct": 1.1987311527103477,
+          "kurt_err_pct": 3.4242893954392875,
+          "corr_err": 0.00984881047303489,
+          "acf1_err": 0.008362431071011256,
+          "lev_err": 0.003293044886876366,
+          "min_price": 29.76066530015723,
+          "sec": 268.0547067229636
+        },
+        {
+          "h": 0.35,
+          "nn_ratio": 0.38845030835814537,
+          "vol_err_pct": 6.449345394099193,
+          "kurt_err_pct": 13.381601229933379,
+          "corr_err": 0.012383310880589266,
+          "acf1_err": 0.014055025504827576,
+          "lev_err": 0.01563248475823726,
+          "min_price": 29.728191020626554,
+          "sec": 268.1825802640524
+        }
+      ]
+    }
+  ],
+  "verdict": {
+    "h_005_transferable": false,
+    "h_005_evidence": "at d = 8: 40.8 % volatility error, generated excess kurtosis 45.66 against a real 1.12, minimum price 0.0 - outright path collapse",
+    "residual_memorisation": "even at the selected h = 0.31 the NN ratio is 0.215: generated paths sit ~4.6x closer to the training set than genuinely held-out real data does. This is a property of SBTS at K = 20, not of the d = 8 port, and it is reported rather than patched.",
+    "curse_of_dimensionality": {
+      "median_pairwise_increment_distance_d1": 0.0372,
+      "median_pairwise_increment_distance_d8": 0.2643,
+      "note": "distance grows like sqrt(d); a radial kernel's support radius must follow"
+    }
+  }
+}
