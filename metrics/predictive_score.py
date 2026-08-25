@@ -1,5 +1,5 @@
 """
-A14 Predictive Score — PyTorch implementation (TSTR protocol).
+A19 Predictive Score — PyTorch implementation (TSTR protocol).
 
 Train predictor on SYNTHETIC data, evaluate one-step-ahead MAE on REAL data.
 Lower MAE = better temporal fidelity of generated sequences.

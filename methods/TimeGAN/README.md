@@ -142,7 +142,7 @@ Loss curves across all three training phases (embedding 0-5k, supervisor 5-10k, 
 
 ---
 
-## A13, Discriminative Classifier Training Loss
+## A18, Discriminative Classifier Training Loss
 
 BCE loss during GRU and MLP classifier training (2 000 steps, logged every 50 steps).
 A value near ln(2) ≈ 0.693 means the classifier cannot distinguish real from fake.
@@ -151,7 +151,7 @@ A value near ln(2) ≈ 0.693 means the classifier cannot distinguish real from f
 
 ---
 
-## A14, Predictive Score Training Loss (TSTR)
+## A19, Predictive Score Training Loss (TSTR)
 
 MAE loss during GRU and MLP predictor training on *synthetic* data (5 000 steps, logged every 100 steps).
 

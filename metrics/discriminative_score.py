@@ -1,5 +1,5 @@
 """
-A13 Discriminative Score — PyTorch implementation.
+A18 Discriminative Score — PyTorch implementation.
 
 Two post-hoc classifiers trained to distinguish real from synthetic sequences.
 Returns |accuracy - 0.5| (lower = harder to tell apart = better generation).
