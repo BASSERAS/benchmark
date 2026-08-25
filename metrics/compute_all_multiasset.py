@@ -71,8 +71,9 @@ sys.path.insert(0, METRICS_DIR)
 _p = argparse.ArgumentParser(add_help=False)
 _p.add_argument("--method", default="SBTS")
 _p.add_argument("--dataset", default="HestonMultiAsset")
-_p.add_argument("--subdir", default="HestonMultiAsset",
-                help="sub-directory under methods/<method>/ holding generated_paths/")
+_p.add_argument("--gen-root", default=None,
+                help="directory holding generated_paths/. Defaults to the "
+                     "self-contained results/<dataset>/<method>/ tree.")
 _p.add_argument("--seeds", type=int, default=5)
 _p.add_argument("--dt", type=float, default=1.0 / 252.0)
 _p.add_argument("--n-sub", type=int, default=1024)
@@ -83,8 +84,11 @@ _cli, _ = _p.parse_known_args()
 METHOD, DATASET, N_SEEDS, DT = _cli.method, _cli.dataset, _cli.seeds, _cli.dt
 
 DATASET_DIR = os.path.join(REPO_ROOT, "dataset", DATASET)
-GENERATED_DIR = os.path.join(REPO_ROOT, "methods", METHOD, _cli.subdir, "generated_paths")
+# Multi-asset results are self-contained: results/<dataset>/<method>/ holds
+# code/, generated_paths/, losses/, weights/ and the README side by side, so
+# inputs and outputs live in one tree instead of being split across methods/.
 RESULTS_DIR = os.path.join(REPO_ROOT, "results", DATASET, METHOD)
+GENERATED_DIR = os.path.join(_cli.gen_root or RESULTS_DIR, "generated_paths")
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 import torch  # noqa: E402

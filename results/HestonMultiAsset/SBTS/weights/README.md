@@ -6,8 +6,11 @@ training set itself**. There is no neural network, no parameter vector, no gradi
 therefore no checkpoint to serialise: the "model" *is* `dataset/HestonMultiAsset/heston_ma_S_8192x252x8.npy`
 plus the three hyperparameters `(h, K, N_pi)`.
 
-This directory is kept so the multi-asset layout matches `methods/SBTS/` exactly (which also
-ships an empty `weights/`). The reproducible configuration lives in:
+This directory is kept so that every method under `results/HestonMultiAsset/` presents the same
+four slots — `code/`, `generated_paths/`, `losses/`, `weights/` — and a reader looking for a
+checkpoint finds this explanation instead of an unexplained absence. (The d = 1 benchmark's
+`methods/SBTS/` ships an empty `weights/` for the same reason.) The reproducible configuration
+lives in:
 
 | File | Contents |
 |------|----------|

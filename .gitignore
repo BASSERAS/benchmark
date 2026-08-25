@@ -103,7 +103,7 @@ dataset/HestonMultiAsset/*.npy
 # array is (8192, 252, 8) float64 = 132 MB, again over GitHub's 100 MB per-file
 # hard limit. Unlike the d = 1 arrays (8.4 MB each) these cannot be tracked.
 # They are fully reproducible from tracked code + tracked hyperparameters:
-#   SBTS paths       -> methods/SBTS/code/run_all_multiasset.py
+#   SBTS paths       -> results/HestonMultiAsset/SBTS/code/run_all_multiasset.py
 #                       (h, K, N_pi in losses/seed_i_bandwidth.json; per-worker
 #                        RNG seeds derived deterministically from the run seed)
 #   perfect-recovery -> metrics/gen_perfect_recovery_multiasset.py
@@ -111,5 +111,9 @@ dataset/HestonMultiAsset/*.npy
 #                        PARAM_SEED=1234 and verified against parameters.json)
 # The metadata.json next to each array IS tracked, so shapes, price ranges and
 # generation times remain auditable without the payload.
-methods/SBTS/HestonMultiAsset/generated_paths/**/*.npy
-methods/perfect_recovery/HestonMultiAsset/generated_paths/**/*.npy
+#
+# One pattern covers every method: the d = 8 tree is SELF-CONTAINED, i.e.
+# results/HestonMultiAsset/<method>/ holds code/, generated_paths/, losses/,
+# weights/ and the README side by side, instead of splitting inputs under
+# methods/ and outputs under results/ the way the d = 1 benchmark does.
+results/HestonMultiAsset/**/generated_paths/**/*.npy

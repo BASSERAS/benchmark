@@ -21,12 +21,17 @@ This script only WRITES THE PATHS. The metrics are then produced by the single
 shared driver, so the floor and every method go through byte-identical code:
 
     /home/tbasseras/gpu-venv/bin/python metrics/compute_all_multiasset.py \
-        --method perfect_recovery --subdir HestonMultiAsset
+        --method perfect_recovery
 
 which reads
-    methods/perfect_recovery/HestonMultiAsset/generated_paths/seed_{i}/generated_paths_*.npy
-and writes
+    results/HestonMultiAsset/perfect_recovery/generated_paths/seed_{i}/generated_paths_*.npy
+and writes its metric JSON/CSV alongside them in
     results/HestonMultiAsset/perfect_recovery/
+
+The d = 8 tree is SELF-CONTAINED: results/HestonMultiAsset/<method>/ holds
+code/, generated_paths/, losses/, weights/ and the README side by side, rather
+than splitting inputs under methods/ and outputs under results/ the way the
+d = 1 benchmark does.
 
 Not a permutation baseline
 ──────────────────────────
@@ -66,7 +71,7 @@ from generate_heston_multiasset import (  # noqa: E402
 )
 
 IND_SEED_BASE = 1000                     # GUIDELINE §5.4: 1000 + i, i = 0..4
-OUT_ROOT = os.path.join(REPO, "methods", "perfect_recovery", "HestonMultiAsset")
+OUT_ROOT = os.path.join(REPO, "results", "HestonMultiAsset", "perfect_recovery")
 
 
 def _digest(obj) -> str:
@@ -161,7 +166,7 @@ def main() -> None:
     print(f"  {os.path.join(OUT_ROOT, 'generated_paths')}")
     print("\nnext:")
     print("  /home/tbasseras/gpu-venv/bin/python metrics/compute_all_multiasset.py \\")
-    print("      --method perfect_recovery --subdir HestonMultiAsset")
+    print("      --method perfect_recovery")
 
 
 if __name__ == "__main__":

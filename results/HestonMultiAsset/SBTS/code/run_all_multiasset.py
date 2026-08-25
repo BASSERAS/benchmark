@@ -9,14 +9,14 @@ Hardware (hard limits):
   max 16 physical cores, max 2 GPUs (GPU is used only for metrics, never here —
   SBTS is CPU-only)
 
-Saved per seed:
-  methods/SBTS/HestonMultiAsset/generated_paths/seed_{i}/generated_paths_8192x252x8.npy
-  methods/SBTS/HestonMultiAsset/generated_paths/seed_{i}/metadata.json
-  methods/SBTS/HestonMultiAsset/losses/seed_{i}_bandwidth.json
-  methods/SBTS/HestonMultiAsset/losses/generation_time.csv
+Saved per seed (all inside results/HestonMultiAsset/SBTS/):
+  generated_paths/seed_{i}/generated_paths_8192x252x8.npy
+  generated_paths/seed_{i}/metadata.json
+  losses/seed_{i}_bandwidth.json
+  losses/generation_time.csv
 
 There is no weights/ checkpoint: SBTS is non-parametric, the "model" IS the
-training array plus (h, K, N_pi). See ../HestonMultiAsset/weights/README.md.
+training array plus (h, K, N_pi). See ../weights/README.md.
 
 Run (must be detached — this is a multi-hour job):
     setsid taskset -c 0-15 env OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
@@ -28,8 +28,9 @@ Run (must be detached — this is a multi-hour job):
 import os, sys, time, json, csv
 import numpy as np
 
-BENCH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+BENCH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
 CODE  = os.path.dirname(os.path.abspath(__file__))
+SBTS  = os.path.dirname(CODE)          # results/HestonMultiAsset/SBTS
 sys.path.insert(0, CODE)
 
 from sbts_generate_multiasset import generate_paths, warmup_jit, DT, S0
@@ -50,8 +51,8 @@ from sbts_generate_multiasset import generate_paths, warmup_jit, DT, S0
 # largest bandwidth still satisfying all three hard constraints and therefore
 # the least-memorising admissible choice. h = 0.35 is the cliff: volatility
 # error jumps 1.20 → 6.45 %. Full sweep, criterion and caveats:
-#   ../HestonMultiAsset/losses/bandwidth_selection.json
-#   ../HestonMultiAsset/losses/selection_criterion.md
+#   ../losses/bandwidth_selection.json
+#   ../losses/selection_criterion.md
 H      = 0.31   # bandwidth — RECALIBRATED FOR d = 8, not the author's 0.05
 K      = 20     # Markovian order (author)
 N_PI   = 50     # Euler substeps  (author)
@@ -63,8 +64,8 @@ SEEDS  = [int(s) for s in os.environ.get("SBTS_SEEDS", "0,1,2,3,4").split(",")]
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 DATA_PATH  = os.path.join(BENCH, "dataset/HestonMultiAsset/heston_ma_S_8192x252x8.npy")
-GEN_ROOT   = os.path.join(BENCH, "methods/SBTS/HestonMultiAsset/generated_paths")
-LOSSES_DIR = os.path.join(BENCH, "methods/SBTS/HestonMultiAsset/losses")
+GEN_ROOT   = os.path.join(SBTS, "generated_paths")
+LOSSES_DIR = os.path.join(SBTS, "losses")
 
 os.makedirs(LOSSES_DIR, exist_ok=True)
 
@@ -182,4 +183,4 @@ for seed in SEEDS:
           f"{np.all(np.isfinite(arr)) and np.all(arr > 0.0)}  -> {'OK' if good else 'FAIL'}")
 
 print("\nAll seeds OK." if ok else "\nSOME SEEDS FAILED VERIFICATION.")
-print("Next: metrics/compute_all_multiasset.py --method SBTS --subdir HestonMultiAsset")
+print("Next: metrics/compute_all_multiasset.py --method SBTS")
