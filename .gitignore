@@ -87,3 +87,14 @@ methods/LS4/code/reference/outputs_*
 #   methods/Deep-MKV-TS/paper_reimplementation/metric/run_seed2.sh          (seed 2)
 # runs/hpsearch* in particular backs NO reported number (validation split only).
 methods/Deep-MKV-TS/paper_reimplementation/runs/
+
+# HestonMultiAsset arrays — 126 MiB each, 1.26 GiB total, over GitHub's 100 MiB
+# per-file hard limit and too large for the free LFS quota. The eight assets'
+# parameters are frozen by PARAM_SEED=1234 and dumped to the TRACKED
+# parameters.json, so the MODEL is always reproduced exactly. The Brownian noise
+# is reproduced bitwise on a fixed numpy version, but np.random.Generator streams
+# are NOT guaranteed stable across numpy versions (unlike legacy RandomState), so
+# arrays regenerated under a different numpy are statistically -- not bitwise --
+# identical. Reproduce in ~4 min on 8 cores:
+#   cd dataset/HestonMultiAsset && python generate_heston_multiasset.py
+dataset/HestonMultiAsset/*.npy
