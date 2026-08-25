@@ -1,0 +1,10 @@
+{
+  "seed": 2,
+  "h": 0.31,
+  "K": 20,
+  "N_pi": 50,
+  "dt": 0.003968253968253968,
+  "method": "K and N_pi author-specified; h recalibrated for d = 8",
+  "h_selection_split": "validation (seed 3), never test",
+  "note": "K=20, N_pi=50 confirmed by A. Alouadi (SBTS author) 2026-07-27 for the d=1 length-128 Heston benchmark and carried over unchanged. h=0.05 is a d=1 value and CANNOT be carried: the radial kernel's support radius must scale with the typical increment distance, which grows like sqrt(d). At d=8, h=0.05 gives 40.8% volatility error, excess kurtosis 45.66 vs a real 1.12, and minimum price 0.0 (path collapse). h=0.31 was selected on the VALIDATION split as the largest bandwidth meeting all hard constraints, hence the least memorising admissible choice. Even so its NN ratio is 0.215: generated paths sit ~4.6x closer to the training set than held-out real data does. See losses/bandwidth_selection.json and losses/selection_criterion.md. SBTS is kernel-based - there is no training loss to log and no weights to serialise."
+}
