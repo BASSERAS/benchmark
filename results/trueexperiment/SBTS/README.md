@@ -181,7 +181,11 @@ Protocol is the paper's §3.3.1 (Deep-MKV-TS, Table 4), reproduced exactly:
 Three targets: cumulative return over the horizon, the 32 individual increments, and
 **realized volatility, `sqrt(sum_t r²_{t,a})` — summed over TIME, one scalar per asset**.
 All ×1000, lower is better.
-Brackets are the **95 % bootstrap CI over the 6 144 queries** (2 000 replicates, seed 0).
+**Two different ± appear in this table and they mean different things:**
+on the bold **SBTS** row it is the sample **sd across the 4 seeds** (generator noise);
+on every other row it is the **half-width of the 95 % bootstrap CI over the 6 144 test
+queries** (2 000 replicates, seed 0 — sampling noise, i.e. how much the average would move
+on a different draw of test histories). The per-seed rows carry the query CI, not a seed sd.
 
 > **Corrected 2026-08-26.** The rv target previously summed the squared increments over
 > **assets** at each step, giving a `(N, 32)` cross-sectional dispersion trajectory. The
@@ -194,13 +198,13 @@ Brackets are the **95 % bootstrap CI over the 6 144 queries** (2 000 replicates,
 | Bank | Bank size | Cumulative return CRPS ×1000 ↓ | Increment CRPS ×1000 ↓ | Realized vol CRPS ×1000 ↓ |
 |---|---|---|---|---|
 | **SBTS** (mean ± sd over 4 seeds) | 8 192 | **1.270 ± 0.001** | **0.337 ± 0.000** | **1.045 ± 0.007** |
-|  seed 0 | 8 192 | 1.270 [1.245, 1.295] | 0.337 [0.333, 0.342] | 1.045 [1.021, 1.072] |
-|  seed 1 | 8 192 | 1.271 [1.247, 1.297] | 0.337 [0.333, 0.342] | 1.052 [1.028, 1.080] |
-|  seed 2 | 8 192 | 1.269 [1.244, 1.294] | 0.337 [0.333, 0.342] | 1.046 [1.021, 1.074] |
-|  seed 3 | 8 192 | 1.269 [1.245, 1.294] | 0.337 [0.332, 0.342] | 1.035 [1.010, 1.062] |
-| Moving-block bootstrap *(paper baseline)* | 8 192 | 1.279 [1.255, 1.304] | 0.338 [0.334, 0.343] | 1.110 [1.087, 1.135] |
-| Session bootstrap *(paper baseline)* | 8 192 | 1.262 [1.236, 1.289] | 0.337 [0.332, 0.341] | 0.975 [0.949, 1.003] |
-| Real training split as bank *(reference, not in the paper)* | 6 144 | 1.257 [1.232, 1.284] | 0.335 [0.331, 0.340] | 0.970 [0.944, 0.998] |
+|  seed 0 | 8 192 | 1.270 ± 0.025 | 0.337 ± 0.005 | 1.045 ± 0.026 |
+|  seed 1 | 8 192 | 1.271 ± 0.025 | 0.337 ± 0.005 | 1.052 ± 0.026 |
+|  seed 2 | 8 192 | 1.269 ± 0.025 | 0.337 ± 0.005 | 1.046 ± 0.027 |
+|  seed 3 | 8 192 | 1.269 ± 0.025 | 0.337 ± 0.005 | 1.035 ± 0.026 |
+| Moving-block bootstrap *(paper baseline)* | 8 192 | 1.279 ± 0.025 | 0.338 ± 0.005 | 1.110 ± 0.024 |
+| Session bootstrap *(paper baseline)* | 8 192 | 1.262 ± 0.026 | 0.337 ± 0.005 | 0.975 ± 0.027 |
+| Real training split as bank *(reference, not in the paper)* | 6 144 | 1.257 ± 0.026 | 0.335 ± 0.005 | 0.970 ± 0.027 |
 
 > **Headline:** SBTS beats the moving-block bootstrap on **3 of the 3 targets** (Cumulative return, Increment, Realized vol). Ratios: Cumulative return **0.993**, Increment **0.997**, Realized vol **0.941**. **The session bootstrap is the harder baseline and SBTS loses to it on 3 of the 3 targets** (Cumulative return, Increment, Realized vol): Cumulative return **1.006**, Increment **1.002**, Realized vol **1.072**. Resampling whole real training days, with no model at all, forecasts this panel better than the generator does.
 > **The ratio row is the number that transfers**, not the absolute CRPS. Absolute CRPS is set by

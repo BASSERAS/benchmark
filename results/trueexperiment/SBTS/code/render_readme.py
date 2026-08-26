@@ -292,10 +292,24 @@ def load_crps():
 
 
 def _cell(blk):
-    """mean [ci_lo, ci_hi] -- the CI is the bootstrap over the 6 144 queries."""
+    """mean +- half-width of the 95 % bootstrap CI over the 6 144 queries.
+
+    The stored artefact holds ci_lo/ci_hi, and a percentile bootstrap CI is not
+    exactly symmetric about the mean. Collapsing it to a single +- therefore
+    discards a little information -- typically ~1e-3 of asymmetry on these rows,
+    which is below the printed precision, so nothing visible is lost. If a row
+    ever shows large skew this is the function that hides it; the raw ci_lo/ci_hi
+    remain in losses/crps_configs/*.json.
+
+    WARNING: this +- is NOT the same quantity as the +- on the bold aggregate
+    SBTS row, which is the sample sd ACROSS THE 4 SEEDS. One is sampling noise
+    over test queries, the other is generator noise over seeds. The note printed
+    under the table says which is which; do not merge the two.
+    """
     if not blk or "mean" not in blk:
         return "-"
-    return f"{blk['mean']:.3f} [{blk['ci_lo']:.3f}, {blk['ci_hi']:.3f}]"
+    half = (blk["ci_hi"] - blk["ci_lo"]) / 2.0
+    return f"{blk['mean']:.3f} ± {half:.3f}"
 
 
 def render_crps_table(per_seed, baselines, realbank):
@@ -634,7 +648,11 @@ Protocol is the paper's §3.3.1 (Deep-MKV-TS, Table 4), reproduced exactly:
 Three targets: cumulative return over the horizon, the 32 individual increments, and
 **realized volatility, `sqrt(sum_t r²_{{t,a}})` — summed over TIME, one scalar per asset**.
 All ×1000, lower is better.
-Brackets are the **95 % bootstrap CI over the 6 144 queries** (2 000 replicates, seed 0).
+**Two different ± appear in this table and they mean different things:**
+on the bold **SBTS** row it is the sample **sd across the 4 seeds** (generator noise);
+on every other row it is the **half-width of the 95 % bootstrap CI over the 6 144 test
+queries** (2 000 replicates, seed 0 — sampling noise, i.e. how much the average would move
+on a different draw of test histories). The per-seed rows carry the query CI, not a seed sd.
 
 > **Corrected 2026-08-26.** The rv target previously summed the squared increments over
 > **assets** at each step, giving a `(N, 32)` cross-sectional dispersion trajectory. The
