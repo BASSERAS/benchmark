@@ -164,7 +164,10 @@ real cloud? That is not the question a trading desk asks. This table scores **co
 skill**: given a real history, does the generator's conditional distribution of the *next*
 32 returns beat a purely historical resampler?
 
-Protocol is the paper's §3.3.1 (Deep-MKV-TS, Table 4), reproduced exactly:
+Protocol is the paper's §3.3.1 (Deep-MKV-TS, Table 4), reproduced with **one documented
+deviation** — retrieval is joint across the 8 assets, because the author's code refuses to
+run at d ≠ 1. The deviation is spelled out under the table; every other constant is the
+author's:
 
 - Take the first **65 log-prices** of each of the 6 144 test paths as the query history.
 - Retrieve the **256 nearest** histories from a pool of **8 192** paths, by Euclidean distance
@@ -206,7 +209,7 @@ on a different draw of test histories). The per-seed rows carry the query CI, no
 | Session bootstrap *(paper baseline)* | 8 192 | 1.262 ± 0.026 | 0.337 ± 0.005 | 0.975 ± 0.027 |
 | Real training split as bank *(reference, not in the paper)* | 6 144 | 1.257 ± 0.026 | 0.335 ± 0.005 | 0.970 ± 0.027 |
 
-> **Headline:** SBTS beats the moving-block bootstrap on **3 of the 3 targets** (Cumulative return, Increment, Realized vol). Ratios: Cumulative return **0.993**, Increment **0.997**, Realized vol **0.941**. **The session bootstrap is the harder baseline and SBTS loses to it on 3 of the 3 targets** (Cumulative return, Increment, Realized vol): Cumulative return **1.006**, Increment **1.002**, Realized vol **1.072**. Resampling whole real training days, with no model at all, forecasts this panel better than the generator does.
+> **Headline:** Against the moving-block bootstrap, **1 of the 3 targets is a difference this test can resolve** (Realized vol); on Cumulative return and Increment the gap sits inside the error bars and SBTS and the bootstrap are indistinguishable. Ratios: Cumulative return **0.993**, Increment **0.997**, Realized vol **0.941**. **The session bootstrap is the harder baseline and SBTS loses to it, resolvably, on Realized vol**: Cumulative return **1.006**, Increment **1.002**, Realized vol **1.072**. Resampling whole real training days, with no model at all, forecasts this panel better than the generator does. *Resolvable* = the two 95 % CIs do not overlap. That is a conservative test — the CIs share the same 6 144 queries, so a paired bootstrap on per-query differences would be tighter; it has not been run.
 > **The ratio row is the number that transfers**, not the absolute CRPS. Absolute CRPS is set by
 > the intrinsic unpredictability of the market and the units of the data; the ratio against the
 > block bootstrap is dimensionless, which is why the paper reports SBTS and the bootstraps side

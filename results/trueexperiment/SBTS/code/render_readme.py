@@ -314,7 +314,7 @@ def _cell(blk):
 
 def render_crps_table(per_seed, baselines, realbank):
     if not per_seed and not baselines:
-        return "_(no conditional-CRPS artefacts found)_", {}, 0
+        return "_(no conditional-CRPS artefacts found)_", {}, {}, {}, 0
 
     head = ["Bank", "Bank size"] + [f"{lbl} CRPS ×1000 ↓" for _k, lbl in CRPS_TARGETS]
     lines = ["| " + " | ".join(head) + " |",
@@ -370,7 +370,34 @@ def render_crps_table(per_seed, baselines, realbank):
     sb = baselines.get("session_bootstrap")
     ratios_sess = {k: sbts_mean[k] / sb[k]["mean"] for k, _l in CRPS_TARGETS} \
         if sb and sbts_mean else {}
-    return "\n".join(lines), ratios, ratios_sess, len(per_seed)
+
+    # Which differences the data can actually RESOLVE.
+    #
+    # A ratio of 0.993 is a "win" only if the 0.009 gap behind it is larger than
+    # the noise on the means, and it is not: the query bootstrap half-width is
+    # 0.025, roughly 3x the gap. Counting ratios by sign therefore reports three
+    # wins where the evidence supports one, and the headline is the first line a
+    # reader sees. So the headline counts only differences whose CIs do not
+    # overlap: |gap| > half_SBTS + half_baseline.
+    #
+    # This is CONSERVATIVE and deliberately so. Both CIs are computed on the same
+    # 6 144 queries, so the comparison is paired; a paired bootstrap on the
+    # per-query differences would be tighter and could resolve more. It has not
+    # been run. Under-claiming here is the safe direction.
+    def _half(blk):
+        return (blk["ci_hi"] - blk["ci_lo"]) / 2.0
+
+    sbts_half = {k: statistics.fmean([_half(per_seed[s][k]) for s in sorted(per_seed)])
+                 for k, _l in CRPS_TARGETS} if per_seed else {}
+    resolved = {}
+    for tag, base in (("block", bb), ("session", sb)):
+        if not (base and sbts_mean and sbts_half):
+            continue
+        resolved[tag] = {
+            k: abs(sbts_mean[k] - base[k]["mean"]) > (sbts_half[k] + _half(base[k]))
+            for k, _l in CRPS_TARGETS
+        }
+    return "\n".join(lines), ratios, ratios_sess, resolved, len(per_seed)
 
 
 # ------------------------------------------------------------------ timing ---
@@ -504,7 +531,8 @@ def main():
     at_floor, n_a, gaps = a_headline(sbts, floor)
     b_at, n_b = b_headline(agg, agg_f)
     per_seed, baselines, realbank = load_crps()
-    crps_tbl, ratios, ratios_sess, n_crps = render_crps_table(per_seed, baselines, realbank)
+    crps_tbl, ratios, ratios_sess, resolved, n_crps = render_crps_table(
+        per_seed, baselines, realbank)
 
     at_floor_txt = ", ".join(at_floor[:8]) + ("…" if len(at_floor) > 8 else "")
     gap_txt = "; ".join(_fmt_gap(g) for g in gaps[:4]) if gaps else "none"
@@ -513,28 +541,41 @@ def main():
     n_seeds = len(next(iter(sbts.values()))["seeds"]) if sbts else 5
     n_floor = len(next(iter(floor.values()))["seeds"]) if floor else 3
 
+    # The headline counts only differences the data can RESOLVE (non-overlapping
+    # CIs), not every ratio that happens to fall on the right side of 1.000.
+    # Counting by sign turned a 0.009 gap sitting inside a +-0.025 error bar into
+    # a reported "win" -- see the resolved= comment in render_crps_table.
+    rb = resolved.get("block", {})
+    rs = resolved.get("session", {})
     if ratios:
-        beats = [lbl for k, lbl in CRPS_TARGETS if ratios.get(k, 9) < 1.0]
-        crps_head = (f"SBTS beats the moving-block bootstrap on "
-                     f"**{len(beats)} of the 3 targets**"
-                     + (f" ({', '.join(beats)})" if beats else "")
+        won = [lbl for k, lbl in CRPS_TARGETS if ratios.get(k, 9) < 1.0 and rb.get(k)]
+        tied = [lbl for k, lbl in CRPS_TARGETS if k in ratios and not rb.get(k)]
+        crps_head = (f"Against the moving-block bootstrap, **{len(won)} of the 3 targets "
+                     f"is a difference this test can resolve**"
+                     + (f" ({', '.join(won)})" if won else "")
+                     + (f"; on {' and '.join(', '.join(tied).rsplit(', ', 1))} "
+                        "the gap sits inside the error bars and "
+                        "SBTS and the bootstrap are indistinguishable" if tied else "")
                      + ". Ratios: " + ", ".join(f"{lbl} **{ratios[k]:.3f}**"
                                                 for k, lbl in CRPS_TARGETS if k in ratios) + ".")
         # Never let the block-bootstrap ratio stand alone. If the session
         # bootstrap -- a baseline that resamples whole real training days and
         # learns nothing -- is ahead, that is the headline, not a footnote.
         if ratios_sess:
-            lost = [lbl for k, lbl in CRPS_TARGETS if ratios_sess.get(k, 0) > 1.0]
+            lost = [lbl for k, lbl in CRPS_TARGETS if ratios_sess.get(k, 0) > 1.0 and rs.get(k)]
             sess_txt = ", ".join(f"{lbl} **{ratios_sess[k]:.3f}**"
                                  for k, lbl in CRPS_TARGETS if k in ratios_sess)
             if lost:
                 crps_head += (f" **The session bootstrap is the harder baseline and SBTS loses "
-                              f"to it on {len(lost)} of the 3 targets** ({', '.join(lost)}): "
+                              f"to it, resolvably, on {', '.join(lost)}**: "
                               + sess_txt + ". Resampling whole real training days, with no model "
                               "at all, forecasts this panel better than the generator does.")
             else:
-                crps_head += (" SBTS also clears the session bootstrap, the harder of the two "
-                              "historical baselines: " + sess_txt + ".")
+                crps_head += (" Against the session bootstrap, the harder of the two historical "
+                              "baselines, no difference is resolvable: " + sess_txt + ".")
+        crps_head += (" *Resolvable* = the two 95 % CIs do not overlap. That is a conservative "
+                      "test — the CIs share the same 6 144 queries, so a paired bootstrap on "
+                      "per-query differences would be tighter; it has not been run.")
     else:
         crps_head = "_(ratios unavailable: the block-bootstrap baseline is missing)_"
 
@@ -631,7 +672,10 @@ real cloud? That is not the question a trading desk asks. This table scores **co
 skill**: given a real history, does the generator's conditional distribution of the *next*
 32 returns beat a purely historical resampler?
 
-Protocol is the paper's §3.3.1 (Deep-MKV-TS, Table 4), reproduced exactly:
+Protocol is the paper's §3.3.1 (Deep-MKV-TS, Table 4), reproduced with **one documented
+deviation** — retrieval is joint across the 8 assets, because the author's code refuses to
+run at d ≠ 1. The deviation is spelled out under the table; every other constant is the
+author's:
 
 - Take the first **65 log-prices** of each of the 6 144 test paths as the query history.
 - Retrieve the **256 nearest** histories from a pool of **8 192** paths, by Euclidean distance
