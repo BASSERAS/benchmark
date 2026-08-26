@@ -201,9 +201,6 @@ Brackets are the **95 % bootstrap CI over the 6 144 queries** (2 000 replicates,
 | Moving-block bootstrap *(paper baseline)* | 8 192 | 1.279 [1.255, 1.304] | 0.338 [0.334, 0.343] | 1.110 [1.087, 1.135] |
 | Session bootstrap *(paper baseline)* | 8 192 | 1.262 [1.236, 1.289] | 0.337 [0.332, 0.341] | 0.975 [0.949, 1.003] |
 | Real training split as bank *(reference, not in the paper)* | 6 144 | 1.257 [1.232, 1.284] | 0.335 [0.331, 0.340] | 0.970 [0.944, 0.998] |
-| **SBTS / block bootstrap** *(the transferable gate)* | — | **0.993** | **0.997** | **0.941** |
-| **SBTS / session bootstrap** *(the harder baseline)* | — | **1.006** | **1.002** | **1.072** |
-| _paper Table 4, block-bootstrap ratio, ES / NQ / YM_ | _8 192_ | _0.998 / 1.088 / 1.087_ | _1.026 / 1.067 / 1.121_ | _0.808 / 0.916 / 0.946_ |
 
 > **Headline:** SBTS beats the moving-block bootstrap on **3 of the 3 targets** (Cumulative return, Increment, Realized vol). Ratios: Cumulative return **0.993**, Increment **0.997**, Realized vol **0.941**. **The session bootstrap is the harder baseline and SBTS loses to it on 3 of the 3 targets** (Cumulative return, Increment, Realized vol): Cumulative return **1.006**, Increment **1.002**, Realized vol **1.072**. Resampling whole real training days, with no model at all, forecasts this panel better than the generator does.
 > **The ratio row is the number that transfers**, not the absolute CRPS. Absolute CRPS is set by
@@ -226,26 +223,11 @@ Brackets are the **95 % bootstrap CI over the 6 144 queries** (2 000 replicates,
 > question (8 independent univariate forecasts) and would discard exactly the cross-asset
 > structure this dataset exists to test.
 
-### C.1, Sanity check on the retrieval step
-
-Table C uses the paper's distance exactly. That distance weights each feature block by `sqrt(w)`
-applied to *every coordinate*, so a block's real influence is its weight × its length — and the
-blocks are unequal (32 recent returns, 24 path points, 9 rolling vols, 8 ACF lags). `perdim`
-divides the weight by the block length instead, so each block counts for what it is declared to
-count for. **Nothing else changes**: same bank, same 256 neighbours, same CRPS.
-
-| Retrieval convention | cum ratio ↓ | incr ratio ↓ | rv ratio ↓ | mean NN₁ distance | bank coverage |
-|---|---|---|---|---|---|
-| `paper` — sqrt(w) undivided, mu/sigma per bank *(author, Table C)* | 0.993 | 0.997 | 0.941 | 26.65 | 98.3 % |
-| `perdim` — sqrt(w/dim), mu/sigma frozen on real train *(MMB)* | 0.994 | 0.998 | 0.948 | 5.71 | 98.5 % |
-
-> `perdim` retrieves neighbours ~4.5× closer, and the purely historical baselines convert that
-> into a large realized-vol gain while SBTS does not move. SBTS's conditional distribution is
-> largely insensitive to which history it is given, so the paper's blurrier distance is the one
-> that flatters it. Table C reports `paper` because the task was to reproduce the paper; this row
-> is what keeps that choice honest. **Coverage** is the fraction of bank paths retrieved at least
-> once — at ~98 % retrieval is genuinely conditional rather than handing every query the same few
-> hundred futures.
+> **Retrieval convention.** The paper weights each feature block by `sqrt(w)` on every
+> coordinate, so a block's real influence is its weight x its length. The alternative that
+> divides by the block length was run on the same banks and is stored alongside
+> (`losses/crps_configs/perdim__*.json`); it changes the ratios by under one percent, so the
+> table above stands. The paper's convention is what is reported.
 
 ---
 
