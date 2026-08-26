@@ -266,8 +266,17 @@ def load_crps():
     realbank is the optional real-train-split-as-bank reference.
     """
     per_seed, baselines = {}, {}
-    files = sorted(glob.glob(os.path.join(SBTS, "losses", "conditional_crps_seed_*.json")),
+    # Preferred source: losses/crps_configs/<config>__seed_*.json, written by
+    # metrics/conditional_crps_multiasset.py once it grew --weight-mode/--standardize.
+    # config="paper" is the author's Table 4 convention (sqrt(w) undivided, mu/sigma
+    # per bank) and is the ONLY one allowed to populate Table C. The legacy flat
+    # losses/conditional_crps_seed_*.json files predate the rv-axis fix of 2026-08-26
+    # and are kept only so this renderer still works on an un-rerun checkout.
+    files = sorted(glob.glob(os.path.join(SBTS, "losses", "crps_configs", "paper__seed_*.json")),
                    key=lambda p: int(re.search(r"seed_(\d+)", p).group(1)))
+    if not files:
+        files = sorted(glob.glob(os.path.join(SBTS, "losses", "conditional_crps_seed_*.json")),
+                       key=lambda p: int(re.search(r"seed_(\d+)", p).group(1)))
     for p in files:
         seed = int(re.search(r"seed_(\d+)", p).group(1))
         res = read_json(p).get("results", {})
@@ -275,7 +284,10 @@ def load_crps():
             per_seed[seed] = res["SBTS"]
         if not baselines:
             baselines = {k: v for k, v in res.items() if k != "SBTS"}
-    realbank = read_json(os.path.join(SBTS, "losses", "conditional_crps_realbank.json"))
+    rb = os.path.join(SBTS, "losses", "crps_configs", "paper__realbank.json")
+    if not os.path.exists(rb):
+        rb = os.path.join(SBTS, "losses", "conditional_crps_realbank.json")
+    realbank = read_json(rb)
     return per_seed, baselines, realbank.get("results", {}).get("real_train_bank", realbank)
 
 
@@ -353,9 +365,62 @@ def render_crps_table(per_seed, baselines, realbank):
         lines.append("| **SBTS / session bootstrap** *(the harder baseline)* | — | "
                      + " | ".join(cells) + " |")
 
+    # Ratios recomputed from paper_real_data_table4.json, NOT transcribed:
+    #   ES  0.279/0.272=1.026   NQ 0.383/0.359=1.067   YM 0.297/0.265=1.121
+    # The YM increment ratio read 1.048 until 2026-08-26; that was a transcription
+    # error (it is the only cell where SBTS's increment loss is worst, so it is
+    # exactly the cell an optimistic slip would land on). Recompute, never retype.
     lines.append("| _paper Table 4, block-bootstrap ratio, ES / NQ / YM_ | _8 192_ | "
-                 "_0.998 / 1.088 / 1.087_ | _1.026 / 1.067 / 1.048_ | _0.808 / 0.916 / 0.946_ |")
+                 "_0.998 / 1.088 / 1.087_ | _1.026 / 1.067 / 1.121_ | _0.808 / 0.916 / 0.946_ |")
     return "\n".join(lines), ratios, ratios_sess, len(per_seed)
+
+
+# ------------------------------------------- retrieval-convention robustness --
+def render_config_table():
+    """Both retrieval conventions on the SAME banks, so the reader can see whether
+    the Table C ranking survives a change of distance.
+
+    `paper` weights each feature block by sqrt(w) on every coordinate, so a block's
+    real influence is weight x length and the unequal block lengths (32/24/9/8)
+    override the declared weights. `perdim` divides by the block length and freezes
+    mu/sigma on the real train split. Retrieval is the ONLY thing that differs.
+
+    Energy and variogram scores are also present in the artefacts (the multivariate
+    generalisations of CRPS, which collapse back to CRPS at the paper's d=1). They
+    are deliberately not rendered here -- the page reports the paper's metric.
+    """
+    rows = []
+    for cfg, desc in (("paper", "`paper` — sqrt(w) undivided, mu/sigma per bank *(author, Table C)*"),
+                      ("perdim", "`perdim` — sqrt(w/dim), mu/sigma frozen on real train *(MMB)*")):
+        files = sorted(glob.glob(os.path.join(SBTS, "losses", "crps_configs",
+                                              f"{cfg}__seed_*.json")))
+        if not files:
+            continue
+        per_seed, base = {}, {}
+        for p in files:
+            res = read_json(p).get("results", {})
+            if "SBTS" in res:
+                per_seed[int(re.search(r"seed_(\d+)", p).group(1))] = res["SBTS"]
+            if not base:
+                base = res
+        bb = base.get("block_bootstrap")
+        if not per_seed or not bb:
+            continue
+        cells = []
+        for k, _l in CRPS_TARGETS:
+            m = statistics.fmean([per_seed[s][k]["mean"] for s in sorted(per_seed)])
+            cells.append(f"{m / bb[k]['mean']:.3f}")
+        diag = next(iter(per_seed.values())).get("_diag", {})
+        nn1 = diag.get("nn1_dist_mean")
+        uniq = diag.get("unique_neighbour_frac")
+        rows.append(f"| {desc} | " + " | ".join(cells) + " | "
+                    + (f"{nn1:.2f}" if nn1 is not None else "-") + " | "
+                    + (f"{uniq * 100:.1f} %" if uniq is not None else "-") + " |")
+    if not rows:
+        return "_(no per-config artefacts found)_"
+    head = ("| Retrieval convention | cum ratio ↓ | incr ratio ↓ | rv ratio ↓ | "
+            "mean NN₁ distance | bank coverage |")
+    return "\n".join([head, "|---|---|---|---|---|---|"] + rows)
 
 
 # ------------------------------------------------------------------ timing ---
@@ -490,6 +555,7 @@ def main():
     b_at, n_b = b_headline(agg, agg_f)
     per_seed, baselines, realbank = load_crps()
     crps_tbl, ratios, ratios_sess, n_crps = render_crps_table(per_seed, baselines, realbank)
+    config_tbl = render_config_table()
 
     at_floor_txt = ", ".join(at_floor[:8]) + ("…" if len(at_floor) > 8 else "")
     gap_txt = "; ".join(_fmt_gap(g) for g in gaps[:4]) if gaps else "none"
@@ -630,9 +696,18 @@ Protocol is the paper's §3.3.1 (Deep-MKV-TS, Table 4), reproduced exactly:
   each drawn from a random training day, kept at its original intraday position) and a
   **session bootstrap** (an entire training day resampled whole).
 
-Three targets: cumulative return over the horizon, the 32 individual increments, and the
-realized-vol trajectory (cross-asset, `sqrt(sum_a r²_{{t,a}})`). All ×1000, lower is better.
+Three targets: cumulative return over the horizon, the 32 individual increments, and
+**realized volatility, `sqrt(sum_t r²_{{t,a}})` — summed over TIME, one scalar per asset**.
+All ×1000, lower is better.
 Brackets are the **95 % bootstrap CI over the 6 144 queries** (2 000 replicates, seed 0).
+
+> **Corrected 2026-08-26.** The rv target previously summed the squared increments over
+> **assets** at each step, giving a `(N, 32)` cross-sectional dispersion trajectory. The
+> author sums over **time** (`shadowing.py:579-601`: `raw_shadows` is `(B, K, h+1, A)` and
+> the reduction is on the TIME axis), giving `(N, 8)`. At d = 1 the author's quantity is
+> realized vol over the window; the old one collapsed to `|r_t|` — a different statistic.
+> This changed the SBTS/block-bootstrap rv ratio from 0.972 to the value tabulated below.
+> Cumulative return and increments are unaffected and are bit-identical to the previous run.
 
 {crps_tbl}
 
@@ -656,6 +731,24 @@ Brackets are the **95 % bootstrap CI over the 6 144 queries** (2 000 replicates,
 > d ≠ 1, so there is no reference behaviour to copy; per-asset retrieval would answer a different
 > question (8 independent univariate forecasts) and would discard exactly the cross-asset
 > structure this dataset exists to test.
+
+### C.1, Sanity check on the retrieval step
+
+Table C uses the paper's distance exactly. That distance weights each feature block by `sqrt(w)`
+applied to *every coordinate*, so a block's real influence is its weight × its length — and the
+blocks are unequal (32 recent returns, 24 path points, 9 rolling vols, 8 ACF lags). `perdim`
+divides the weight by the block length instead, so each block counts for what it is declared to
+count for. **Nothing else changes**: same bank, same 256 neighbours, same CRPS.
+
+{config_tbl}
+
+> `perdim` retrieves neighbours ~4.5× closer, and the purely historical baselines convert that
+> into a large realized-vol gain while SBTS does not move. SBTS's conditional distribution is
+> largely insensitive to which history it is given, so the paper's blurrier distance is the one
+> that flatters it. Table C reports `paper` because the task was to reproduce the paper; this row
+> is what keeps that choice honest. **Coverage** is the fraction of bank paths retrieved at least
+> once — at ~98 % retrieval is genuinely conditional rather than handing every query the same few
+> hundred futures.
 
 ---
 

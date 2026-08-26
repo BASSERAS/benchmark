@@ -178,25 +178,34 @@ Protocol is the paper's §3.3.1 (Deep-MKV-TS, Table 4), reproduced exactly:
   each drawn from a random training day, kept at its original intraday position) and a
   **session bootstrap** (an entire training day resampled whole).
 
-Three targets: cumulative return over the horizon, the 32 individual increments, and the
-realized-vol trajectory (cross-asset, `sqrt(sum_a r²_{t,a})`). All ×1000, lower is better.
+Three targets: cumulative return over the horizon, the 32 individual increments, and
+**realized volatility, `sqrt(sum_t r²_{t,a})` — summed over TIME, one scalar per asset**.
+All ×1000, lower is better.
 Brackets are the **95 % bootstrap CI over the 6 144 queries** (2 000 replicates, seed 0).
+
+> **Corrected 2026-08-26.** The rv target previously summed the squared increments over
+> **assets** at each step, giving a `(N, 32)` cross-sectional dispersion trajectory. The
+> author sums over **time** (`shadowing.py:579-601`: `raw_shadows` is `(B, K, h+1, A)` and
+> the reduction is on the TIME axis), giving `(N, 8)`. At d = 1 the author's quantity is
+> realized vol over the window; the old one collapsed to `|r_t|` — a different statistic.
+> This changed the SBTS/block-bootstrap rv ratio from 0.972 to the value tabulated below.
+> Cumulative return and increments are unaffected and are bit-identical to the previous run.
 
 | Bank | Bank size | Cumulative return CRPS ×1000 ↓ | Increment CRPS ×1000 ↓ | Realized vol CRPS ×1000 ↓ |
 |---|---|---|---|---|
-| **SBTS** (mean ± sd over 4 seeds) | 8 192 | **1.270 ± 0.001** | **0.337 ± 0.000** | **0.564 ± 0.002** |
-|  seed 0 | 8 192 | 1.270 [1.245, 1.295] | 0.337 [0.333, 0.342] | 0.565 [0.555, 0.575] |
-|  seed 1 | 8 192 | 1.271 [1.247, 1.297] | 0.337 [0.333, 0.342] | 0.565 [0.555, 0.575] |
-|  seed 2 | 8 192 | 1.269 [1.244, 1.294] | 0.337 [0.333, 0.342] | 0.564 [0.554, 0.575] |
-|  seed 3 | 8 192 | 1.269 [1.245, 1.294] | 0.337 [0.332, 0.342] | 0.561 [0.551, 0.572] |
-| Moving-block bootstrap *(paper baseline)* | 8 192 | 1.279 [1.255, 1.304] | 0.338 [0.334, 0.343] | 0.580 [0.571, 0.590] |
-| Session bootstrap *(paper baseline)* | 8 192 | 1.262 [1.236, 1.289] | 0.337 [0.332, 0.341] | 0.549 [0.539, 0.560] |
-| Real training split as bank *(reference, not in the paper)* | 6 144 | 1.257 [1.232, 1.284] | 0.335 [0.331, 0.340] | 0.547 [0.537, 0.558] |
-| **SBTS / block bootstrap** *(the transferable gate)* | — | **0.993** | **0.997** | **0.972** |
-| **SBTS / session bootstrap** *(the harder baseline)* | — | **1.006** | **1.002** | **1.026** |
-| _paper Table 4, block-bootstrap ratio, ES / NQ / YM_ | _8 192_ | _0.998 / 1.088 / 1.087_ | _1.026 / 1.067 / 1.048_ | _0.808 / 0.916 / 0.946_ |
+| **SBTS** (mean ± sd over 4 seeds) | 8 192 | **1.270 ± 0.001** | **0.337 ± 0.000** | **1.045 ± 0.007** |
+|  seed 0 | 8 192 | 1.270 [1.245, 1.295] | 0.337 [0.333, 0.342] | 1.045 [1.021, 1.072] |
+|  seed 1 | 8 192 | 1.271 [1.247, 1.297] | 0.337 [0.333, 0.342] | 1.052 [1.028, 1.080] |
+|  seed 2 | 8 192 | 1.269 [1.244, 1.294] | 0.337 [0.333, 0.342] | 1.046 [1.021, 1.074] |
+|  seed 3 | 8 192 | 1.269 [1.245, 1.294] | 0.337 [0.332, 0.342] | 1.035 [1.010, 1.062] |
+| Moving-block bootstrap *(paper baseline)* | 8 192 | 1.279 [1.255, 1.304] | 0.338 [0.334, 0.343] | 1.110 [1.087, 1.135] |
+| Session bootstrap *(paper baseline)* | 8 192 | 1.262 [1.236, 1.289] | 0.337 [0.332, 0.341] | 0.975 [0.949, 1.003] |
+| Real training split as bank *(reference, not in the paper)* | 6 144 | 1.257 [1.232, 1.284] | 0.335 [0.331, 0.340] | 0.970 [0.944, 0.998] |
+| **SBTS / block bootstrap** *(the transferable gate)* | — | **0.993** | **0.997** | **0.941** |
+| **SBTS / session bootstrap** *(the harder baseline)* | — | **1.006** | **1.002** | **1.072** |
+| _paper Table 4, block-bootstrap ratio, ES / NQ / YM_ | _8 192_ | _0.998 / 1.088 / 1.087_ | _1.026 / 1.067 / 1.121_ | _0.808 / 0.916 / 0.946_ |
 
-> **Headline:** SBTS beats the moving-block bootstrap on **3 of the 3 targets** (Cumulative return, Increment, Realized vol). Ratios: Cumulative return **0.993**, Increment **0.997**, Realized vol **0.972**. **The session bootstrap is the harder baseline and SBTS loses to it on 3 of the 3 targets** (Cumulative return, Increment, Realized vol): Cumulative return **1.006**, Increment **1.002**, Realized vol **1.026**. Resampling whole real training days, with no model at all, forecasts this panel better than the generator does.
+> **Headline:** SBTS beats the moving-block bootstrap on **3 of the 3 targets** (Cumulative return, Increment, Realized vol). Ratios: Cumulative return **0.993**, Increment **0.997**, Realized vol **0.941**. **The session bootstrap is the harder baseline and SBTS loses to it on 3 of the 3 targets** (Cumulative return, Increment, Realized vol): Cumulative return **1.006**, Increment **1.002**, Realized vol **1.072**. Resampling whole real training days, with no model at all, forecasts this panel better than the generator does.
 > **The ratio row is the number that transfers**, not the absolute CRPS. Absolute CRPS is set by
 > the intrinsic unpredictability of the market and the units of the data; the ratio against the
 > block bootstrap is dimensionless, which is why the paper reports SBTS and the bootstraps side
@@ -216,6 +225,27 @@ Brackets are the **95 % bootstrap CI over the 6 144 queries** (2 000 replicates,
 > d ≠ 1, so there is no reference behaviour to copy; per-asset retrieval would answer a different
 > question (8 independent univariate forecasts) and would discard exactly the cross-asset
 > structure this dataset exists to test.
+
+### C.1, Sanity check on the retrieval step
+
+Table C uses the paper's distance exactly. That distance weights each feature block by `sqrt(w)`
+applied to *every coordinate*, so a block's real influence is its weight × its length — and the
+blocks are unequal (32 recent returns, 24 path points, 9 rolling vols, 8 ACF lags). `perdim`
+divides the weight by the block length instead, so each block counts for what it is declared to
+count for. **Nothing else changes**: same bank, same 256 neighbours, same CRPS.
+
+| Retrieval convention | cum ratio ↓ | incr ratio ↓ | rv ratio ↓ | mean NN₁ distance | bank coverage |
+|---|---|---|---|---|---|
+| `paper` — sqrt(w) undivided, mu/sigma per bank *(author, Table C)* | 0.993 | 0.997 | 0.941 | 26.65 | 98.3 % |
+| `perdim` — sqrt(w/dim), mu/sigma frozen on real train *(MMB)* | 0.994 | 0.998 | 0.948 | 5.71 | 98.5 % |
+
+> `perdim` retrieves neighbours ~4.5× closer, and the purely historical baselines convert that
+> into a large realized-vol gain while SBTS does not move. SBTS's conditional distribution is
+> largely insensitive to which history it is given, so the paper's blurrier distance is the one
+> that flatters it. Table C reports `paper` because the task was to reproduce the paper; this row
+> is what keeps that choice honest. **Coverage** is the fraction of bank paths retrieved at least
+> once — at ~98 % retrieval is genuinely conditional rather than handing every query the same few
+> hundred futures.
 
 ---
 

@@ -1,0 +1,224 @@
+{
+  "units": "CRPS x 1000, lower is better",
+  "protocol": {
+    "s_idx": 64,
+    "history_log_prices": 65,
+    "horizon": 32,
+    "k_neighbours": 256,
+    "block_w": {
+      "recent": 1.0,
+      "cumpath": 0.5,
+      "rollvol": 2.0,
+      "dep": 1.0
+    },
+    "acf_lags": [
+      1,
+      2,
+      5,
+      10
+    ],
+    "roll_windows": [
+      5,
+      10,
+      20
+    ],
+    "cumpath_pts": 24,
+    "recent_n": 32,
+    "bootstrap_block_len": 8,
+    "baseline_seed": 1234,
+    "boot_reps": 2000,
+    "boot_seed": 0,
+    "boot_level": 0.95,
+    "weight_mode": "paper",
+    "standardisation": "bank",
+    "joint_scores": true,
+    "rv_definition": "sqrt(sum_t r^2) per asset, summed over TIME (shadowing.py:583-584); axis fixed 2026-08-26",
+    "retrieval": "joint across assets",
+    "d": 8
+  },
+  "paper_reference": "methods/Deep-MKV-TS/paper_reimplementation/results/paper_real_data_table4.json",
+  "data_dir": "dataset/TrueDataset/variants/om_2022-07_N6144",
+  "queries": "true_S_test_6144x128x8.npy",
+  "results": {
+    "SBTS": {
+      "cum_return": {
+        "mean": 1.2691674838029212,
+        "ci_lo": 1.2446407154897483,
+        "ci_hi": 1.2944526414885407
+      },
+      "cum_return__energy": {
+        "mean": 25.8337993700439,
+        "ci_lo": 25.36909749193309,
+        "ci_hi": 26.330680583249066
+      },
+      "cum_return__variogram": {
+        "mean": 8.874525253958067,
+        "ci_lo": 8.752409688282478,
+        "ci_hi": 9.006224424967892
+      },
+      "increment": {
+        "mean": 0.33695043817902876,
+        "ci_lo": 0.3323392308476597,
+        "ci_hi": 0.34185677547166715
+      },
+      "increment__energy": {
+        "mean": 7.286464639809975,
+        "ci_lo": 7.1843791994512936,
+        "ci_hi": 7.3903918797916965
+      },
+      "increment__variogram": {
+        "mean": 2.571963637697171,
+        "ci_lo": 2.54947763479315,
+        "ci_hi": 2.595048704212557
+      },
+      "rv": {
+        "mean": 1.0346485718574607,
+        "ci_lo": 1.009671748325937,
+        "ci_hi": 1.0616293010402431
+      },
+      "rv__energy": {
+        "mean": 3.3654509233943934,
+        "ci_lo": 3.2904047654812456,
+        "ci_hi": 3.445424233416015
+      },
+      "rv__variogram": {
+        "mean": 7.3801728531346225,
+        "ci_lo": 7.2154350325113725,
+        "ci_hi": 7.566193012246795
+      },
+      "_diag": {
+        "feature_dim": 584,
+        "nn1_dist_mean": 27.35255724070568,
+        "nn1_dist_p95": 52.733667372079886,
+        "unique_neighbour_frac": 0.9862060546875,
+        "mean_reuse": 194.68548087634608
+      },
+      "bank_shape": [
+        8192,
+        128,
+        8
+      ],
+      "elapsed_sec": 166.9
+    },
+    "block_bootstrap": {
+      "cum_return": {
+        "mean": 1.2788976947462019,
+        "ci_lo": 1.255032986392843,
+        "ci_hi": 1.3043195257056146
+      },
+      "cum_return__energy": {
+        "mean": 26.145350209308365,
+        "ci_lo": 25.691995046877313,
+        "ci_hi": 26.622635146007184
+      },
+      "cum_return__variogram": {
+        "mean": 9.133799402829919,
+        "ci_lo": 9.011376953885286,
+        "ci_hi": 9.26473385775265
+      },
+      "increment": {
+        "mean": 0.33808497591952397,
+        "ci_lo": 0.3335652379786616,
+        "ci_hi": 0.34292022180963855
+      },
+      "increment__energy": {
+        "mean": 7.38014758723102,
+        "ci_lo": 7.282548574317797,
+        "ci_hi": 7.481283474770586
+      },
+      "increment__variogram": {
+        "mean": 2.6302396286966157,
+        "ci_lo": 2.607300296737013,
+        "ci_hi": 2.65331627432186
+      },
+      "rv": {
+        "mean": 1.1101677261491036,
+        "ci_lo": 1.0870790379231834,
+        "ci_hi": 1.135248197540112
+      },
+      "rv__energy": {
+        "mean": 3.6189194529488313,
+        "ci_lo": 3.5504042472880992,
+        "ci_hi": 3.6945900431254546
+      },
+      "rv__variogram": {
+        "mean": 7.935918729628478,
+        "ci_lo": 7.787688473180475,
+        "ci_hi": 8.107761908767847
+      },
+      "_diag": {
+        "feature_dim": 584,
+        "nn1_dist_mean": 25.461147243210057,
+        "nn1_dist_p95": 47.43049184941607,
+        "unique_neighbour_frac": 0.962158203125,
+        "mean_reuse": 199.5513828977417
+      },
+      "bank_shape": [
+        8192,
+        128,
+        8
+      ],
+      "elapsed_sec": 165.7
+    },
+    "session_bootstrap": {
+      "cum_return": {
+        "mean": 1.261900014830704,
+        "ci_lo": 1.236228461599605,
+        "ci_hi": 1.2885443210559966
+      },
+      "cum_return__energy": {
+        "mean": 25.57192970875547,
+        "ci_lo": 25.0650518883394,
+        "ci_hi": 26.084523610692916
+      },
+      "cum_return__variogram": {
+        "mean": 6.986580341958389,
+        "ci_lo": 6.830989085324649,
+        "ci_hi": 7.149201830023486
+      },
+      "increment": {
+        "mean": 0.33653249708520755,
+        "ci_lo": 0.3318509100691063,
+        "ci_hi": 0.3413631153573033
+      },
+      "increment__energy": {
+        "mean": 7.273357394640034,
+        "ci_lo": 7.167264412448551,
+        "ci_hi": 7.380867551560071
+      },
+      "increment__variogram": {
+        "mean": 2.3489771777338024,
+        "ci_lo": 2.323382838650315,
+        "ci_hi": 2.3752666346325846
+      },
+      "rv": {
+        "mean": 0.9748653406267904,
+        "ci_lo": 0.9485940224920137,
+        "ci_hi": 1.003244632451713
+      },
+      "rv__energy": {
+        "mean": 3.189971833138558,
+        "ci_lo": 3.1110816256309044,
+        "ci_hi": 3.2737016949084214
+      },
+      "rv__variogram": {
+        "mean": 6.998340513241215,
+        "ci_lo": 6.828842958695977,
+        "ci_hi": 7.189877959376479
+      },
+      "_diag": {
+        "feature_dim": 584,
+        "nn1_dist_mean": 23.050445305856115,
+        "nn1_dist_p95": 41.61372917434478,
+        "unique_neighbour_frac": 0.9676513671875,
+        "mean_reuse": 198.41856944619656
+      },
+      "bank_shape": [
+        8192,
+        128,
+        8
+      ],
+      "elapsed_sec": 169.5
+    }
+  }
+}
