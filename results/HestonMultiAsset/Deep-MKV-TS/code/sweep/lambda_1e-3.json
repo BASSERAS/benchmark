@@ -1,0 +1,19 @@
+{
+  "ce_projection_r2": 0.928087517619133,
+  "date": "2026-08-26",
+  "elapsed_sec": 3086.2633247519843,
+  "eta_3000_hours": 10.287544415839948,
+  "final_loss": 19.357080459594727,
+  "noise_ce_projection_r2": 0.9140385389328003,
+  "peak_gpu_gib": 9.089290142059326,
+  "ridge_lambda": 0.001,
+  "score_paths": 8192,
+  "score_seed": 20260826,
+  "sec_per_step": 12.345053299007937,
+  "secondary_file": "heston_ma_S_valdisc_8192x252x8.npy",
+  "seed": 0,
+  "selection_file": "heston_ma_S_val_8192x252x8.npy",
+  "steps": 250,
+  "val_discrepancy": 0.03641340509057045,
+  "valdisc_discrepancy": 0.034553468227386475
+}

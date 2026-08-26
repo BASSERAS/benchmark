@@ -297,7 +297,7 @@ def main():
     # column and rewrites README.md with one method missing -- it happened on 2026-08-26,
     # when the default still read "SBTS,LS4,reference" and re-rendering deleted CSDI from a
     # page that had shipped with it. Append your method here as well as to the command line.
-    ap.add_argument("--methods", default="SBTS,LS4,CSDI,reference",
+    ap.add_argument("--methods", default="SBTS,LS4,CSDI,Deep-MKV-TS,reference",
                     help="comma-separated, in display order")
     args = ap.parse_args()
     methods = [m.strip() for m in args.methods.split(",") if m.strip()]

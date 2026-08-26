@@ -1,0 +1,24 @@
+{
+  "ce_projection_r2": 0.16175678372383118,
+  "date": "2026-08-26",
+  "eigh_fallback": {
+    "n_calls_failed": 0,
+    "n_fallback_cpu": 0,
+    "n_fallback_cpu_float64": 0
+  },
+  "elapsed_sec": 2331.0346421099966,
+  "eta_3000_hours": 7.770115473699989,
+  "final_loss": 2.289684295654297,
+  "noise_ce_projection_r2": 0.2895602881908417,
+  "peak_gpu_gib": 9.089290142059326,
+  "ridge_lambda": 300.0,
+  "score_paths": 8192,
+  "score_seed": 20260826,
+  "sec_per_step": 9.324138568439986,
+  "secondary_file": "heston_ma_S_valdisc_8192x252x8.npy",
+  "seed": 0,
+  "selection_file": "heston_ma_S_val_8192x252x8.npy",
+  "steps": 250,
+  "val_discrepancy": 0.02714373916387558,
+  "valdisc_discrepancy": 0.026338867843151093
+}

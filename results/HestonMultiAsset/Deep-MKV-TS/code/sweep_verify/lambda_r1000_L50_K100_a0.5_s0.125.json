@@ -1,0 +1,10 @@
+{
+  "date": "2026-08-26",
+  "diverged": true,
+  "diverged_after_sec": 2001.064479635097,
+  "diverged_detail": "eigh failed AND Theta is not finite -- this is an exploding control, not a cuSOLVER convergence problem. Do not retry on another backend. Theta: shape=(256, 8, 8), dtype=torch.float32, non_finite_entries=16384, bad_batch_elements=[0, 1, 2, 3, 4, 5, 6, 7]... of 256",
+  "ridge_lambda": 1000.0,
+  "seed": 0,
+  "selection_file": "heston_ma_S_val_8192x252x8.npy",
+  "steps": 250
+}

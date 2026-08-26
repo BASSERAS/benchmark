@@ -1,0 +1,37 @@
+{
+  "method": "Deep-MKV-TS",
+  "seed": 2,
+  "shape": [
+    8192,
+    252,
+    8
+  ],
+  "dtype": "float64",
+  "d": 8,
+  "S0": 100.0,
+  "S0_exact": true,
+  "S_min": 14.290087285359592,
+  "S_max": 456.1732928429708,
+  "all_finite_positive": true,
+  "generated_mean": 102.32484967088777,
+  "generated_std": 14.281183859871005,
+  "gen_time_sec": 4.1,
+  "train_time_sec": 20148.126192767057,
+  "n_steps": 3000,
+  "selected_step": 2500,
+  "selection_file": "heston_ma_S_val_8192x252x8.npy",
+  "selection_val_discrepancy": 0.011789021082222462,
+  "ridge_lambda": 1000.0,
+  "retuned_for_d8": [
+    "ridge_lambda"
+  ],
+  "batch_size": 256,
+  "n_parameters": 56136,
+  "num_steps": 252,
+  "generation_seed": 90002,
+  "n_entries": 16515072,
+  "s0_rescaled": true,
+  "s0_max_abs_residual_before_rescale": 6.395087552846235e-06,
+  "gpu": "NVIDIA A100-SXM4-80GB",
+  "date": "2026-08-26"
+}

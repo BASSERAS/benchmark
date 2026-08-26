@@ -1,0 +1,27 @@
+{
+  "argmin_is_last": false,
+  "argmin_step": 500,
+  "best_val_discrepancy": 0.0159473679959774,
+  "date": "2026-08-26",
+  "gain_2500_to_3000_pct": null,
+  "gain_500_to_best_pct": 0.0,
+  "last_step_scored": 1000,
+  "per_step": [
+    {
+      "step": 500,
+      "val_discrepancy": 0.0159473679959774,
+      "valdisc_discrepancy": 0.015089199878275394
+    },
+    {
+      "step": 1000,
+      "val_discrepancy": 0.02398163639008999,
+      "valdisc_discrepancy": 0.022703753784298897
+    }
+  ],
+  "read_only": true,
+  "score_paths": 8192,
+  "score_seed": 20260826,
+  "secondary_file": "heston_ma_S_valdisc_8192x252x8.npy",
+  "seed": 6,
+  "selection_file": "heston_ma_S_val_8192x252x8.npy"
+}
