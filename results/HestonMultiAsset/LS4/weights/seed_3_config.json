@@ -1,0 +1,50 @@
+{
+  "method": "LS4",
+  "variant": "LS4 (released solar_weekly preset, retuned for d=8)",
+  "seed": 3,
+  "feat_dim": 8,
+  "seq_len": 252,
+  "joint_or_per_asset": "joint",
+  "paper_hyperparams": false,
+  "retuned_for_d8": [
+    "in_channels",
+    "z_dim",
+    "scaler"
+  ],
+  "epochs": 100,
+  "z_dim": 40,
+  "d_state": 64,
+  "d_model": 64,
+  "n_layers": 4,
+  "s4_type": "s4",
+  "latent_type": "split",
+  "batch_size": 128,
+  "lr": 0.001,
+  "weight_decay": 0.0,
+  "ema_lamb": 0.99,
+  "ema_start_step": 200,
+  "scaler": "per_channel_standardize",
+  "scaler_mu": [
+    102.58981383284528,
+    102.34781477057501,
+    102.39113931563847,
+    102.49818158348326,
+    102.36643426745181,
+    102.72102946025358,
+    102.49819899227627,
+    102.50455066480379
+  ],
+  "scaler_sigma": [
+    11.825840474638719,
+    15.74109272213291,
+    14.047927211228867,
+    18.55019744248962,
+    13.310628904100351,
+    16.4124679937139,
+    12.684368677148319,
+    11.14159070800995
+  ],
+  "params": 2205832,
+  "per_asset_digest": "231da80bdedf22e9",
+  "train_time_sec": 1314.5
+}

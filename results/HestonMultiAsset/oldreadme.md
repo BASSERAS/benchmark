@@ -11,6 +11,7 @@ the two can be read side by side:
 | Method | A rows at/below floor | B plots at/below floor | NN memorisation ratio |
 |--------|----------------------:|-----------------------:|----------------------:|
 | [SBTS](SBTS/README.md) | 12 / 103 | 0 / 6 | 0.219 |
+| [LS4](LS4/README.md) | 7 / 103 | 0 / 6 | 0.838 |
 
 ---
 
@@ -133,6 +134,7 @@ therefore a real property of the generator, not an artefact of d = 8.
 | Method | NN ratio | Std across seeds | Times closer than held-out data | Exact duplicates |
 |--------|---------:|-----------------:|--------------------------------:|-----------------:|
 | [SBTS](SBTS/README.md) | 0.2189 | 0.0003 | 4.6× | 0 |
+| [LS4](LS4/README.md) | 0.8381 | 0.0166 | 1.2× | 0 |
 
 > **Zero exact duplicates does NOT clear a method.** A kernel generator interpolates
 > between training paths, so it produces *near*-copies rather than bitwise copies. The

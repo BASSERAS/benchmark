@@ -1,0 +1,54 @@
+{
+  "criterion": "mean validation ELBO over epochs 15-19, 20 epochs, --frac 0.25 (2048 train/2048 val), seed 0",
+  "criterion_file": "selection_criterion.md",
+  "hard_constraint": "first_nan_epoch is null and all losses finite",
+  "tie_break": "within 1% -> prefer smaller z_dim",
+  "candidates": [
+    {
+      "z_dim": 40,
+      "val_elbo_tail5": -5.369175691902638,
+      "val_final": -2.1052634194493294,
+      "train_final": -4.724958073347807,
+      "finite": true,
+      "first_nan_epoch": null,
+      "params": 2205832,
+      "sec_per_epoch": 2.06
+    },
+    {
+      "z_dim": 32,
+      "val_elbo_tail5": -2.906071123480797,
+      "val_final": -3.858354762196541,
+      "train_final": -0.854265877045691,
+      "finite": true,
+      "first_nan_epoch": null,
+      "params": 2190832,
+      "sec_per_epoch": 3.0
+    },
+    {
+      "z_dim": 16,
+      "val_elbo_tail5": -1.4741652082651853,
+      "val_final": -2.9408131688833237,
+      "train_final": -3.095844805240631,
+      "finite": true,
+      "first_nan_epoch": null,
+      "params": 2163904,
+      "sec_per_epoch": 2.04
+    },
+    {
+      "z_dim": 5,
+      "val_elbo_tail5": 71.61985125541688,
+      "val_final": 66.99430346488953,
+      "train_final": 66.92520046234131,
+      "finite": true,
+      "first_nan_epoch": null,
+      "params": 2147767,
+      "sec_per_epoch": 2.05
+    }
+  ],
+  "best_by_elbo": 40,
+  "within_1pct": [
+    40
+  ],
+  "selected_z_dim": 40,
+  "date": "2026-08-25"
+}

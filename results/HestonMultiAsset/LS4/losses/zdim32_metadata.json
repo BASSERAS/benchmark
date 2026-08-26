@@ -1,0 +1,20 @@
+{
+  "method": "LS4",
+  "seed": 0,
+  "gen_sec": 0.0,
+  "train_time_sec": 78.8,
+  "sec_per_epoch": 3.0,
+  "gpu": "A100-SXM4-80GB",
+  "date": "2026-08-25",
+  "params": 2190832,
+  "z_dim": 32,
+  "epochs_run": 20,
+  "epochs_max": 20,
+  "min_total_loss": -5.415459990501404,
+  "min_val_loss": -5.701891303062439,
+  "first_nan_epoch": null,
+  "real_mean": 102.22817156547958,
+  "real_std": 14.525878892861337,
+  "per_asset_digest": "231da80bdedf22e9",
+  "s0_rescaled": true
+}

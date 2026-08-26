@@ -1,0 +1,44 @@
+{
+  "diagnostic": "nearest-neighbour memorisation ratio, log-return space",
+  "definition": "median_i min_j ||gen_i - train_j||  /  median_i min_j ||real_test_i - train_j||",
+  "interpretation": "1.0 = generated paths sit no closer to the training set than genuine held-out data; <1 = memorisation, 1/ratio = how many times closer they sit",
+  "space": "log-returns, flattened to (T-1)*d = 2008 dims",
+  "median_nn_heldout": 0.6864349842071533,
+  "nn_ratio": 0.8381312742761061,
+  "nn_ratio_std": 0.016556232234989015,
+  "median_nn_generated": 0.5753226280212402,
+  "n_exact_duplicates": 0,
+  "per_seed": [
+    {
+      "seed": 0,
+      "median_nn_generated": 0.5779811143875122,
+      "nn_ratio": 0.8420041630819449,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 1,
+      "median_nn_generated": 0.5900911092758179,
+      "nn_ratio": 0.8596460303627814,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 2,
+      "median_nn_generated": 0.5717138051986694,
+      "nn_ratio": 0.8328739332232764,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 3,
+      "median_nn_generated": 0.5809059739112854,
+      "nn_ratio": 0.8462651048915345,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 4,
+      "median_nn_generated": 0.5559211373329163,
+      "nn_ratio": 0.8098671398209937,
+      "n_exact_duplicates": 0
+    }
+  ],
+  "note": "Exact duplicates being 0 does NOT clear the method, and for LS4 it is close to uninformative: the decoder output is a continuous function of a Gaussian prior sample, so bitwise equality with a training path has probability zero by construction. The ratio is the number that matters. Estimator byte-identical to SBTS/code/measure_memorisation.py so the two columns are directly comparable; SBTS d = 8 scores 0.2189 +/- 0.0003 on it, and SBTS d = 1 scores 0.158."
+}
