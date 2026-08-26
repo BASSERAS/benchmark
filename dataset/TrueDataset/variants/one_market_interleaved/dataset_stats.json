@@ -1,0 +1,131 @@
+{
+  "source": "Binance public monthly 1s spot klines (data.binance.vision)",
+  "price_kind": "last trade price; the spot archive publishes no quotes",
+  "assets": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "BNBUSDT",
+    "SOLUSDT",
+    "XRPUSDT",
+    "DOGEUSDT",
+    "ADAUSDT",
+    "LINKUSDT"
+  ],
+  "period": {
+    "start": "2021-07",
+    "end": "2026-07"
+  },
+  "bar_seconds": 30,
+  "seq_len": 128,
+  "n_samples": 8192,
+  "d": 8,
+  "dt": 9.512937595129376e-07,
+  "bars_per_year": 1051200,
+  "S0": 100.0,
+  "split_mode": "interleaved",
+  "block_windows": 256,
+  "blocks_per_split": 32,
+  "n_windows_available": 41782,
+  "diagnostics": {
+    "zero_return_fraction": {
+      "BTCUSDT": 0.0526,
+      "ETHUSDT": 0.03685,
+      "BNBUSDT": 0.20144,
+      "SOLUSDT": 0.12744,
+      "XRPUSDT": 0.14998,
+      "DOGEUSDT": 0.13629,
+      "ADAUSDT": 0.22483,
+      "LINKUSDT": 0.24513
+    },
+    "no_trade_bar_fraction": {
+      "BTCUSDT": 0.0002,
+      "ETHUSDT": 0.0002,
+      "BNBUSDT": 0.0002,
+      "SOLUSDT": 0.00142,
+      "XRPUSDT": 0.00029,
+      "DOGEUSDT": 0.00182,
+      "ADAUSDT": 0.00677,
+      "LINKUSDT": 0.02079
+    },
+    "realised_corr_mean": 0.6218635634570864,
+    "realised_corr_min": 0.5480765169519498,
+    "realised_corr_max": 0.81803107779452
+  },
+  "splits": {
+    "train": {
+      "n_samples": 8192,
+      "first_utc": "2021-07-01T00:00:00+00:00",
+      "last_utc": "2026-06-14T00:32:00+00:00",
+      "ann_vol": [
+        0.5078,
+        0.6713,
+        0.5925,
+        0.9587,
+        0.7661,
+        0.9782,
+        0.8858,
+        0.9346
+      ]
+    },
+    "_test": {
+      "n_samples": 8192,
+      "first_utc": "2021-07-12T09:04:00+00:00",
+      "last_utc": "2026-06-25T09:36:00+00:00",
+      "ann_vol": [
+        0.494,
+        0.653,
+        0.5896,
+        0.9618,
+        0.8157,
+        1.01,
+        0.9212,
+        0.9574
+      ]
+    },
+    "_disc": {
+      "n_samples": 8192,
+      "first_utc": "2021-07-23T18:08:00+00:00",
+      "last_utc": "2026-07-06T18:40:00+00:00",
+      "ann_vol": [
+        0.5711,
+        0.7369,
+        0.6459,
+        1.1649,
+        0.8949,
+        1.0188,
+        0.9633,
+        1.0249
+      ]
+    },
+    "_val": {
+      "n_samples": 8192,
+      "first_utc": "2021-08-04T03:12:00+00:00",
+      "last_utc": "2026-07-18T03:44:00+00:00",
+      "ann_vol": [
+        0.549,
+        0.7137,
+        0.6352,
+        1.0539,
+        0.9001,
+        1.0075,
+        0.948,
+        1.0193
+      ]
+    },
+    "_valdisc": {
+      "n_samples": 8192,
+      "first_utc": "2021-08-15T12:16:00+00:00",
+      "last_utc": "2026-07-29T12:48:00+00:00",
+      "ann_vol": [
+        0.5458,
+        0.7125,
+        0.6844,
+        1.0847,
+        0.96,
+        1.0774,
+        0.9996,
+        1.0672
+      ]
+    }
+  }
+}

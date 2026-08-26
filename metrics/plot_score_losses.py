@@ -57,9 +57,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--method", default="FourierFlow")
     ap.add_argument("--dataset", default="Heston")
+    # Same escape hatch as compute_all_multiasset.py --results-dir: the
+    # TrueDataset artefacts are published under results/trueexperiment/, which
+    # results/<dataset>/<method> cannot name.
+    ap.add_argument("--results-dir", default=None,
+                    help="tree holding seed_*_{disc,pred}_*_loss.csv. "
+                         "Defaults to results/<dataset>/<method>/.")
     args = ap.parse_args()
 
-    res_dir = os.path.join(REPO, "results", args.dataset, args.method)
+    res_dir = args.results_dir or os.path.join(REPO, "results",
+                                               args.dataset, args.method)
     plots_dir = os.path.join(res_dir, "plots")
     os.makedirs(plots_dir, exist_ok=True)
 

@@ -1,0 +1,5 @@
+{
+  "source_split": "true_S_val_6144x128x8.npy",
+  "note": "real-vs-real floor: a REAL split standing in for a generated bank",
+  "variant": "om_2022-07_N6144"
+}

@@ -1,0 +1,53 @@
+{
+  "diagnostic": "nearest-neighbour memorisation ratio, log-return space",
+  "definition": "median_i min_j ||gen_i - train_j||  /  median_i min_j ||real_val_i - train_j||",
+  "denominator_split": "val",
+  "why_val_not_test": "TrueDataset splits by era (dataset_stats.json: split_mode = holdout-era). train/val/valdisc are 2022-07 -> 2024-12; disc/test are 2025-02 -> 2026-07, and annualised vol falls between the eras on 6 of 8 assets. median NN(test -> train) is therefore large partly because the market changed. Using it as the denominator would stretch the yardstick and flatter a memorising generator. val is the same era as train, so it answers the actual question: how close does real data of this kind sit to the training set. The test-era ratio is reported as nn_ratio_vs_test_era for context, and the gap between the two is the regime change.",
+  "interpretation": "1.0 = generated paths sit no closer to the training set than real same-era data; <1 = memorisation, 1/ratio = how many times closer they sit",
+  "space": "log-returns, flattened to (T-1)*d = 1016 dims",
+  "median_nn_heldout": 0.01894340105354786,
+  "median_nn_test_era": 0.017647208645939827,
+  "nn_ratio": 1.0814508246231305,
+  "nn_ratio_std": 0.004180108124863662,
+  "nn_ratio_vs_test_era": 1.1608836899675574,
+  "median_nn_generated": 0.02048635669052601,
+  "n_exact_duplicates": 0,
+  "per_seed": [
+    {
+      "seed": 0,
+      "median_nn_generated": 0.020578738301992416,
+      "nn_ratio": 1.0863275419140366,
+      "nn_ratio_vs_test_era": 1.1661186035065698,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 1,
+      "median_nn_generated": 0.020540136843919754,
+      "nn_ratio": 1.0842898160609258,
+      "nn_ratio_vs_test_era": 1.163931206119984,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 2,
+      "median_nn_generated": 0.02042066678404808,
+      "nn_ratio": 1.0779831312404986,
+      "nn_ratio_vs_test_era": 1.1571612935367177,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 3,
+      "median_nn_generated": 0.020524771884083748,
+      "nn_ratio": 1.08347871779021,
+      "nn_ratio_vs_test_era": 1.1630605324545746,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 4,
+      "median_nn_generated": 0.020367469638586044,
+      "nn_ratio": 1.075174916109981,
+      "nn_ratio_vs_test_era": 1.1541468142199407,
+      "n_exact_duplicates": 0
+    }
+  ],
+  "note": "Exact duplicates being 0 does NOT clear the method: SBTS interpolates between training paths, so it produces near-copies rather than copies. The ratio is the number that matters. This ratio is not a passive report -- it is the objective the bandwidth was selected on: (h, K) were chosen to minimise |log nn_ratio| subject to the real-vs-real envelope, with corr_err as the tie-break. Rejected candidates make the point: K=3, h=0.05 scores vol_err 6.06 %, better than the real-vs-real MINIMUM of 8.72 %, and its nn_ratio is 0.197. Beating the floor on a distributional metric is what memorisation looks like from inside the panel; only this diagnostic sees it."
+}

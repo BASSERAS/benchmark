@@ -1,0 +1,110 @@
+{
+  "units": "CRPS x 1000, lower is better",
+  "protocol": {
+    "s_idx": 64,
+    "history_log_prices": 65,
+    "horizon": 32,
+    "k_neighbours": 256,
+    "block_w": {
+      "recent": 1.0,
+      "cumpath": 0.5,
+      "rollvol": 2.0,
+      "dep": 1.0
+    },
+    "acf_lags": [
+      1,
+      2,
+      5,
+      10
+    ],
+    "roll_windows": [
+      5,
+      10,
+      20
+    ],
+    "cumpath_pts": 24,
+    "recent_n": 32,
+    "bootstrap_block_len": 8,
+    "baseline_seed": 1234,
+    "boot_reps": 2000,
+    "boot_seed": 0,
+    "boot_level": 0.95,
+    "standardisation": "frozen on each bank (author's convention)",
+    "retrieval": "joint across assets",
+    "d": 8
+  },
+  "paper_reference": "methods/Deep-MKV-TS/paper_reimplementation/results/paper_real_data_table4.json",
+  "data_dir": "/home/tbasseras/benchmark/dataset/TrueDataset/variants/om_2022-07_N6144",
+  "queries": "true_S_test_6144x128x8.npy",
+  "results": {
+    "SBTS": {
+      "cum_return": {
+        "mean": 1.2713072776965728,
+        "ci_lo": 1.246964411555189,
+        "ci_hi": 1.2969301875082655
+      },
+      "increment": {
+        "mean": 0.33734695954183863,
+        "ci_lo": 0.33272253241369465,
+        "ci_hi": 0.34221675488694264
+      },
+      "rv": {
+        "mean": 0.5647922158439129,
+        "ci_lo": 0.5550278121177968,
+        "ci_hi": 0.5754245873077871
+      },
+      "bank_shape": [
+        8192,
+        128,
+        8
+      ],
+      "elapsed_sec": 33.5
+    },
+    "block_bootstrap": {
+      "cum_return": {
+        "mean": 1.2788976947462019,
+        "ci_lo": 1.255032986392843,
+        "ci_hi": 1.3043195257056146
+      },
+      "increment": {
+        "mean": 0.33808497591952397,
+        "ci_lo": 0.3335652379786616,
+        "ci_hi": 0.34292022180963855
+      },
+      "rv": {
+        "mean": 0.579905203332547,
+        "ci_lo": 0.5709646629887711,
+        "ci_hi": 0.5897209138286565
+      },
+      "bank_shape": [
+        8192,
+        128,
+        8
+      ],
+      "elapsed_sec": 33.8
+    },
+    "session_bootstrap": {
+      "cum_return": {
+        "mean": 1.261900014830704,
+        "ci_lo": 1.236228461599605,
+        "ci_hi": 1.2885443210559966
+      },
+      "increment": {
+        "mean": 0.33653249708520755,
+        "ci_lo": 0.3318509100691063,
+        "ci_hi": 0.3413631153573033
+      },
+      "rv": {
+        "mean": 0.549309624447064,
+        "ci_lo": 0.5393023522060642,
+        "ci_hi": 0.5599608995329528
+      },
+      "bank_shape": [
+        8192,
+        128,
+        8
+      ],
+      "elapsed_sec": 33.8
+    }
+  }
+}

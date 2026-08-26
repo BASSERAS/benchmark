@@ -1,0 +1,152 @@
+{
+  "dataset": "TrueDataset",
+  "d": 8,
+  "T": 128,
+  "dt_gauge": 0.003968253968253968,
+  "S0": 100.0,
+  "bars_per_year": 1051200,
+  "criterion_source": "results/TrueDataset/SBTS/losses/selection_criterion.md",
+  "criterion_note": "Heston's absolute tolerances are unsatisfiable on real data: train-vs-val alone is 7.05% vol / 33.10% kurt. Thresholds here are the real-vs-real envelope, derived at runtime from --data-dir.",
+  "real_vs_real_envelope": {
+    "splits_found": [
+      "train",
+      "test",
+      "disc",
+      "val",
+      "valdisc"
+    ],
+    "median_nn_heldout": 0.01894340105354786,
+    "vol_err_pct_max": 24.594543089032,
+    "vol_err_pct_min": 8.722158549724696,
+    "vol_err_pct_median": 14.959668261117109,
+    "kurt_err_pct_max": 3044.677873297915,
+    "kurt_err_pct_min": 52.63161714599185,
+    "kurt_err_pct_median": 119.5046142252558,
+    "corr_err_max": 0.18425939526917132,
+    "corr_err_min": 0.02081516834278599,
+    "corr_err_median": 0.09247711758955052,
+    "nn_ratio_by_split": {
+      "test": 0.9315755669944655,
+      "disc": 0.9641509608353299,
+      "val": 1.0,
+      "valdisc": 0.9678398896536643
+    },
+    "nn_ratio_band": [
+      0.9315755669944655,
+      1.0
+    ],
+    "train_vs_score": {
+      "vol_err_pct": 9.025260210598317,
+      "kurt_err_pct": 84.57230798645028,
+      "corr_err": 0.07611503211649559
+    }
+  },
+  "hard_constraints": {
+    "min_price": 10.0,
+    "vol_err_pct_max": 24.594543089032,
+    "corr_err_max": 0.18425939526917132,
+    "kurt_err_pct_max": null
+  },
+  "objective": "minimise |log nn_ratio| among admissible; tie-break (0.02) lowest corr_err",
+  "nn_ratio_band": [
+    0.9315755669944655,
+    1.0
+  ],
+  "scored_on": "true_S_val_6144x128x8.npy",
+  "trained_on": "true_S_6144x128x8.npy",
+  "data_dir": "/home/tbasseras/benchmark/dataset/TrueDataset/variants/om_2022-07_N6144",
+  "median_nn_heldout": 0.01894340105354786,
+  "reference": {
+    "ann_vol": [
+      0.5398602727962984,
+      0.6862528624044383,
+      0.6914960967097058,
+      1.1652522010894075,
+      0.8646792031195798,
+      1.051341114488751,
+      0.8604347307547829,
+      0.9521534526167487
+    ],
+    "excess_kurt": [
+      95.79563696565006,
+      322.4918120386488,
+      190.0666451143942,
+      118.01705215871394,
+      138.838043351972,
+      89.74579393737359,
+      61.02378778517297,
+      53.64122651107998
+    ],
+    "mean_cross_corr": 0.5989793222165444
+  },
+  "selected": {
+    "h": 0.07,
+    "K": 1,
+    "N_pi": 50,
+    "m_probe": 2048,
+    "finite": true,
+    "min_price": 92.02208775632248,
+    "vol_err_pct": 17.950014398905495,
+    "vol_ratio": 0.8204998560109451,
+    "kurt_err_pct": 58.07632676120518,
+    "corr_err": 0.10553158824706883,
+    "nn_ratio": 1.0773813216919574,
+    "abs_log_nn_ratio": 0.07453339464841331,
+    "in_nn_band": false,
+    "admissible": true,
+    "elapsed_sec": 191.6
+  },
+  "sweep": [
+    {
+      "h": 0.06,
+      "K": 1,
+      "N_pi": 50,
+      "m_probe": 2048,
+      "finite": true,
+      "min_price": 88.82751330985454,
+      "vol_err_pct": 13.987661569024157,
+      "vol_ratio": 0.8601233843097584,
+      "kurt_err_pct": 64.56324957030102,
+      "corr_err": 0.09036727178120126,
+      "nn_ratio": 1.0994217299018176,
+      "abs_log_nn_ratio": 0.09478434148632954,
+      "in_nn_band": false,
+      "admissible": true,
+      "elapsed_sec": 193.9
+    },
+    {
+      "h": 0.07,
+      "K": 1,
+      "N_pi": 50,
+      "m_probe": 2048,
+      "finite": true,
+      "min_price": 92.02208775632248,
+      "vol_err_pct": 17.950014398905495,
+      "vol_ratio": 0.8204998560109451,
+      "kurt_err_pct": 58.07632676120518,
+      "corr_err": 0.10553158824706883,
+      "nn_ratio": 1.0773813216919574,
+      "abs_log_nn_ratio": 0.07453339464841331,
+      "in_nn_band": false,
+      "admissible": true,
+      "elapsed_sec": 191.6
+    },
+    {
+      "h": 0.08,
+      "K": 1,
+      "N_pi": 50,
+      "m_probe": 2048,
+      "finite": true,
+      "min_price": 91.88450475120626,
+      "vol_err_pct": 18.8042621509832,
+      "vol_ratio": 0.8119573784901679,
+      "kurt_err_pct": 64.31504846017214,
+      "corr_err": 0.11082566836490937,
+      "nn_ratio": 1.0668867975639718,
+      "abs_log_nn_ratio": 0.06474487256187503,
+      "in_nn_band": false,
+      "admissible": true,
+      "elapsed_sec": 193.6
+    }
+  ]
+}

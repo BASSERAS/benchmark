@@ -75,6 +75,25 @@ _p.add_argument("--gen-root", default=None,
                 help="directory holding generated_paths/. Defaults to the "
                      "self-contained results/<dataset>/<method>/ tree.")
 _p.add_argument("--seeds", type=int, default=5)
+_p.add_argument("--seed-list", default=None,
+                help="explicit comma-separated seed ids, e.g. 0,2,4,5,6. Overrides "
+                     "--seeds. Default None => range(--seeds), so every method scored "
+                     "before this flag existed re-runs bit-identically. Needed because "
+                     "TWO Deep-MKV-TS seeds diverged with a non-finite control -- "
+                     "seed 3 at step 2 and seed 1 at step ~1450 -- and were replaced "
+                     "by seeds 5 and 6.")
+_p.add_argument("--data-dir", default=None,
+                help="directory holding the real .npy splits. Defaults to "
+                     "dataset/<dataset>/. Needed for TrueDataset variants, which "
+                     "live under dataset/TrueDataset/variants/<name>/.")
+_p.add_argument("--results-dir", default=None,
+                help="where to write the artefacts. Defaults to "
+                     "results/<dataset>/<method>/. Needed when a dataset's "
+                     "results live under a differently-named tree, e.g. the "
+                     "TrueDataset run publishes to results/trueexperiment/.")
+_p.add_argument("--seq-tag", default=None,
+                help="override the NxTxd tag in the real split filenames, e.g. "
+                     "6144x128x8. Defaults to the dataset's canonical tag.")
 _p.add_argument("--dt", type=float, default=1.0 / 252.0)
 _p.add_argument("--n-sub", type=int, default=1024)
 _p.add_argument("--pred-steps", type=int, default=5000)
@@ -83,11 +102,21 @@ _cli, _ = _p.parse_known_args()
 
 METHOD, DATASET, N_SEEDS, DT = _cli.method, _cli.dataset, _cli.seeds, _cli.dt
 
-DATASET_DIR = os.path.join(REPO_ROOT, "dataset", DATASET)
+# Which seed ids to score. Contiguous range(N_SEEDS) is the norm and stays the
+# default; --seed-list exists only because a campaign can lose a seed. Deep-MKV-TS
+# lost TWO with a non-finite control -- seed 3 at step 2, seed 1 at step ~1450 --
+# replaced by seeds 5 and 6, so it reports {0, 2, 4, 5, 6}. Silently renumbering
+# 5 -> 3 and 6 -> 1 would put false seed ids in every artefact and hide a 33%
+# stability failure rate.
+SEED_IDS = ([int(s) for s in _cli.seed_list.split(",") if s.strip()]
+            if _cli.seed_list else list(range(N_SEEDS)))
+
+DATASET_DIR = _cli.data_dir or os.path.join(REPO_ROOT, "dataset", DATASET)
 # Multi-asset results are self-contained: results/<dataset>/<method>/ holds
 # code/, generated_paths/, losses/, weights/ and the README side by side, so
 # inputs and outputs live in one tree instead of being split across methods/.
-RESULTS_DIR = os.path.join(REPO_ROOT, "results", DATASET, METHOD)
+RESULTS_DIR = _cli.results_dir or os.path.join(REPO_ROOT, "results",
+                                               DATASET, METHOD)
 GENERATED_DIR = os.path.join(_cli.gen_root or RESULTS_DIR, "generated_paths")
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
@@ -116,6 +145,33 @@ NATIVE_KEYS = [
     "A18_disc_score_gru", "A18_disc_score_mlp",
     "A20_cov_error", "A25_mean_rmse",
 ]
+
+
+# Per-dataset file naming. `v_test` is the latent-variance array that A33-A34
+# score the generated path against; a real dataset has no latent variance, so
+# it is None there and A33-A34 are skipped rather than faked from a proxy.
+DATASET_FILES = {
+    "HestonMultiAsset": {
+        "test": "heston_ma_S_test_8192x252x8.npy",
+        "disc": "heston_ma_S_disc_8192x252x8.npy",
+        "v_test": "heston_ma_v_test_8192x252x8.npy",
+    },
+    "TrueDataset": {
+        "test": "true_S_test_8192x128x8.npy",
+        "disc": "true_S_disc_8192x128x8.npy",
+        "v_test": None,
+    },
+}
+
+# --seq-tag rewrites the NxTxd tag in every filename above. TrueDataset variants
+# carry their own path count (the locked build is 6144x128x8), so the canonical
+# tag would point at files that do not exist in that directory.
+if _cli.seq_tag:
+    _canon = {"HestonMultiAsset": "8192x252x8", "TrueDataset": "8192x128x8"}[DATASET]
+    DATASET_FILES[DATASET] = {
+        k: (v.replace(_canon, _cli.seq_tag) if v else v)
+        for k, v in DATASET_FILES[DATASET].items()
+    }
 
 
 def _load(name):
@@ -173,9 +229,11 @@ def per_asset_metrics(real, fake, v_real, j):
     }
     # Heston spec A33-A34 — latent variance of asset j, dt from the dataset (1/252),
     # NOT the function's 1/250 default which belongs to the single-asset dataset.
-    corr_ts, rmse_ts = teacher_sigma_metrics(f3, v_real[:, :, j], dt=DT)
-    out["A33_sigma_corr"] = float(corr_ts)
-    out["A34_sigma_rmse"] = float(rmse_ts)
+    # v_real is None on a real dataset, where no latent variance exists.
+    if v_real is not None:
+        corr_ts, rmse_ts = teacher_sigma_metrics(f3, v_real[:, :, j], dt=DT)
+        out["A33_sigma_corr"] = float(corr_ts)
+        out["A34_sigma_rmse"] = float(rmse_ts)
     # B curve metrics + grid_tvd on the univariate (N, T) slice
     out.update({k: float(v) for k, v in
                 compute_curve_metrics(real[:, :, j], fake[:, :, j]).items()})
@@ -289,14 +347,22 @@ def compute_metrics_for_seed(seed, real, v_real, disc):
 
 
 def main():
-    real = _load("heston_ma_S_test_8192x252x8.npy")
-    v_real = _load("heston_ma_v_test_8192x252x8.npy")
-    disc = _load("heston_ma_S_disc_8192x252x8.npy")
-    print(f"Real (test, seed 1): {real.shape}  min={real.min():.2f}  max={real.max():.2f}")
-    print(f"Judge (disc, seed 2): {disc.shape}")
+    try:
+        files = DATASET_FILES[DATASET]
+    except KeyError:
+        raise SystemExit(f"unknown dataset {DATASET!r}; "
+                         f"add it to DATASET_FILES (have {sorted(DATASET_FILES)})")
+
+    real = _load(files["test"])
+    disc = _load(files["disc"])
+    v_real = _load(files["v_test"]) if files["v_test"] else None
+    print(f"Real (test): {real.shape}  min={real.min():.2f}  max={real.max():.2f}")
+    print(f"Judge (disc): {disc.shape}")
+    if v_real is None:
+        print("No latent variance for this dataset: A33-A34 skipped.")
 
     all_results = []
-    for seed in range(N_SEEDS):
+    for seed in SEED_IDS:
         res = compute_metrics_for_seed(seed, real, v_real, disc)
         out = os.path.join(RESULTS_DIR, f"seed_{seed}_metrics.json")
         with open(out, "w") as fh:

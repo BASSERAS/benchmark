@@ -1,0 +1,142 @@
+{
+ "full-hist interleaved": {
+  "splits_found": [
+   "train",
+   "test",
+   "disc",
+   "val",
+   "valdisc"
+  ],
+  "median_nn_heldout": 0.021449250169098377,
+  "vol_err_pct_max": 18.06345849675484,
+  "vol_err_pct_min": 7.051622432371884,
+  "vol_err_pct_median": 11.30572517800465,
+  "kurt_err_pct_max": 1012.8106846807027,
+  "kurt_err_pct_min": 29.69742995113317,
+  "kurt_err_pct_median": 70.45761628826511,
+  "corr_err_max": 0.1172638770326069,
+  "corr_err_min": 0.024059264954545873,
+  "corr_err_median": 0.05978044354201071,
+  "nn_ratio_by_split": {
+   "test": 1.0310074392479653,
+   "disc": 1.0497770891587352,
+   "val": 1.0,
+   "valdisc": 0.9801382113648165
+  },
+  "nn_ratio_band": [
+   0.9801382113648165,
+   1.0497770891587352
+  ],
+  "train_vs_score": {
+   "vol_err_pct": 7.051622432371884,
+   "kurt_err_pct": 33.10208419464988,
+   "corr_err": 0.024059264954545873
+  },
+  "train_vs_test_vol_err": 10.239091904291401
+ },
+ "full-hist holdout-era": {
+  "splits_found": [
+   "train",
+   "test",
+   "disc",
+   "val",
+   "valdisc"
+  ],
+  "median_nn_heldout": 0.024540317244827747,
+  "vol_err_pct_max": 60.817956726303194,
+  "vol_err_pct_min": 8.82592193892459,
+  "vol_err_pct_median": 24.275236437743178,
+  "kurt_err_pct_max": 1958.7373488055061,
+  "kurt_err_pct_min": 44.82123812212579,
+  "kurt_err_pct_median": 161.56547466684964,
+  "corr_err_max": 0.15309640529327342,
+  "corr_err_min": 0.015452326842074494,
+  "corr_err_median": 0.10358016913301601,
+  "nn_ratio_by_split": {
+   "test": 0.748516971464668,
+   "disc": 0.78487136510428,
+   "val": 1.0,
+   "valdisc": 0.9370233698602636
+  },
+  "nn_ratio_band": [
+   0.748516971464668,
+   1.0
+  ],
+  "train_vs_score": {
+   "vol_err_pct": 14.798149781188178,
+   "kurt_err_pct": 77.89985715465212,
+   "corr_err": 0.10650863436170845
+  },
+  "train_vs_test_vol_err": 41.45821114861569
+ },
+ "ONE-MARKET interleaved": {
+  "splits_found": [
+   "train",
+   "test",
+   "disc",
+   "val",
+   "valdisc"
+  ],
+  "median_nn_heldout": 0.021484759636223316,
+  "vol_err_pct_max": 13.092403438286931,
+  "vol_err_pct_min": 2.7303045176515996,
+  "vol_err_pct_median": 7.471715659192887,
+  "kurt_err_pct_max": 1133.5686212011901,
+  "kurt_err_pct_min": 35.302501487767834,
+  "kurt_err_pct_median": 88.40346964900127,
+  "corr_err_max": 0.03367907384516514,
+  "corr_err_min": 0.014318677937357261,
+  "corr_err_median": 0.021853198786288504,
+  "nn_ratio_by_split": {
+   "test": 0.9357534119797123,
+   "disc": 0.9966182447201525,
+   "val": 1.0,
+   "valdisc": 0.9906206943188254
+  },
+  "nn_ratio_band": [
+   0.9357534119797123,
+   1.0
+  ],
+  "train_vs_score": {
+   "vol_err_pct": 7.732341630432717,
+   "kurt_err_pct": 44.06529343501374,
+   "corr_err": 0.022486943808869037
+  },
+  "train_vs_test_vol_err": 2.7303045176515996
+ },
+ "ONE-MARKET holdout-era": {
+  "splits_found": [
+   "train",
+   "test",
+   "disc",
+   "val",
+   "valdisc"
+  ],
+  "median_nn_heldout": 0.021554295904934406,
+  "vol_err_pct_max": 25.255542586709623,
+  "vol_err_pct_min": 5.654464008221419,
+  "vol_err_pct_median": 12.956424515257712,
+  "kurt_err_pct_max": 1867.6851905215976,
+  "kurt_err_pct_min": 34.804030058356595,
+  "kurt_err_pct_median": 84.34575163490337,
+  "corr_err_max": 0.08891050451015699,
+  "corr_err_min": 0.017108706288408167,
+  "corr_err_median": 0.06296560303886094,
+  "nn_ratio_by_split": {
+   "test": 0.8648921572732231,
+   "disc": 0.8832757821561235,
+   "val": 1.0,
+   "valdisc": 0.9709071767067643
+  },
+  "nn_ratio_band": [
+   0.8648921572732231,
+   1.0
+  ],
+  "train_vs_score": {
+   "vol_err_pct": 6.10853209839214,
+   "kurt_err_pct": 157.43175384034237,
+   "corr_err": 0.018497363484124323
+  },
+  "train_vs_test_vol_err": 25.255542586709623
+ }
+}

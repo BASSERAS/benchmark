@@ -1,0 +1,64 @@
+{
+  "units": "CRPS x 1000, lower is better",
+  "protocol": {
+    "s_idx": 64,
+    "history_log_prices": 65,
+    "horizon": 32,
+    "k_neighbours": 256,
+    "block_w": {
+      "recent": 1.0,
+      "cumpath": 0.5,
+      "rollvol": 2.0,
+      "dep": 1.0
+    },
+    "acf_lags": [
+      1,
+      2,
+      5,
+      10
+    ],
+    "roll_windows": [
+      5,
+      10,
+      20
+    ],
+    "cumpath_pts": 24,
+    "recent_n": 32,
+    "bootstrap_block_len": 8,
+    "baseline_seed": 1234,
+    "boot_reps": 2000,
+    "boot_seed": 0,
+    "boot_level": 0.95,
+    "standardisation": "frozen on each bank (author's convention)",
+    "retrieval": "joint across assets",
+    "d": 8
+  },
+  "paper_reference": "methods/Deep-MKV-TS/paper_reimplementation/results/paper_real_data_table4.json",
+  "data_dir": "/home/tbasseras/benchmark/dataset/TrueDataset/variants/om_2022-07_N6144",
+  "queries": "true_S_test_6144x128x8.npy",
+  "results": {
+    "block_bootstrap": {
+      "cum_return": {
+        "mean": 1.283815035387087,
+        "ci_lo": 1.260021252966875,
+        "ci_hi": 1.3091472418812748
+      },
+      "increment": {
+        "mean": 0.3382782046312618,
+        "ci_lo": 0.33374275692743566,
+        "ci_hi": 0.3431132646017308
+      },
+      "rv": {
+        "mean": 0.5815356964994691,
+        "ci_lo": 0.5725966637519223,
+        "ci_hi": 0.5912646865258655
+      },
+      "bank_shape": [
+        6144,
+        128,
+        8
+      ],
+      "elapsed_sec": 33.3
+    }
+  }
+}

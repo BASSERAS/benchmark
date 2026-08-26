@@ -117,3 +117,43 @@ dataset/HestonMultiAsset/*.npy
 # weights/ and the README side by side, instead of splitting inputs under
 # methods/ and outputs under results/ the way the d = 1 benchmark does.
 results/HestonMultiAsset/**/generated_paths/**/*.npy
+
+# TrueDataset — the REAL d = 8 panel. Three separate reasons, all disqualifying:
+#   raw/    27.7 GiB of Binance monthly 1s kline zips (536 files). Never push these;
+#           they are a byte-for-byte copy of a public archive and are re-fetched,
+#           checksum-verified, by `python download_binance.py`.
+#   cache/  403 MiB of per-symbol-month parsed .npz (already covered by the global
+#           `cache/` rule above; listed here so the reason is on the record).
+#   *.npy   the ten split arrays plus five t0 index arrays, 64 MiB each, 640 MiB
+#           total. Under GitHub's 100 MiB per-file cap individually, but LFS was
+#           ruled out on 2026-07-30 and 640 MiB of regenerable payload has no
+#           business in a git history.
+# Unlike the Heston panel there is no PARAM_SEED to pin: the "model" is the public
+# archive itself. The build is nonetheless DETERMINISTIC — the split layout comes
+# from np.linspace over the window count with no RNG anywhere — so a rebuild from
+# the same raw archives is bitwise identical. The TRACKED dataset_stats.json pins
+# the exact build (panel, period, split date bounds, staleness and correlation
+# diagnostics) so the arrays stay auditable without the payload. Reproduce:
+#   cd dataset/TrueDataset && python download_binance.py \
+#     && OMP_NUM_THREADS=1 taskset -c 0-11 python build_true_dataset.py --workers 12
+dataset/TrueDataset/*.npy
+dataset/TrueDataset/raw/
+dataset/TrueDataset/logs/
+# `variants/` is where the arrays actually live -- one subdirectory per build
+# (period, N, split mode), each holding the ten split arrays. The bare
+# `dataset/TrueDataset/*.npy` rule above does NOT reach them, so nine variants'
+# worth of regenerable payload sat stageable. The per-variant dataset_stats.json
+# is .json and stays tracked, which is what keeps the build auditable.
+dataset/TrueDataset/variants/**/*.npy
+
+# Same reasoning for everything DERIVED from the real panel. Each generated array
+# is (8192, 128, 8) float64 = 67 MB. Reproducible from tracked code + tracked
+# hyperparameters (h, K, N_pi in losses/bandwidth_selection.json). The tree is
+# SELF-CONTAINED in the same way as results/HestonMultiAsset/.
+results/TrueDataset/**/generated_paths/**/*.npy
+# The published tree lives at results/trueexperiment/ (SBTS/ + real_floor/), and
+# the same rule has to reach it: generated_paths/ under both, plus the CRPS banks
+# at SBTS/crps_banks/generated_paths/. real_floor/generated_paths/ holds SYMLINKS
+# into dataset/TrueDataset/variants/ -- ignoring them is deliberate, a tracked
+# symlink pointing at an ignored file is a dangling reference on any clone.
+results/trueexperiment/**/generated_paths/**/*.npy
