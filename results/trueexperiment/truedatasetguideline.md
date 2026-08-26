@@ -30,6 +30,35 @@ the floor is by construction impossible and therefore diagnostic of memorisation
 If you internalise one sentence: **on Heston the references are ground truth; here they are
 other measurements, and they carry their own error.**
 
+### 0.1 Order of operations, and where the time actually goes
+
+Adding a method is nine steps. The estimates are wall-clock on 6 cores, measured on SBTS.
+
+| # | Step | § | Cost | Skippable? |
+|---|---|---|---|---|
+| 1 | Answer the five questions in `code/README.md` | §2 | 20 min | No — this is the audit record |
+| 2 | Fit on `train`/`val` only, select against the **envelope** | §7 | hours-days | No |
+| 3 | Generate 5 A/B banks `(6144,128,8)` | §4 | method-dependent | No |
+| 4 | `compute_all_multiasset.py` with **all four** dataset flags | §5 | ~40 min | No |
+| 5 | Reuse `real_floor/` — **do not regenerate** | §6 | 0 | Already done for you |
+| 6 | Generate 4 CRPS banks of 8 192 | §8 | method-dependent | No |
+| 7 | Score CRPS, **both** conventions, 4 seeds + realbank | §8, §8.7 | ~150 s × 10 ≈ 25 min | **No.** See below |
+| 8 | Memorisation NNratio | §9 | ~10 min | No — it is the only copy guard |
+| 9 | Render README, run the §10.4 checks | §10 | 10 min | No |
+
+Step 7 is the one people cut, because 10 scoring runs feels redundant when 4 would fill the
+table. It is not redundant: the second retrieval convention is the robustness check on the
+first (§8.7), and the real-training-split bank is the only row that tells you whether your
+generator is worth more than the raw data (§8.4). Twenty-five minutes.
+
+**The four places a new method has historically gone wrong**, all of which are silent failures
+that produce plausible numbers:
+
+1. the `rv` reduction axis (§8.1.3, §13.8) — `(N, A)`, summed over **time**
+2. scoring baselines at a different bank size than the method (§8.4, §8.5)
+3. reporting `ratio < 1.0` as a win when the gap is inside the error bars (§8.8)
+4. quoting a derived statistic computed before a metric fix (§13.9)
+
 ---
 
 ## 1. Directory layout (mandatory, no deviations)
@@ -390,21 +419,50 @@ Table C is the paper's §3.3.1 protocol (Deep-MKV-TS, Table 4), and on this data
 **primary result**; the A-table is a sanity gate.
 
 ```bash
+V=dataset/TrueDataset/variants/om_2022-07_N6144
+R=results/trueexperiment/<Method>
+
 # 1. the pool: 4 banks of 8 192 paths at the selected hyperparameters
 for S in 0 1 2 3; do
-  <your generator> --seed $S --m-simu 8192 \
-      --out-root results/trueexperiment/<Method>/crps_banks
+  <your generator> --seed $S --m-simu 8192 --out-root $R/crps_banks
 done
-# 2. score, one file per seed. Both historical baselines are rebuilt each time
-#    (deterministic given --seed 1234), which is ~90 s of redundant work and
-#    buys you a per-file self-contained artefact.
-for S in 0 1 2 3; do
+
+# 2. score, one file per (config, seed). Both historical baselines are rebuilt
+#    inside every run (deterministic given --seed 1234): ~5 min of redundant
+#    work that buys a self-contained artefact per file. Worth it.
+#
+#    RUN BOTH CONFIGS. `paper` is what Table C reports. `perdim` is the
+#    robustness check (§8.7) and the renderer's one-line prose claim that the
+#    table "stands" is FALSE unless you have actually produced it.
+for CFG in paper perdim; do
+  [ $CFG = paper ] && WM=paper ST=bank || WM=perdim ST=realtrain
+  for S in 0 1 2 3; do
+    /home/tbasseras/gpu-venv/bin/python metrics/conditional_crps_multiasset.py \
+        --data-dir $V --seq-tag 6144x128x8 --bank-size 8192 --label <Method> \
+        --weight-mode $WM --standardize $ST \
+        --bank $R/crps_banks/generated_paths/seed_$S/generated_paths_8192x128x8.npy \
+        --out $R/losses/crps_configs/${CFG}__seed_$S.json
+  done
+  # 3. the reference bank: the real training split used directly (§8.4)
   /home/tbasseras/gpu-venv/bin/python metrics/conditional_crps_multiasset.py \
-      --data-dir $V --seq-tag 6144x128x8 --bank-size 8192 --label <Method> \
-      --bank results/trueexperiment/<Method>/crps_banks/generated_paths/seed_$S/generated_paths_8192x128x8.npy \
-      --out results/trueexperiment/<Method>/losses/conditional_crps_seed_$S.json
+      --data-dir $V --seq-tag 6144x128x8 --bank-size 8192 \
+      --weight-mode $WM --standardize $ST \
+      --bank $V/true_S_6144x128x8.npy --label real_train_bank \
+      --out $R/losses/crps_configs/${CFG}__realbank.json
 done
 ```
+
+**Artefact paths are load-bearing.** `render_readme.py` globs
+`losses/crps_configs/paper__seed_*.json` and falls back to the flat legacy
+`losses/conditional_crps_seed_*.json` only so an un-rerun checkout still renders. **The legacy
+files predate the rv fix of 2026-08-26 (§8.1) and are numerically wrong.** If your method writes
+to the legacy path you will silently render against the old convention while `SBTS/` renders
+against the new one, and the two columns will not be comparable. Write to `crps_configs/`.
+
+Wall clock, measured: **~150 s per bank** on 6 cores, 3 banks per run (yours + 2 baselines) =
+~8 min per (config, seed). 10 runs = ~80 min serial, ~20 min at 7-way parallelism with
+`taskset -c` and `OMP_NUM_THREADS=6`. Detach it (`setsid … & disown`), do not background it in
+the harness.
 
 **Protocol, fixed — do not tune any of it:**
 
@@ -424,13 +482,41 @@ done
 
 Verified against the author's implementation; keep all three:
 
-1. **Block weights are NOT dimension-normalised.** A block's weight multiplies its raw squared
-   distance, so a longer block contributes more. Do not divide by block length.
+1. **Block weights are NOT dimension-normalised.** `_standardize_block` returns
+   `(weight**0.5) * ((block - mean) / std)` — the √w multiplies *every coordinate*, with no
+   division by the block's length. Do not divide by block length. (This has a consequence the
+   paper does not discuss; see §8.7.)
 2. **Standardisation is frozen on the bank being scored**, not on a shared reference
-   (`shadowing.py:303-329`). Each bank gets its own μ, σ. This means the two baselines and your
-   generated bank are standardised differently — that is intended.
-3. **`rv` is a cross-asset trajectory**, `sqrt(sum_a r²_{t,a})` of shape `(N, H)`, not a scalar
-   per path and not per-asset.
+   (`shadowing.py:303-329`, `reference_blocks=generated_raw`). Each bank gets its own μ, σ. This
+   means the two baselines and your generated bank are standardised differently — that is
+   intended.
+3. **`rv` is realised volatility per asset**, `sqrt(sum_t r²_{t,a})` of shape `(N, A)` — the
+   squared increments are summed over **TIME**, giving one scalar per asset per path.
+
+#### 8.1.3 was wrong until 2026-08-26. Read this before you copy anything.
+
+This file previously stated, in this exact slot, that `rv` was a *cross-asset trajectory*
+`sqrt(sum_a r²_{t,a})` of shape `(N, H)` — summed over **assets** at each step. That is a
+different statistic, and it was implemented that way and shipped.
+
+The author sums over time. `shadowing.py:579-601`: `raw_shadows` is `(B, top_k, h+1, A)` and
+`raw_real_continuation` is `(B, h+1, A)`; in both the reduction runs on the **time** axis. At
+d = 1 the author's quantity is realised vol over the window, while the wrong one collapses to
+`|r_t|`.
+
+The failure mode is worth naming because it is easy to repeat: the docstring **cited the correct
+line numbers** while asserting the opposite of what those lines do. The axis *index* was matched;
+the axis *meaning* was not. When you port a reduction from someone else's array, write down what
+each axis **is** before you write `axis=`.
+
+Consequences, all of which you inherit:
+
+- Every `losses/conditional_crps_seed_*.json` written before 2026-08-26 has a wrong `rv` column.
+  `cum_return` and `increment` are unaffected and reproduce bit-identically.
+- The SBTS/block-bootstrap rv ratio moved **0.972 → 0.941**, into the paper's 0.808-0.946 band
+  rather than just outside it.
+- This lands on the single row where the paper's headline sits and where SBTS posts its only
+  resolvable result. It was the one cell that could not be left wrong.
 
 ### 8.2 One deliberate deviation, and why
 
@@ -447,42 +533,154 @@ transferable number is the **ratio to the moving-block bootstrap**. Paper Table 
 
 | | cum | incr | rv |
 |---|---|---|---|
-| SBTS / block bootstrap | 0.998 / 1.088 / 1.087 | 1.026 / 1.067 / 1.048 | **0.808 / 0.916 / 0.946** |
+| SBTS / block bootstrap | 0.998 / 1.088 / 1.087 | 1.026 / 1.067 / **1.121** | **0.808 / 0.916 / 0.946** |
 
 The paper's own SBTS **loses** on cumulative return for two of three indices. Winning there is
 not the expected outcome.
 
+> **The YM increment ratio read `1.048` in this file until 2026-08-26. It is `1.121`.**
+> `0.297 / 0.265 = 1.1208`. It is the cell where SBTS's increment loss is *worst*, i.e. exactly
+> where an optimistic transcription slip lands. **Recompute these from
+> `methods/Deep-MKV-TS/paper_reimplementation/results/paper_real_data_table4.json`; never retype
+> them.** That JSON holds the full Table 4 (Reference / Deep MKV / SBTS / both bootstraps, for
+> ES, NQ and YM) and is the only permitted source for a paper number in this tree.
+
 ### 8.4 The window is narrow — measured, not asserted
 
-Reference levels on this build (×1000, 6 144 test queries):
+Reference levels on this build (×1000, 6 144 test queries, `paper` config, post-rv-fix):
 
-| Bank | cum | incr | rv |
-|---|---|---|---|
-| Real **training split** used directly as the bank | 1.257 | 0.335 | 0.547 |
-| Moving-block bootstrap (M = 6 144, seed 1234) | 1.284 | 0.338 | 0.582 |
+| Bank | Bank size | cum | incr | rv |
+|---|---|---|---|---|
+| Real **training split** used directly as the bank | 6 144 | 1.257 | 0.335 | 0.970 |
+| Session bootstrap (seed 1234) | 8 192 | 1.262 | 0.337 | 0.975 |
+| Moving-block bootstrap (seed 1234) | 8 192 | 1.279 | 0.338 | 1.110 |
 
 The real training split — a bank **no generator fitted on that split can beat** — is only
-**2 %** better than the block bootstrap on `cum` and **1 %** on `incr`. Only `rv` (6 %) has real
-room. A method "winning" by 0.5 % on `cum` has demonstrated that the metric is saturated there,
-not that it has conditional skill. Say so.
+**1.7 %** better than the block bootstrap on `cum` and **0.9 %** on `incr`. Only `rv` (**12.6 %**)
+has real room. A method "winning" by 0.5 % on `cum` has demonstrated that the metric is saturated
+there, not that it has conditional skill. Say so.
+
+**Note the ordering**: the session bootstrap lands within 0.5 % of the real-training-split bank
+on all three targets. Resampling whole real training days is very nearly the best a
+train-fitted bank can do on this panel. **That, not the block bootstrap, is the baseline your
+method has to survive**, and the paper does not report it as a ratio — so nobody will do it for
+you.
 
 ### 8.5 Bank size is not a lever
 
-Measured on this build, K = 256 fixed, block bootstrap:
+Measured on this build, K = 256 fixed, block bootstrap, **re-run 2026-08-26 with the corrected
+`rv`** (the `rv` column here was `0.574-0.584` before the §8.1 fix; those values were wrong):
 
 | M | cum | incr | rv |
 |---|---|---|---|
-| 1 536 | 1.284 | 0.338 | 0.584 |
-| 3 072 | 1.284 | 0.338 | 0.578 |
-| 6 144 | 1.284 | 0.338 | 0.582 |
-| 8 192 | 1.279 | 0.338 | 0.580 |
-| 12 288 | 1.279 | 0.337 | 0.574 |
+| 1 536 | 1.284 | 0.338 | 1.128 |
+| 3 072 | 1.284 | 0.338 | 1.088 |
+| 6 144 | 1.284 | 0.338 | 1.123 |
+| 8 192 | 1.279 | 0.338 | 1.110 |
+| 12 288 | 1.279 | 0.337 | 1.090 |
 
-**0.4 % over an 8× range.** Averaging 256 neighbours makes the ensemble spread depend on
-intrinsic unpredictability, not on retrieval sharpness. Pin to 8 192 for comparability and stop
-thinking about it.
+**`cum` and `incr` move 0.4 % over an 8× range — flat.** Averaging 256 neighbours makes the
+ensemble spread depend on intrinsic unpredictability, not on retrieval sharpness.
 
-### 8.6 This is not the 1M-path bank
+**`rv` is different and the earlier version of this file got it wrong.** It spans 1.088-1.128, a
+**3.7 %** range — but **non-monotonically** (1 536 is the worst, 3 072 the best, 12 288
+second-best). A real bank-size effect would be monotone. The spread is comparable to the query
+CI half-width (±0.026) and is resampling noise from the single bootstrap draw at each M, not a
+lever. The operational conclusion is unchanged — **pin to 8 192 for comparability** — but the
+supporting number is 3.7 % and non-monotone, not 0.4 %.
+
+The lesson is not about bank size. **A stale summary statistic outlives the bug that produced
+it.** "0.4 % over an 8× range" was quoted as settled for weeks and was an artefact of the wrong
+`rv` axis. When you fix a metric, re-run every sweep that quoted it — grep this file and the
+method READMEs for the metric's name before you call the fix done.
+
+### 8.6 Two ± in one table, and they are not the same quantity
+
+Table C prints `mean ± x` in every cell. **The ± means two different things depending on the
+row**, and a reader who merges them draws a conclusion that is wrong by a factor of ~25:
+
+| Row | ± is | Typical size (rv) | Answers |
+|---|---|---|---|
+| Bold aggregate **`<Method>`** row | sample **sd across the 4 seeds** | 0.007 | how much does the *generator* wobble? |
+| Every per-seed and baseline row | **half-width of the 95 % bootstrap CI over the 6 144 queries** (2 000 replicates, seed 0) | 0.026 | how much would the *average* move on a different draw of test histories? |
+
+Both are stored. The artefacts keep `ci_lo`/`ci_hi`; `_cell()` collapses them to a half-width,
+which discards the (small, ~1e-3, sub-precision) asymmetry of a percentile bootstrap. **Your
+renderer must print the disambiguating caption.** If you emit two different ± under one column
+header with no note, the table is misinformation regardless of the numbers being right.
+
+### 8.7 Run the second retrieval convention, or delete the claim
+
+§8.1.1 says the author does not divide the block weight by the block dimension. That is a
+faithful reproduction, and it has a consequence the paper never states: **a block's effective
+influence is `weight × dimension`, not `weight`.**
+
+| Block | Declared weight | Dim | Effective mass | Share |
+|---|---|---|---|---|
+| Recent returns | 1.0 | 32 | 32 | **46 %** |
+| Rolling vol | **2.0** | 9 | 18 | 26 % |
+| Path shape | 0.5 | 24 | 12 | 17 % |
+| ACF (dependence) | 1.0 | 8 | 8 | 11 % |
+
+The block weighted highest per coordinate carries barely half the mass of the block weighted
+lowest. **The declared intent is inverted by dimensionality.** This is not a bug to fix — it is
+what the author's code does, so Table C keeps it — but it means the retrieval geometry is an
+arbitrary choice, and a ranking that only survives that choice is not a finding.
+
+So run `--weight-mode perdim --standardize realtrain` on the same banks (§8, step 2). Measured
+for SBTS on this build:
+
+| Convention | cum ratio | incr ratio | rv ratio | mean NN₁ distance | bank coverage |
+|---|---|---|---|---|---|
+| `paper` — √w undivided, μ/σ per bank | 0.993 | 0.997 | 0.941 | **26.65** | 98.3 % |
+| `perdim` — √(w/dim), μ/σ frozen on real train | 0.994 | 0.998 | 0.948 | **5.71** | 98.5 % |
+
+Two things to take from it:
+
+- **The ratios move by under 1 %, so the SBTS conclusion survives.** That sentence is only
+  allowed in your README *if you ran it*. `SBTS/README.md` makes the claim and the artefacts
+  backing it are committed at `losses/crps_configs/perdim__*.json`.
+- **The geometries are genuinely different** — nearest-neighbour distance drops 4.7× — so the
+  agreement is a real robustness result, not two runs of the same thing. If your method's ratios
+  *disagree in sign* between the two, the ranking is an artefact of the weighting; report both
+  and claim neither.
+
+**`bank coverage`** (`_diag.unique_neighbour_frac`) is the fraction of bank paths retrieved at
+least once across all 6 144 × 256 retrievals. It is a degeneracy alarm, not a quality score: at
+~98 % retrieval is genuinely conditional; at 5 % every query would be handed nearly the same 256
+futures and Table C would be scoring one fixed ensemble, scoring identically for a method with
+conditional skill and one with none. With **584 dimensions against an 8 192-path bank**, distance
+concentration is a live risk — measure it, do not assume it. `_diag` also carries
+`nn1_dist_mean`/`nn1_dist_p95`; `_diag` is excluded from the ×1000 scaling because it holds
+distances and fractions, not CRPS.
+
+### 8.8 Count differences the test can resolve, not ratios below 1.000
+
+The headline sentence under Table C is generated. **Do not generate it by counting which side of
+1.000 each ratio falls on.** That is what this tree did until 2026-08-26, and it printed:
+
+> SBTS beats the moving-block bootstrap on **3 of the 3 targets**
+
+when two of those three were a **0.009** and a **0.001** gap sitting inside a **±0.025** and
+**±0.005** error bar. Three claimed wins, one supportable.
+
+The rule now applied in `render_crps_table`:
+
+```
+resolvable(target)  ⟺  |mean_method − mean_baseline|  >  half_method + half_baseline
+```
+
+i.e. the two 95 % CIs do not overlap. On SBTS this yields **1 of 3** (realized vol) against the
+block bootstrap, and correctly flags the realized-vol *loss* to the session bootstrap as
+resolvable too — the gate must not be applied only to the good news.
+
+**This test is deliberately conservative.** Both CIs are computed on the *same* 6 144 queries, so
+the comparison is paired; a paired bootstrap on the per-query differences would be tighter and
+would likely resolve the increment column as well. It has not been run in this tree. Under-
+claiming is the safe direction, and if you run the paired version, say in your README that you
+did and that it is a different (sharper) test than the one `SBTS/` used.
+
+### 8.9 This is not the 1M-path bank
 
 If someone mentions a **1 000 000**-path bank, they are thinking of **Morel, Mallat & Bouchaud**
 ([arXiv:2308.01486](https://arxiv.org/abs/2308.01486)), implemented separately in this repo at
@@ -579,16 +777,85 @@ number in a README is a defect regardless of whether it happens to be correct to
 11. File layout
 12. Reproduce
 
-### 10.2 The floor column is named `Real-vs-real floor`, not `Perfect floor`
+### 10.2 Table C display contract — six rules, all load-bearing
+
+Copy these from `SBTS/code/render_readme.py`; each exists because it was got wrong once.
+
+1. **Read from `losses/crps_configs/paper__seed_*.json`.** Fall back to the flat legacy path only
+   for backward compatibility, and never write there (§8).
+2. **The table shows the paper's protocol and nothing else.** No `Method / block` ratio row, no
+   `Method / session` ratio row, no paper ES/NQ/YM reference row inside the table. They were
+   removed 2026-08-26 by decision of the repo owner.
+3. **But keep computing the ratios**, and quote them in the headline prose under the table. They
+   are the *only* dimensionless numbers here: absolute CRPS is set by this crypto panel's units
+   and intrinsic unpredictability and cannot be compared with the paper's futures data; the ratio
+   can. Deleting the computation to "simplify the table" leaves the auto-generated headline
+   silently reporting nothing. There is a comment in `render_crps_table` saying exactly this —
+   do not remove it.
+4. **`mean ± half-width`, not `mean [lo, hi]`** — and print the caption that says which ± is
+   which (§8.6).
+5. **The headline counts resolvable differences (§8.8), not signs.** Apply the gate to losses as
+   well as wins.
+6. **Do not write "reproduced exactly."** Retrieval is joint across d = 8 and the author's code
+   hard-raises for `d ≠ 1` (§8.2). The page said "reproduced exactly" in one paragraph and
+   documented a deliberate deviation four lines later, on the same screen, for weeks. State the
+   deviation in the same sentence as the claim of fidelity.
+
+#### 10.2.1 The exact shape to reproduce
+
+This is the rendered output as of 2026-08-26. Reproduce this **layout**; the numbers are SBTS's
+and yours will differ. Row order is fixed: bold aggregate, then per-seed, then the two historical
+baselines, then the real bank last.
+
+| Bank | Bank size | cum ×1000 ↓ | incr ×1000 ↓ | rv ×1000 ↓ |
+|---|---|---|---|---|
+| **SBTS** (mean ± sd over 4 seeds) | 8 192 | **1.270 ± 0.001** | **0.337 ± 0.000** | **1.045 ± 0.007** |
+| seed 0 | 8 192 | 1.270 ± 0.025 | 0.337 ± 0.005 | 1.045 ± 0.026 |
+| seed 1 | 8 192 | 1.271 ± 0.025 | 0.337 ± 0.005 | 1.052 ± 0.026 |
+| seed 2 | 8 192 | 1.269 ± 0.025 | 0.337 ± 0.005 | 1.046 ± 0.027 |
+| seed 3 | 8 192 | 1.269 ± 0.025 | 0.337 ± 0.005 | 1.035 ± 0.026 |
+| Moving-block bootstrap | 8 192 | 1.279 ± 0.025 | 0.338 ± 0.005 | 1.110 ± 0.024 |
+| Session bootstrap | 8 192 | 1.262 ± 0.026 | 0.337 ± 0.005 | 0.975 ± 0.027 |
+| Real training split as bank | 6 144 | 1.257 ± 0.026 | 0.335 ± 0.005 | 0.970 ± 0.027 |
+
+Four things about this layout that are decisions, not defaults:
+
+- **The bold row's ± is a different quantity from every other row's ±.** Bold = sample sd across
+  the 4 seeds (0.007 on rv: how much the method wanders with its own randomness). Every other row
+  = half-width of the 95 % bootstrap CI over the 6 144 queries (0.026 on rv: how precisely this
+  panel can measure anything at all). The second is ~4× the first, which is the whole story of
+  §8.8 in two numbers. **The caption must say this**, because two identically-formatted `±` in
+  one table that mean different things is a trap the reader cannot see. §8.6.
+- **The per-seed rows stay.** They are what makes the bold row's sd auditable, and they are the
+  only place a single bad seed becomes visible.
+- **The bank-size column stays**, and the real-bank row shows 6 144 rather than being padded to
+  8 192. The size differs, it is a confound, and hiding it does not remove it (§8.4).
+- **No ratio rows, no paper reference row.** Removed 2026-08-26. The ratios move to the prose
+  directly beneath — see rule 3 above for why they must still be *computed*.
+
+The headline sentence underneath is generated, and reads in this shape:
+
+> Against the moving-block bootstrap, **1 of the 3 targets is a difference this test can
+> resolve** (realised vol); on cumulative return and increment the gap sits inside the error bars
+> and SBTS and the bootstrap are indistinguishable. Ratios: …
+
+Note what it does **not** say: it does not say "beats the bootstrap on 3 of 3 targets". That was
+the wording until 2026-08-26, and it was produced by counting `ratio < 1.0`. Two of those three
+"wins" were a 0.009 gap inside a ±0.025 half-width and a 0.001 gap inside ±0.005. §8.8.
+
+### 10.3 The floor column is named `Real-vs-real floor`, not `Perfect floor`
 
 One string, and it is load-bearing. "Perfect floor" is a promise this dataset cannot keep, and a
 reader who carries the Heston meaning across will draw exactly the wrong conclusion about a
 method that beats it. The caption must restate §6.1 in the method's own README — do not rely on
 the reader having come here first.
 
-### 10.3 Structural checks before you trust the renderer
+### 10.4 Structural checks before you trust the renderer
 
-Run these on the generated file, not on the code:
+Run these on the **generated file**, not on the code. A renderer that produces a defect-free
+`render_readme.py` diff and a broken `README.md` is still broken.
+
+**Generic (all tables):**
 
 - [ ] every table has the same number of `|` per row as its header
 - [ ] no cell contains a raw `|` (escape curve names — several contain `ACF |r|`)
@@ -596,12 +863,38 @@ Run these on the generated file, not on the code:
 - [ ] the A-table has no A33/A34 rows
 - [ ] the seed columns count matches `--seeds`
 - [ ] the floor column has 3 underlying splits and the caption says so
-- [ ] Table C's ratio row and its headline sentence agree
+- [ ] every headline count in the prose is computed, not typed
+
+**Table C specifically — the first six map one-to-one onto the six rules of §10.2:**
+
+- [ ] the numbers came from `losses/crps_configs/paper__*.json`, not the legacy flat path —
+      check by deleting the legacy files locally and re-rendering; the table must be unchanged
+- [ ] the table contains **no ratio rows and no paper reference row** (rule 2)
+- [ ] the ratios still appear **in the headline prose** under the table (rule 3). If the headline
+      says "Ratios: " followed by nothing, `render_crps_table` stopped returning them
+- [ ] every cell is `mean ± half` and the caption distinguishes the two ± (rules 4, §8.6)
+- [ ] the headline's win/tie counts add to 3 and were produced by the **resolvability gate**,
+      not by `ratio < 1.0` (rule 5, §8.8). Sanity check: a 0.001 gap against a ±0.005 half-width
+      must be reported as a tie, never as a win
+- [ ] the string `reproduced exactly` does not appear anywhere in the file (rule 6, §8.2):
+      `grep -c 'reproduced exactly' README.md` must print `0`
+- [ ] both historical baselines are present (block **and** session — §13.4)
+- [ ] the real-training-split row is labelled with its **own** bank size (6 144), not 8 192
+
+**Memorisation:**
+
 - [ ] the **Memorisation check** section sits immediately after Table C, and its band
       endpoints are recomputed from `losses/memorisation.json` rather than typed
 - [ ] the memorisation verdict sentence matches the sign of the measured ratio (above /
       inside / below the band) — a renderer that always prints "inside" is useless
-- [ ] every headline count in the prose is computed, not typed
+
+**The one check that catches the class of bug §13.8 was:**
+
+- [ ] pick one cell at random, recompute it from the JSON with a three-line python snippet, and
+      confirm it matches to the printed precision. Do this for a **different** cell each time you
+      touch the renderer. Every transcription error found on this page so far — the YM `1.048`,
+      the stale `0.4%` bank-size figure — would have been caught by one such spot-check and was
+      instead caught weeks later.
 
 ---
 
@@ -695,6 +988,47 @@ gets reaped when the harness moves on; one such mistake cost 50 minutes of idle 
 **13.7 `dt` and a generator's internal `DT` are different objects.** §3.2. SBTS's module-level
 `DT = 1/252` does not mean the data is daily and changing it changes nothing.
 
+**13.8 A reduction axis silently changed the meaning of a metric, and the docstring vouched for
+it.** The `rv` target summed squared increments over the **asset** axis instead of the **time**
+axis, turning realised volatility over the horizon into a cross-sectional dispersion at each step.
+It ran for weeks, produced plausible numbers, and the docstring above it cited the correct
+`shadowing.py` line numbers while asserting the opposite of what those lines do. Full post-mortem
+in §8.1.3. Three generalisations, all of which cost time here:
+
+- **At `d = 1` the two axes coincide**, so no d = 1 test can catch this. Any reduction you port
+  from a univariate reference needs a `d > 1` test whose expected value you derived by hand.
+- **A citation is not a check.** Line numbers in a comment prove someone once looked; they prove
+  nothing about the code beneath them. When you port a formula, paste the reference's array shapes
+  into the comment — `(B, top_k, h+1, A)` — because a shape comment is falsifiable and a prose
+  claim is not.
+- **Fixes must be surgical and proven surgical.** After the patch, `cum` and `incr` had to
+  reproduce bit-identically and only `rv` was allowed to move. It did: cum 1.2695 → 1.270 (print
+  precision only), rv 0.5648 → 1.045. If a "targeted" fix moves a number it should not have
+  touched, you fixed the wrong thing.
+
+**13.9 A summary statistic outlived the bug it was computed on.** §8.5 quoted "0.4 % across an
+8× bank-size range" as evidence that bank size is not a lever. That number was computed on the
+broken `rv` of §13.8. Re-run after the fix it is **3.7 % and non-monotone** — a weaker claim,
+still supporting the same conclusion, but the original was not evidence of anything.
+
+> **When you fix a metric, re-run every sweep, table and sentence that quoted it.** Grep the
+> guideline and every README for the metric's name before you close the fix. A bug fix that
+> leaves stale derived numbers in prose has converted one wrong number into several, and the
+> survivors are now harder to find because the code is correct.
+
+**13.10 Two of the scariest bugs this session were in the diagnostic, not the code.** A
+`pgrep -af ... | sed 's/--data-dir.*--bank //'` was read as proof that the running jobs had been
+launched without `--data-dir`/`--seq-tag`; the flags were there, the `sed` was eating them. And
+`ls` of an artefact directory returned empty because the shell was in `$HOME` rather than the
+repo root. Both nearly triggered an unnecessary relaunch of hours of compute.
+
+- **Prefix every command in this repo with `cd /home/tbasseras/benchmark &&`.** The harness's
+  working directory is not stable across calls.
+- **Before declaring a running job broken, verify against the launcher on disk**
+  (`grep -n 'data-dir\|seq-tag' /tmp/launch_crps.sh`), never against a filtered view of `ps`.
+  Killing a correct 3-hour run on the strength of your own `sed` is the most expensive class of
+  mistake available here.
+
 ---
 
 ## 14. Checklist before you call a method done
@@ -708,11 +1042,35 @@ gets reaped when the harness moves on; one such mistake cost 50 minutes of idle 
 - [ ] `losses/dataset_stats.json` copied from the variant directory
 - [ ] `compute_all_multiasset.py` completed for all 5 seeds with **all four** dataset flags (§5)
 - [ ] `real_floor/` reused, not regenerated; floor column labelled **`Real-vs-real floor`**
-- [ ] **4 CRPS banks of 8 192 generated and scored (§8); Table C present in the README**
-- [ ] Table C reports the ratio to the block bootstrap, and both historical baselines are there
+
+**Conditional generation (§8) — the headline, and the part most often shipped half-done:**
+
+- [ ] **4 CRPS banks of 8 192 generated and scored; Table C present in the README**
+- [ ] scored under **both** retrieval conventions, `paper` **and** `perdim` (§8.7). Running only
+      one is the single most common way to ship an unfalsifiable claim here: `perdim` is the
+      sharper retriever (NN₁ 26.65 → 5.71) *and* it makes the method look worse, so a run that
+      skipped it has quietly selected the flattering convention
+- [ ] all ten artefacts committed: `crps_configs/{paper,perdim}__seed_{0,1,2,3}.json` and
+      `crps_configs/{paper,perdim}__realbank.json`. They are small JSON — there is no excuse
+- [ ] **both historical baselines** present — moving-block **and** session (§13.4) — and both
+      run at bank 8 192, the same size as the method. A baseline at a different bank size is a
+      confound, not a baseline (§8.4, §8.5)
+- [ ] the real-training-split bank is scored too, at its natural 6 144, and labelled as such
+- [ ] the `rv` target reduces over **time**, not assets — assert the shape is `(N, A)` (§8.1.3,
+      §13.8). This is the one line to re-read every single time
+- [ ] every ratio to the paper was **recomputed from `paper_real_data_table4.json`**, never
+      transcribed from the PDF or from an earlier README (§8.3)
+- [ ] the headline applies the **resolvability gate** (§8.8): a gap smaller than the sum of the
+      two half-widths is a tie and must be printed as one
+- [ ] the deviation of §8.2 — joint retrieval across d = 8, which the author's code hard-raises
+      against — is stated in the same paragraph as any claim of fidelity (§10.2 rule 6)
+
+**Everything else:**
+
 - [ ] `losses/memorisation.json` written and NNratio reported honestly (§9)
 - [ ] 3 figures rendered (4 for NN methods)
-- [ ] `render_readme.py` passes all 8 structural checks (§10.3)
+- [ ] `render_readme.py` passes every structural check in §10.4, including the random-cell
+      recomputation
 - [ ] `README.md` regenerated; **no hand-typed numbers anywhere**
 - [ ] A20 covariance error reported prominently
 - [ ] any metric that beats the floor has been **explained** against §6.1, not celebrated
