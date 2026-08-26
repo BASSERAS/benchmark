@@ -49,13 +49,13 @@ no gradient descent, **no weights**. The "model" *is* the training array plus `(
 
 | Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Real-vs-real floor |
 |---|---|---|---|---|---|---|---|
-| **, Fat Tail, ** | | | | | | | |
+| **Fat Tail** | | | | | | | |
 | A1 Kurtosis Error ↓ | 150.5 ± 62.69 | 228.8 | 176.7 | 42.13 | 129.1 | 175.7 | 259.6 |
 | A2 \|r\| q95 Error ↓ | 1.50e-04 ± 1.66e-06 | 1.51e-04 | 1.50e-04 | 1.47e-04 | 1.51e-04 | 1.49e-04 | 1.85e-04 |
 | A3 \|r\| q99 Error ↓ | 3.19e-04 ± 4.38e-06 | 3.21e-04 | 3.20e-04 | 3.11e-04 | 3.24e-04 | 3.21e-04 | 4.53e-04 |
 | A4 Tail QQ Error ↓ | 1.62e-04 ± 1.23e-06 | 1.63e-04 | 1.62e-04 | 1.60e-04 | 1.63e-04 | 1.62e-04 | 1.94e-04 |
 | A5 Hill Tail Index Error ↓ | 52.63 ± 11.05 | 55.97 | 49.45 | 72.06 | 39.67 | 46 | 39.99 |
-| **, Distribution, ** | | | | | | | |
+| **Distribution** | | | | | | | |
 | A6 Path MMD² ↓ *(native d=8)* | 0.003007 ± 3.94e-04 | 0.003579 | 0.002813 | 0.00292 | 0.003289 | 0.002437 | 0.00108 |
 | A7 Terminal MMD² ↓ *(native d=8)* | 0.00822 ± 0.001185 | 0.00904 | 0.009322 | 0.007627 | 0.008953 | 0.00616 | 0.00199 |
 | A8 Increment MMD² ↓ *(native d=8)* | 1.31e-05 ± 8.10e-07 | 1.33e-05 | 1.30e-05 | 1.25e-05 | 1.21e-05 | 1.45e-05 | 1.71e-05 |
@@ -68,19 +68,19 @@ no gradient descent, **no weights**. The "model" *is* the training array plus `(
 | A15 Skewness Error ↓ | 1.056 ± 0.2374 | 1.214 | 1.309 | 0.6307 | 1.138 | 0.9857 | 1.365 |
 | A16 QQ RMSE (300-pt) ↓ | 9.58e-05 ± 9.30e-07 | 9.66e-05 | 9.61e-05 | 9.40e-05 | 9.64e-05 | 9.61e-05 | 1.08e-04 |
 | A17 Terminal Price KS ↓ | 0.07703 ± 0.001093 | 0.07627 | 0.07668 | 0.07859 | 0.07564 | 0.07798 | 0.032 |
-| **, Adversarial, ** | | | | | | | |
+| **Adversarial** | | | | | | | |
 | A18 Disc Score GRU ↓ *(native d=8)* | 0.007323 ± 0.00233 | 0.00773 | 0.005289 | 0.01017 | 0.004068 | 0.009357 | 0.01044 |
 | A18 Disc Score MLP ↓ *(native d=8)* | 0.004069 ± 0.002831 | 0.008137 | 0.006103 | 0.003662 | 0 | 0.002441 | 0.003797 |
-| **, Predictive, ** | | | | | | | |
+| **Predictive** | | | | | | | |
 | A19 Pred Score GRU ↓ | 0.00357 ± 1.42e-05 | 0.003581 | 0.00357 | 0.003558 | 0.00359 | 0.003552 | 0.003637 |
 | A19 Pred Score MLP ↓ | 0.003876 ± 5.01e-05 | 0.003873 | 0.003913 | 0.003913 | 0.00378 | 0.0039 | 0.003776 |
-| **, Temporal, ** | | | | | | | |
+| **Temporal** | | | | | | | |
 | A20 Covariance Error ↓ *(native d=8)* | 0.9965 ± 0.07298 | 1.026 | 1.057 | 1.08 | 0.8992 | 0.9207 | 1.157 |
 | A21 ACF \|r\| Error (lags) ↓ | 0.05778 ± 5.46e-04 | 0.05827 | 0.05841 | 0.05718 | 0.05793 | 0.05709 | 0.009538 |
 | A22 ACF r² Error (lags) ↓ | 0.0432 ± 3.94e-04 | 0.04324 | 0.04381 | 0.04289 | 0.04338 | 0.04268 | 0.006465 |
 | A23 ACF \|r\| Lag-1 Error ↓ | 0.1379 ± 9.13e-04 | 0.1388 | 0.1384 | 0.1368 | 0.1386 | 0.1368 | 0.0123 |
 | A24 ACF r² Lag-1 Error ↓ | 0.1035 ± 7.34e-04 | 0.1034 | 0.1041 | 0.1028 | 0.1045 | 0.1026 | 0.008313 |
-| **, Vol, ** | | | | | | | |
+| **Vol** | | | | | | | |
 | A25 Mean RMSE ↓ *(native d=8)* | 0.06186 ± 0.01264 | 0.06155 | 0.06418 | 0.05795 | 0.04312 | 0.08251 | 0.04728 |
 | A26 Return Std Error ↓ | 0.01094 ± 4.26e-04 | 0.01144 | 0.01101 | 0.01015 | 0.01101 | 0.01106 | 0.01284 |
 | A27 Log-Return Std Error ↓ | 1.09e-04 ± 3.82e-06 | 1.13e-04 | 1.09e-04 | 1.02e-04 | 1.11e-04 | 1.10e-04 | 1.28e-04 |
@@ -90,7 +90,7 @@ no gradient descent, **no weights**. The "model" *is* the training array plus `(
 | A31 Rolling Vol KS (w=5) ↓ | 0.1312 ± 1.13e-04 | 0.1312 | 0.1314 | 0.1313 | 0.1311 | 0.1311 | 0.1196 |
 | A32 Vol-of-Vol Error ↓ | 6.66e-05 ± 2.30e-06 | 7.06e-05 | 6.53e-05 | 6.40e-05 | 6.74e-05 | 6.55e-05 | 1.04e-04 |
 
-> **Convention:** ↓ lower is better; ↑ higher is better;, no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
+> **Convention:** ↓ lower is better; ↑ higher is better; no arrow = no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
 > **Headline:** **16 of the 34 A-metric rows sit at or below the real-vs-real floor** — A1 Kurtosis Error, A2 |r| q95 Error, A3 |r| q99 Error, A4 Tail QQ Error, A8 Increment MMD², A12 RV Law Loss, A15 Skewness Error, A16 QQ RMSE (300-pt)…. The largest remaining gaps are **A9 Volatility MMD** (0.04406 vs floor 0.003092, 14.3×); **A24 ACF r² Lag-1 Error** (0.1035 vs floor 0.008313, 12.5×); **A23 ACF |r| Lag-1 Error** (0.1379 vs floor 0.0123, 11.2×); **A22 ACF r² Error (lags)** (0.0432 vs floor 0.006465, 6.7×).
 > **What the "Real-vs-real floor" column is — read this before quoting it.** On Heston the floor is an *independent draw from the true SDE*: a genuine second sample of the data-generating law. **A real market has no law to re-draw from.** The column here is instead three **held-out real splits** — `train`, `val`, `valdisc` — pushed through the metric pipeline *as if they were generated banks* and scored against `test`, with byte-identical code. Three consequences you must not forget:
 > 1. It is **not** a floor a generator ought to reach. It is the score a **perfect memoriser of the training era** achieves on the test era.

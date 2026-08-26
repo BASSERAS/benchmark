@@ -26,13 +26,13 @@ and the head-to-head verdict are **below the metrics**
 
 | Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |--------|-----------|--------|--------|--------|--------|--------|---------------|
-| **, Fat Tail, ** | | | | | | | |
+| **Fat Tail** | | | | | | | |
 | A1 Kurtosis Error ↓ | 0.07225 ± 0.01942 | 0.0572 | 0.08271 | 0.1054 | 0.06259 | 0.05334 | 0.05717 |
 | A2 \|r\| q95 Error ↓ | 6.06e-04 ± 5.60e-05 | 4.99e-04 | 6.56e-04 | 6.07e-04 | 6.37e-04 | 6.30e-04 | 1.49e-04 |
 | A3 \|r\| q99 Error ↓ | 8.33e-04 ± 1.33e-04 | 5.90e-04 | 9.91e-04 | 8.89e-04 | 8.21e-04 | 8.73e-04 | 2.40e-04 |
 | A4 Tail QQ Error ↓ | 5.62e-04 ± 7.00e-05 | 4.27e-04 | 6.27e-04 | 5.78e-04 | 5.82e-04 | 5.97e-04 | 1.54e-04 |
 | A5 Hill Tail Index Error ↓ | 1.606 ± 0.9107 | 3.093 | 0.46 | 1.541 | 2.007 | 0.9281 | 1.280 |
-| **, Distribution, ** | | | | | | | |
+| **Distribution** | | | | | | | |
 | A6 Path MMD² ↓ | 0.002174 ± 1.52e-04 | 0.001994 | 0.002117 | 0.002414 | 0.002278 | 0.002069 | 0.001785 |
 | A7 Terminal MMD² ↓ | 0.00208 ± 7.68e-04 | 0.001335 | 0.002198 | 0.003511 | 0.001743 | 0.001612 | 0.001252 |
 | A8 Increment MMD² ↓ | 0.001322 ± 4.20e-05 | 0.00135 | 0.001258 | 0.001316 | 0.001381 | 0.001305 | 8.35e-04 |
@@ -45,19 +45,19 @@ and the head-to-head verdict are **below the metrics**
 | A15 Skewness Error ↓ | 0.01182 ± 0.004283 | 0.005642 | 0.01537 | 0.01727 | 0.008509 | 0.01232 | 0.01206 |
 | A16 QQ RMSE (300-pt) ↓ | 2.23e-04 ± 3.30e-05 | 1.63e-04 | 2.60e-04 | 2.23e-04 | 2.27e-04 | 2.40e-04 | 8.18e-05 |
 | A17 Terminal Price KS ↓ | 0.0207 ± 0.005751 | 0.01392 | 0.03027 | 0.02319 | 0.01611 | 0.02002 | 0.02139 |
-| **, Adversarial, ** | | | | | | | |
+| **Adversarial** | | | | | | | |
 | A18 Disc Score GRU ↓ | 0.018 ± 0.01705 | 0.01129 | 0.01434 | 0.05095 | 0.0119 | 0.001525 | 0.007138 |
 | A18 Disc Score MLP ↓ | 0.03606 ± 0.02449 | 0.04423 | 0.06071 | 0.006406 | 0.06132 | 0.007627 | 0.006284 |
-| **, Predictive, ** | | | | | | | |
+| **Predictive** | | | | | | | |
 | A19 Pred Score GRU ↓ | 0.0564 ± 1.10e-05 | 0.05639 | 0.05642 | 0.05639 | 0.0564 | 0.0564 | 0.05638 |
 | A19 Pred Score MLP ↓ | 0.0563 ± 4.90e-05 | 0.05627 | 0.05627 | 0.05628 | 0.05627 | 0.05639 | 0.05668 |
-| **, Temporal, ** | | | | | | | |
+| **Temporal** | | | | | | | |
 | A20 Covariance Error ↓ | 10.55 ± 3.421 | 4.215 | 12.56 | 10.68 | 14.31 | 10.97 | 5.825 |
 | A21 ACF \|r\| Error (lags) ↓ | 0.003416 ± 3.25e-04 | 0.003005 | 0.003086 | 0.003858 | 0.003644 | 0.003485 | 0.001318 |
 | A22 ACF r² Error (lags) ↓ | 0.004008 ± 3.49e-04 | 0.003544 | 0.004333 | 0.004358 | 0.004173 | 0.003634 | 0.001394 |
 | A23 ACF \|r\| Lag-1 Error ↓ | 0.005333 ± 8.51e-04 | 0.005682 | 0.006075 | 0.004864 | 0.006146 | 0.003895 | 9.01e-04 |
 | A24 ACF r² Lag-1 Error ↓ | 0.006588 ± 8.26e-04 | 0.006025 | 0.007767 | 0.005909 | 0.007408 | 0.00583 | 0.001377 |
-| **, Vol, ** | | | | | | | |
+| **Vol** | | | | | | | |
 | A25 Mean RMSE ↓ | 0.3239 ± 0.2242 | 0.09637 | 0.6452 | 0.3078 | 0.0693 | 0.5007 | 0.3668 |
 | A26 Return Std Error ↓ | 0.01868 ± 0.001095 | 0.01698 | 0.02038 | 0.01875 | 0.01833 | 0.01894 | 0.005319 |
 | A27 Log-Return Std Error ↓ | 2.34e-04 ± 3.70e-05 | 1.67e-04 | 2.79e-04 | 2.33e-04 | 2.37e-04 | 2.54e-04 | 7.03e-05 |
@@ -66,11 +66,11 @@ and the head-to-head verdict are **below the metrics**
 | A30 Cross-Sect. Vol Path RMSE ↓ | 0.3453 ± 0.04165 | 0.2728 | 0.3474 | 0.3597 | 0.4019 | 0.3447 | 0.1684 |
 | A31 Rolling Vol KS (w=5) ↓ | 0.0164 ± 0.002043 | 0.0132 | 0.01854 | 0.01484 | 0.01739 | 0.01802 | 0.004939 |
 | A32 Vol-of-Vol Error ↓ | 1.32e-04 ± 2.10e-05 | 9.22e-05 | 1.37e-04 | 1.47e-04 | 1.31e-04 | 1.52e-04 | 4.26e-05 |
-| **, Heston Spec, ** | | | | | | | |
+| **Heston Spec** | | | | | | | |
 | A33 Teacher-Sigma Corr ↑ | -0.003848 ± 0.008977 | -0.01637 | -0.004193 | -0.01062 | 0.004089 | 0.007858 | 0.6156 |
 | A34 Teacher-Sigma RMSE ↓ | 0.09948 ± 6.30e-04 | 0.1006 | 0.09939 | 0.09957 | 0.09906 | 0.09877 | 0.06560 |
 
-> **Convention:** ↓ lower is better; ↑ higher is better;, no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
+> **Convention:** ↓ lower is better; ↑ higher is better; no arrow = no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
 > **A1**: |kurt_real − kurt_gen| on log-returns. **A2-A3**: 95th/99th quantile error on |log-returns|. **A4**: QQ error restricted to top-5% tail quantiles. **A5**: |Hill tail index_real − Hill tail index_gen|, Hill estimator on |log-returns| above 95th pct.
 > **A6-A11**: path-kernel distances, Gaussian MMD² on full paths / terminal prices / increments / realized-vol, and sliced-Wasserstein on terminal & full paths. Non-zero perfect floor (an independent Heston draw scored against the test set, finite-sample noise).
 > **A12**: W₁(RV_real, RV_gen), RV_i = Σ_t r²_{i,t}/dt. **A13**: path-level RMSE between real/gen mean trajectories. **A14**: KS statistic on pooled log-returns. **A15**: |skew_real − skew_gen|, Heston true skew ≈ −0.45. **A16**: QQ RMSE over 300 uniform quantile levels. **A17**: KS statistic on terminal prices S_T.

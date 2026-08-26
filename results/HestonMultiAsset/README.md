@@ -15,20 +15,20 @@ produce identical histograms, ACFs, quantiles or covariance matrices. A method s
 
 ## A1–A34, mean ± std across 5 seeds
 
-> ↓ lower is better; ↑ higher is better;, no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
+> ↓ lower is better; ↑ higher is better; no arrow = no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
 > Rows marked *(native d=8)* are evaluated **once** on the full `(N, T, 8)` tensor; every
 > other row is computed on each of the 8 univariate slices and reported as the **mean over
 > assets**. All metrics on **log-returns** unless noted; A26 uses price increments.
 
 | Metric | SBTS | LS4 | CSDI | reference | Perfect floor | Winner |
 |---|---|---|---|---|---|---|
-| **, Fat Tail, ** | | | | | | |
+| **Fat Tail** | | | | | | |
 | A1 Kurtosis Error ↓ | 0.01811 ± 0.003116 | 0.7708 ± 0.005457 | 0.1464 ± 0.03503 | 0.6296 ± 0.002013 | 0.008385 | **SBTS** |
 | A2 \|r\| q95 Error ↓ | 1.40e-04 ± 1.01e-05 | 0.007707 ± 7.45e-04 | 0.005902 ± 2.80e-04 | 0.00355 ± 1.61e-05 | 4.58e-05 | **SBTS** |
 | A3 \|r\| q99 Error ↓ | 2.08e-04 ± 2.20e-05 | 0.0124 ± 0.001045 | 0.008171 ± 3.66e-04 | 0.004809 ± 3.38e-05 | 8.08e-05 | **SBTS** |
 | A4 Tail QQ Error ↓ | 1.35e-04 ± 7.31e-06 | 0.007604 ± 7.35e-04 | 0.005814 ± 2.75e-04 | 0.003534 ± 1.72e-05 | 5.62e-05 | **SBTS** |
 | A5 Hill Tail Index Error ↓ | 0.7294 ± 0.1953 | 2.793 ± 0.4285 | 1.466 ± 0.3679 | 3.274 ± 0.1463 | 0.5896 | **SBTS** |
-| **, Distribution, ** | | | | | | |
+| **Distribution** | | | | | | |
 | A6 Path MMD² ↓ *(native d=8)* | 0.002046 ± 9.17e-05 | 0.01225 ± 0.00266 | 0.003622 ± 3.20e-04 | 0.002745 ± 9.90e-05 | 0.001948 | **SBTS** |
 | A7 Terminal MMD² ↓ *(native d=8)* | 0.002055 ± 4.96e-05 | 0.006468 ± 0.001546 | 0.002716 ± 1.58e-04 | 0.002586 ± 6.34e-05 | 0.001954 | **SBTS** |
 | A8 Increment MMD² ↓ *(native d=8)* | 0.00101 ± 1.22e-05 | 0.01435 ± 0.004248 | 0.009969 ± 1.98e-04 | 9.00e-04 ± 4.65e-06 | 8.71e-04 | **reference** |
@@ -41,19 +41,19 @@ produce identical histograms, ACFs, quantiles or covariance matrices. A method s
 | A15 Skewness Error ↓ | 0.007407 ± 6.69e-04 | 0.0209 ± 0.001063 | 0.06925 ± 0.005297 | 0.05418 ± 0.001213 | 0.003568 | **SBTS** |
 | A16 QQ RMSE (300-pt) ↓ | 8.09e-05 ± 5.38e-06 | 0.00333 ± 3.52e-04 | 0.002819 ± 1.44e-04 | 0.001943 ± 7.27e-06 | 3.04e-05 | **SBTS** |
 | A17 Terminal Price KS ↓ | 0.0217 ± 0.002147 | 0.09221 ± 0.01855 | 0.06658 ± 0.01179 | 0.04949 ± 0.002247 | 0.01466 | **SBTS** |
-| **, Adversarial, ** | | | | | | |
+| **Adversarial** | | | | | | |
 | A18 Disc Score GRU ↓ *(native d=8)* | 0.02658 ± 0.00467 | 0.3987 ± 0.1967 | 0.2844 ± 0.2272 | 0.4808 ± 0.01072 | 0.005523 | **SBTS** |
 | A18 Disc Score MLP ↓ *(native d=8)* | 0.007904 ± 0.007351 | 0.005279 ± 0.002527 | 0.006195 ± 0.004601 | 0.005279 ± 0.005004 | 0.006012 | — *(floor)* |
-| **, Predictive, ** | | | | | | |
+| **Predictive** | | | | | | |
 | A19 Pred Score GRU ↓ | 0.0492 ± 2.76e-06 | 0.0492 ± 3.69e-06 | 0.04953 ± 1.96e-05 | 0.0492 ± 4.09e-06 | 0.0492 | — *(floor)* |
 | A19 Pred Score MLP ↓ | 0.04932 ± 6.13e-05 | 0.04941 ± 5.12e-05 | 0.04968 ± 4.91e-05 | 0.0496 ± 8.11e-05 | 0.04931 | — |
-| **, Temporal, ** | | | | | | |
+| **Temporal** | | | | | | |
 | A20 Covariance Error ↓ *(native d=8)* | 80.27 ± 12.98 | 1084 ± 90.03 | 527.4 ± 45.47 | 754.6 ± 6.179 | 55.2 | **SBTS** |
 | A21 ACF \|r\| Error (lags) ↓ | 0.004719 ± 3.10e-04 | 0.06824 ± 0.00132 | 0.01092 ± 0.001795 | 0.04602 ± 2.82e-04 | 0.001066 | **SBTS** |
 | A22 ACF r² Error (lags) ↓ | 0.003448 ± 3.00e-04 | 0.05623 ± 0.001435 | 0.00997 ± 0.001346 | 0.0333 ± 2.93e-04 | 0.001107 | **SBTS** |
 | A23 ACF \|r\| Lag-1 Error ↓ | 0.005199 ± 3.32e-04 | 0.07919 ± 0.001432 | 0.02199 ± 0.002742 | 0.05307 ± 3.44e-04 | 0.001038 | **SBTS** |
 | A24 ACF r² Lag-1 Error ↓ | 0.003714 ± 3.33e-04 | 0.06584 ± 0.001548 | 0.02007 ± 0.00194 | 0.03839 ± 4.24e-04 | 0.001036 | **SBTS** |
-| **, Vol, ** | | | | | | |
+| **Vol** | | | | | | |
 | A25 Mean RMSE ↓ *(native d=8)* | 1.649 ± 0.2965 | 4.066 ± 2.772 | 6.091 ± 2.464 | 2.087 ± 0.4813 | 0.9234 | — |
 | A26 Return Std Error ↓ | 0.006541 ± 4.14e-04 | 0.3366 ± 0.03949 | 0.288 ± 0.003593 | 0.1868 ± 3.21e-04 | 0.001745 | **SBTS** |
 | A27 Log-Return Std Error ↓ | 6.34e-05 ± 5.34e-06 | 0.003519 ± 3.71e-04 | 0.002921 ± 1.46e-04 | 0.001888 ± 9.11e-06 | 2.21e-05 | **SBTS** |
@@ -62,7 +62,7 @@ produce identical histograms, ACFs, quantiles or covariance matrices. A method s
 | A30 Cross-Sect. Vol Path RMSE ↓ | 0.3011 ± 0.02041 | 3.859 ± 0.3462 | 1.745 ± 0.1586 | 2.079 ± 0.03411 | 0.1596 | **SBTS** |
 | A31 Rolling Vol KS (w=5) ↓ | 0.007704 ± 3.42e-04 | 0.2578 ± 0.03221 | 0.2451 ± 0.01367 | 0.1648 ± 4.29e-04 | 0.00208 | **SBTS** |
 | A32 Vol-of-Vol Error ↓ | 4.80e-05 ± 3.56e-06 | 0.001949 ± 1.39e-04 | 0.001181 ± 3.97e-05 | 6.34e-04 ± 4.43e-06 | 1.14e-05 | **SBTS** |
-| **, Heston Spec, ** | | | | | | |
+| **Heston Spec** | | | | | | |
 | A33 Teacher-Sigma Corr ↑ | -4.17e-04 ± 6.08e-04 | 1.46e-04 ± 4.00e-04 | 0.002651 ± 0.00109 | -4.96e-04 ± 0.001518 | -1.35e-04 | — *(floor)* |
 | A34 Teacher-Sigma RMSE ↓ | 0.1006 ± 8.39e-05 | 0.09441 ± 0.002176 | 0.1011 ± 7.47e-04 | 0.1018 ± 1.67e-04 | 0.1013 | — *(floor)* |
 

@@ -162,7 +162,7 @@ def render_a_table(sbts, floor):
     lines = ["| " + " | ".join(head) + " |",
              "|" + "|".join(["---"] * len(head)) + "|"]
     for cat, rows in CATEGORIES:
-        lines.append(f"| **, {cat}, ** |" + " |" * (len(head) - 1))
+        lines.append(f"| **{cat}** |" + " |" * (len(head) - 1))
         for key, label, direction in rows:
             s, f = sbts.get(key), floor.get(key)
             if s is None:
@@ -574,7 +574,7 @@ no gradient descent, **no weights**. The "model" *is* the training array plus `(
 
 {render_a_table(sbts, floor)}
 
-> **Convention:** ↓ lower is better; ↑ higher is better;, no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
+> **Convention:** ↓ lower is better; ↑ higher is better; no arrow = no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
 > **Headline:** **{len(at_floor)} of the {n_a} A-metric rows sit at or below the real-vs-real floor** — {at_floor_txt}. The largest remaining gaps are {gap_txt}.
 > **What the "{FLOOR_COL}" column is — read this before quoting it.** On Heston the floor is an *independent draw from the true SDE*: a genuine second sample of the data-generating law. **A real market has no law to re-draw from.** The column here is instead three **held-out real splits** — `train`, `val`, `valdisc` — pushed through the metric pipeline *as if they were generated banks* and scored against `test`, with byte-identical code. Three consequences you must not forget:
 > 1. It is **not** a floor a generator ought to reach. It is the score a **perfect memoriser of the training era** achieves on the test era.

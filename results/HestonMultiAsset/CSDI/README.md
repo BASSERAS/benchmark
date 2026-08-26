@@ -55,13 +55,13 @@ native metric scoping, and the memorisation diagnostic shared by all methods on 
 
 | Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
 |---|---|---|---|---|---|---|---|
-| **, Fat Tail, ** | | | | | | | |
+| **Fat Tail** | | | | | | | |
 | A1 Kurtosis Error ↓ | 0.1464 ± 0.03503 | 0.1394 | 0.09615 | 0.179 | 0.1918 | 0.1255 | 0.008385 |
 | A2 \|r\| q95 Error ↓ | 0.005902 ± 2.80e-04 | 0.005733 | 0.005476 | 0.006266 | 0.006126 | 0.005909 | 4.58e-05 |
 | A3 \|r\| q99 Error ↓ | 0.008171 ± 3.66e-04 | 0.007919 | 0.007631 | 0.008659 | 0.008446 | 0.008198 | 8.08e-05 |
 | A4 Tail QQ Error ↓ | 0.005814 ± 2.75e-04 | 0.005647 | 0.005397 | 0.006171 | 0.006037 | 0.005817 | 5.62e-05 |
 | A5 Hill Tail Index Error ↓ | 1.466 ± 0.3679 | 1.241 | 0.8989 | 1.503 | 1.939 | 1.747 | 0.5896 |
-| **, Distribution, ** | | | | | | | |
+| **Distribution** | | | | | | | |
 | A6 Path MMD² ↓ *(native d=8)* | 0.003622 ± 3.20e-04 | 0.003666 | 0.003019 | 0.003856 | 0.003925 | 0.003643 | 0.001948 |
 | A7 Terminal MMD² ↓ *(native d=8)* | 0.002716 ± 1.58e-04 | 0.00268 | 0.002525 | 0.002763 | 0.00299 | 0.002622 | 0.001954 |
 | A8 Increment MMD² ↓ *(native d=8)* | 0.009969 ± 1.98e-04 | 0.01027 | 0.009875 | 0.009937 | 0.009683 | 0.01008 | 8.71e-04 |
@@ -74,19 +74,19 @@ native metric scoping, and the memorisation diagnostic shared by all methods on 
 | A15 Skewness Error ↓ | 0.06925 ± 0.005297 | 0.06897 | 0.05987 | 0.06881 | 0.07367 | 0.07495 | 0.003568 |
 | A16 QQ RMSE (300-pt) ↓ | 0.002819 ± 1.44e-04 | 0.002736 | 0.002601 | 0.003002 | 0.002944 | 0.002813 | 3.04e-05 |
 | A17 Terminal Price KS ↓ | 0.06658 ± 0.01179 | 0.06799 | 0.07581 | 0.06697 | 0.07762 | 0.04453 | 0.01466 |
-| **, Adversarial, ** | | | | | | | |
+| **Adversarial** | | | | | | | |
 | A18 Disc Score GRU ↓ *(native d=8)* | 0.2844 ± 0.2272 | 0.4658 | 0.006561 | 0.482 | 0.005951 | 0.4619 | 0.005523 |
 | A18 Disc Score MLP ↓ *(native d=8)* | 0.006195 ± 0.004601 | 0.008697 | 1.53e-04 | 0.01358 | 0.005035 | 0.003509 | 0.006012 |
-| **, Predictive, ** | | | | | | | |
+| **Predictive** | | | | | | | |
 | A19 Pred Score GRU ↓ | 0.04953 ± 1.96e-05 | 0.04951 | 0.04951 | 0.04955 | 0.04954 | 0.04954 | 0.0492 |
 | A19 Pred Score MLP ↓ | 0.04968 ± 4.91e-05 | 0.04974 | 0.0496 | 0.04966 | 0.04973 | 0.04968 | 0.04931 |
-| **, Temporal, ** | | | | | | | |
+| **Temporal** | | | | | | | |
 | A20 Covariance Error ↓ *(native d=8)* | 527.4 ± 45.47 | 540.5 | 468.2 | 516.6 | 506.4 | 605.5 | 55.2 |
 | A21 ACF \|r\| Error (lags) ↓ | 0.01092 ± 0.001795 | 0.01071 | 0.008378 | 0.01325 | 0.01257 | 0.009703 | 0.001066 |
 | A22 ACF r² Error (lags) ↓ | 0.00997 ± 0.001346 | 0.009545 | 0.008069 | 0.01172 | 0.01126 | 0.009247 | 0.001107 |
 | A23 ACF \|r\| Lag-1 Error ↓ | 0.02199 ± 0.002742 | 0.02079 | 0.01827 | 0.02624 | 0.02374 | 0.02091 | 0.001038 |
 | A24 ACF r² Lag-1 Error ↓ | 0.02007 ± 0.00194 | 0.0185 | 0.01784 | 0.02322 | 0.02118 | 0.01959 | 0.001036 |
-| **, Vol, ** | | | | | | | |
+| **Vol** | | | | | | | |
 | A25 Mean RMSE ↓ *(native d=8)* | 6.091 ± 2.464 | 5.725 | 7.857 | 6.616 | 8.661 | 1.594 | 0.9234 |
 | A26 Return Std Error ↓ | 0.288 ± 0.003593 | 0.291 | 0.2832 | 0.2928 | 0.285 | 0.2881 | 0.001745 |
 | A27 Log-Return Std Error ↓ | 0.002921 ± 1.46e-04 | 0.002836 | 0.002698 | 0.003108 | 0.003045 | 0.002918 | 2.21e-05 |
@@ -95,11 +95,11 @@ native metric scoping, and the memorisation diagnostic shared by all methods on 
 | A30 Cross-Sect. Vol Path RMSE ↓ | 1.745 ± 0.1586 | 1.826 | 1.465 | 1.818 | 1.692 | 1.926 | 0.1596 |
 | A31 Rolling Vol KS (w=5) ↓ | 0.2451 ± 0.01367 | 0.2368 | 0.2244 | 0.2621 | 0.2572 | 0.245 | 0.00208 |
 | A32 Vol-of-Vol Error ↓ | 0.001181 ± 3.97e-05 | 0.001151 | 0.00112 | 0.001229 | 0.001207 | 0.001198 | 1.14e-05 |
-| **, Heston Spec, ** | | | | | | | |
+| **Heston Spec** | | | | | | | |
 | A33 Teacher-Sigma Corr ↑ | 0.002651 ± 0.00109 | 0.004053 | 0.003274 | 0.002814 | 7.92e-04 | 0.002324 | -1.35e-04 |
 | A34 Teacher-Sigma RMSE ↓ | 0.1011 ± 7.47e-04 | 0.1007 | 0.09999 | 0.102 | 0.1018 | 0.1009 | 0.1013 |
 
-> **Convention:** ↓ lower is better; ↑ higher is better;, no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
+> **Convention:** ↓ lower is better; ↑ higher is better; no arrow = no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
 > **Headline:** **2 of the 36 A-metric rows sit at or below the independent-draw floor** — A33 Teacher-Sigma Corr, A34 Teacher-Sigma RMSE. The largest remaining gaps are **A26 Return Std Error** (0.288 vs floor 0.001745, 165.1×); **A29 Sigma Mean Error** (0.04547 vs floor 3.32e-04, 137.1×); **A27 Log-Return Std Error** (0.002921 vs floor 2.21e-05, 132.0×); **A2 |r| q95 Error** (0.005902 vs floor 4.58e-05, 128.9×). The floor, not the other method, is the reference on this page; the cross-method comparison lives in the dataset-level [`../README.md`](../README.md) so that neither method's page grades itself against a rival it was tuned beside.
 > **Perfect floor** is the *independent-draw* floor (GUIDELINE §5.4): five fresh draws from the *same* SDE with the *same* frozen per-asset parameters at seeds 1000-1004, scored with byte-identical metric code. It is **non-zero everywhere** — two independent 8 192-path draws never produce identical histograms, ACFs, quantiles or covariance matrices. It is **not** a permutation of the test set, which would preserve every column-wise statistic exactly, collapse most metrics to 0, and be a misleading target.
 > **A1-A5**: fat-tail block — kurtosis error, tail quantile / QQ errors on |log-returns|, Hill tail index. **A6-A11** *(native d=8)*: path-kernel distances on the full 8-dimensional tensor (MMD² on paths / terminal / increments / realized-vol; sliced-Wasserstein on terminal & full paths), the rows where a multivariate generalisation is genuinely meaningful.

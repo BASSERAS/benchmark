@@ -493,7 +493,8 @@ must render 8 columns and be obviously wrong, not silently render an empty 9th.
 
 **Category separator rows** partition the metrics: Fat Tail, Distribution, Temporal,
 Volatility, Heston Spec. They span the full width with empty cells:
-`| **, Fat Tail, ** | | | | | | | |`. See §8.10 before you "fix" that comma.
+`| **Fat Tail** | | | | | | | |`. This used to carry a stray comma inside the bold; see §8.10 —
+it was fixed tree-wide on 2026-08-26, do not restore it.
 
 **Direction arrows** suffix the metric label: ` ↓` lower-is-better, ` ↑` higher-is-better, and
 the empty string for a metric with no monotone direction (A28, whose target is 1.0, rendered
@@ -667,19 +668,43 @@ grep -o '](\([^)h][^)]*\))' README.md | sed 's/^](//;s/)$//' | sort -u \
 Every relative link must resolve. A dead link in a generated page is worse than in a hand-written
 one, because it will be regenerated dead forever.
 
-### 8.10 Two cosmetic defects are deliberate — do not fix them unilaterally
+### 8.10 Two cosmetic defects — FIXED 2026-08-26, tree-wide
 
-The rendered pages contain two known typos, inherited verbatim from the committed d = 1 tree:
+Until 2026-08-26 the rendered pages carried two typos, inherited verbatim from the committed
+d = 1 tree:
 
-- category separator rows render as `| **, Fat Tail, ** |` instead of `| **Fat Tail** |`;
-- the convention legend renders `↑ higher is better;, no monotone direction`.
+- category separator rows rendered as `| **, Fat Tail, ** |` instead of `| **Fat Tail** |`;
+- the convention legend rendered `↑ higher is better;` followed directly by `, no monotone
+  direction` — that comma being a leaked format-string separator.
 
-Both come from literal typos in `render_readme.py` (the category and arrow-legend format
-strings). They are **reproduced** at d = 8 on purpose, because the requirement is that the d = 8
-page display *exactly* as the d = 1 pages do. Fixing d = 8 alone breaks that; fixing both means
-restating fifteen already-committed pages in one sweep.
+Both came from literal typos in the `render_readme.py` format strings. This section used to say
+they were reproduced at d = 8 *on purpose* — the requirement being that the d = 8 page display
+exactly as the d = 1 pages do — and that fixing them meant restating every already-committed
+page in one sweep. **That sweep has now happened**, so the parity requirement is satisfied by
+the corrected form instead of the broken one:
 
-If you fix them, fix all sixteen pages in a single commit and say so. Do not fix only yours.
+| what | count |
+|------|-------|
+| d = 1 pages patched textually (`results/Heston/**`) | 16 |
+| renderers patched (`*/code/render_readme.py` + `tools/render_comparison.py`) | 7 |
+| separator rows rewritten in markdown | 112 |
+| **numeric cells changed** | **0** |
+
+The 16 d = 1 pages have **no renderer in this repo** — `find . -name 'render*.py'` returns
+nothing under `results/Heston/` that emits these rows, and `metrics/render_tables.py` emits
+HTML `<tr><td colspan>`, not markdown pipes. They were therefore corrected by anchored textual
+substitution: the separator pattern was anchored to a full line beginning `| **, ` so it could
+not reach a data cell, and the legend clause was matched exactly so it could not reach genuine
+prose such as "**higher is better**; perfect floor ≈ 0.616" in the A33 footnotes. Every file's
+diff was inspected to confirm only separator and legend lines moved.
+
+The d = 1 spec that *mandated* the broken form
+([`../Heston/preprocessing_with_log_returns/GUIDELINE.md`](../Heston/preprocessing_with_log_returns/GUIDELINE.md),
+category-separator table) was updated in the same commit. Leaving it would have re-specified the
+bug for the next method landed.
+
+**Do not "restore" the comma form.** If you meet a page still showing it, that page predates this
+commit — re-render or re-patch it.
 
 ### 8.11 Pitfalls that have actually bitten
 
@@ -750,11 +775,21 @@ Never hand-edit either file. Both are regenerated and your edit will be lost.
 
 ```bash
 /home/tbasseras/gpu-venv/bin/python results/HestonMultiAsset/tools/render_comparison.py \
-    --methods SBTS,LS4        # comma-separated, in display order
+    --methods SBTS,LS4,CSDI,reference    # comma-separated, in display order
 ```
 
 **Re-run it with your method appended to `--methods` as the last step of landing a method.**
 It is not auto-discovering: a method that is not named on the command line does not appear.
+
+**Append it to the `--methods` default inside the script too.** On 2026-08-26 the page was
+re-rendered without the flag; the default still read `SBTS,LS4,reference`, so CSDI was silently
+deleted from a page it had shipped on — a 168-line diff that looked like a rendering change and
+was actually a lost column. The default now lists every landed method, and the check below
+catches the failure mode regardless:
+
+```bash
+head -8 results/HestonMultiAsset/README.md | grep '^| Metric'   # must name every method
+```
 
 Scope is deliberately narrow — **two tables, each followed by one tally paragraph, and nothing
 else**:

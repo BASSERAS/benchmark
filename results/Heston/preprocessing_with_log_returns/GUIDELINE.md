@@ -724,19 +724,29 @@ $\Delta S_t$.`). Then an **8-column** table:
 | 3–7 | `Seed 0` … `Seed 4` | per-seed value |
 | 8 | `Perfect floor` | **dataset-derived, identical across methods — reuse LS4's column verbatim** |
 
-Rows are grouped by **7 category separator rows** `| **, <Category>, ** | | | | | | | |` in this
+Rows are grouped by **7 category separator rows** `| **<Category>** | | | | | | | |` in this
 **exact order and range** (37 metric rows total — A18 and A19 each split into a **GRU** and an **MLP**
 row):
 
 | separator | metrics | rows |
 |-----------|---------|------|
-| `**, Fat Tail, **` | A1–A5 | 5 |
-| `**, Distribution, **` | A6–A17 | 12 |
-| `**, Adversarial, **` | A18 | 2 (GRU, MLP) |
-| `**, Predictive, **` | A19 | 2 (GRU, MLP) |
-| `**, Temporal, **` | A20–A24 | 5 |
-| `**, Vol, **` | A25–A32 | 8 |
-| `**, Heston Spec, **` | A33–A34 | 2 (A33 `↑`, A34 `↓`) |
+| `**Fat Tail**` | A1–A5 | 5 |
+| `**Distribution**` | A6–A17 | 12 |
+| `**Adversarial**` | A18 | 2 (GRU, MLP) |
+| `**Predictive**` | A19 | 2 (GRU, MLP) |
+| `**Temporal**` | A20–A24 | 5 |
+| `**Vol**` | A25–A32 | 8 |
+| `**Heston Spec**` | A33–A34 | 2 (A33 `↑`, A34 `↓`) |
+
+> **Changed 2026-08-26.** These rows used to be specified — and rendered — as
+> `| **, Fat Tail, ** |`, a literal typo in the format string that leaked the tuple separators
+> into the markdown, so every page displayed a stray leading and trailing comma inside the bold.
+> The same typo produced `↑ higher is better;, no monotone direction` in the convention
+> blockquote. Both were corrected across **all 16 d = 1 pages, the d = 8 pages and the
+> TrueDataset page in a single commit**, because the d = 8 tree's requirement is that it display
+> exactly as d = 1 does — fixing one tree alone breaks that parity. Only the two format strings
+> changed; **no numeric cell was touched**. If you are reading an older page that still shows the
+> comma form, it predates that commit — re-render it, do not copy it.
 
 Close with the **convention blockquote** (`↓` lower better · `↑` higher better · A28 Kurtosis Ratio
 perfect = 1.0) followed by the **7-line per-metric footnote block** defining A1…A34 (copy LS4's

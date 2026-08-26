@@ -195,7 +195,7 @@ def render_a(methods, data, floor):
              "|" + "|".join(["---"] * len(head)) + "|"]
     tally, n_rows = {}, 0
     for cat, rows in R.CATEGORIES:
-        lines.append(f"| **, {cat}, ** |" + " |" * (len(head) - 1))
+        lines.append(f"| **{cat}** |" + " |" * (len(head) - 1))
         for key, label, direction in rows:
             cells, scope, means, stds = [], "", [], []
             for m in methods:
@@ -292,7 +292,12 @@ def render_b(methods, aggs, tvds, agg_f, tvd_f):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--methods", default="SBTS,LS4,reference",
+    # The default MUST list every method currently on the committed page. This is not
+    # cosmetic: the renderer is not auto-discovering, so a stale default silently drops a
+    # column and rewrites README.md with one method missing -- it happened on 2026-08-26,
+    # when the default still read "SBTS,LS4,reference" and re-rendering deleted CSDI from a
+    # page that had shipped with it. Append your method here as well as to the command line.
+    ap.add_argument("--methods", default="SBTS,LS4,CSDI,reference",
                     help="comma-separated, in display order")
     args = ap.parse_args()
     methods = [m.strip() for m in args.methods.split(",") if m.strip()]
@@ -363,7 +368,7 @@ produce identical histograms, ACFs, quantiles or covariance matrices. A method s
 {ref_note}
 ## A1–A34, mean ± std across {n_seeds} seeds
 
-> ↓ lower is better; ↑ higher is better;, no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
+> ↓ lower is better; ↑ higher is better; no arrow = no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
 > Rows marked *(native d=8)* are evaluated **once** on the full `(N, T, 8)` tensor; every
 > other row is computed on each of the 8 univariate slices and reported as the **mean over
 > assets**. All metrics on **log-returns** unless noted; A26 uses price increments.
