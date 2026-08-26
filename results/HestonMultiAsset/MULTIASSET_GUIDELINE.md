@@ -988,13 +988,140 @@ recoverable without re-reading a 1 000-line log.
 - **Import shared tables, never copy them.** Both §10.1 and §8 depend on this. A copied row list
   diverges silently and the divergence is invisible in review.
 
-### 12.8 Stay inside the scope you were given
+### 12.8 A linear-algebra primitive that was scalar at d = 1 becomes a batched solver at d = 8
+
+**Symptom.** Deep-MKV-TS's Algorithm 1 contains a spectral clip,
+`sigma = U diag(eta / clip(theta_i)) U^T`, computed with `torch.linalg.eigh`. At d = 1 that is
+arithmetic on a 1x1 matrix and cannot fail. At d = 8 it is a real batched cuSOLVER call on
+`batch_size * euler_steps` symmetric 8x8 matrices per outer iteration, and it failed **two
+different ways**:
+
+1. **A batch-size ceiling.** Above roughly 64k matrices in one call, cuSOLVER raises
+   `CUSOLVER_STATUS_INTERNAL_ERROR` (64 256 works, 65 536 does not). `256 * 251 = 64 256` sits
+   right on the edge. MAGMA is deprecated in torch 2.13 and silently redirects to cuSOLVER, so
+   switching backend is not an escape.
+2. **A "convergence failure" that was nothing of the sort.** `linalg.eigh: The algorithm failed
+   to converge because the input matrix is ill-conditioned or has too many repeated eigenvalues
+   (error code: 1)`, raised 31 minutes into a run at one particular `ridge_lambda`. The message
+   names ill-conditioning and repeated eigenvalues. **Neither was the cause.** Instrumenting the
+   input showed `non_finite_entries=16384` out of `256 * 8 * 8 = 16384` — *every* entry of every
+   batch element was NaN. The control had diverged; cuSOLVER emits this conditioning-flavoured
+   message when handed NaN, and the message sent the first diagnosis in entirely the wrong
+   direction. **Read the error text as a symptom, never as a diagnosis.**
+
+**Why it is dangerous.** Neither failure can occur in the d = 1 reproduction, so a port that
+matched the published d = 1 table perfectly gives you **zero** evidence that the d = 8 path is
+numerically sound. The first failure is fatal-but-loud. The second is worse: it is fatal *late*
+and it *lies about why*. It landed 25-31 minutes into a 250-step pilot, and the real campaign is
+3000 steps per seed — 12x longer, with 12x more chances to hit it.
+
+Worse still, the divergence was **not monotone in the hyperparameter**: `ridge_lambda = 1`
+diverged while both its neighbours, `1e-3` and `10`, completed 250 steps cleanly, and the
+projection quality at `lambda = 1` was unremarkable (`r2 = 0.917`, between its two neighbours).
+So it is not "large lambda is unstable" or "small lambda is unstable" — it is a trajectory
+instability that one setting happened to hit. **You therefore cannot conclude that a lambda which
+survived a short pilot will survive the full run.** A short screen bounds nothing about step 800.
+
+**Do this instead.**
+
+1. **Chunk the batched call inside your own control**, not by shrinking `batch_size`. Chunking
+   changes throughput only; shrinking the batch changes the algorithm and the results.
+   Deep-MKV-TS uses `MAX_EIGH_BATCH = 32768`. Note this does **not** belong in `retuned_for_d8`:
+   §3.2 reserves that list for hyperparameters changed from the paper's value, and a chunk size
+   changes throughput only. Record it as an implementation deviation in `code/README.md` instead.
+   Putting it in `retuned_for_d8` would overstate what you changed about the method.
+2. **On a convergence failure, diagnose before you retry.** Print the state of the input matrix:
+   how many entries are non-finite, which batch elements are responsible, the finite range, and
+   the symmetry residual. The symmetry residual is what distinguishes a broken symmetrisation from
+   a genuinely hard spectrum.
+3. **If the input is not finite, raise — do not retry on another backend.** A NaN means the control
+   exploded upstream. Retrying elsewhere either fails again or returns garbage that looks like a
+   successful run. That is a bug to fix, not a backend to swap.
+4. **If the input is finite, retry the same decomposition on CPU LAPACK** (then in float64 if
+   needed). LAPACK's `syevd` is markedly more robust than the batched cuSOLVER path on clustered
+   spectra, and it is *the same mathematics* — no jitter, no extra clamping, same clipped spectrum.
+   Autograd follows `.cpu()` and `.to(device)`, so the graph survives the detour.
+5. **Adding `eps * I` to break degenerate eigenvalues is not an acceptable fix.** It changes the
+   clipped spectrum, which changes the algorithm you claim to be reproducing. It was considered
+   here and rejected for exactly that reason.
+6. **Guard for non-finite values where they are born, not where a solver trips over them.** The
+   NaN above was detected by `linalg.eigh` several operations downstream of the divergence, and
+   the solver's error message actively misdirected the diagnosis. A one-line finite-check on the
+   control output each step costs nothing measurable and reports the *step index* at which the run
+   died — which is the number you actually need, and the one a wall-clock crash time does not give
+   you. On a 10 h/seed campaign this is the difference between a loud failure at minute 20 and a
+   silent one discovered at hour 10.
+7. **Count the retries into the config JSON.** A run that needed CPU fallback is still valid, but
+   it is a run that entered a numerically hard region, and that is selection-relevant information
+   about the hyperparameter — not a footnote. Deep-MKV-TS writes
+   `eigh_fallback: {n_calls_failed, n_fallback_cpu, n_fallback_cpu_float64}` into both
+   `weights/seed_*_config.json` and every sweep record.
+
+**Generalise it.** Any method whose d = 1 form collapses a matrix operation to a scalar — spectral
+clips, matrix square roots, Cholesky factors, log-determinants, matrix exponentials — is running
+untested code at d = 8. Note also that a symmetric matrix is **not** necessarily positive definite:
+Deep-MKV-TS's `Theta` is symmetric and indefinite, so Cholesky and LDL^T are invalid and `eigh` is
+the only correct primitive. Reaching for `cholesky` because "it's faster and the matrix is
+symmetric" is a silent correctness bug at d > 1.
+
+### 12.9 Stay inside the scope you were given
 
 Landing a method touches its own directory plus the two pages in §11. It does **not** touch
 `metrics/`, other methods, or unrelated trees. If you find a genuine bug outside your scope —
 and this port found several — **write it down and report it**, do not fix it in the same change.
 A diff that spans three subsystems cannot be reviewed, and the reviewer cannot tell which part
 produced the numbers.
+
+### 12.10 A short probe silently trained at the wrong learning rate
+
+**Symptom.** CSDI's released trainer builds its scheduler as
+
+```python
+MultiStepLR(optimizer, milestones=[int(0.75 * epochs), int(0.9 * epochs)], gamma=0.1)
+```
+
+At the campaign value `epochs = 200` this is `[150, 180]` and behaves as the paper intends. At
+`epochs = 1` — the obvious choice for a "does it run at all" probe — it is `int(0.75) = 0` and
+`int(0.9) = 0`, so **both milestones fire at construction** and the probe trains at `1e-5`
+instead of `1e-3`. The probe still completes, still writes a loss, and still looks like a
+successful smoke test. Its loss is simply two orders of magnitude off, which then gets read as
+"the model does not learn", or worse, kept as the baseline a later "fix" is measured against.
+
+**Fix.** Any short probe must use **`--epochs ≥ 4`**, where the milestones resolve to `[3, 3]`
+and the schedule is inert across the probe. Assert the resolved learning rate rather than
+trusting the epoch count:
+
+```python
+assert abs(opt.param_groups[0]["lr"] - cfg["lr"]) < 1e-12, "scheduler already fired"
+```
+
+**Generalise it.** Any hyperparameter computed *as a fraction of another* — warmup fraction,
+milestone list, EMA horizon, patience — is a landmine at small values, because integer
+truncation collapses it to zero. Enumerate every such derived field and print its **resolved**
+value as the probe's first line of output. This is §12.1 one level deeper: there a shared anchor
+was not propagated, here it was propagated and then silently truncated.
+
+### 12.11 Two loss curves that are not the same quantity
+
+**Symptom.** CSDI's `calc_loss` draws **one** random diffusion step *t* per sample;
+`calc_loss_valid` loops `for t in range(self.num_steps)` and averages over **all 50**. Plot both
+on one axis and the validation curve sits *below* the training curve for the whole run. Read as
+train/test that is nonsense — and every tempting explanation (leakage, a broken split, dropout)
+is wrong.
+
+**Why.** They are different estimators of different averages. The training curve is a
+one-sample-in-*t* estimate and carries that sampling variance; the validation curve is the
+low-variance one and is the series to read convergence from. Their **levels are not comparable
+at all**, and no amount of seeding makes them so.
+
+**Fix.** State it on the page beside the figure — do not just plot it. And size the validation
+set accordingly: at ~50× the per-batch cost of `calc_loss`, a full 8 192-path validation pass
+costs roughly one training epoch *per evaluation*. CSDI d = 8 uses `--val_n 256` on a 20-point
+cadence (`val_every = max(1, epochs // 20)`), ~1 % of the run instead of ~100 %.
+
+**Also.** Use `drop_last=False` on the validation loader. With `drop_last=True` and
+`val_n < batch_size` the loader yields **zero** batches, the mean of an empty list is `nan`, and
+the column fills with `nan` for the entire run without raising anything.
 
 ---
 
@@ -1014,6 +1141,9 @@ produced the numbers.
 - [ ] `s0_rescaled` set honestly in all 5 `metadata.json` files (§4)
 - [ ] if the model has a separate sampling path, the two paths were checked to agree (§12.2)
 - [ ] every field fed by a shared config anchor was enumerated and the resolved shape asserted (§12.1)
+- [ ] any matrix primitive that was scalar at d = 1 (eigendecomposition, Cholesky, matrix square
+      root, log-determinant) was exercised at the full d = 8 batch size before the campaign, and
+      any numerical fallback it needed is counted in the config JSON rather than silent (§12.8)
 - [ ] `tools/render_comparison.py` re-run **with your method appended to `--methods`** (§10.1)
 - [ ] the comparison page's `Winner` column and tally paragraph agree, and floored/tied rows are
       shown as such rather than awarded to anyone

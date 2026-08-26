@@ -300,6 +300,17 @@ therefore a real property of the generator, not an artefact of d = 8.
 > between training paths, so it produces *near*-copies rather than bitwise copies. The
 > ratio is the number that matters.
 
+> **A high ratio is not a ranking.** This column must be read jointly with the A/B tables,
+> never on its own. A generator whose paths miss the data manifold **in every direction**
+> scores near 1.0 here by default — being far from the training set is trivial if you are
+> also far from the truth. The ratio only carries information for a method that is
+> *simultaneously* accurate, so the honest sentence for a method scoring high here while
+> winning few A rows is "clean, for an uninteresting reason", not "better than the method
+> above it". Concretely: SBTS sits at 0.219 and wins 29 of the 36 A rows, so its low ratio
+> is a real interpolation property of the most accurate generator on this dataset; LS4
+> (0.838) and CSDI (0.859) each win 0 A rows, so their high ratios say only that they are
+> not copying — not that they are closer to the law.
+
 ---
 
 ## Per-method implementation notes
@@ -326,6 +337,52 @@ from the untouched `methods/SBTS/code/sbts_generate.py`.
    proves the **multivariate** form correct; at `dt = 1/252` the univariate form
    evaluates to `exp(8e-6) ≈ 1` instead of `exp(0.5) ≈ 1.65`, silently disabling the
    bridge correction. This implementation uses the correct multivariate form.
+
+### LS4
+
+Three deviations from the released d = 1 implementation, none of which changes the d = 1
+numbers.
+
+1. **Cauchy kernel patch** (`reference_models/s4.py` line 795). The naive pure-PyTorch
+   kernel must sum over conjugate pole *pairs* to match the keops/CUDA path. This is not
+   cosmetic: `model.generate` rolls the prior through `latent.step` in STEP mode, where
+   the unpatched kernel disagrees with conv mode — so generation and training would run
+   on different dynamics. Inherited from the d = 1 port, not introduced at d = 8.
+2. **Invertible scaler.** The released `normalize_per_seq` preset has an identity decode
+   that cannot map prior samples back to price scale. The d = 1 port replaced it with a
+   global standardise; this port uses the **per-channel** version, because the eight
+   assets have a 1.66× spread in price σ.
+3. **S0 rescaling.** LS4 prior samples do not land on `S0 = 100` — at d = 1 the generated
+   `S0` spread over `[99.30, 100.48]`, std 0.055. Each path is rescaled per asset. A
+   per-path constant multiplier is exactly a shift of the log-price *level*, so every
+   log-return is bit-identical and A1-A25 / A27-A34 are unaffected. A contract fix, not
+   a performance fix — it cannot flatter the results.
+
+### CSDI
+
+Four deviations, all narrow. Hyperparameters are the released `config/base.yaml` verbatim:
+`retuned_for_d8` is **empty** in all five configs.
+
+1. **One vendored-file edit.** `reference/diff_models.py` had a top-level
+   `from linear_attention_transformer import ...` reachable only through the forecasting
+   path this benchmark never runs, which made the module unimportable without that
+   dependency. Moved inside its function, marked in place, changes no computation.
+2. **`generate()` generalised past asset 0.** The d = 1 wrapper ends its sampler with
+   `samples[:, 0, 0, :]` — correct and invisible at K = 1, but at K = 8 it would have
+   silently kept **asset 0 only** and returned a degenerate tensor. Replaced with
+   `samples[:, 0].permute(0, 2, 1)`. A bug in the d = 1 wrapper's shortcut, and exactly
+   the class of error a copy-paste port ships without noticing.
+3. **Per-channel z-score**, as for LS4. At K = 1 the d = 1 global statistic *is* the
+   per-feature statistic, so this is a scoping consequence rather than a retune, and the
+   scaler is diagonal — the correlation matrix, which A20 scores, is invariant under it.
+4. **S0 rescaling, with the clip counted.** The multiply preserves log-returns exactly;
+   the `≤ 0` clip that precedes it does **not**, and a first price clipped to `1e-6`
+   rescales an entire path by `1e8`. Both counters are therefore reported per seed rather
+   than left implicit. Across all 5 seeds and 82 575 360 entries the clip **never fired**.
+
+The parameter count moves 412 945 → 413 057 between d = 1 and d = 8, exactly **+112** =
+`nn.Embedding(target_dim, 16)` growing from 1×16 to 8×16. Nothing else in the architecture
+depends on the number of assets: the feature axis is handled by attention, not by width.
 
 ---
 
