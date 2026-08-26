@@ -211,9 +211,34 @@ for an array that is not:
   "gen_time_sec": 42.1,
   "train_time_sec": 1823.4,
   "gpu": "A100-SXM4-80GB",
-  "date": "YYYY-MM-DD"
+  "date": "YYYY-MM-DD",
+  "s0_rescaled": false
 }
 ```
+
+#### Meeting `S[:, 0, :] == 100.0` when your generator cannot — rescale, never clip
+
+**Hit on LS4; it will hit every learned generator.** A model that trains on a normalised
+representation and denormalises afterwards has no mechanism to land its first time step on
+exactly 100.0. Overwriting `S[:, 0, :] = 100.0` on its own is **wrong**: it leaves the rest of the
+path where it was, so the first log-return absorbs the entire correction and A1-A5, A14, A16,
+A21-A24 and A27 are all silently poisoned by one bad increment per path.
+
+The correct fix, and the one every future method should copy:
+
+```python
+Xg = Xg * (100.0 / Xg[:, 0:1, :])   # per-(path, asset) constant multiplier
+Xg[:, 0, :] = 100.0                 # remove the float residue from the division
+```
+
+Multiplying a whole path by a constant is exactly a **shift of the log-price level**, so every
+log-return `log(S_t / S_{t-1})` is **bit-identical** before and after. A1-A25 and A27-A34 are
+unaffected by construction, not merely approximately. Only price-level rows can move; A26 (price
+increments) and A17 (terminal price KS) are the two to sanity-check.
+
+Record it: set `"s0_rescaled": true` in `metadata.json`. A reader must be able to tell a method
+that met the contract natively from one that was rescaled onto it, and this flag is the only
+place that distinction survives.
 
 `losses/generation_time.csv` records wall-clock per seed:
 `seed,n_samples,T,d,n_workers,elapsed_sec,elapsed_min`, plus any method-specific hyperparameter
@@ -223,6 +248,30 @@ columns.
 > mode from an in-memory list, re-running a *subset* of seeds silently deletes the rows for the
 > seeds you did not re-run. Either append with a dedupe-by-seed pass, or merge explicitly.
 > **Check the file has 5 rows before you render the README.**
+
+**The concurrent-seed version of that trap, and the fix to reuse.** On LS4 the failure is worse
+than a subset re-run, because §3.1 tells you to train **two seeds at once on two GPUs**. Two live
+processes each holding a `"w"`-mode handle on the same shared CSV do not merge — the last one to
+close wins, and you end up with one or two rows out of five. The same applies to any file written
+once per seed at a shared path.
+
+Do not try to make the concurrent writers cooperate with locking. **No seed process writes a
+shared file at all.** Each seed writes only inside its own `generated_paths/seed_{i}/`, and a
+single-threaded pass rebuilds every shared artefact after all five have exited:
+
+```bash
+/home/tbasseras/gpu-venv/bin/python results/HestonMultiAsset/<Method>/code/collect_artifacts.py
+```
+
+Copy `LS4/code/collect_artifacts.py`. It rebuilds `losses/generation_time.csv` from the five
+`metadata.json` files, normalises each one to the §4 schema by **recomputing shape, dtype, S0,
+min and max from the `.npy` itself** rather than trusting what the trainer wrote, and exits
+non-zero if any seed violates the contract. Two properties make it worth copying verbatim:
+
+- it is **idempotent** — run it as many times as you like, after any subset of seeds;
+- it is a **gate**, not a report. Wire its exit code so that a contract violation stops the run
+  *before* `compute_all_multiasset.py`. Metrics computed on a broken array cost 55 minutes and
+  produce numbers that look completely normal.
 
 ---
 
@@ -679,7 +728,84 @@ failure to hide, and it is the correct explanation for any metric that appears t
 
 ---
 
-## 10. Dataset-level README
+## 10. The two dataset-level pages
+
+There are **two** generated pages one level above the methods, written by two different scripts.
+Know which is which before you run either — they are not interchangeable, and an earlier phase of
+this project renamed one of them, so the names are not self-explanatory:
+
+| Page | Written by | Contains |
+|------|-----------|----------|
+| `README.md` | `tools/render_comparison.py` | **the comparison page** — two tables, nothing else |
+| `oldreadme.md` | `tools/render_dataset_readme.py` | dataset law, scoping, memorisation, leaderboard |
+
+> **Check the output path before you chain them.** `render_dataset_readme.py` writes
+> `oldreadme.md` (its `out = ...` line), *not* `README.md`. Running the two renderers in the wrong
+> belief that either one owns `README.md` will have one silently clobber the other's page. Both
+> are regenerated from artefacts, so the damage is recoverable — but only if you notice.
+
+Never hand-edit either file. Both are regenerated and your edit will be lost.
+
+### 10.1 `README.md` — the cross-method comparison page
+
+```bash
+/home/tbasseras/gpu-venv/bin/python results/HestonMultiAsset/tools/render_comparison.py \
+    --methods SBTS,LS4        # comma-separated, in display order
+```
+
+**Re-run it with your method appended to `--methods` as the last step of landing a method.**
+It is not auto-discovering: a method that is not named on the command line does not appear.
+
+Scope is deliberately narrow — **two tables, each followed by one tally paragraph, and nothing
+else**:
+
+1. A1-A34, mean ± std, one column per method, `Perfect floor`, `Winner`.
+2. B curve-shape metrics, same column set.
+
+Everything discursive belongs in `oldreadme.md`; everything method-specific belongs in
+`<Method>/README.md`. This page answers exactly one question — which method is closer to the
+truth on each row — and prose blurs it.
+
+**The floor column stays.** Without it, "LS4 1084 vs SBTS 80.3" is unreadable: you cannot tell
+whether SBTS is good or merely less bad. With it you can see SBTS sits at 1.45× the floor and LS4
+at 19.6×, which is the difference between "SBTS wins" and "SBTS is near-optimal and LS4 is
+broken". Only the second claim is defensible, and only the floor column supports it.
+
+**The row list is imported, never retyped.** `render_comparison.py` loads
+`SBTS/code/render_readme.py` by path and reads `CATEGORIES`, `MEASURES`, `ARROW` and the
+formatters from it. Relabel a metric there and this page follows automatically. If you copy the
+row list instead, the two pages will disagree about what A17 is called and nobody will notice.
+
+#### The `Winner` column is not "smallest number wins"
+
+`verdict()` rules out two things first, in this order. Skip either and the column manufactures
+results out of noise:
+
+| Cell | Meaning |
+|------|---------|
+| `— *(floor)*` | at least one method has reached the independent-draw floor on this row |
+| `—` | the gap between the best two is no larger than the sum of their cross-seed stds |
+| `**<Method>**` | a win that survives both tests |
+
+A floored row is dead as a comparison: at the floor the metric can no longer separate a generator
+from a fresh draw of the true SDE, and *past* the floor is a red flag (§6). Awarding the row to
+whoever is furthest past the floor **inverts the meaning of the number**. A within-std row is not
+resolvable at 5 seeds, and calling it is how a table starts lying.
+
+`A28_kurtosis_ratio` carries `direction = "none"` because its target is 1.0, not 0. Fold it into
+the lower-is-better path by comparing `|value − 1|` so the floor and tie tests need one code path.
+
+The tally paragraph under each table must report **wins, ties and floored rows separately**.
+Collapsing them into one win count overstates the separation. On the B table, quote the **MSE
+count over the 6 plots** as the headline: the % err / NRMSE / CVaR rows describe the *same* curve
+as their MSE row, so counting all 31 rows quintuple-counts one result — "wins 31" sounds five
+times more decisive than "wins 6" while carrying identical information.
+
+Accumulate the tallies **while emitting the rows**, never by re-parsing the rendered markdown.
+Otherwise the paragraph and the column can drift apart, and the reader has no way to tell which
+one is wrong.
+
+### 10.2 `oldreadme.md` — dataset page and leaderboard
 
 ```bash
 /home/tbasseras/gpu-venv/bin/python results/HestonMultiAsset/tools/render_dataset_readme.py
@@ -690,8 +816,7 @@ It auto-discovers every directory under `results/HestonMultiAsset/` except `tool
 the floor) and the memorisation table. **Adding a method requires no code change here** — just
 make sure your artefact filenames match §1, or the method is silently skipped.
 
-Re-run it after every method lands. Never hand-edit `oldreadme.md` in this directory; it is
-regenerated and your edit will be lost.
+Re-run it after every method lands.
 
 ---
 
@@ -710,6 +835,14 @@ curve_b_aggregate.json, grid_tvd_aggregate.json, seed_*_metrics.json
 generated_paths/seed_*/metadata.json
 ```
 
+Plus the two regenerated pages one level up, which your method changes and which are **easy to
+forget because they are outside your method's directory**:
+
+```
+results/HestonMultiAsset/README.md      ← regenerated with your method in --methods (§10.1)
+results/HestonMultiAsset/oldreadme.md   ← regenerated leaderboard (§10.2)
+```
+
 **Never commit** — `generated_paths/**/*.npy`. Each is 132 MB, over GitHub's 100 MB per-file hard
 limit; they are gitignored at `.gitignore:119`
 (`results/HestonMultiAsset/**/generated_paths/**/*.npy`). **Git LFS was evaluated and rejected on
@@ -725,7 +858,147 @@ large number of untracked paths belonging to unrelated work.
 
 ---
 
-## 12. Checklist before you call a method done
+## 12. Problems already hit — and the fix to reuse
+
+Everything below cost real time on a real port. Each entry is written as *symptom → why → what to
+do instead*, so the next method can recognise the symptom rather than rediscover the cause.
+Problems already documented in place are cross-referenced, not repeated: `S0` rescaling (§4),
+the concurrent-seed CSV race (§4), the floor (§6), the deliberate typos (§8.10), README pitfalls
+(§8.11), the `Winner` column rules (§10.1).
+
+### 12.1 A shared config value changed in one place did not change everywhere
+
+**Symptom.** LS4's released YAML sets `in_channels` via a YAML **anchor**, `&channel`. Setting it
+to 8 for d = 8 looked complete. It was not: the same anchor feeds three fields, and a second
+anchor `&z_dim` feeds five more — **seven fields across the model** resolve from two anchors.
+OmegaConf expands anchors at load time, so a partial edit produced a model with an 8-channel
+encoder and a **1-channel decoder head**. It trained without error and the loss curve looked
+healthy. Only the generated paths were wrong.
+
+**Why it is dangerous.** Nothing raises. A shape mismatch that would normally fail loudly instead
+produced a smaller, well-conditioned model that optimised its own wrong objective happily.
+
+**Do this instead.** For any reference config with anchors, aliases, `${...}` interpolation or
+inheritance:
+
+1. **Enumerate every field the shared value feeds** before editing, and list them in
+   `code/README.md`. LS4's list is `in_channels → {model.in_channels,
+   decoder.decoder.d_output, encoder.posterior.d_input}` and `z_dim → {model.z_dim,
+   decoder.prior.d_input, decoder.prior.d_output, decoder.decoder.d_input,
+   encoder.posterior.d_output}`.
+2. **Assert the resolved shape after the model is constructed**, not the config before it. One
+   forward pass on a `(2, T, 8)` batch and a check that the output is `(2, T, 8)` catches this in
+   a second.
+3. Put every field you touched in `retuned_for_d8` (§3.2). LS4's is
+   `["in_channels", "z_dim", "scaler"]`.
+
+### 12.2 The model has two evaluation paths and only one of them was correct
+
+**Symptom.** LS4 trains its S4 backbone in **convolution mode** but `model.generate` rolls the
+prior forward with `latent.step`, i.e. **recurrent mode**. The stock Cauchy kernel disagreed
+between the two. Training loss was perfect throughout; the generated paths were garbage.
+
+**Fix applied.** Patch `reference_models/s4.py:795` to
+`r = cauchy_naive(_conj(v), z, _conj(w))`, documented as a deviation in `code/README.md`.
+
+**Generalise it.** Any model with a fast parallel training path and a separate sequential
+sampling path — S4/SSM variants, RNNs with a fused kernel, diffusion samplers with a distinct
+inference schedule — must be checked for **agreement between the two paths before you trust a
+single generated path**. The check is cheap:
+
+```python
+# same input, same weights, both modes -> must agree to float tolerance
+assert np.allclose(model.forward_conv(x), model.forward_step(x), atol=1e-5)
+```
+
+Training loss cannot detect this class of bug, because the broken path is never exercised during
+training. Neither can any metric in §5 — they only tell you the output is bad, not why.
+
+### 12.3 A hyperparameter sweep that found no optimum was nearly reported as if it had
+
+**Symptom.** The LS4 `z_dim` screen over {5, 16, 32, 40} came out **monotone**: validation ELBO
+improved at every step, so the largest value tested won. That is not a located optimum, it is a
+boundary hit — the true optimum is at 40 or beyond and the sweep cannot say which.
+
+**Do this instead.** Record the full sweep as an artefact (`losses/<hp>_selection.json`), and in
+the README state the ordering, not just the winner. If the ordering is monotone in the screened
+direction, **say so explicitly**: "largest value tested, not a located maximum". A reader who sees
+only `z_dim = 40` will reasonably assume 40 beat something on both sides.
+
+Also report the train-vs-validation gap alongside it. LS4's stayed within 0.06 nats, which says
+the model is capacity-limited rather than overfitting — the honest reading of a monotone screen.
+
+### 12.4 More epochs were nearly spent on the wrong diagnosis
+
+**Symptom.** With GPU time available, the obvious move was to raise 100 epochs to 400. The
+evidence said otherwise: gain from epoch 20→40 was ≈ 0.47 nats, from 60→80 ≈ 0.15 and
+oscillating; `lr` was still 1e-3, so `ReduceLROnPlateau` had never fired; train and validation
+ELBO sat within 0.06 of each other.
+
+**The rule.** Before extending a training budget, state which curve you expect to move and by how
+much. A method can be **fully converged on its own objective and still lose every metric in §5**,
+because the ELBO does not measure kurtosis, ACF decay or Σˢ. LS4 is exactly that case. Extra
+epochs buy a tighter fit to an objective the benchmark is not scoring.
+
+Second reason to leave it alone: the committed d = 1 run used 100 epochs. Changing the budget at
+d = 8 makes the two incomparable, and comparability is the point of the dataset.
+
+### 12.5 A near-1.0 memorisation ratio is not a pass
+
+**Symptom.** LS4 scores `nn_ratio = 0.838 ± 0.017` against SBTS's `0.219 ± 0.000`. Read alone,
+that looks like LS4 winning the diagnostic outright.
+
+**Why it is not.** A generator whose paths are far from the data manifold **in every direction**
+scores well here by default. The ratio only rewards a method that is simultaneously accurate, so
+it must be read jointly with §5 — and LS4 loses 30 of 36 A rows. The correct sentence is "clean,
+for an uninteresting reason", not "better than SBTS".
+
+**Also.** `n_exact_duplicates` is close to meaningless for any continuous decoder: the output is a
+continuous function of a Gaussian sample, so bitwise equality with a training path has
+probability zero **by construction**. Report it, but state in the JSON `note` that only the ratio
+carries information. Copy `LS4/code/measure_memorisation.py` — the estimator must stay
+byte-identical across methods or the column is not a comparison.
+
+### 12.6 Long chains: detach, gate, and leave a sentinel
+
+The post-training chain (collect → figures → memorisation → metrics → three renderers) runs ~1.5 h
+and the harness reaps background jobs. `setsid <script> < /dev/null & disown`; verify with
+`ps -o sid=` that the PID is its own session leader.
+
+Two **hard gates** are what makes an unattended chain safe, and both earn their place:
+
+1. `collect_artifacts.py` fails → **stop before metrics.** 55 minutes of metrics on a broken array
+   yields numbers that look entirely normal.
+2. `compute_all_multiasset.py` fails → **stop before the renderers.** A rendered page is worse
+   than a missing one: it is dated, plausible, and describes numbers that were never produced.
+
+Write a terminal sentinel (`PIPELINE_OK` / `PIPELINE_FAILED <stage>`) so the outcome is
+recoverable without re-reading a 1 000-line log.
+
+### 12.7 Renderer traps
+
+- **`metrics_summary.csv` cells are strings.** `csv.DictReader` returns `str`, so any comparison
+  written without `float()` sorts **lexicographically** — `"0.0492" < "0.005"` is `True`. Every
+  numeric comparison in a renderer must convert first. This is why `render_comparison.py` has a
+  one-line `_f()` helper it applies to every value before use.
+- **Never cite line numbers in a living document.** `LS4/code/collect_artifacts.py` cited
+  "MULTIASSET_GUIDELINE.md lines 222-225"; the next edit to §4 invalidated it. Cite **section
+  numbers** — they are stable, and §0, §1, §3, §3.2 and §8.6 are load-bearing precisely because
+  other files reference them by number.
+- **Import shared tables, never copy them.** Both §10.1 and §8 depend on this. A copied row list
+  diverges silently and the divergence is invisible in review.
+
+### 12.8 Stay inside the scope you were given
+
+Landing a method touches its own directory plus the two pages in §11. It does **not** touch
+`metrics/`, other methods, or unrelated trees. If you find a genuine bug outside your scope —
+and this port found several — **write it down and report it**, do not fix it in the same change.
+A diff that spans three subsystems cannot be reviewed, and the reviewer cannot tell which part
+produced the numbers.
+
+---
+
+## 13. Checklist before you call a method done
 
 - [ ] `code/README.md` answers all four questions from §0
 - [ ] 5 seeds trained; `weights/seed_{0..4}_model.pt` and `seed_{0..4}_config.json` present
@@ -736,9 +1009,17 @@ large number of untracked paths belonging to unrelated work.
 - [ ] `compute_all_multiasset.py` completed for all 5 seeds; all 5 output files written
 - [ ] 4 figures rendered (`heston_diagnostics`, `disc_classifier_loss`, `pred_score_loss`, `loss_convergence`)
 - [ ] `losses/memorisation.json` written and its value reported honestly
-- [ ] `render_readme.py` passes all 7 structural checks from §8.7
+- [ ] `render_readme.py` passes all 7 structural checks from §8.9
 - [ ] `README.md` regenerated; no hand-typed numbers anywhere
-- [ ] dataset README re-rendered; the new method appears in the leaderboard
-- [ ] artefacts staged **by name**; no `.npy` in the diff
+- [ ] `s0_rescaled` set honestly in all 5 `metadata.json` files (§4)
+- [ ] if the model has a separate sampling path, the two paths were checked to agree (§12.2)
+- [ ] every field fed by a shared config anchor was enumerated and the resolved shape asserted (§12.1)
+- [ ] `tools/render_comparison.py` re-run **with your method appended to `--methods`** (§10.1)
+- [ ] the comparison page's `Winner` column and tally paragraph agree, and floored/tied rows are
+      shown as such rather than awarded to anyone
+- [ ] `oldreadme.md` re-rendered; the new method appears in the leaderboard (§10.2)
+- [ ] artefacts staged **by name**, including `README.md` and `oldreadme.md`; no `.npy` in the diff
 - [ ] A20 covariance error reported prominently
 - [ ] any metric that beats the floor has been **explained**, not celebrated
+- [ ] any hyperparameter screen that hit a boundary is described as a boundary, not an optimum (§12.3)
+- [ ] problems you hit that are not yet in §12 have been **added to §12** with the fix

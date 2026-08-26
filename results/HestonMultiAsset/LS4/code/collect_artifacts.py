@@ -2,7 +2,10 @@
 
 Why this exists as a separate script rather than inline in the trainer
 ---------------------------------------------------------------------
-MULTIASSET_GUIDELINE.md section 4 warns (lines 222-225):
+MULTIASSET_GUIDELINE.md section 4, under the ``generation_time.csv`` contract,
+warns (cited by section rather than line number: this docstring originally said
+"lines 222-225" and the next edit to section 4 invalidated it -- see section
+12.7):
 
     If your runner rewrites generation_time.csv in "w" mode from an in-memory
     list, re-running a *subset* of seeds silently deletes the rows for the seeds
