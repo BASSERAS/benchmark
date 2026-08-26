@@ -57,10 +57,27 @@ Reads, per method in --methods:
 Writes
   results/HestonMultiAsset/README.md
 
+`reference` in --methods
+------------------------
+`reference/` is not a trained generator: it is sigma^ref, the frozen parametric
+SDE Deep-MKV-TS Algorithm 1 starts from, sampled with the neural control verified
+to be exactly zero -- 19 fitted coefficients, zero gradient steps. It is
+adjudicated **on equal terms** in the Winner column rather than shown as a passive
+baseline like `Perfect floor`, because a row where a 19-coefficient SDE beats a
+trained network is a real result about that network rather than a footnote. The
+consequence is that a reader who does not know what the column is will misread
+"reference wins N" as a method claim, so `main()` emits a labelled paragraph
+whenever the column is present -- conditionally, so the paragraph can never
+describe a column that is not there.
+
+Because `reference` and `Deep-MKV-TS` share generation seeds, those two columns
+are **paired** (same Brownian streams), which makes their difference free of
+simulation noise and is the whole reason the reference row is worth rendering.
+
 Usage
     /home/tbasseras/gpu-venv/bin/python \
         results/HestonMultiAsset/tools/render_comparison.py
-    ... --methods SBTS,LS4
+    ... --methods SBTS,LS4,reference
 """
 from __future__ import annotations
 
@@ -275,7 +292,7 @@ def render_b(methods, aggs, tvds, agg_f, tvd_f):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--methods", default="SBTS,LS4",
+    ap.add_argument("--methods", default="SBTS,LS4,reference",
                     help="comma-separated, in display order")
     args = ap.parse_args()
     methods = [m.strip() for m in args.methods.split(",") if m.strip()]
@@ -306,6 +323,27 @@ def main():
     n_seeds = len(next(iter(data[methods[0]].values()))["seeds"])
     links = " · ".join(f"[{m}]({m}/README.md)" for m in methods)
 
+    # `reference` competes on equal terms in the Winner column, but a reader who
+    # does not know what it is will misread the tally as "an untrained model beat
+    # LS4". It did -- and that is the point -- but only if the column is labelled.
+    # Emitted conditionally so the paragraph can never describe an absent column.
+    ref_note = ""
+    if "reference" in methods:
+        ref_note = (
+            "\n**`reference` is not a trained generator.** It is σ<sup>ref</sup>, the frozen "
+            "parametric SDE that Deep-MKV-TS Algorithm 1 starts from, sampled with the neural "
+            "control switched off and verified to be exactly zero — 19 fitted coefficients, "
+            "**zero gradient steps**. It is adjudicated on equal terms above rather than shown "
+            "as a passive baseline, because a row where a 19-coefficient SDE beats a trained "
+            "network is a real result about that network, not a footnote. Read its column two "
+            "ways: against **Deep-MKV-TS** it isolates what the learned control bought — and any "
+            "row where Deep-MKV-TS scores *worse* is a row where Algorithm 1 damaged a working "
+            "reference; against the other methods it is the bar a neural generator has to clear "
+            "to justify itself. Generation seeds are shared with Deep-MKV-TS, so those two "
+            "columns are **paired** — same Brownian streams, difference free of simulation "
+            "noise. Details: [`reference/README.md`](reference/README.md).\n"
+        )
+
     a_tbl, a_tally, a_rows = render_a(methods, data, floor)
     b_tbl, b_tally, b_rows, mse_tally = render_b(methods, aggs, tvds, agg_f, tvd_f)
     n_plots = sum(mse_tally.values())
@@ -322,7 +360,7 @@ with the same frozen per-asset parameters at seeds 1000–1004, scored with byte
 metric code. It is **non-zero everywhere** — two independent 8 192-path draws never
 produce identical histograms, ACFs, quantiles or covariance matrices. A method scoring
 *below* the floor is a red flag, not a win.
-
+{ref_note}
 ## A1–A34, mean ± std across {n_seeds} seeds
 
 > ↓ lower is better; ↑ higher is better;, no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
