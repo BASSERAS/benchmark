@@ -1,0 +1,51 @@
+{
+  "method": "CSDI",
+  "seed": 2,
+  "dataset": "TrueDataset",
+  "role": "conditional-CRPS pool (guideline section 8)",
+  "data_dir": "/home/tbasseras/benchmark/dataset/TrueDataset/variants/om_2022-07_N6144",
+  "seq_tag": "6144x128x8",
+  "checkpoint": "weights/seed_2_model.pt",
+  "shape": [
+    8192,
+    128,
+    8
+  ],
+  "dtype": "float64",
+  "S0": 100.0,
+  "S0_exact": true,
+  "s0_rescaled": true,
+  "S_min": 88.20470053029837,
+  "S_max": 124.82340079045314,
+  "all_finite_positive": true,
+  "generated_mean": 100.00399060636927,
+  "generated_std": 0.41990038303472105,
+  "raw_price_min": 88.20450691754422,
+  "raw_price_max": 124.87152752337127,
+  "n_nonpositive_s0_before_rescale": 0,
+  "n_nonpositive_total_before_rescale": 0,
+  "zscore_source": "checkpoint (not recomputed from --data-dir)",
+  "zscore_mean": [
+    100.00612199612043,
+    100.00734263303212,
+    100.00236728792089,
+    100.01147058293088,
+    100.0112465036468,
+    100.01975653125203,
+    100.0107472166469,
+    100.00649823675577
+  ],
+  "zscore_std": [
+    0.3729247236856438,
+    0.4479213829366051,
+    0.40658974374317275,
+    0.7527219855152746,
+    0.7306805579469657,
+    0.8529347856670271,
+    0.6856608094588968,
+    0.6483049912329543
+  ],
+  "gen_time_sec": 190.8,
+  "gpu": "A100-SXM4-80GB",
+  "date": "2026-08-26"
+}

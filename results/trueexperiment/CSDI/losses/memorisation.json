@@ -1,0 +1,53 @@
+{
+  "diagnostic": "nearest-neighbour memorisation ratio, log-return space",
+  "definition": "median_i min_j ||gen_i - train_j||  /  median_i min_j ||real_val_i - train_j||",
+  "denominator_split": "val",
+  "why_val_not_test": "TrueDataset splits by era (dataset_stats.json: split_mode = holdout-era). train/val/valdisc are 2022-07 -> 2024-12; disc/test are 2025-02 -> 2026-07, and annualised vol FALLS between the eras on 6 of 8 assets. Measured, the test era sits CLOSER to train than val does (0.932x the distance) -- not because it is more similar, but because its returns are smaller, so every distance contracts with them. A smaller denominator inflates every ratio, and memorisation is the LOW-ratio failure, so a test denominator pushes a memorising generator up towards the healthy end. val is the same era as train, so it is the honest reference. nn_ratio_vs_test_era is reported for context only.",
+  "interpretation": "1.0 = generated paths sit no closer to the training set than real same-era data; <1 = memorisation, 1/ratio = how many times closer they sit; >1 = the bank is further from train than reality is, which read next to a large vol_err means underfitting",
+  "space": "log-returns, flattened to (T-1)*d = 1016 dims",
+  "median_nn_heldout": 0.01894339919090271,
+  "median_nn_test_era": 0.017647210508584976,
+  "nn_ratio": 0.5611753994037458,
+  "nn_ratio_std": 0.01971174182462216,
+  "nn_ratio_vs_test_era": 0.6023937665302903,
+  "median_nn_generated": 0.010630569607019424,
+  "n_exact_duplicates": 0,
+  "per_seed": [
+    {
+      "seed": 0,
+      "median_nn_generated": 0.010854372754693031,
+      "nn_ratio": 0.5729897071432505,
+      "nn_ratio_vs_test_era": 0.6150758358899057,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 1,
+      "median_nn_generated": 0.010281413793563843,
+      "nn_ratio": 0.5427438703029254,
+      "nn_ratio_vs_test_era": 0.5826084404989765,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 2,
+      "median_nn_generated": 0.010910086333751678,
+      "nn_ratio": 0.5759307621512346,
+      "nn_ratio_vs_test_era": 0.6182329115666277,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 3,
+      "median_nn_generated": 0.011019939556717873,
+      "nn_ratio": 0.5817297859620695,
+      "nn_ratio_vs_test_era": 0.6244578740281314,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 4,
+      "median_nn_generated": 0.010087035596370697,
+      "nn_ratio": 0.5324828714592494,
+      "nn_ratio_vs_test_era": 0.5715937706678106,
+      "n_exact_duplicates": 0
+    }
+  ],
+  "note": "Exact duplicates being 0 is expected and clears nothing. CSDI is a continuous-density diffusion: the probability that ancestral sampling lands on a bit-identical float64 path is zero, so this counter can only ever fire on a plumbing bug (a training array accidentally saved as the bank). The RATIO is the number that matters. Unlike SBTS, nothing here was tuned against this diagnostic -- the hyperparameters are the authors' published config and the ratio was not an objective, so it is an out-of-sample readout rather than a constraint that was optimised to. That makes it more informative, not less: if 200 epochs over 6 144 paths with 413 057 parameters memorises, this is where it shows, and no part of the training run was arranged to prevent it."
+}

@@ -1,0 +1,224 @@
+{
+  "units": "CRPS x 1000, lower is better",
+  "protocol": {
+    "s_idx": 64,
+    "history_log_prices": 65,
+    "horizon": 32,
+    "k_neighbours": 256,
+    "block_w": {
+      "recent": 1.0,
+      "cumpath": 0.5,
+      "rollvol": 2.0,
+      "dep": 1.0
+    },
+    "acf_lags": [
+      1,
+      2,
+      5,
+      10
+    ],
+    "roll_windows": [
+      5,
+      10,
+      20
+    ],
+    "cumpath_pts": 24,
+    "recent_n": 32,
+    "bootstrap_block_len": 8,
+    "baseline_seed": 1234,
+    "boot_reps": 2000,
+    "boot_seed": 0,
+    "boot_level": 0.95,
+    "weight_mode": "perdim",
+    "standardisation": "realtrain",
+    "joint_scores": true,
+    "rv_definition": "sqrt(sum_t r^2) per asset, summed over TIME (shadowing.py:583-584); axis fixed 2026-08-26",
+    "retrieval": "joint across assets",
+    "d": 8
+  },
+  "paper_reference": "methods/Deep-MKV-TS/paper_reimplementation/results/paper_real_data_table4.json",
+  "data_dir": "/home/tbasseras/benchmark/dataset/TrueDataset/variants/om_2022-07_N6144",
+  "queries": "true_S_test_6144x128x8.npy",
+  "results": {
+    "real_train_bank": {
+      "cum_return": {
+        "mean": 1.2382183347009414,
+        "ci_lo": 1.2134601471834483,
+        "ci_hi": 1.2644341033118949
+      },
+      "cum_return__energy": {
+        "mean": 25.126280065999254,
+        "ci_lo": 24.64513383101061,
+        "ci_hi": 25.620941051876727
+      },
+      "cum_return__variogram": {
+        "mean": 6.770915053142836,
+        "ci_lo": 6.6317089297156295,
+        "ci_hi": 6.916635287180656
+      },
+      "increment": {
+        "mean": 0.33039820291314326,
+        "ci_lo": 0.3258469363775965,
+        "ci_hi": 0.3350791352119791
+      },
+      "increment__energy": {
+        "mean": 7.156511151800253,
+        "ci_lo": 7.053099009436893,
+        "ci_hi": 7.260718490472166
+      },
+      "increment__variogram": {
+        "mean": 2.276605926858225,
+        "ci_lo": 2.2535050863040413,
+        "ci_hi": 2.300754900826579
+      },
+      "rv": {
+        "mean": 0.8090676462137797,
+        "ci_lo": 0.7861877394456994,
+        "ci_hi": 0.8339979459997457
+      },
+      "rv__energy": {
+        "mean": 2.6893767159016333,
+        "ci_lo": 2.620774806611192,
+        "ci_hi": 2.764215604530172
+      },
+      "rv__variogram": {
+        "mean": 6.3952998752605525,
+        "ci_lo": 6.240066281959415,
+        "ci_hi": 6.567091649383545
+      },
+      "_diag": {
+        "feature_dim": 584,
+        "nn1_dist_mean": 5.52150972602825,
+        "nn1_dist_p95": 9.545990428565235,
+        "unique_neighbour_frac": 0.98974609375,
+        "mean_reuse": 258.65219536260486
+      },
+      "bank_shape": [
+        6144,
+        128,
+        8
+      ],
+      "elapsed_sec": 156.4
+    },
+    "block_bootstrap": {
+      "cum_return": {
+        "mean": 1.2806239294454622,
+        "ci_lo": 1.256685689805432,
+        "ci_hi": 1.3056878497271749
+      },
+      "cum_return__energy": {
+        "mean": 26.235350116697347,
+        "ci_lo": 25.79121064842602,
+        "ci_hi": 26.718633611483764
+      },
+      "cum_return__variogram": {
+        "mean": 9.51573513986222,
+        "ci_lo": 9.392998545618097,
+        "ci_hi": 9.645049939223625
+      },
+      "increment": {
+        "mean": 0.3379967748389628,
+        "ci_lo": 0.33346555161105035,
+        "ci_hi": 0.3428011862884409
+      },
+      "increment__energy": {
+        "mean": 7.384653140397678,
+        "ci_lo": 7.286459353180796,
+        "ci_hi": 7.484419162197851
+      },
+      "increment__variogram": {
+        "mean": 2.649359032154739,
+        "ci_lo": 2.626518839842197,
+        "ci_hi": 2.6722906524252914
+      },
+      "rv": {
+        "mean": 1.108960264991537,
+        "ci_lo": 1.0860594805469217,
+        "ci_hi": 1.1343494215991075
+      },
+      "rv__energy": {
+        "mean": 3.6296898072773183,
+        "ci_lo": 3.5609670297679488,
+        "ci_hi": 3.7062257364979483
+      },
+      "rv__variogram": {
+        "mean": 8.262431750621303,
+        "ci_lo": 8.11523212812613,
+        "ci_hi": 8.433470464690526
+      },
+      "_diag": {
+        "feature_dim": 584,
+        "nn1_dist_mean": 5.776900724086303,
+        "nn1_dist_p95": 10.092266201894626,
+        "unique_neighbour_frac": 0.9814453125,
+        "mean_reuse": 260.83980099502486
+      },
+      "bank_shape": [
+        6144,
+        128,
+        8
+      ],
+      "elapsed_sec": 155.6
+    },
+    "session_bootstrap": {
+      "cum_return": {
+        "mean": 1.2421669470460828,
+        "ci_lo": 1.2173034022832419,
+        "ci_hi": 1.2685135673457295
+      },
+      "cum_return__energy": {
+        "mean": 25.218322980561982,
+        "ci_lo": 24.735113709127585,
+        "ci_hi": 25.716101266952204
+      },
+      "cum_return__variogram": {
+        "mean": 6.793976617627354,
+        "ci_lo": 6.653300894782865,
+        "ci_hi": 6.939791009530709
+      },
+      "increment": {
+        "mean": 0.3315915180693567,
+        "ci_lo": 0.3270335908847705,
+        "ci_hi": 0.33627365733636133
+      },
+      "increment__energy": {
+        "mean": 7.1811378813046725,
+        "ci_lo": 7.078429463194923,
+        "ci_hi": 7.286058962518521
+      },
+      "increment__variogram": {
+        "mean": 2.286681497017514,
+        "ci_lo": 2.263819018593089,
+        "ci_hi": 2.3107574412399208
+      },
+      "rv": {
+        "mean": 0.814399622978498,
+        "ci_lo": 0.7915457911800635,
+        "ci_hi": 0.8391134751739554
+      },
+      "rv__energy": {
+        "mean": 2.7067543242035046,
+        "ci_lo": 2.637505371303334,
+        "ci_hi": 2.782429607074438
+      },
+      "rv__variogram": {
+        "mean": 6.435869812439015,
+        "ci_lo": 6.281241709546529,
+        "ci_hi": 6.607236799921908
+      },
+      "_diag": {
+        "feature_dim": 584,
+        "nn1_dist_mean": 5.579761472603246,
+        "nn1_dist_p95": 9.607538127832212,
+        "unique_neighbour_frac": 0.9894205729166666,
+        "mean_reuse": 258.73729231781545
+      },
+      "bank_shape": [
+        6144,
+        128,
+        8
+      ],
+      "elapsed_sec": 152.8
+    }
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "question": "is nn_ratio ~0.56 memorisation, or shrunken support?",
+  "band": [
+    0.932,
+    1.0
+  ],
+  "median_nn_val_to_train": 0.01894339919090271,
+  "test_a_rescale_generated_up": {
+    "0": {
+      "vol_ratio": 0.5318527401380664,
+      "nn_ratio_raw": 0.5729897071432505,
+      "nn_ratio_rescaled": 1.080697157173535,
+      "rescaled_in_real_vs_real_band": false,
+      "rescaled_position": "above"
+    },
+    "1": {
+      "vol_ratio": 0.5117893135710188,
+      "nn_ratio_raw": 0.5427438703029254,
+      "nn_ratio_rescaled": 1.066175163419258,
+      "rescaled_in_real_vs_real_band": false,
+      "rescaled_position": "above"
+    },
+    "2": {
+      "vol_ratio": 0.5315737617403988,
+      "nn_ratio_raw": 0.5759307621512346,
+      "nn_ratio_rescaled": 1.0848385866102401,
+      "rescaled_in_real_vs_real_band": false,
+      "rescaled_position": "above"
+    },
+    "3": {
+      "vol_ratio": 0.536365920292121,
+      "nn_ratio_raw": 0.5817297859620695,
+      "nn_ratio_rescaled": 1.0884497392371408,
+      "rescaled_in_real_vs_real_band": false,
+      "rescaled_position": "above"
+    },
+    "4": {
+      "vol_ratio": 0.4941494796222486,
+      "nn_ratio_raw": 0.5324828714592494,
+      "nn_ratio_rescaled": 1.0809475957113752,
+      "rescaled_in_real_vs_real_band": false,
+      "rescaled_position": "above"
+    }
+  },
+  "test_b_control_shrink_real_val": {
+    "1.000": 0.9622017746033494,
+    "0.494": 0.47533141071526896,
+    "0.512": 0.4926509022473589,
+    "0.532": 0.5118947981152706,
+    "0.536": 0.5157436067869139
+  },
+  "summary": {
+    "mean_nn_ratio_raw": 0.5611753994037458,
+    "mean_nn_ratio_rescaled": 1.0802216484303098,
+    "n_seeds_in_band_after_rescale": 0,
+    "n_seeds": 5
+  },
+  "verdict": "SHRUNKEN SUPPORT. Rescaling to the real volatility moves the ratio from 0.5612 to a value that OVERSHOOTS it (1.0802 > 1.0), i.e. the rescaled paths sit FARTHER from the training set than genuine held-out data does; and shrinking genuine val data reproduces CSDI's score on data that cannot be a copy. The low nn_ratio is a restatement of the volatility failure, not a second independent finding, and is NOT evidence of copying."
+}
