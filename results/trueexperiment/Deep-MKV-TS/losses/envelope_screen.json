@@ -1,0 +1,113 @@
+{
+  "ceilings": {
+    "vol_err_pct": 24.59,
+    "corr_err": 0.1843
+  },
+  "reference": "real train split, true_S_6144x128x8.npy",
+  "real_val_vs_train": {
+    "vol_ratio_mean": 1.060155184605874,
+    "vol_err_pct": 9.87434307468417,
+    "corr_err": 0.07611503211649559
+  },
+  "seeds": {
+    "0": {
+      "vol_err_pct": 11.44717059740831,
+      "corr_err": 0.0702274851260407,
+      "vol_ratio_mean": 0.932173470029846,
+      "vol_ratio_per_asset": {
+        "BTC": 0.8799233974244662,
+        "ETH": 0.8980306263763358,
+        "BNB": 1.0273537032879299,
+        "SOL": 1.1160509858379917,
+        "XRP": 0.8321070782876308,
+        "DOGE": 0.7731565946327967,
+        "ADA": 0.8875893595018217,
+        "LINK": 1.0431760148897946
+      },
+      "finite_and_positive": true,
+      "passes_vol": true,
+      "passes_corr": true,
+      "passes": true
+    },
+    "1": {
+      "vol_err_pct": 19.69754805970883,
+      "corr_err": 0.06056768839815981,
+      "vol_ratio_mean": 0.8030245194029116,
+      "vol_ratio_per_asset": {
+        "BTC": 0.8504594144613731,
+        "ETH": 0.8021749242336875,
+        "BNB": 0.890333347579553,
+        "SOL": 0.8344428471086301,
+        "XRP": 0.7001505372707428,
+        "DOGE": 0.6933630337083351,
+        "ADA": 0.7387032284648131,
+        "LINK": 0.9145688223961589
+      },
+      "finite_and_positive": true,
+      "passes_vol": true,
+      "passes_corr": true,
+      "passes": true
+    },
+    "2": {
+      "vol_err_pct": 14.728985455537394,
+      "corr_err": 0.07842646477718065,
+      "vol_ratio_mean": 0.8607440387950867,
+      "vol_ratio_per_asset": {
+        "BTC": 0.8869083204528783,
+        "ETH": 0.8836710613845795,
+        "BNB": 0.8976767019685734,
+        "SOL": 0.9190739044431259,
+        "XRP": 0.7485783193185905,
+        "DOGE": 0.7057654181611764,
+        "ADA": 0.8121430112299265,
+        "LINK": 1.0321355734018418
+      },
+      "finite_and_positive": true,
+      "passes_vol": true,
+      "passes_corr": true,
+      "passes": true
+    },
+    "3": {
+      "vol_err_pct": 12.257001619077363,
+      "corr_err": 0.07294607629312312,
+      "vol_ratio_mean": 0.8777828933627618,
+      "vol_ratio_per_asset": {
+        "BTC": 0.8937914545406039,
+        "ETH": 0.9175591043060125,
+        "BNB": 0.8870450890280169,
+        "SOL": 0.9111355347466431,
+        "XRP": 0.7337041075156476,
+        "DOGE": 0.7792023897437002,
+        "ADA": 0.8984138288073282,
+        "LINK": 1.0014116382141416
+      },
+      "finite_and_positive": true,
+      "passes_vol": true,
+      "passes_corr": true,
+      "passes": true
+    },
+    "4": {
+      "vol_err_pct": 9.695078267079497,
+      "corr_err": 0.06840679422637337,
+      "vol_ratio_mean": 0.9123601435082479,
+      "vol_ratio_per_asset": {
+        "BTC": 0.9060331538725188,
+        "ETH": 0.8536659683479443,
+        "BNB": 0.9191314944080267,
+        "SOL": 0.9915194433375474,
+        "XRP": 0.8242994592919397,
+        "DOGE": 0.7964197321810284,
+        "ADA": 0.9705681919108067,
+        "LINK": 1.0372437047161716
+      },
+      "finite_and_positive": true,
+      "passes_vol": true,
+      "passes_corr": true,
+      "passes": true
+    }
+  },
+  "n_seeds": 5,
+  "n_failing": 0,
+  "seeds_failing_vol": [],
+  "seeds_failing_corr": []
+}

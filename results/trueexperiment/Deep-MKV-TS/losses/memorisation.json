@@ -1,0 +1,53 @@
+{
+  "diagnostic": "nearest-neighbour memorisation ratio, log-return space",
+  "definition": "median_i min_j ||gen_i - train_j||  /  median_i min_j ||val_i - train_j||",
+  "interpretation": "1.0 = generated paths sit no closer to the training set than a genuine same-era held-out sample; <1 = memorisation, 1/ratio = how many times closer they sit; >1 = the generator is not landing in the right region",
+  "space": "log-returns, flattened to (T-1)*d = 1016 dims",
+  "denominator_split": "val",
+  "denominator_rationale": "truedatasetguideline section 9.1. TrueDataset is one realisation split by era; test sits behind a 45.5-day embargo in a later market regime, so NN(test -> train) measures regime shift, not novelty. The measured gap is 0.9316 -- using test would inflate every ratio by about 7% for a reason unrelated to the generator.",
+  "median_nn_heldout": 0.01894339919090271,
+  "median_nn_test_era": 0.017647210508584976,
+  "nn_ratio": 1.0229592258135565,
+  "nn_ratio_std": 0.03994899479653629,
+  "nn_ratio_vs_test_era": 1.0980956430012474,
+  "median_nn_generated": 0.01937832497060299,
+  "n_exact_duplicates": 0,
+  "per_seed": [
+    {
+      "seed": 0,
+      "median_nn_generated": 0.020343180745840073,
+      "nn_ratio": 1.0738928394440206,
+      "nn_ratio_vs_test_era": 1.152770333642451,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 1,
+      "median_nn_generated": 0.018242718651890755,
+      "nn_ratio": 0.9630118896851181,
+      "nn_ratio_vs_test_era": 1.0337451713978296,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 2,
+      "median_nn_generated": 0.018948430195450783,
+      "nn_ratio": 1.0002655808758172,
+      "nn_ratio_vs_test_era": 1.0737351484662572,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 3,
+      "median_nn_generated": 0.019305983558297157,
+      "nn_ratio": 1.0191404068372572,
+      "nn_ratio_vs_test_era": 1.0939963315394932,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 4,
+      "median_nn_generated": 0.02005131170153618,
+      "nn_ratio": 1.0584854122255698,
+      "nn_ratio_vs_test_era": 1.136231229960206,
+      "n_exact_duplicates": 0
+    }
+  ],
+  "note": "Exact duplicates being 0 does NOT clear the method, and for Deep-MKV-TS it is close to uninformative: a sample is a 127-step Euler-Maruyama rollout driven by fresh Gaussian increments, so bitwise equality with a training path has probability zero by construction. The ratio is the number that matters. Estimator byte-identical to SBTS/code/measure_memorisation.py and LS4/code/measure_memorisation.py so the columns are directly comparable."
+}

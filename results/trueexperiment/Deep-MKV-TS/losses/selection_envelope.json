@@ -1,0 +1,43 @@
+{
+  "envelope": {
+    "corr_err_max": 0.18425939526917132,
+    "corr_err_median": 0.09247711758955052,
+    "corr_err_min": 0.02081516834278599,
+    "kurt_err_pct_max": 3044.677873297916,
+    "kurt_err_pct_median": 119.50461422525572,
+    "kurt_err_pct_min": 52.63161714599184,
+    "median_nn_heldout": 0.01894340105354786,
+    "min_price": 10.0,
+    "nn_ratio_band": [
+      0.9315755669944655,
+      1.0
+    ],
+    "nn_ratio_by_split": {
+      "disc": 0.9641509608353299,
+      "test": 0.9315755669944655,
+      "val": 1.0,
+      "valdisc": 0.9678398896536643
+    },
+    "splits_found": [
+      "train",
+      "test",
+      "disc",
+      "val",
+      "valdisc"
+    ],
+    "train_vs_score": {
+      "corr_err": 0.07611503211649559,
+      "kurt_err_pct": 84.57230798645024,
+      "vol_err_pct": 9.025260210598317
+    },
+    "vol_err_pct_max": 24.594543089032,
+    "vol_err_pct_median": 14.959668261117109,
+    "vol_err_pct_min": 8.722158549724696
+  },
+  "key": {
+    "criterion_sha256_16": "331206323ba24287",
+    "data_dir": "/home/tbasseras/benchmark/dataset/TrueDataset/variants/om_2022-07_N6144",
+    "score_suffix": "_val",
+    "seq_tag": "6144x128x8"
+  }
+}

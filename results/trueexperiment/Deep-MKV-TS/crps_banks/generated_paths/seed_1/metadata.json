@@ -1,0 +1,41 @@
+{
+  "S0": 100.0,
+  "S0_exact": true,
+  "S_max": 111.00334437203418,
+  "S_min": 90.12965541882431,
+  "all_finite_positive": true,
+  "bank_role": "crps_pool",
+  "d": 8,
+  "data_dir": "/home/tbasseras/benchmark/dataset/TrueDataset/variants/om_2022-07_N6144",
+  "dataset": "TrueDataset om_2022-07_N6144",
+  "date": "2026-08-27",
+  "dt": 9.512937595129376e-07,
+  "dtype": "float64",
+  "eigh_fallback": {
+    "n_calls_failed": 0,
+    "n_fallback_cpu": 0,
+    "n_fallback_cpu_float64": 0
+  },
+  "gen_time_sec": 2.5,
+  "generated_mean": 99.99559121019932,
+  "generated_std": 0.5136033339620607,
+  "generation_seed": 90001,
+  "gpu": "NVIDIA A100-SXM4-80GB",
+  "method": "Deep-MKV-TS",
+  "n_parameters": 56136,
+  "ridge_lambda": 1000.0,
+  "s0_max_abs_residual_before_rescale": 6.395087552846235e-06,
+  "s0_rescaled": true,
+  "seed": 1,
+  "selected_step": 1500,
+  "selection_nn_ratio": 0.9623470562560416,
+  "selection_rule": "truedatasetguideline section 7: admissible on the measured real-vs-real vol and corr ceilings, then argmin |log NNratio|",
+  "seq_tag": "6144x128x8",
+  "shape": [
+    8192,
+    128,
+    8
+  ],
+  "sigma_max": 5.0,
+  "train_time_sec": 5466.877816649852
+}

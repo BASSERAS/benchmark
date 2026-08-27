@@ -1,0 +1,41 @@
+{
+  "selected": {
+    "sigma_max": 5.0,
+    "ridge_covariance": 0.001,
+    "ridge_drift": 0.01,
+    "lr": 0.01,
+    "steps": 300,
+    "validation_nll": -1.4262007206143001,
+    "baseline_nll": -0.002318924070943583,
+    "clip_saturation_high": 0.004652128444881889,
+    "spectrum_p99": 3.8713382178695177
+  },
+  "gate": {
+    "rule": "p99 < sigma_max AND ceiling_mass <= MAX_CEILING_MASS AND floor_mass <= MAX_FLOOR_MASS AND validation_nll < baseline_nll",
+    "max_ceiling_mass": 0.01,
+    "max_floor_mass": 0.001,
+    "objective": "minimise validation_nll among admissible points",
+    "why_not_nll_alone": "the likelihood is minimised by a censoring ceiling; clipping removes variance and a Gaussian NLL rewards that"
+  },
+  "stage_sizes": {
+    "screen_paths": 6144,
+    "confirm_paths": 6144,
+    "grid_points": 8,
+    "admissible_at_screen": 8,
+    "confirmed": 3
+  },
+  "grid": {
+    "sigma_max": [
+      5.0,
+      8.0
+    ],
+    "ridge_covariance": [
+      1e-05,
+      0.001
+    ],
+    "ridge_drift": [
+      0.001,
+      0.01
+    ]
+  }
+}

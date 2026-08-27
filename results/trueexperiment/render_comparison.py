@@ -70,7 +70,19 @@ FLOOR_DIR = os.path.join(HERE, "real_floor")
 # to locate the shared `paper__realbank.json` and the bootstrap baselines, and
 # the reference has no crps_configs/ (table C renders it as a "-" row, which
 # render_c already handles).
-METHODS = ["SBTS", "CSDI", "reference"]
+# Deep-MKV-TS sits between CSDI and the reference for two structural reasons, not
+# for looks. It cannot be METHODS[0] -- that slot supplies the shared
+# `paper__realbank.json` and the bootstrap baselines -- and it must not displace
+# `reference` from last, which is the baseline-column position described above.
+#
+# The column is the lr = 6.4e-06 RETUNE, which is the only Deep-MKV-TS run ever
+# scored on this dataset. The weights previously at the method root were
+# lr = 0.002, carried over unchanged from the Heston d = 8 run; that rate moves
+# Theta by 2.05 per step here against Heston's 0.032, because the control map
+# adds `Zhat / sqrt(dt)` and dt is 9.51e-07 rather than 1/252. Those weights were
+# never generated from and never scored. They are preserved under
+# `Deep-MKV-TS/weights_lr2e-3/` rather than deleted.
+METHODS = ["SBTS", "CSDI", "Deep-MKV-TS", "reference"]
 
 # -- metric display table -----------------------------------------------------
 # A33-A34 are absent by construction: they score against the dataset's LATENT

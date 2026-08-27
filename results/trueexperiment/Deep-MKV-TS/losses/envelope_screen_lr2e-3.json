@@ -1,0 +1,13 @@
+{
+  "ceilings": {
+    "vol_err_pct": 24.59,
+    "corr_err": 0.1843
+  },
+  "reference": "real train split, true_S_6144x128x8.npy",
+  "real_val_vs_train": {
+    "vol_ratio_mean": 1.060155184605874,
+    "vol_err_pct": 9.87434307468417,
+    "corr_err": 0.07611503211649559
+  },
+  "seeds": {}
+}

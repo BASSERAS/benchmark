@@ -1,0 +1,245 @@
+{
+  "description": "Per-block MMD bandwidth gauge. h_true = h_heston * pcRMS(true) / pcRMS(heston), so every block keeps the dimensionless ratio h / pcRMS -- the only quantity the RBF kernel can observe -- that it had on the published Heston run. Change of units, not of objective.",
+  "preset": "old_fullv_w0p25",
+  "discrepancy_kwargs": {
+    "include_acf": true,
+    "preset": "old_fullv_w0p25",
+    "lambda_scale": 50.0,
+    "kappa_scale": 100.0,
+    "include_conditional_volatility": false,
+    "include_conditional_volatility_correlation": false,
+    "abs_return_acf_weight": 0.25,
+    "squared_return_acf_weight": 0.125
+  },
+  "num_paths": 512,
+  "scale_estimator": "sqrt(mean_{i != j} ||f_i - f_j||^2 / feature_dim) over the train split, matching the k_yy block of rbf_mmd2",
+  "reference_panel": {
+    "dataset": "/home/tbasseras/benchmark/dataset/HestonMultiAsset",
+    "train_file": "heston_ma_S_8192x252x8.npy",
+    "dt": 0.003968253968253968,
+    "num_steps": 251
+  },
+  "target_panel": {
+    "dataset": "/home/tbasseras/benchmark/dataset/TrueDataset/variants/om_2022-07_N6144",
+    "train_file": "true_S_6144x128x8.npy",
+    "dt": 9.512937595129376e-07,
+    "num_steps": 127
+  },
+  "blocks": {
+    "path_law_observed_path": {
+      "mode": "rescaled",
+      "pcrms_heston": 0.2073193552466425,
+      "pcrms_true": 0.007615554822100798,
+      "ratio": 0.03673344832198985,
+      "bandwidths_heston": [
+        0.2,
+        0.5,
+        1.0,
+        2.0,
+        4.0
+      ],
+      "bandwidths_true": [
+        0.007346689664397971,
+        0.018366724160994927,
+        0.03673344832198985,
+        0.0734668966439797,
+        0.1469337932879594
+      ]
+    },
+    "path_law_terminal": {
+      "mode": "rescaled",
+      "pcrms_heston": 0.29759576835390383,
+      "pcrms_true": 0.011242611693449207,
+      "ratio": 0.037778130232279994,
+      "bandwidths_heston": [
+        0.2,
+        0.5,
+        1.0,
+        2.0,
+        4.0
+      ],
+      "bandwidths_true": [
+        0.007555626046455999,
+        0.018889065116139997,
+        0.037778130232279994,
+        0.07555626046455999,
+        0.15111252092911998
+      ]
+    },
+    "path_law_increments": {
+      "mode": "rescaled",
+      "pcrms_heston": 0.0181247084473123,
+      "pcrms_true": 0.001101876027677138,
+      "ratio": 0.06079413806187511,
+      "bandwidths_heston": [
+        0.2,
+        0.5,
+        1.0,
+        2.0,
+        4.0
+      ],
+      "bandwidths_true": [
+        0.012158827612375023,
+        0.030397069030937553,
+        0.06079413806187511,
+        0.12158827612375021,
+        0.24317655224750043
+      ]
+    },
+    "volatility_law_instantaneous_rv": {
+      "mode": "rescaled",
+      "pcrms_heston": 0.10681605984551054,
+      "pcrms_true": 4.4840002354503135,
+      "ratio": 41.97870846327398,
+      "bandwidths_heston": [
+        0.01,
+        0.025,
+        0.05,
+        0.1,
+        0.2
+      ],
+      "bandwidths_true": [
+        0.41978708463273984,
+        1.0494677115818496,
+        2.098935423163699,
+        4.197870846327398,
+        8.395741692654797
+      ]
+    },
+    "volatility_law_state_rv": {
+      "mode": "standardized",
+      "ratio": 1.0,
+      "reason": "features are standardised against the target batch inside the discrepancy; bandwidths are already dimensionless"
+    },
+    "volatility_law_global_rv": {
+      "mode": "rescaled",
+      "pcrms_heston": 0.019676164369009028,
+      "pcrms_true": 0.9001066633990444,
+      "ratio": 45.746043106692014,
+      "bandwidths_heston": [
+        0.01,
+        0.025,
+        0.05,
+        0.1,
+        0.2
+      ],
+      "bandwidths_true": [
+        0.45746043106692014,
+        1.1436510776673003,
+        2.2873021553346007,
+        4.574604310669201,
+        9.149208621338403
+      ]
+    },
+    "volatility_law_sigma_like_terminal_return": {
+      "mode": "rescaled",
+      "pcrms_heston": 0.29759576835390383,
+      "pcrms_true": 0.011242611693449207,
+      "ratio": 0.037778130232279994,
+      "bandwidths_heston": [
+        0.17280253767967224,
+        0.3456050753593445,
+        0.08640126883983612
+      ],
+      "bandwidths_true": [
+        0.006528156772931129,
+        0.013056313545862258,
+        0.0032640783864655645
+      ]
+    },
+    "volatility_law_sigma_like_returns": {
+      "mode": "rescaled",
+      "pcrms_heston": 0.0181247084473123,
+      "pcrms_true": 0.001101876027677138,
+      "ratio": 0.06079413806187511,
+      "bandwidths_heston": [
+        0.02287130430340767,
+        0.04574260860681534,
+        0.09148521721363068
+      ],
+      "bandwidths_true": [
+        0.001390441231476524,
+        0.002780882462953048,
+        0.005561764925906096
+      ]
+    },
+    "volatility_law_sigma_like_realized_vol": {
+      "mode": "rescaled",
+      "pcrms_heston": 0.0073654191762102085,
+      "pcrms_true": 0.0004345555630853791,
+      "ratio": 0.05899943407008841,
+      "bandwidths_heston": [
+        0.02173430845141411,
+        0.04346861690282822,
+        0.010867154225707054
+      ],
+      "bandwidths_true": [
+        0.001282311898538172,
+        0.002564623797076344,
+        0.000641155949269086
+      ]
+    },
+    "volatility_law_sigma_like_abs_returns": {
+      "mode": "rescaled",
+      "pcrms_heston": 0.011568460570529219,
+      "pcrms_true": 0.0005749108612758004,
+      "ratio": 0.049696401502235504,
+      "bandwidths_heston": [
+        0.032140329480171204,
+        0.016070164740085602,
+        0.06428065896034241
+      ],
+      "bandwidths_true": [
+        0.0015972587182607242,
+        0.0007986293591303621,
+        0.0031945174365214483
+      ]
+    },
+    "volatility_law_sigma_like_squared_returns": {
+      "mode": "rescaled",
+      "pcrms_heston": 0.0004238732780795538,
+      "pcrms_true": 4.265601504452281e-06,
+      "ratio": 0.01006338857636527,
+      "bandwidths_heston": [
+        0.01,
+        0.011117583140730858
+      ],
+      "bandwidths_true": [
+        0.00010063388576365269,
+        0.00011188055917522203
+      ]
+    },
+    "volatility_law_abs_return_acf": {
+      "mode": "rescaled",
+      "pcrms_heston": 1.7155230965334005,
+      "pcrms_true": 5.573705692357037,
+      "ratio": 3.2489831839745906,
+      "bandwidths_heston": [
+        2.169067621231079,
+        4.338135242462158,
+        1.0845338106155396
+      ],
+      "bandwidths_true": [
+        7.047264226283542,
+        14.094528452567085,
+        3.523632113141771
+      ]
+    },
+    "volatility_law_squared_return_acf": {
+      "mode": "rescaled",
+      "pcrms_heston": 2.6250034327530916,
+      "pcrms_true": 19.18299769048785,
+      "ratio": 7.307799087473501,
+      "bandwidths_heston": [
+        2.128969192504883,
+        1.0644845962524414,
+        0.5322422981262207
+      ],
+      "bandwidths_true": [
+        15.558079122246378,
+        7.779039561123189,
+        3.8895197805615944
+      ]
+    }
+  }
+}
