@@ -430,6 +430,27 @@ def main():
     n_floor = max((v["n"] for v in floor.values()), default=0)
     seed_line = ", ".join(f"{m} {n_seeds[m]} seeds" for m in METHODS)
     crps_line = ", ".join(f"{m} {len(crps[m])}" for m in METHODS)
+    # Derived, not typed. Unequal seed counts mean the method `+/-` are sd over
+    # different n and must not be read against each other; equal counts make that
+    # warning false, and a false caveat left in generated prose survives because
+    # nobody re-reads generated prose.
+    _crps_n = {len(crps[m]) for m in METHODS}
+    if len(_crps_n) == 1:
+        crps_seed_note = (
+            f"Each method's CRPS is a mean over {_crps_n.pop()} generator seeds, "
+            "matching tables A\nand B, so the method `+/-` are sd over the same *n* "
+            "and are comparable to each\nother."
+        )
+    else:
+        crps_seed_note = (
+            f"CRPS seed counts differ ({crps_line}) -- the spread columns are not "
+            "computed over\nthe same *n* and the method `+/-` are not directly "
+            "comparable to each other."
+        )
+    # Same "derived, not typed" rule as src_line below. This list was hardcoded to
+    # SBTS and CSDI and silently went stale when Deep-MKV-TS and reference joined
+    # METHODS, telling the reader two method pages exist when four do.
+    readme_line = ", ".join(f"[`{m}/README.md`]({m}/README.md)" for m in METHODS)
     flags = "; ".join(f"{m} {len(v)}/34" for m, v in a_below.items())
     nn_line = "; ".join(
         f"{m} **{nn[m]:.4f}**" if nn.get(m) is not None else f"{m} -" for m in METHODS)
@@ -445,8 +466,7 @@ bars, `T = 128` (64 minutes), variant `om_2022-07_N6144`, holdout-era split with
 45.5-day embargo. Scored against `true_S_test_6144x128x8.npy`.
 
 Three tables, nothing else. Per-seed numbers, provenance and diagnostics live in
-each method's own README: [`SBTS/README.md`](SBTS/README.md),
-[`CSDI/README.md`](CSDI/README.md).
+each method's own README: {readme_line}.
 
 **Reading the floor.** `real_floor/` holds the *real* train, val and valdisc splits
 scored against the *real* test split. On a "lower is better" metric its value is not
@@ -530,10 +550,8 @@ training era, which on this split it is (annualised vol falls between the two er
 on 6 of the 8 assets). The three targets are scored on the same queries, so compare
 across a row before reading down a column.
 
-CRPS seed counts differ ({crps_line}) -- the spread columns are not computed over
-the same *n* and the method `+/-` are not directly comparable to each other. The
-floor row and the two bootstrap baselines are deterministic given
-`--baseline-seed 1234`, hence one "seed" each.
+{crps_seed_note} The floor row and the two bootstrap baselines are deterministic
+given `--baseline-seed 1234`, hence one "seed" each.
 
 **Two different `+/-` appear in this table and they are not the same quantity.** On
 the floor and baseline rows it is the half-width of the 95 % bootstrap CI over the

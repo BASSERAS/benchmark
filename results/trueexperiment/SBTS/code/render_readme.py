@@ -693,7 +693,7 @@ Three targets: cumulative return over the horizon, the 32 individual increments,
 **realized volatility, `sqrt(sum_t r²_{{t,a}})` — summed over TIME, one scalar per asset**.
 All ×1000, lower is better.
 **Two different ± appear in this table and they mean different things:**
-on the bold **SBTS** row it is the sample **sd across the 4 seeds** (generator noise);
+on the bold **SBTS** row it is the sample **sd across the {n_crps} seeds** (generator noise);
 on every other row it is the **half-width of the 95 % bootstrap CI over the 6 144 test
 queries** (2 000 replicates, seed 0 — sampling noise, i.e. how much the average would move
 on a different draw of test histories). The per-seed rows carry the query CI, not a seed sd.
@@ -823,8 +823,12 @@ results/trueexperiment/
     │   ├── finalists_seed{{0,1,2}}.json       3-seed re-measurement of the top candidates
     │   ├── selection_criterion.md           pre-registered criterion and its caveats
     │   ├── envelope_by_split_mode.json      real-vs-real envelope, interleaved vs holdout-era
-    │   ├── conditional_crps_seed_{{i}}.json   table C, one file per SBTS bank
-    │   ├── conditional_crps_realbank.json   table C, real training split used as the bank
+    │   ├── crps_configs/                    table C, LIVE. <config>__seed_{{i}}.json per
+    │   │                                    bank, config in {{paper, perdim}}; plus
+    │   │                                    <config>__realbank.json (real train split
+    │   │                                    as the bank). Only paper__* feeds table C.
+    │   ├── conditional_crps_seed_{{i}}.json   SUPERSEDED (pre rv-axis fix, 2026-08-26)
+    │   ├── conditional_crps_realbank.json   SUPERSEDED, kept for provenance only
     │   ├── memorisation.json                NN ratio -- the objective (h, K) were picked on
     │   ├── dataset_stats.json               copy of the locked build's stats (provenance)
     │   └── generation_time.csv              wall-clock per seed
@@ -887,15 +891,28 @@ for M in SBTS real_floor; do
     --data-dir $V --seq-tag $TAG --dt 9.51293759512e-07 --results-dir $R/$M
 done
 
-# 6. conditional CRPS (table C) — the paper's 8 192-path pool, 4 seeds.
-for S in 0 1 2 3; do
+# 6. conditional CRPS (table C) — the paper's 8 192-path pool, 5 seeds.
+#    --out MUST land in losses/crps_configs/. The flat losses/conditional_crps_seed_*.json
+#    names are the pre-2026-08-26 artefacts from before the rv-axis fix (rv ~0.565 there
+#    vs ~1.045 here); they are kept for provenance and are NOT read by this renderer.
+#    Seeds 0-3 used --workers 24, seed 4 used 16 (shared-box cap). Worker count
+#    repartitions the RNG (sbts_generate_true.py:473 seeds substream seed*10_000+i),
+#    so it changes the draw but not the law: same (h, K, N_pi), same bank size,
+#    8 192 iid paths either way. metadata.json records n_workers per seed.
+for S in 0 1 2 3 4; do
   /home/tbasseras/sbts-venv/bin/python $R/SBTS/code/generate_bank_true.py \\
-    --data-dir $V --seq-tag $TAG --h {h} --K {K} --seed $S --m-simu 8192 \\
-    --workers 24 --out-root $R/SBTS/crps_banks
-  /home/tbasseras/gpu-venv/bin/python metrics/conditional_crps_multiasset.py \\
+    --data-dir $V --seq-tag $TAG --h {h} --K {K} --N-pi {npi} --seed $S --m-simu 8192 \\
+    --workers 16 --out-root $R/SBTS/crps_banks
+  B=$R/SBTS/crps_banks/generated_paths/seed_$S/generated_paths_8192x128x8.npy
+  # both conventions; --label SBTS is load-bearing (table C is keyed on it)
+  /home/tbasseras/sbts-venv/bin/python metrics/conditional_crps_multiasset.py \\
     --data-dir $V --seq-tag $TAG --bank-size 8192 --label SBTS \\
-    --bank $R/SBTS/crps_banks/generated_paths/seed_$S/generated_paths_8192x128x8.npy \\
-    --out $R/SBTS/losses/conditional_crps_seed_$S.json
+    --weight-mode paper --standardize bank --bank $B \\
+    --out $R/SBTS/losses/crps_configs/paper__seed_$S.json
+  /home/tbasseras/sbts-venv/bin/python metrics/conditional_crps_multiasset.py \\
+    --data-dir $V --seq-tag $TAG --bank-size 8192 --label SBTS \\
+    --weight-mode perdim --standardize realtrain --bank $B \\
+    --out $R/SBTS/losses/crps_configs/perdim__seed_$S.json
 done
 # ... and the reference every row in table C is read against: the real TRAIN
 # split used as the bank. Native size 6144 -- that is all the data there is --

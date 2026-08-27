@@ -185,7 +185,7 @@ Three targets: cumulative return over the horizon, the 32 individual increments,
 **realized volatility, `sqrt(sum_t r²_{t,a})` — summed over TIME, one scalar per asset**.
 All ×1000, lower is better.
 **Two different ± appear in this table and they mean different things:**
-on the bold **SBTS** row it is the sample **sd across the 4 seeds** (generator noise);
+on the bold **SBTS** row it is the sample **sd across the 5 seeds** (generator noise);
 on every other row it is the **half-width of the 95 % bootstrap CI over the 6 144 test
 queries** (2 000 replicates, seed 0 — sampling noise, i.e. how much the average would move
 on a different draw of test histories). The per-seed rows carry the query CI, not a seed sd.
@@ -200,16 +200,17 @@ on a different draw of test histories). The per-seed rows carry the query CI, no
 
 | Bank | Bank size | Cumulative return CRPS ×1000 ↓ | Increment CRPS ×1000 ↓ | Realized vol CRPS ×1000 ↓ |
 |---|---|---|---|---|
-| **SBTS** (mean ± sd over 4 seeds) | 8 192 | **1.270 ± 0.001** | **0.337 ± 0.000** | **1.045 ± 0.007** |
+| **SBTS** (mean ± sd over 5 seeds) | 8 192 | **1.269 ± 0.002** | **0.337 ± 0.000** | **1.043 ± 0.007** |
 |  seed 0 | 8 192 | 1.270 ± 0.025 | 0.337 ± 0.005 | 1.045 ± 0.026 |
 |  seed 1 | 8 192 | 1.271 ± 0.025 | 0.337 ± 0.005 | 1.052 ± 0.026 |
 |  seed 2 | 8 192 | 1.269 ± 0.025 | 0.337 ± 0.005 | 1.046 ± 0.027 |
 |  seed 3 | 8 192 | 1.269 ± 0.025 | 0.337 ± 0.005 | 1.035 ± 0.026 |
+|  seed 4 | 8 192 | 1.267 ± 0.025 | 0.337 ± 0.005 | 1.037 ± 0.026 |
 | Moving-block bootstrap *(paper baseline)* | 8 192 | 1.279 ± 0.025 | 0.338 ± 0.005 | 1.110 ± 0.024 |
 | Session bootstrap *(paper baseline)* | 8 192 | 1.262 ± 0.026 | 0.337 ± 0.005 | 0.975 ± 0.027 |
 | Real training split as bank *(reference, not in the paper)* | 6 144 | 1.257 ± 0.026 | 0.335 ± 0.005 | 0.970 ± 0.027 |
 
-> **Headline:** Against the moving-block bootstrap, **1 of the 3 targets is a difference this test can resolve** (Realized vol); on Cumulative return and Increment the gap sits inside the error bars and SBTS and the bootstrap are indistinguishable. Ratios: Cumulative return **0.993**, Increment **0.997**, Realized vol **0.941**. **The session bootstrap is the harder baseline and SBTS loses to it, resolvably, on Realized vol**: Cumulative return **1.006**, Increment **1.002**, Realized vol **1.072**. Resampling whole real training days, with no model at all, forecasts this panel better than the generator does. *Resolvable* = the two 95 % CIs do not overlap. That is a conservative test — the CIs share the same 6 144 queries, so a paired bootstrap on per-query differences would be tighter; it has not been run.
+> **Headline:** Against the moving-block bootstrap, **1 of the 3 targets is a difference this test can resolve** (Realized vol); on Cumulative return and Increment the gap sits inside the error bars and SBTS and the bootstrap are indistinguishable. Ratios: Cumulative return **0.992**, Increment **0.997**, Realized vol **0.939**. **The session bootstrap is the harder baseline and SBTS loses to it, resolvably, on Realized vol**: Cumulative return **1.006**, Increment **1.002**, Realized vol **1.070**. Resampling whole real training days, with no model at all, forecasts this panel better than the generator does. *Resolvable* = the two 95 % CIs do not overlap. That is a conservative test — the CIs share the same 6 144 queries, so a paired bootstrap on per-query differences would be tighter; it has not been run.
 > **The ratio row is the number that transfers**, not the absolute CRPS. Absolute CRPS is set by
 > the intrinsic unpredictability of the market and the units of the data; the ratio against the
 > block bootstrap is dimensionless, which is why the paper reports SBTS and the bootstraps side
@@ -374,8 +375,12 @@ results/trueexperiment/
     │   ├── finalists_seed{0,1,2}.json       3-seed re-measurement of the top candidates
     │   ├── selection_criterion.md           pre-registered criterion and its caveats
     │   ├── envelope_by_split_mode.json      real-vs-real envelope, interleaved vs holdout-era
-    │   ├── conditional_crps_seed_{i}.json   table C, one file per SBTS bank
-    │   ├── conditional_crps_realbank.json   table C, real training split used as the bank
+    │   ├── crps_configs/                    table C, LIVE. <config>__seed_{i}.json per
+    │   │                                    bank, config in {paper, perdim}; plus
+    │   │                                    <config>__realbank.json (real train split
+    │   │                                    as the bank). Only paper__* feeds table C.
+    │   ├── conditional_crps_seed_{i}.json   SUPERSEDED (pre rv-axis fix, 2026-08-26)
+    │   ├── conditional_crps_realbank.json   SUPERSEDED, kept for provenance only
     │   ├── memorisation.json                NN ratio -- the objective (h, K) were picked on
     │   ├── dataset_stats.json               copy of the locked build's stats (provenance)
     │   └── generation_time.csv              wall-clock per seed
@@ -438,15 +443,28 @@ for M in SBTS real_floor; do
     --data-dir $V --seq-tag $TAG --dt 9.51293759512e-07 --results-dir $R/$M
 done
 
-# 6. conditional CRPS (table C) — the paper's 8 192-path pool, 4 seeds.
-for S in 0 1 2 3; do
+# 6. conditional CRPS (table C) — the paper's 8 192-path pool, 5 seeds.
+#    --out MUST land in losses/crps_configs/. The flat losses/conditional_crps_seed_*.json
+#    names are the pre-2026-08-26 artefacts from before the rv-axis fix (rv ~0.565 there
+#    vs ~1.045 here); they are kept for provenance and are NOT read by this renderer.
+#    Seeds 0-3 used --workers 24, seed 4 used 16 (shared-box cap). Worker count
+#    repartitions the RNG (sbts_generate_true.py:473 seeds substream seed*10_000+i),
+#    so it changes the draw but not the law: same (h, K, N_pi), same bank size,
+#    8 192 iid paths either way. metadata.json records n_workers per seed.
+for S in 0 1 2 3 4; do
   /home/tbasseras/sbts-venv/bin/python $R/SBTS/code/generate_bank_true.py \
-    --data-dir $V --seq-tag $TAG --h 0.07 --K 1 --seed $S --m-simu 8192 \
-    --workers 24 --out-root $R/SBTS/crps_banks
-  /home/tbasseras/gpu-venv/bin/python metrics/conditional_crps_multiasset.py \
+    --data-dir $V --seq-tag $TAG --h 0.07 --K 1 --N-pi 50 --seed $S --m-simu 8192 \
+    --workers 16 --out-root $R/SBTS/crps_banks
+  B=$R/SBTS/crps_banks/generated_paths/seed_$S/generated_paths_8192x128x8.npy
+  # both conventions; --label SBTS is load-bearing (table C is keyed on it)
+  /home/tbasseras/sbts-venv/bin/python metrics/conditional_crps_multiasset.py \
     --data-dir $V --seq-tag $TAG --bank-size 8192 --label SBTS \
-    --bank $R/SBTS/crps_banks/generated_paths/seed_$S/generated_paths_8192x128x8.npy \
-    --out $R/SBTS/losses/conditional_crps_seed_$S.json
+    --weight-mode paper --standardize bank --bank $B \
+    --out $R/SBTS/losses/crps_configs/paper__seed_$S.json
+  /home/tbasseras/sbts-venv/bin/python metrics/conditional_crps_multiasset.py \
+    --data-dir $V --seq-tag $TAG --bank-size 8192 --label SBTS \
+    --weight-mode perdim --standardize realtrain --bank $B \
+    --out $R/SBTS/losses/crps_configs/perdim__seed_$S.json
 done
 # ... and the reference every row in table C is read against: the real TRAIN
 # split used as the bank. Native size 6144 -- that is all the data there is --

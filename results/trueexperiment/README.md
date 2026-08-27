@@ -5,8 +5,7 @@ bars, `T = 128` (64 minutes), variant `om_2022-07_N6144`, holdout-era split with
 45.5-day embargo. Scored against `true_S_test_6144x128x8.npy`.
 
 Three tables, nothing else. Per-seed numbers, provenance and diagnostics live in
-each method's own README: [`SBTS/README.md`](SBTS/README.md),
-[`CSDI/README.md`](CSDI/README.md).
+each method's own README: [`SBTS/README.md`](SBTS/README.md), [`CSDI/README.md`](CSDI/README.md), [`Deep-MKV-TS/README.md`](Deep-MKV-TS/README.md), [`reference/README.md`](reference/README.md).
 
 **Reading the floor.** `real_floor/` holds the *real* train, val and valdisc splits
 scored against the *real* test split. On a "lower is better" metric its value is not
@@ -156,7 +155,7 @@ convention (`--weight-mode paper --standardize bank`), CRPS x 1000, lower is bet
 | Bank | Seeds | Cumulative return v | Increment v | Realized vol v | xfloor (cum. return) |
 |---|---|---|---|---|---|
 | **Real train split as bank** *(floor)* | 1 | 1.257 +/- 0.026 | 0.335 +/- 0.005 | 0.970 +/- 0.027 | 1.00x |
-| **SBTS** | 4 | **1.270 +/- 0.001** | **0.337 +/- 0.000** | **1.045 +/- 0.007** | 1.01x |
+| **SBTS** | 5 | **1.269 +/- 0.002** | **0.337 +/- 0.000** | **1.043 +/- 0.007** | 1.01x |
 | **CSDI** | 5 | **1.248 +/- 0.002** | **0.342 +/- 0.001** | **1.230 +/- 0.024** | **0.99x** ! |
 | **Deep-MKV-TS** | 5 | **1.248 +/- 0.002** | **0.333 +/- 0.000** | **0.887 +/- 0.020** | **0.99x** ! |
 | **reference** | 5 | **1.258 +/- 0.001** | **0.338 +/- 0.000** | **0.983 +/- 0.004** | 1.00x |
@@ -171,10 +170,10 @@ training era, which on this split it is (annualised vol falls between the two er
 on 6 of the 8 assets). The three targets are scored on the same queries, so compare
 across a row before reading down a column.
 
-CRPS seed counts differ (SBTS 4, CSDI 5, Deep-MKV-TS 5, reference 5) -- the spread columns are not computed over
-the same *n* and the method `+/-` are not directly comparable to each other. The
-floor row and the two bootstrap baselines are deterministic given
-`--baseline-seed 1234`, hence one "seed" each.
+Each method's CRPS is a mean over 5 generator seeds, matching tables A
+and B, so the method `+/-` are sd over the same *n* and are comparable to each
+other. The floor row and the two bootstrap baselines are deterministic
+given `--baseline-seed 1234`, hence one "seed" each.
 
 **Two different `+/-` appear in this table and they are not the same quantity.** On
 the floor and baseline rows it is the half-width of the 95 % bootstrap CI over the
