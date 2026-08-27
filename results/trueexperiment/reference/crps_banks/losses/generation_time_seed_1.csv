@@ -1,0 +1,2 @@
+seed,n_samples,T,d,device,elapsed_sec,elapsed_min
+1,8192,128,8,cpu,27.1,0.45

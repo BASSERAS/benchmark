@@ -1,0 +1,47 @@
+{
+  "S0": 100.0,
+  "S0_exact": true,
+  "S_max": 117.25340831891978,
+  "S_min": 85.09566266106589,
+  "all_finite_positive": true,
+  "bank_role": "conditional-CRPS pool (guideline section 8)",
+  "d": 8,
+  "data_dir": "/home/tbasseras/benchmark/dataset/TrueDataset/variants/om_2022-07_N6144",
+  "dataset": "TrueDataset om_2022-07_N6144",
+  "date": "2026-08-27",
+  "device": "cpu",
+  "dt": 9.512937595129376e-07,
+  "dtype": "float64",
+  "eigh_fallback": {
+    "n_calls_failed": 0,
+    "n_fallback_cpu": 0,
+    "n_fallback_cpu_float64": 0
+  },
+  "gen_time_sec": 27.2,
+  "generated_mean": 100.00345438733359,
+  "generated_std": 0.7695330791759785,
+  "generation_seed": 90004,
+  "method": "reference",
+  "n_parameters": 56136,
+  "n_trained_parameters": 0,
+  "note": "Frozen reference SDE on TrueDataset. The model was BUILT but never FITTED; both output heads have a zero final layer, so Zhat == 0 exactly and the control reduces to eta * (sigma^ref)^-1, i.e. sigma == sigma^ref. n_parameters counts the architecture Deep-MKV-TS would train; n_trained_parameters is 0 because no gradient step was taken. sigma_max is read from the frozen reference_kernel.json, not hardcoded. Generation seeds are shared with Deep-MKV-TS/code/generate_bank_true.py, so every seed is paired with that method's bank. There is no perfect-recovery floor on this dataset: a real market has no law to re-draw from.",
+  "num_steps": 127,
+  "s0_max_abs_residual_before_rescale": 6.395087552846235e-06,
+  "s0_rescaled": true,
+  "seed": 4,
+  "seq_tag": "6144x128x8",
+  "shape": [
+    8192,
+    128,
+    8
+  ],
+  "sigma_max": 5.0,
+  "train_time_sec": 0.0,
+  "zero_control_verified": true,
+  "zhat_head_max_abs": {
+    "expected_adjoint_next_head.2.bias": 0.0,
+    "expected_adjoint_next_head.2.weight": 0.0,
+    "expected_adjoint_noise_next_head.2.bias": 0.0,
+    "expected_adjoint_noise_next_head.2.weight": 0.0
+  }
+}

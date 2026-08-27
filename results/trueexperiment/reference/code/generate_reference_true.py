@@ -238,7 +238,8 @@ def generate_one(seed: int, args: argparse.Namespace) -> dict:
     if not s0_exact:
         raise SystemExit(f"ABORT: seed {seed} failed S[:, 0, :] == 100.0 after rescale")
 
-    gen_dir = METHOD_ROOT / "generated_paths" / f"seed_{int(seed)}"
+    out_root = Path(getattr(args, "out_root", None) or METHOD_ROOT)
+    gen_dir = out_root / "generated_paths" / f"seed_{int(seed)}"
     gen_dir.mkdir(parents=True, exist_ok=True)
     n, t, d = expected_shape
     npy_path = gen_dir / f"generated_paths_{n}x{t}x{d}.npy"
@@ -250,7 +251,12 @@ def generate_one(seed: int, args: argparse.Namespace) -> dict:
         "seed": int(seed),
         "data_dir": str(DATASET),
         "seq_tag": SEQ_TAG,
-        "bank_role": "ab_bank",
+        # Derived from where the bank actually lands, so a pool written under
+        # crps_banks/ cannot be mistaken later for the A/B bank.
+        "bank_role": (
+            "ab_bank" if out_root == METHOD_ROOT
+            else "conditional-CRPS pool (guideline section 8)"
+        ),
         "shape": list(prices.shape),
         "dtype": str(prices.dtype),
         "d": int(prices.shape[2]),
@@ -310,7 +316,7 @@ def generate_one(seed: int, args: argparse.Namespace) -> dict:
     return metadata
 
 
-def _write_generation_time(rows: list[dict]) -> Path:
+def _write_generation_time(rows: list[dict], out_root: Path | None = None) -> Path:
     """Write the generation-time CSV and return its path.
 
     Deep-MKV-TS rebuilds this file with ``collect_artifacts.py`` because it also
@@ -324,7 +330,7 @@ def _write_generation_time(rows: list[dict]) -> Path:
     finish would win and the other four rows would vanish.  ``merge_generation_
     time.py`` concatenates the per-seed files into ``generation_time.csv``.
     """
-    losses_dir = METHOD_ROOT / "losses"
+    losses_dir = Path(out_root or METHOD_ROOT) / "losses"
     losses_dir.mkdir(parents=True, exist_ok=True)
     if len(rows) == 1:
         path = losses_dir / f"generation_time_seed_{rows[0]['seed']}.csv"
@@ -354,6 +360,16 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--seeds", type=int, nargs="+", default=[0, 1, 2, 3, 4])
     parser.add_argument("--device", type=str, default="cpu")
     parser.add_argument("--num-paths", type=int, default=EXPECTED_SHAPE[0])
+    # Mirrors CSDI/code/generate_bank_true.py:62, which uses
+    # `--out-root $R/crps_banks` to keep the 8192-path conditional-CRPS pool off
+    # the 6144-path A/B bank. Without this flag a CRPS run would land in the same
+    # seed_<S>/ directory and overwrite the published bank's metadata.json (whose
+    # bank_role is "ab_bank") and the generation-time CSVs beside it.
+    parser.add_argument(
+        "--out-root", type=Path, default=None,
+        help="directory to hold generated_paths/ and losses/ "
+             "(default: the reference method root, i.e. the A/B bank)",
+    )
     return parser.parse_args(argv)
 
 
@@ -372,7 +388,7 @@ def main(argv: list[str] | None = None) -> None:
     for seed in args.seeds:
         rows.append(generate_one(int(seed), args))
         # Rewritten after every seed so a crash still leaves a usable record.
-        csv_path = _write_generation_time(rows)
+        csv_path = _write_generation_time(rows, args.out_root)
     print(
         f"\nAll {len(rows)} seeds done in "
         f"{(time.perf_counter() - started) / 60:.1f} min",

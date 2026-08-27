@@ -158,7 +158,7 @@ convention (`--weight-mode paper --standardize bank`), CRPS x 1000, lower is bet
 | **Real train split as bank** *(floor)* | 1 | 1.257 +/- 0.026 | 0.335 +/- 0.005 | 0.970 +/- 0.027 | 1.00x |
 | **SBTS** | 4 | **1.270 +/- 0.001** | **0.337 +/- 0.000** | **1.045 +/- 0.007** | 1.01x |
 | **CSDI** | 5 | **1.248 +/- 0.002** | **0.342 +/- 0.001** | **1.230 +/- 0.024** | **0.99x** ! |
-| **reference** | 0 | - | - | - | - |
+| **reference** | 5 | **1.258 +/- 0.001** | **0.338 +/- 0.000** | **0.983 +/- 0.004** | 1.00x |
 | Block bootstrap *(baseline)* | 1 | 1.279 +/- 0.025 | 0.338 +/- 0.005 | 1.110 +/- 0.024 | 1.02x |
 | Session bootstrap *(baseline)* | 1 | 1.262 +/- 0.026 | 0.337 +/- 0.005 | 0.975 +/- 0.027 | 1.00x |
 
@@ -170,7 +170,7 @@ training era, which on this split it is (annualised vol falls between the two er
 on 6 of the 8 assets). The three targets are scored on the same queries, so compare
 across a row before reading down a column.
 
-CRPS seed counts differ (SBTS 4, CSDI 5, reference 0) -- the spread columns are not computed over
+CRPS seed counts differ (SBTS 4, CSDI 5, reference 5) -- the spread columns are not computed over
 the same *n* and the method `+/-` are not directly comparable to each other. The
 floor row and the two bootstrap baselines are deterministic given
 `--baseline-seed 1234`, hence one "seed" each.
