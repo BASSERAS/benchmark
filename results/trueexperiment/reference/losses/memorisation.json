@@ -1,0 +1,49 @@
+{
+  "diagnostic": "nearest-neighbour memorisation ratio, log-return space",
+  "definition": "median_i min_j ||gen_i - train_j||  /  median_i min_j ||val_i - train_j||",
+  "interpretation": "1.0 = generated paths sit no closer to the training set than a genuine same-era held-out sample; <1 = memorisation, 1/ratio = how many times closer they sit; >1 = the generator is not landing in the right region",
+  "space": "log-returns, flattened to (T-1)*d = 1016 dims",
+  "denominator_split": "val",
+  "denominator_rationale": "truedatasetguideline section 9.1. TrueDataset is one realisation split by era; test sits behind a 45.5-day embargo in a later market regime, so NN(test -> train) measures regime shift, not novelty. The measured gap is 0.9316 -- using test would inflate every ratio by about 7% for a reason unrelated to the generator.",
+  "median_nn_heldout": 0.01894340105354786,
+  "nn_ratio": 1.5093982091335625,
+  "nn_ratio_std": 0.012430738507343952,
+  "median_nn_generated": 0.02859313562512398,
+  "n_exact_duplicates": 0,
+  "per_seed": [
+    {
+      "seed": 0,
+      "median_nn_generated": 0.02891608327627182,
+      "nn_ratio": 1.5264462381667312,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 1,
+      "median_nn_generated": 0.02873435989022255,
+      "nn_ratio": 1.5168532730209483,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 2,
+      "median_nn_generated": 0.028321150690317154,
+      "nn_ratio": 1.4950404423292807,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 3,
+      "median_nn_generated": 0.02867107093334198,
+      "nn_ratio": 1.5135123229612588,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 4,
+      "median_nn_generated": 0.028323013335466385,
+      "nn_ratio": 1.495138769189593,
+      "n_exact_duplicates": 0
+    }
+  ],
+  "note": "Exact duplicates being 0 does NOT clear a method, and here it is entirely uninformative: a sample is a 127-step Euler-Maruyama rollout driven by fresh Gaussian increments, so bitwise equality with a training path has probability zero by construction. The ratio is the number that matters. Estimator byte-identical to SBTS/code/measure_memorisation.py and CSDI/code/measure_memorisation.py so the columns are directly comparable. THIS row is a calibration of the diagnostic rather than a test of the generator: the reference SDE has 25 fitted numbers (7 covariance-diagonal, 7 off-diagonal, 5 drift, 2 trend half-lives, 2 activity half-lives, 2 mixing weights) against 6144*128*8 ~ 6.29M training values, and its neural control is verified to be exactly zero before sampling, so memorisation is arithmetically impossible. The value it returns is therefore what nn_ratio reads for a generator that certainly did not memorise, which is the null the other columns need.",
+  "n_fitted_coefficients": 25,
+  "n_gamma_coefficients": 19,
+  "control_is_zero": true
+}

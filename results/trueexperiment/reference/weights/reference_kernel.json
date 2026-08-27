@@ -1,0 +1,88 @@
+{
+  "state_dim": 8,
+  "dt": 9.512937595129376e-07,
+  "num_steps": 127,
+  "trend_half_lives": [
+    9.383326013225256,
+    76.29612801778273
+  ],
+  "activity_half_lives": [
+    10.205451361269903,
+    49.05607850961953
+  ],
+  "activity_update": "structural_variance",
+  "fit": {
+    "dataset": "/home/tbasseras/benchmark/dataset/TrueDataset/variants/om_2022-07_N6144",
+    "seq_tag": "6144x128x8",
+    "train_file": "true_S_6144x128x8.npy",
+    "dt": 9.512937595129376e-07,
+    "steps": 300,
+    "lr": 0.01,
+    "seed": 0,
+    "num_paths": 6144,
+    "num_steps": 127,
+    "validation_fraction": 0.2,
+    "baseline_nll": -0.002318924070943583,
+    "validation_gain_over_baseline": 1.4238817965433566,
+    "clip_saturation_high": 0.0024010365403543308,
+    "clip_saturation_low": 0.0,
+    "spectrum_min": 0.14209180237621624,
+    "spectrum_mean": 0.6723115953190304,
+    "spectrum_p99": 3.2403600875345124,
+    "spectrum_max": 5.000000000000012,
+    "saturation_num_paths": 512,
+    "torch_version": "2.13.0+cu130",
+    "device": "cuda:0",
+    "fitted_at": "2026-08-27T07:24:25"
+  },
+  "trend_weight": 0.5927682655119418,
+  "activity_weight": 0.08265270288579064,
+  "initial_activity": 0.7100957304544644,
+  "sigma_min": 0.001,
+  "sigma_max": 5.0,
+  "ridge_covariance": 0.001,
+  "ridge_drift": 0.01,
+  "calibration_nll": -1.4448726930412596,
+  "validation_nll": -1.4262007206143001,
+  "gamma_diagonal": [
+    -0.004291651471305636,
+    0.3190919733049872,
+    0.24353024162766507,
+    0.023053811807135692,
+    75290024.7021983,
+    -76.57195568521476,
+    20.979999272223157
+  ],
+  "gamma_offdiagonal": [
+    -0.011388168261449288,
+    0.2514971005851931,
+    0.027816957095920986,
+    0.04139984839461644,
+    58015518.93635902,
+    -64.47191737836087,
+    -30.53074589433756
+  ],
+  "gamma_drift": [
+    -0.00024223322512499158,
+    -149.70939987649658,
+    171.13073323771764,
+    1.208024947188536e-05,
+    -1.8751309464312676e-05
+  ],
+  "covariance_feature_names": [
+    "1",
+    "sqrt(V_j V_k)",
+    "(V_j+V_k)/2",
+    "mean_k V_k",
+    "T_j T_k",
+    "(T_j+T_k)/2",
+    "mean_k T_k"
+  ],
+  "drift_feature_names": [
+    "1",
+    "T_j",
+    "mean_k T_k",
+    "V_j",
+    "mean_k V_k"
+  ]
+}
