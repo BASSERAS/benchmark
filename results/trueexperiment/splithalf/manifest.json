@@ -1,0 +1,16 @@
+{
+  "purpose": "split-half robustness of tables A and B on the test era",
+  "half_A": "test/disc windows [0:3072] -- earlier part of the late era",
+  "half_B": "test/disc windows [3072:6144] -- later part",
+  "bank_cut": "first 3072 paths, IDENTICAL for both halves",
+  "why": "holding the bank fixed means the only difference between run A and run B is the real evaluation data, which isolates split sensitivity from generator sampling noise",
+  "source_data": "/home/tbasseras/benchmark/dataset/TrueDataset/variants/om_2022-07_N6144",
+  "source_results": "/home/tbasseras/benchmark/results/trueexperiment",
+  "banks": [
+    "Deep-MKV-TS",
+    "reference",
+    "SBTS",
+    "CSDI",
+    "real_floor"
+  ]
+}
