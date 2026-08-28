@@ -70,6 +70,15 @@ import json
 import os
 import re
 import statistics
+import sys
+
+# Table D is a SHARED module (results/trueexperiment/table_d.py) imported by all
+# four renderers, not a fourth copy. Tables A/B/C are duplicated across these
+# files and that duplication has already cost a byte-exact three-file patch --
+# read table_d.py's docstring before adding a fifth table anywhere.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__)))))
+import table_d  # noqa: E402
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 METHOD_DIR = os.path.dirname(HERE)                            # .../Deep-MKV-TS
@@ -911,6 +920,12 @@ def main():
     at_floor, n_a, gaps = a_headline(meth, floor)
     b_at, n_b = b_headline(agg, agg_f)
     per_seed, baselines, realbank = load_crps()
+    # section() returns an empty string when var_backtest.json is absent, so
+    # this file renders exactly what it rendered before Table D existed. When
+    # the VaR run and the CRPS configs disagree about which query file they
+    # read it returns an HTML-comment note instead of a table -- that has
+    # already happened once, and every number in the result looked plausible.
+    d_block = table_d.section()
     crps_tbl, ratios, ratios_sess, resolved, n_crps = render_crps_table(
         per_seed, baselines, realbank)
 
@@ -1189,7 +1204,7 @@ provably never reaches it — rerunning it at seed 9999 reproduces all three tar
 > table above stands. The paper's convention is what is reported.
 
 ---
-
+{d_block}
 {memo}
 ---
 

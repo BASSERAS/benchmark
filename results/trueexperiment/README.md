@@ -186,6 +186,115 @@ the bootstraps. They are never merged.
 
 ---
 
+## Table D -- intraday portfolio VaR/ES backtest
+
+| Bank | Seeds | Exceptions @ 5% | Kupiec `LR_uc` *p* | `LR_cc` *p* | ES ratio | ens sd / real sd = pool × shrink |
+|---|---:|---:|---:|---:|---:|---:|
+| Moving-block bootstrap *(paper baseline)* | 5 | 5.01 ± 0.51% *(3/5)* | 9.6e-03 | 9.0e-08 | 1.04 ± 0.03 | **1.057** = 1.068 × 0.990 |
+| RiskMetrics EWMA (λ=0.94) *(desk benchmark)* | 1 | 6.36% | 2.4e-06 | 1.3e-05 | 1.14 | – |
+| **SBTS** | 5 | 7.10 ± 0.40% | 1.8e-19 | 2.6e-24 | 1.11 ± 0.03 | **0.878** = 0.930 × 0.944 |
+| **reference** | 5 | 8.06 ± 0.64% | 2.7e-32 | 2.5e-33 | 0.97 ± 0.04 | **0.809** = 1.275 × 0.635 |
+| **CSDI** | 5 | 8.80 ± 0.49% | 1.4e-42 | 5.0e-42 | 1.08 ± 0.02 | **0.693** = 0.726 × 0.955 |
+| **Deep-MKV-TS** | 5 | 10.44 ± 1.36% | 1.0e-104 | 2.9e-104 | 1.05 ± 0.06 | **0.694** = 0.942 × 0.741 |
+| Real train split as bank *(Table C floor)* | 1 | 12.06% | 2.7e-104 | 1.2e-103 | 1.02 | **0.656** = 1.043 × 0.629 |
+| Session bootstrap *(paper baseline)* | 5 | 12.19 ± 0.38% | 3.6e-124 | 2.2e-123 | 1.04 ± 0.04 | **0.650** = 1.033 × 0.630 |
+
+**Table D — intraday portfolio VaR backtest.** Horizon **16 minutes**
+(32 bars x 30 s), equal-weight across the 8
+assets, one forecast per test query. The alpha = 5% VaR is the empirical
+5th percentile of the **same K = 256 retrieved continuations that Table C
+scores with CRPS** — no retraining, no new sampling, the identical ensemble read a
+different way. The two tables are checked to read the same query file before this one is
+printed.
+
+This is a **liquidation-horizon** risk figure, roughly the time needed to unwind a crypto
+position. It is **not** an FRTB or Basel capital number, which is a 10-day quantity, and
+it is deliberately **not** scaled to one day by sqrt(t): that scaling assumes returns are
+independent across time, which is the assumption the volatility-clustering results in
+Table A refute. No sqrt(t) appears anywhere in the computation.
+
+**How to read it.** Nominal is the target, not zero — 5% is correct, and
+both 3% and 7% are wrong, one as over-capitalisation and the other as under. Rows are
+ranked by distance from nominal, the same principle by which `winner()` ranks Table A by
+|log ratio| rather than "lowest wins". The *p* columns show the **worst seed**, because
+passing four and being rejected at 1e-104 on the fifth is not passing; the italic fraction
+records how many seeds did pass Kupiec at the 5% level.
+
+**The finding, in one line: the moving-block bootstrap is the only bank whose exception
+rate is anywhere near nominal, and it is the only bank that does not condition.** It
+rebuilds paths from randomly recombined blocks, so its "nearest neighbours" carry no
+information about the query. Its rate is 5.01% against a 5% target, and its per-seed
+misses change sign (4.30%, 4.72%, 5.09%, 5.35%, 5.58% — three of five pass Kupiec, the
+other two marginally at *p* = 0.010 and 0.040). Every bank that **does** condition misses
+in the same direction on every single seed, and is rejected at *p* < 2e-19 throughout.
+
+**`ens sd / real sd` is the whole result, and it factors.** The bold number is the sd of
+the 256-member predictive ensemble over the realised sd of the test portfolio return. It
+is the product of a **generator** property — is the 8192-path pool as dispersed as the
+market? — and a **protocol** property — how much does taking the 256 nearest neighbours
+collapse that dispersion? The two failure modes are genuinely distinct:
+
+* The real training split's pool is *correctly* dispersed (1.043) and conditioning
+  destroys 37% of it (0.629). Pure protocol failure, no generator involved.
+* CSDI's pool is 27% too narrow (0.726) and conditioning costs it almost nothing (0.955),
+  because its paths are already too alike for retrieval to tighten them further. Pure
+  generator failure — this is the over-sharpness signature of section 7.1, priced.
+* The block bootstrap is slightly over-dispersed (1.068) and shrinks by 1% (0.990),
+  which is what "my neighbours are uninformative" looks like as a number.
+
+Across the seven retrieval banks the bold column and the exception rate have Spearman
+rho = 0.96 (the sole inversion is CSDI vs Deep-MKV-TS, tied on width at 0.693/0.694 but
+1.6 points apart on rate — width is the dominant term, not the only one).
+
+**That the real-data row fails is what makes this a statement about the protocol rather
+than about the generators.** Queried by its own training data, at 12.06% against a 5%
+target, *p* = 2.7e-104. Three controls back it:
+
+* **Not tail noise.** The floor breaches 3.84% at alpha = 1%, 12.06% at alpha = 5% and
+  19.65% at alpha = 10% — 3.8x, 2.4x and 2.0x nominal. The estimator behaves differently
+  at each level; the failure does not. Full sweep in `var_backtest.json`.
+* **Not the held-out era.** Re-run against the *validation* split, the same era as the
+  bank: 11.17% versus 12.06% out-of-era. Regime shift explains 0.89 of a 7.06-point miss —
+  13% — and the in-era run is still rejected at *p* = 2.1e-82.
+* **Not too few neighbours.** Sweeping K from 16 to 2048 — 128x more neighbours — moves
+  the floor only 16.24% -> 9.88%, and its retained width only 0.618 -> 0.716 — still a
+  third short of the market at the largest K tested, with no sign of closing.
+
+**`ES ratio`** is the realised mean loss given a breach, divided by the loss the model
+predicted for that same breach. Expected Shortfall is not elicitable (Gneiting 2011), so
+it carries **no** *p*-value by construction — cite it as a magnitude, never as a test.
+Every row sits between 0.97 and 1.14, straddling 1: **conditional on a breach, the loss is
+about the size the model said it would be.** The failure is in the *frequency* of
+breaches, not their severity — these ensembles have roughly the right tail shape in the
+wrong place.
+
+**Nothing passes both tests.** Read the `LR_cc` column: it is rejected on every row of the
+table, the block bootstrap included, and on all five of its seeds (worst 9.0e-08, best
+1.8e-06). That bank gets the *frequency* right and still fails independence, because it
+has no volatility dynamics at all — its VaR is near-constant across queries, so its breach
+sequence simply inherits the clustering of the truth. Everything else fails frequency as
+well. Correct exception rate *and* correct breach timing is achieved by no method in this
+study, which is the open problem this table poses rather than solves.
+
+The independence test is legitimate here, which is unusual — most VaR backtests on H-step
+returns cannot run it, because overlapping windows induce mechanical serial dependence in
+the breach sequence. This dataset's windows are disjoint (stride = seq_len:
+`n_windows_available` 33 570 against 4.30 M bars at `seq_len` 128), and transitions are
+counted only within contiguous 256-window blocks, so the seam between two non-adjacent
+blocks never contributes one.
+
+**Why this is not a restatement of Table C.** CRPS is a distance over the whole law and is
+dominated by its centre; a forecast that nails the bulk and collapses the tail loses very
+little. Coverage is a frequency in the tail alone and cannot be bought back by sharpness.
+Table D also shows why a portfolio view is not a per-asset view rescaled: from train to
+test the mean pairwise correlation of the 8 assets rises 0.557 -> 0.769, so although each
+asset became **17.6% less** volatile, the equal-weight portfolio became only **4.1% less**
+volatile. Diversification decayed enough to absorb three quarters of the per-asset drop —
+a bank that calibrated per-asset vol perfectly and carried the training-era correlation
+forward would still understate portfolio risk by roughly 13%.
+
+---
+
 *Generated by [`render_comparison.py`](render_comparison.py). Every number is read
 from `real_floor/`, `SBTS/`, `CSDI/`, `Deep-MKV-TS/` and `reference/` at render time; none is typed by hand. Do
 not edit this file -- re-run the script.*
