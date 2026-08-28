@@ -159,8 +159,8 @@ convention (`--weight-mode paper --standardize bank`), CRPS x 1000, lower is bet
 | **CSDI** | 5 | **1.248 +/- 0.002** | **0.342 +/- 0.001** | **1.230 +/- 0.024** | **0.99x** ! |
 | **Deep-MKV-TS** | 5 | **1.248 +/- 0.002** | **0.333 +/- 0.000** | **0.887 +/- 0.020** | **0.99x** ! |
 | **reference** | 5 | **1.258 +/- 0.001** | **0.338 +/- 0.000** | **0.983 +/- 0.004** | 1.00x |
-| Block bootstrap *(baseline)* | 1 | 1.279 +/- 0.025 | 0.338 +/- 0.005 | 1.110 +/- 0.024 | 1.02x |
-| Session bootstrap *(baseline)* | 1 | 1.262 +/- 0.026 | 0.337 +/- 0.005 | 0.975 +/- 0.027 | 1.00x |
+| Block bootstrap *(baseline)* | 5 | 1.275 +/- 0.004 | 0.338 +/- 0.000 | 1.097 +/- 0.016 | 1.01x |
+| Session bootstrap *(baseline)* | 5 | 1.261 +/- 0.001 | 0.336 +/- 0.000 | 0.969 +/- 0.008 | 1.00x |
 
 The `xfloor` column carries the same sub-floor convention as tables A and B, and it
 fires here: a bank that forecasts the test era *better* than a bank of real training
@@ -172,13 +172,17 @@ across a row before reading down a column.
 
 Each method's CRPS is a mean over 5 generator seeds, matching tables A
 and B, so the method `+/-` are sd over the same *n* and are comparable to each
-other. The floor row and the two bootstrap baselines are deterministic
-given `--baseline-seed 1234`, hence one "seed" each.
+other. The two bootstrap rows are means over 5 resampling seeds (1234-1238): they redraw
+their blocks and sessions from `--seed` and are not deterministic. The floor row is --
+its bank is the real training split loaded off disk and `score()` holds no RNG, so
+`--seed` never reaches it (rerun at 9999: `+0.00e+00` on all three targets). Hence one
+"seed" for the floor and no seed sd on that row.
 
 **Two different `+/-` appear in this table and they are not the same quantity.** On
-the floor and baseline rows it is the half-width of the 95 % bootstrap CI over the
-6 144 test queries -- sampling noise. On the method rows it is the sample sd across
-seeds -- generator noise. They are never merged.
+the **floor** row it is the half-width of the 95 % bootstrap CI over the 6 144 test
+queries -- sampling noise. On the **method rows and the two bootstrap rows** it is
+the sample sd across seeds -- generator noise for the methods, resampling noise for
+the bootstraps. They are never merged.
 
 ---
 

@@ -291,6 +291,44 @@ def load_crps():
     return per_seed, baselines, realbank.get("results", {}).get("real_train_bank", realbank)
 
 
+BASELINE_SWEEP = os.path.join(TE, "baselines", "crps_configs")
+
+
+def load_baseline_sweep(cfg="paper"):
+    """The two bootstrap baselines as mean +- sd over the resampling seed sweep.
+
+    Reads results/trueexperiment/baselines/crps_configs/<cfg>__bseed_<S>.json,
+    written by results/trueexperiment/run_baseline_seed_sweep.sh.
+
+    Why this exists: block_bootstrap and session_bootstrap ARE stochastic in
+    --seed (conditional_crps_multiasset.py:449 and :464 each build a fresh
+    default_rng(seed)), so reporting them at the author's single 1234 while every
+    method row carried a 5-seed sd compared a point estimate against a
+    distribution. The sweep's block-bootstrap rv sd is ~0.016, wider than this
+    method's own cross-seed sd, so the correction is not cosmetic.
+
+    Deliberately does NOT cover real_train_bank: that bank is np.load()'d off
+    disk and score() contains no RNG, so --seed provably never reaches it
+    (rerunning it at 9999 reproduces all three targets to +0.00e+00). Five seeds
+    there would print one number five times.
+
+    Returns {} when the sweep directory is absent, in which case every caller
+    falls back to the single-seed baselines embedded in the per-seed method
+    artefacts and the table renders exactly what it rendered before.
+    """
+    out = {}
+    files = sorted(glob.glob(os.path.join(BASELINE_SWEEP, f"{cfg}__bseed_*.json")),
+                   key=lambda p: int(re.search(r"bseed_(\d+)", p).group(1)))
+    for p in files:
+        for name, blk in read_json(p).get("results", {}).items():
+            d = out.setdefault(name, {"n": 0, "bank_shape": blk.get("bank_shape")})
+            d["n"] += 1
+            for k, _l in CRPS_TARGETS:
+                if isinstance(blk.get(k), dict) and "mean" in blk[k]:
+                    d.setdefault(k, []).append(blk[k]["mean"])
+    return out
+
+
 def _cell(blk):
     """mean +- half-width of the 95 % bootstrap CI over the 6 144 queries.
 
@@ -302,9 +340,14 @@ def _cell(blk):
     remain in losses/crps_configs/*.json.
 
     WARNING: this +- is NOT the same quantity as the +- on the bold aggregate
-    SBTS row, which is the sample sd ACROSS THE 4 SEEDS. One is sampling noise
-    over test queries, the other is generator noise over seeds. The note printed
-    under the table says which is which; do not merge the two.
+    SBTS row, which is the sample sd ACROSS SEEDS. One is sampling noise over
+    test queries, the other is generator noise over seeds. The note printed under
+    the table says which is which; do not merge the two.
+
+    Since the baseline seed sweep this function NO LONGER renders the two
+    bootstrap rows -- those carry a cross-seed sd like the method row. It still
+    renders the per-seed rows and the real-training-split floor, whose bank is
+    np.load()'d off disk and carries no seed at all.
     """
     if not blk or "mean" not in blk:
         return "-"
@@ -338,6 +381,11 @@ def render_crps_table(per_seed, baselines, realbank):
             cells = [_cell(per_seed[sd_][k]) for k, _l in CRPS_TARGETS]
             lines.append(f"|  seed {sd_} | {bsz} | " + " | ".join(cells) + " |")
 
+    # The bootstrap rows are seed-swept; the floor row below is not, and the
+    # difference is a property of the code, not an oversight. See
+    # load_baseline_sweep.__doc__.
+    sweep = load_baseline_sweep("paper")
+
     NICE = {"block_bootstrap": "Moving-block bootstrap *(paper baseline)*",
             "session_bootstrap": "Session bootstrap *(paper baseline)*"}
     for name in ("block_bootstrap", "session_bootstrap"):
@@ -346,8 +394,18 @@ def render_crps_table(per_seed, baselines, realbank):
             continue
         size = (blk.get("bank_shape") or [None])[0]
         size_txt = f"{size:,}".replace(",", " ") if size else "-"
-        cells = [_cell(blk[k]) for k, _l in CRPS_TARGETS]
-        lines.append(f"| {NICE[name]} | {size_txt} | " + " | ".join(cells) + " |")
+        swp = sweep.get(name)
+        if swp and swp.get("n", 0) > 1:
+            # mean +- sd over the resampling seeds -- the SAME quantity as the
+            # bold method row, which is the point: the comparison is now
+            # distribution against distribution.
+            cells = [f"{statistics.fmean(swp[k]):.3f} ± {statistics.stdev(swp[k]):.3f}"
+                     for k, _l in CRPS_TARGETS]
+            label = f"{NICE[name]} (mean ± sd over {swp['n']} seeds)"
+        else:
+            cells = [_cell(blk[k]) for k, _l in CRPS_TARGETS]
+            label = NICE[name]
+        lines.append(f"| {label} | {size_txt} | " + " | ".join(cells) + " |")
 
     if realbank and "cum_return" in realbank:
         cells = [_cell(realbank[k]) for k, _l in CRPS_TARGETS]
@@ -364,12 +422,28 @@ def render_crps_table(per_seed, baselines, realbank):
     # the ratio against a historical baseline can. So they are returned and the
     # headline prose below the table quotes them. Do not delete the computation
     # to "simplify" -- the headline would then silently report nothing.
+    def _base_mean(name, blk):
+        """Baseline mean for the ratios: the sweep mean when the sweep exists.
+
+        The published single-seed block-bootstrap cum_return (1.2789) sits ~1.1 sd
+        above the 5-seed mean (1.2749), so the old ratios were taken against a
+        mildly unlucky draw. Falls back to the single-seed value so a checkout
+        without baselines/crps_configs/ renders the old numbers rather than
+        crashing.
+        """
+        swp = sweep.get(name)
+        if swp and swp.get("n", 0) > 1:
+            return {k: statistics.fmean(swp[k]) for k, _l in CRPS_TARGETS}
+        return {k: blk[k]["mean"] for k, _l in CRPS_TARGETS} if blk else None
+
     bb = baselines.get("block_bootstrap")
-    ratios = {k: sbts_mean[k] / bb[k]["mean"] for k, _l in CRPS_TARGETS} \
-        if bb and sbts_mean else {}
+    bb_m = _base_mean("block_bootstrap", bb)
+    ratios = {k: sbts_mean[k] / bb_m[k] for k, _l in CRPS_TARGETS} \
+        if bb_m and sbts_mean else {}
     sb = baselines.get("session_bootstrap")
-    ratios_sess = {k: sbts_mean[k] / sb[k]["mean"] for k, _l in CRPS_TARGETS} \
-        if sb and sbts_mean else {}
+    sb_m = _base_mean("session_bootstrap", sb)
+    ratios_sess = {k: sbts_mean[k] / sb_m[k] for k, _l in CRPS_TARGETS} \
+        if sb_m and sbts_mean else {}
 
     # Which differences the data can actually RESOLVE.
     #
@@ -390,11 +464,21 @@ def render_crps_table(per_seed, baselines, realbank):
     sbts_half = {k: statistics.fmean([_half(per_seed[s][k]) for s in sorted(per_seed)])
                  for k, _l in CRPS_TARGETS} if per_seed else {}
     resolved = {}
-    for tag, base in (("block", bb), ("session", sb)):
+    for tag, name, base in (("block", "block_bootstrap", bb),
+                            ("session", "session_bootstrap", sb)):
         if not (base and sbts_mean and sbts_half):
             continue
+        bm = _base_mean(name, base)
+        swp = sweep.get(name)
+        # The baseline mean now carries TWO noise sources -- test-query sampling
+        # AND the resampling seed. Ignoring the second would over-resolve. It is
+        # added rather than combined in quadrature, matching the deliberately
+        # conservative sum-of-half-widths already used on the line below.
+        seed_sd = {k: (statistics.stdev(swp[k])
+                       if swp and swp.get("n", 0) > 1 else 0.0)
+                   for k, _l in CRPS_TARGETS}
         resolved[tag] = {
-            k: abs(sbts_mean[k] - base[k]["mean"]) > (sbts_half[k] + _half(base[k]))
+            k: abs(sbts_mean[k] - bm[k]) > (sbts_half[k] + _half(base[k]) + seed_sd[k])
             for k, _l in CRPS_TARGETS
         }
     return "\n".join(lines), ratios, ratios_sess, resolved, len(per_seed)
@@ -692,11 +776,17 @@ author's:
 Three targets: cumulative return over the horizon, the 32 individual increments, and
 **realized volatility, `sqrt(sum_t r²_{{t,a}})` — summed over TIME, one scalar per asset**.
 All ×1000, lower is better.
-**Two different ± appear in this table and they mean different things:**
-on the bold **SBTS** row it is the sample **sd across the {n_crps} seeds** (generator noise);
-on every other row it is the **half-width of the 95 % bootstrap CI over the 6 144 test
-queries** (2 000 replicates, seed 0 — sampling noise, i.e. how much the average would move
-on a different draw of test histories). The per-seed rows carry the query CI, not a seed sd.
+**Two different ± appear in this table and they mean different things.**
+On the bold **SBTS** row *and on the two bootstrap baselines* it is a sample **sd across
+seeds** — {n_crps} generator seeds for SBTS, 5 resampling seeds (1234–1238) for the
+bootstraps, whose blocks and sessions are redrawn from `--seed`.
+On the **per-seed rows** and on the **real-training-split floor** it is the **half-width of
+the 95 % bootstrap CI over the 6 144 test queries** (2 000 replicates — sampling noise, i.e.
+how much the average would move on a different draw of test histories).
+The floor carries no seed sd because it has none to carry: its bank is the real training
+split loaded off disk and `conditional_crps_multiasset.py`'s `score()` contains no RNG, so
+`--seed` provably never reaches it — rerunning it at seed 9999 reproduces all three targets
+to `+0.00e+00`. Five seeds there would print one number five times.
 
 > **Corrected 2026-08-26.** The rv target previously summed the squared increments over
 > **assets** at each step, giving a `(N, 32)` cross-sectional dispersion trajectory. The

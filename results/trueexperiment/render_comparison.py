@@ -174,9 +174,14 @@ def read_json(path):
 def load_crps(method_dir, label):
     """(per_seed_results, baselines) for the `paper` convention.
 
-    The two historical baselines are deterministic given --baseline-seed, so
-    every seed file carries identical numbers; re-reporting them per seed would
-    manufacture a spread that does not exist. Taken from the lowest seed only.
+    Every one of a method's seed files re-scores the two historical baselines at
+    the SAME --baseline-seed, so they carry identical numbers across that
+    method's seeds; re-reporting them per generator seed would manufacture a
+    spread that does not exist. Taken from the lowest seed only.
+
+    That does NOT mean the baselines are deterministic -- they are stochastic in
+    --seed, they were simply never varied here. load_baseline_sweep() below reads
+    the dedicated sweep that does vary it, and render_c prefers it.
     """
     files = sorted(
         glob.glob(os.path.join(method_dir, "losses", "crps_configs", "paper__seed_*.json")),
@@ -189,6 +194,47 @@ def load_crps(method_dir, label):
         if not baselines:
             baselines = {k: v for k, v in res.items() if k != label}
     return per_seed, baselines
+
+
+BASELINE_SWEEP = os.path.join(HERE, "baselines", "crps_configs")
+
+
+def load_baseline_sweep(cfg="paper"):
+    """The two bootstrap baselines as mean +/- sd over the resampling seed sweep.
+
+    Reads baselines/crps_configs/<cfg>__bseed_<S>.json, written by
+    run_baseline_seed_sweep.sh.
+
+    Why: block_bootstrap and session_bootstrap ARE stochastic in --seed
+    (conditional_crps_multiasset.py:449 and :464 each build a fresh
+    default_rng(seed)), so reporting them at the author's single 1234 while every
+    method row carried a 5-seed sd compared a point estimate against a
+    distribution. The sweep's block-bootstrap rv sd is ~0.016 -- wider than
+    SBTS's own cross-seed sd -- so some method-vs-baseline gaps that looked
+    decided sit inside baseline noise. The correction is not cosmetic.
+
+    Deliberately does NOT cover real_train_bank. That bank is np.load()'d off
+    disk and score() contains no RNG, so --seed provably never reaches it:
+    rerunning it at 9999 reproduces all three targets to +0.00e+00. Five seeds
+    there would print one number five times. Its honest analogue is a DIFFERENT
+    real split used as the bank, which is a semantic change to what "the floor"
+    means and is not silently bundled in here.
+
+    Returns {} when the sweep is absent, in which case render_c falls back to the
+    single-seed baselines embedded in the per-seed method artefacts and the table
+    renders exactly what it rendered before.
+    """
+    out = {}
+    files = sorted(glob.glob(os.path.join(BASELINE_SWEEP, f"{cfg}__bseed_*.json")),
+                   key=lambda p: int(re.search(r"bseed_(\d+)", p).group(1)))
+    for p in files:
+        for name, blk in read_json(p).get("results", {}).items():
+            d = out.setdefault(name, {"n": 0})
+            d["n"] += 1
+            for k, _l in CRPS_TARGETS:
+                if isinstance(blk.get(k), dict) and "mean" in blk[k]:
+                    d.setdefault(k, []).append(blk[k]["mean"])
+    return out
 
 
 # --------------------------------------------------------------- format -----
@@ -385,16 +431,37 @@ def render_c(crps, realbank, baselines):
         rel = ratio_cell(first_mean, rb, "down")[0] if (rb and first_mean) else "-"
         lines.append(f"| **{m}** | {len(per_seed)} | " + " | ".join(cells) + f" | {rel} |")
 
+    # The bootstrap rows carry a cross-seed sd like the method rows whenever the
+    # resampling sweep exists; the floor row above never does, and that asymmetry
+    # is a property of the code, not an oversight. See load_baseline_sweep.__doc__.
+    sweep = load_baseline_sweep("paper")
+
     for name, label in (("block_bootstrap", "Block bootstrap *(baseline)*"),
                         ("session_bootstrap", "Session bootstrap *(baseline)*")):
         blk = baselines.get(name)
         if not blk:
             continue
-        mu = blk.get("cum_return", {}).get("mean")
+        swp = sweep.get(name)
+        if swp and swp.get("n", 0) > 1:
+            # mean +/- sd over the resampling seeds -- the SAME quantity as the
+            # method rows, which is the point: distribution against distribution.
+            cells, mu = [], None
+            for k, _ in CRPS_TARGETS:
+                vals = swp.get(k)
+                if not vals:
+                    cells.append("-")
+                    continue
+                m = statistics.fmean(vals)
+                if mu is None:
+                    mu = m          # cum_return is CRPS_TARGETS[0]; drives xfloor
+                cells.append(f"{m:.3f} +/- {statistics.stdev(vals):.3f}")
+            n_txt = str(swp["n"])
+        else:
+            cells = [_cell(blk.get(k)) for k, _ in CRPS_TARGETS]
+            mu = blk.get("cum_return", {}).get("mean")
+            n_txt = "1"
         rel = ratio_cell(mu, rb, "down")[0] if (rb and mu) else "-"
-        lines.append(f"| {label} | 1 | "
-                     + " | ".join(_cell(blk.get(k)) for k, _ in CRPS_TARGETS)
-                     + f" | {rel} |")
+        lines.append(f"| {label} | {n_txt} | " + " | ".join(cells) + f" | {rel} |")
     return "\n".join(lines)
 
 
@@ -450,6 +517,30 @@ def main():
     # Same "derived, not typed" rule as src_line below. This list was hardcoded to
     # SBTS and CSDI and silently went stale when Deep-MKV-TS and reference joined
     # METHODS, telling the reader two method pages exist when four do.
+    # Derived, not typed. This sentence used to assert that the floor row AND the
+    # two bootstraps were "deterministic given --baseline-seed 1234, hence one
+    # seed each". Half of that was false: the bootstraps redraw from --seed. If
+    # the sweep is later deleted the table silently reverts to one seed, so the
+    # sentence has to be read off the same source the table is.
+    _bsw = load_baseline_sweep("paper")
+    _bn = {v["n"] for v in _bsw.values()} or {1}
+    if len(_bn) == 1 and next(iter(_bn)) > 1:
+        baseline_seed_note = (
+            f"The two bootstrap rows are means over {next(iter(_bn))} resampling seeds "
+            "(1234-1238): they redraw\ntheir blocks and sessions from `--seed` and are "
+            "not deterministic. The floor row is --\nits bank is the real training split "
+            "loaded off disk and `score()` holds no RNG, so\n`--seed` never reaches it "
+            "(rerun at 9999: `+0.00e+00` on all three targets). Hence one\n\"seed\" for "
+            "the floor and no seed sd on that row."
+        )
+    else:
+        baseline_seed_note = (
+            "The floor row and the two bootstrap baselines are all reported at the "
+            "single\n`--baseline-seed 1234`, hence one \"seed\" each. The bootstraps are "
+            "in fact stochastic\nin that seed; run `run_baseline_seed_sweep.sh` to give "
+            "them a spread."
+        )
+
     readme_line = ", ".join(f"[`{m}/README.md`]({m}/README.md)" for m in METHODS)
     flags = "; ".join(f"{m} {len(v)}/34" for m, v in a_below.items())
     nn_line = "; ".join(
@@ -550,13 +641,13 @@ training era, which on this split it is (annualised vol falls between the two er
 on 6 of the 8 assets). The three targets are scored on the same queries, so compare
 across a row before reading down a column.
 
-{crps_seed_note} The floor row and the two bootstrap baselines are deterministic
-given `--baseline-seed 1234`, hence one "seed" each.
+{crps_seed_note} {baseline_seed_note}
 
 **Two different `+/-` appear in this table and they are not the same quantity.** On
-the floor and baseline rows it is the half-width of the 95 % bootstrap CI over the
-6 144 test queries -- sampling noise. On the method rows it is the sample sd across
-seeds -- generator noise. They are never merged.
+the **floor** row it is the half-width of the 95 % bootstrap CI over the 6 144 test
+queries -- sampling noise. On the **method rows and the two bootstrap rows** it is
+the sample sd across seeds -- generator noise for the methods, resampling noise for
+the bootstraps. They are never merged.
 
 ---
 

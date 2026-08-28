@@ -184,11 +184,17 @@ author's:
 Three targets: cumulative return over the horizon, the 32 individual increments, and
 **realized volatility, `sqrt(sum_t r²_{t,a})` — summed over TIME, one scalar per asset**.
 All ×1000, lower is better.
-**Two different ± appear in this table and they mean different things:**
-on the bold **SBTS** row it is the sample **sd across the 5 seeds** (generator noise);
-on every other row it is the **half-width of the 95 % bootstrap CI over the 6 144 test
-queries** (2 000 replicates, seed 0 — sampling noise, i.e. how much the average would move
-on a different draw of test histories). The per-seed rows carry the query CI, not a seed sd.
+**Two different ± appear in this table and they mean different things.**
+On the bold **SBTS** row *and on the two bootstrap baselines* it is a sample **sd across
+seeds** — 5 generator seeds for SBTS, 5 resampling seeds (1234–1238) for the
+bootstraps, whose blocks and sessions are redrawn from `--seed`.
+On the **per-seed rows** and on the **real-training-split floor** it is the **half-width of
+the 95 % bootstrap CI over the 6 144 test queries** (2 000 replicates — sampling noise, i.e.
+how much the average would move on a different draw of test histories).
+The floor carries no seed sd because it has none to carry: its bank is the real training
+split loaded off disk and `conditional_crps_multiasset.py`'s `score()` contains no RNG, so
+`--seed` provably never reaches it — rerunning it at seed 9999 reproduces all three targets
+to `+0.00e+00`. Five seeds there would print one number five times.
 
 > **Corrected 2026-08-26.** The rv target previously summed the squared increments over
 > **assets** at each step, giving a `(N, 32)` cross-sectional dispersion trajectory. The
@@ -206,11 +212,11 @@ on a different draw of test histories). The per-seed rows carry the query CI, no
 |  seed 2 | 8 192 | 1.269 ± 0.025 | 0.337 ± 0.005 | 1.046 ± 0.027 |
 |  seed 3 | 8 192 | 1.269 ± 0.025 | 0.337 ± 0.005 | 1.035 ± 0.026 |
 |  seed 4 | 8 192 | 1.267 ± 0.025 | 0.337 ± 0.005 | 1.037 ± 0.026 |
-| Moving-block bootstrap *(paper baseline)* | 8 192 | 1.279 ± 0.025 | 0.338 ± 0.005 | 1.110 ± 0.024 |
-| Session bootstrap *(paper baseline)* | 8 192 | 1.262 ± 0.026 | 0.337 ± 0.005 | 0.975 ± 0.027 |
+| Moving-block bootstrap *(paper baseline)* (mean ± sd over 5 seeds) | 8 192 | 1.275 ± 0.004 | 0.338 ± 0.000 | 1.097 ± 0.016 |
+| Session bootstrap *(paper baseline)* (mean ± sd over 5 seeds) | 8 192 | 1.261 ± 0.001 | 0.336 ± 0.000 | 0.969 ± 0.008 |
 | Real training split as bank *(reference, not in the paper)* | 6 144 | 1.257 ± 0.026 | 0.335 ± 0.005 | 0.970 ± 0.027 |
 
-> **Headline:** Against the moving-block bootstrap, **1 of the 3 targets is a difference this test can resolve** (Realized vol); on Cumulative return and Increment the gap sits inside the error bars and SBTS and the bootstrap are indistinguishable. Ratios: Cumulative return **0.992**, Increment **0.997**, Realized vol **0.939**. **The session bootstrap is the harder baseline and SBTS loses to it, resolvably, on Realized vol**: Cumulative return **1.006**, Increment **1.002**, Realized vol **1.070**. Resampling whole real training days, with no model at all, forecasts this panel better than the generator does. *Resolvable* = the two 95 % CIs do not overlap. That is a conservative test — the CIs share the same 6 144 queries, so a paired bootstrap on per-query differences would be tighter; it has not been run.
+> **Headline:** Against the moving-block bootstrap, **0 of the 3 targets is a difference this test can resolve**; on Cumulative return, Increment and Realized vol the gap sits inside the error bars and SBTS and the bootstrap are indistinguishable. Ratios: Cumulative return **0.995**, Increment **0.998**, Realized vol **0.951**. **The session bootstrap is the harder baseline and SBTS loses to it, resolvably, on Realized vol**: Cumulative return **1.006**, Increment **1.003**, Realized vol **1.076**. Resampling whole real training days, with no model at all, forecasts this panel better than the generator does. *Resolvable* = the two 95 % CIs do not overlap. That is a conservative test — the CIs share the same 6 144 queries, so a paired bootstrap on per-query differences would be tighter; it has not been run.
 > **The ratio row is the number that transfers**, not the absolute CRPS. Absolute CRPS is set by
 > the intrinsic unpredictability of the market and the units of the data; the ratio against the
 > block bootstrap is dimensionless, which is why the paper reports SBTS and the bootstraps side
