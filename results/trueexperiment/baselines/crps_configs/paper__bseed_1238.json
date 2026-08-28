@@ -1,0 +1,164 @@
+{
+  "units": "CRPS x 1000, lower is better",
+  "protocol": {
+    "s_idx": 64,
+    "history_log_prices": 65,
+    "horizon": 32,
+    "k_neighbours": 256,
+    "block_w": {
+      "recent": 1.0,
+      "cumpath": 0.5,
+      "rollvol": 2.0,
+      "dep": 1.0
+    },
+    "acf_lags": [
+      1,
+      2,
+      5,
+      10
+    ],
+    "roll_windows": [
+      5,
+      10,
+      20
+    ],
+    "cumpath_pts": 24,
+    "recent_n": 32,
+    "bootstrap_block_len": 8,
+    "baseline_seed": 1238,
+    "boot_reps": 2000,
+    "boot_seed": 0,
+    "boot_level": 0.95,
+    "weight_mode": "paper",
+    "standardisation": "bank",
+    "joint_scores": true,
+    "rv_definition": "sqrt(sum_t r^2) per asset, summed over TIME (shadowing.py:583-584); axis fixed 2026-08-26",
+    "retrieval": "joint across assets",
+    "d": 8
+  },
+  "paper_reference": "methods/Deep-MKV-TS/paper_reimplementation/results/paper_real_data_table4.json",
+  "data_dir": "/home/tbasseras/benchmark/dataset/TrueDataset/variants/om_2022-07_N6144",
+  "queries": "true_S_test_6144x128x8.npy",
+  "results": {
+    "block_bootstrap": {
+      "cum_return": {
+        "mean": 1.2743156852607207,
+        "ci_lo": 1.2502754132269385,
+        "ci_hi": 1.299593757639548
+      },
+      "cum_return__energy": {
+        "mean": 26.048643200955418,
+        "ci_lo": 25.595354619755618,
+        "ci_hi": 26.52796657792234
+      },
+      "cum_return__variogram": {
+        "mean": 9.090556315238747,
+        "ci_lo": 8.967523044233737,
+        "ci_hi": 9.217974017406858
+      },
+      "increment": {
+        "mean": 0.3378203657193558,
+        "ci_lo": 0.3332870860343401,
+        "ci_hi": 0.342669868755807
+      },
+      "increment__energy": {
+        "mean": 7.37039147242103,
+        "ci_lo": 7.272840706424284,
+        "ci_hi": 7.470330024600741
+      },
+      "increment__variogram": {
+        "mean": 2.628186405920241,
+        "ci_lo": 2.605370749073386,
+        "ci_hi": 2.6514912218303
+      },
+      "rv": {
+        "mean": 1.086761268170142,
+        "ci_lo": 1.0638624589994718,
+        "ci_hi": 1.1117310266752212
+      },
+      "rv__energy": {
+        "mean": 3.5491929890433607,
+        "ci_lo": 3.4802268055594308,
+        "ci_hi": 3.6246946941594453
+      },
+      "rv__variogram": {
+        "mean": 8.093492647338941,
+        "ci_lo": 7.946391116828171,
+        "ci_hi": 8.263882654916443
+      },
+      "_diag": {
+        "feature_dim": 584,
+        "nn1_dist_mean": 24.624641290340197,
+        "nn1_dist_p95": 45.41874447466954,
+        "unique_neighbour_frac": 0.9619140625,
+        "mean_reuse": 199.6020304568528
+      },
+      "bank_shape": [
+        8192,
+        128,
+        8
+      ],
+      "elapsed_sec": 205.8
+    },
+    "session_bootstrap": {
+      "cum_return": {
+        "mean": 1.2601296733300669,
+        "ci_lo": 1.2343146613933995,
+        "ci_hi": 1.2873099446452085
+      },
+      "cum_return__energy": {
+        "mean": 25.53543731149056,
+        "ci_lo": 25.032848911647218,
+        "ci_hi": 26.047041697209227
+      },
+      "cum_return__variogram": {
+        "mean": 6.982743953062334,
+        "ci_lo": 6.827725170752137,
+        "ci_hi": 7.145080992581152
+      },
+      "increment": {
+        "mean": 0.33610624810132683,
+        "ci_lo": 0.33144760597235995,
+        "ci_hi": 0.34091257823413385
+      },
+      "increment__energy": {
+        "mean": 7.269557911161421,
+        "ci_lo": 7.163459076269546,
+        "ci_hi": 7.376373762078226
+      },
+      "increment__variogram": {
+        "mean": 2.3394713935967357,
+        "ci_lo": 2.3141368069066437,
+        "ci_hi": 2.366034792811065
+      },
+      "rv": {
+        "mean": 0.9606771294408855,
+        "ci_lo": 0.9345437343792685,
+        "ci_hi": 0.9888354401754369
+      },
+      "rv__energy": {
+        "mean": 3.1443325745093924,
+        "ci_lo": 3.066827809460824,
+        "ci_hi": 3.2286027421303203
+      },
+      "rv__variogram": {
+        "mean": 6.8926300671200496,
+        "ci_lo": 6.722782081449358,
+        "ci_hi": 7.080806951587416
+      },
+      "_diag": {
+        "feature_dim": 584,
+        "nn1_dist_mean": 24.003946903457084,
+        "nn1_dist_p95": 43.593139210197506,
+        "unique_neighbour_frac": 0.97216796875,
+        "mean_reuse": 197.49673530889
+      },
+      "bank_shape": [
+        8192,
+        128,
+        8
+      ],
+      "elapsed_sec": 200.8
+    }
+  }
+}
