@@ -1,0 +1,110 @@
+{
+  "method": "SBTS",
+  "role": "baseline comparator for Figure 2",
+  "config": {
+    "M": 5000,
+    "M_simu": 1000,
+    "N": 252,
+    "d": 2,
+    "K": 1,
+    "h": 0.2,
+    "N_pi": 100,
+    "dt": 0.003968253968253968,
+    "seed": 0,
+    "source": "SBTS reference experiments_demo.ipynb cell 9",
+    "rescaling": false
+  },
+  "timing": {
+    "gen_min": 27.3,
+    "mle_min": 2.43
+  },
+  "generated": {
+    "shape": [
+      1000,
+      252,
+      2
+    ],
+    "file": "X_sbts_1000x252x2_sbts.npy",
+    "n_mle_paths": 1000,
+    "n_dropped_for_mle": 0
+  },
+  "summary": [
+    {
+      "param": "kappa",
+      "data_mean": 4.882441120009164,
+      "data_std": 2.788146024874517,
+      "data_q05": 1.8459573724288327,
+      "data_q95": 10.314724017465233,
+      "gen_mean": 5.398080845142041,
+      "gen_std": 3.0852795975381118,
+      "gen_q05": 1.2017441686252297,
+      "gen_q95": 11.430534142631572,
+      "std_ratio": 1.1065703051463984,
+      "w1": 0.6506677553404832,
+      "prior_low": 0.5,
+      "prior_high": 4.0
+    },
+    {
+      "param": "theta",
+      "data_mean": 0.8025000222380313,
+      "data_std": 0.4274431462371093,
+      "data_q05": 0.05684320449957705,
+      "data_q95": 1.417144598297105,
+      "gen_mean": 1.0181204553763115,
+      "gen_std": 0.6497380775742526,
+      "gen_q05": 0.4324875039251062,
+      "gen_q95": 1.919383783592519,
+      "std_ratio": 1.520057306554245,
+      "w1": 0.21562043313828008,
+      "prior_low": 0.5,
+      "prior_high": 1.5
+    },
+    {
+      "param": "xi",
+      "data_mean": 0.4891494995749171,
+      "data_std": 0.21384862831052423,
+      "data_q05": 0.18143638843577115,
+      "data_q95": 0.826839982582793,
+      "gen_mean": 0.5668653145041831,
+      "gen_std": 0.08389952341496117,
+      "gen_q05": 0.4510043292720382,
+      "gen_q95": 0.726892389986624,
+      "std_ratio": 0.392331361102456,
+      "w1": 0.1286193504023957,
+      "prior_low": 0.1,
+      "prior_high": 0.9
+    },
+    {
+      "param": "rho",
+      "data_mean": -0.05844439641432036,
+      "data_std": 0.41642462719277845,
+      "data_q05": -0.7089708344828964,
+      "data_q95": 0.6294049796107571,
+      "gen_mean": -0.00032161540197918163,
+      "gen_std": 0.05465098283170854,
+      "gen_q05": -0.09308007281242318,
+      "gen_q95": 0.08701184230778837,
+      "std_ratio": 0.1312385946050414,
+      "w1": 0.3123760247971698,
+      "prior_low": -0.9,
+      "prior_high": 0.9
+    },
+    {
+      "param": "r",
+      "data_mean": 0.2789302562375652,
+      "data_std": 0.3768034105981277,
+      "data_q05": 0.0,
+      "data_q95": 1.0,
+      "gen_mean": 0.3225021959174769,
+      "gen_std": 0.40601717009388444,
+      "gen_q05": 0.0,
+      "gen_q95": 1.0,
+      "std_ratio": 1.0775305070869279,
+      "w1": 0.05202892499920367,
+      "prior_low": 0.01,
+      "prior_high": 0.1
+    }
+  ],
+  "paper_reference": "Paper section 5.1: SBTS 'failed to reproduce the vol of vol xi and the correlation rho', which are 'projected onto an effective average, yielding a concentrated distribution around the centre of the parameter range', while kappa, theta, r 'remain identifiable and well recovered'. The falsifiable statistic is std_ratio << 1 for xi and rho and ~1 for the rest.",
+  "figure": "figure2_params_kde_sbts.png"
+}

@@ -1,0 +1,14 @@
+{
+  "method": "SBBTS",
+  "seed": 4,
+  "shape": [
+    8192,
+    128
+  ],
+  "min_val": 38.26473355293274,
+  "max_val": 160.20923852920532,
+  "gen_time_sec": 58.1,
+  "train_time_sec": 609.3,
+  "gpu": "NVIDIA A100-SXM4-80GB",
+  "date": "2026-09-01"
+}

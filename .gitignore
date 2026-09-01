@@ -24,6 +24,17 @@ methods/TimeDiT/weights/*.pt
 methods/TimeDiT/paper_reimplementation/*.pt
 methods/TimeDiT/paper_reimplementation/*_fake.npy
 methods/TimeDiT/paper_reimplementation/pretrain_data/
+# SBBTS hyperparameter sweep — 30 arms x (model.pt 7.5 MB + X_sbbts pool 2.7 MB)
+# = 313 MB of transient search artifacts, regenerable from sweep_paper.py. The
+# evidence that actually backs the beta dose-response table in
+# methods/SBBTS/paper_reimplementation/README.md is the per-arm
+# sbbts_heston_scores*.json / losses*.csv / *.log / figure2_params_kde*.png
+# (~7 MB total), which stay tracked. The final shipped model
+# (results/model.pt) and the five benchmark seeds (weights/seed_*_model.pt)
+# are NOT covered by these rules and remain committed.
+methods/SBBTS/paper_reimplementation/results/sweep/*.pt
+methods/SBBTS/paper_reimplementation/results/sweep/X_*.npy
+methods/SBBTS/paper_reimplementation/results/sweep/params_*.npy
 *.pdf
 # ...but keep the reference paper PDF committed for each method
 !methods/**/paper_reimplementation/*.pdf

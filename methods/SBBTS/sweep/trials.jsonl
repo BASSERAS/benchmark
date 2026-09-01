@@ -1,0 +1,15 @@
+{"id": 0, "cfg": {"beta": 100, "K": 5, "N_pi": 60, "d_model": 128, "hidden_dim": 64, "nhead": 32, "n_layers": 2}, "note": "base=paper"}
+{"id": 1, "cfg": {"beta": 300, "K": 5, "N_pi": 60, "d_model": 128, "hidden_dim": 64, "nhead": 32, "n_layers": 2}, "note": "beta=300"}
+{"id": 2, "cfg": {"beta": 1000, "K": 5, "N_pi": 60, "d_model": 128, "hidden_dim": 64, "nhead": 32, "n_layers": 2}, "note": "beta=1000"}
+{"id": 3, "cfg": {"beta": 100, "K": 3, "N_pi": 60, "d_model": 128, "hidden_dim": 64, "nhead": 32, "n_layers": 2}, "note": "K=3"}
+{"id": 4, "cfg": {"beta": 100, "K": 8, "N_pi": 60, "d_model": 128, "hidden_dim": 64, "nhead": 32, "n_layers": 2}, "note": "K=8"}
+{"id": 5, "cfg": {"beta": 100, "K": 5, "N_pi": 30, "d_model": 128, "hidden_dim": 64, "nhead": 32, "n_layers": 2}, "note": "N_pi=30"}
+{"id": 6, "cfg": {"beta": 100, "K": 5, "N_pi": 120, "d_model": 128, "hidden_dim": 64, "nhead": 32, "n_layers": 2}, "note": "N_pi=120"}
+{"id": 7, "cfg": {"beta": 100, "K": 5, "N_pi": 60, "d_model": 64, "hidden_dim": 64, "nhead": 32, "n_layers": 2}, "note": "d_model=64"}
+{"id": 8, "cfg": {"beta": 100, "K": 5, "N_pi": 60, "d_model": 256, "hidden_dim": 64, "nhead": 32, "n_layers": 2}, "note": "d_model=256"}
+{"id": 9, "cfg": {"beta": 100, "K": 5, "N_pi": 60, "d_model": 128, "hidden_dim": 32, "nhead": 32, "n_layers": 2}, "note": "hidden_dim=32"}
+{"id": 10, "cfg": {"beta": 100, "K": 5, "N_pi": 60, "d_model": 128, "hidden_dim": 128, "nhead": 32, "n_layers": 2}, "note": "hidden_dim=128"}
+{"id": 11, "cfg": {"beta": 100, "K": 5, "N_pi": 60, "d_model": 128, "hidden_dim": 64, "nhead": 8, "n_layers": 2}, "note": "nhead=8"}
+{"id": 12, "cfg": {"beta": 100, "K": 5, "N_pi": 60, "d_model": 128, "hidden_dim": 64, "nhead": 16, "n_layers": 2}, "note": "nhead=16"}
+{"id": 13, "cfg": {"beta": 100, "K": 5, "N_pi": 60, "d_model": 128, "hidden_dim": 64, "nhead": 32, "n_layers": 1}, "note": "n_layers=1"}
+{"id": 14, "cfg": {"beta": 100, "K": 5, "N_pi": 60, "d_model": 128, "hidden_dim": 64, "nhead": 32, "n_layers": 4}, "note": "n_layers=4"}

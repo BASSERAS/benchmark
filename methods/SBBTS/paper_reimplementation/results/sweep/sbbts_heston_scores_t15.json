@@ -1,0 +1,121 @@
+{
+  "config": {
+    "M": 5000,
+    "N": 252,
+    "T": 1,
+    "beta": 100,
+    "K": 5,
+    "safe_t": 0.01,
+    "batch_size": 128,
+    "n_epochs": 1000,
+    "lr": 0.0003,
+    "patience": 100,
+    "delta": 0.001,
+    "d_model": 128,
+    "hidden_dim": 64,
+    "nhead": 32,
+    "n_layers": 2,
+    "N_pi": 60,
+    "M_simu": 1000,
+    "N_batch": 2,
+    "seed": 0,
+    "n_params": 1277890,
+    "scale": [
+      0.06270536035299301,
+      0.03749117627739906
+    ]
+  },
+  "timing": {
+    "train_min": 248.76,
+    "gen_min": 2.06,
+    "mle_min": 2.41
+  },
+  "generated": {
+    "shape": [
+      1000,
+      252,
+      2
+    ],
+    "n_dropped_for_mle": 0,
+    "n_mle_paths": 1000
+  },
+  "summary": [
+    {
+      "param": "kappa",
+      "data_mean": 4.882441120009164,
+      "data_std": 2.788146024874517,
+      "data_q05": 1.8459573724288327,
+      "data_q95": 10.314724017465233,
+      "gen_mean": 4.82794156144409,
+      "gen_std": 2.81335277026331,
+      "gen_q05": 1.450743122782259,
+      "gen_q95": 10.494509325560403,
+      "std_ratio": 1.0090406833659036,
+      "w1": 0.11958642065299063,
+      "prior_low": 0.5,
+      "prior_high": 4.0
+    },
+    {
+      "param": "theta",
+      "data_mean": 0.8025000222380313,
+      "data_std": 0.4274431462371093,
+      "data_q05": 0.05684320449957705,
+      "data_q95": 1.417144598297105,
+      "gen_mean": 0.7808327985549353,
+      "gen_std": 0.39762568090649403,
+      "gen_q05": 0.04450659825135495,
+      "gen_q95": 1.3955323838473643,
+      "std_ratio": 0.9302422659174536,
+      "w1": 0.04953034030375934,
+      "prior_low": 0.5,
+      "prior_high": 1.5
+    },
+    {
+      "param": "xi",
+      "data_mean": 0.4891494995749171,
+      "data_std": 0.21384862831052423,
+      "data_q05": 0.18143638843577115,
+      "data_q95": 0.826839982582793,
+      "gen_mean": 0.47602917506738524,
+      "gen_std": 0.15346989368493621,
+      "gen_q05": 0.26055369608270296,
+      "gen_q95": 0.7466670652650991,
+      "std_ratio": 0.7176566662942838,
+      "w1": 0.061693531873508164,
+      "prior_low": 0.1,
+      "prior_high": 0.9
+    },
+    {
+      "param": "rho",
+      "data_mean": -0.05844439641432036,
+      "data_std": 0.41642462719277845,
+      "data_q05": -0.7089708344828964,
+      "data_q95": 0.6294049796107571,
+      "gen_mean": -0.18459397770897135,
+      "gen_std": 0.39140142998872957,
+      "gen_q05": -0.6947453876684688,
+      "gen_q95": 0.5094296257017512,
+      "std_ratio": 0.939909420408835,
+      "w1": 0.1286325939677486,
+      "prior_low": -0.9,
+      "prior_high": 0.9
+    },
+    {
+      "param": "r",
+      "data_mean": 0.2789302562375652,
+      "data_std": 0.3768034105981277,
+      "data_q05": 0.0,
+      "data_q95": 1.0,
+      "gen_mean": 0.18162039827845972,
+      "gen_std": 0.3318730498608366,
+      "gen_q05": 0.0,
+      "gen_q95": 1.0,
+      "std_ratio": 0.880759145290193,
+      "w1": 0.09730985795910546,
+      "prior_low": 0.01,
+      "prior_high": 0.1
+    }
+  ],
+  "paper_reference": "Figure 2 is qualitative. Claims: (a) SBBTS spans the full real range of all five parameters; (b) SBTS collapses xi and rho onto a narrow spike at the centre of the range while still recovering kappa, theta, r. The falsifiable statistic here is std_ratio ~ 1 for xi and rho.",
+  "figure": "figure2_params_kde_t15.png"
+}

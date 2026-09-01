@@ -33,7 +33,7 @@ FAMILIES = [
     ("GAN",                [("TimeGAN", "TimeGAN"),   ("COSCI-GAN", "COSCI-GAN"), ("GT-GAN", "GT-GAN")]),
     ("Diffusion",          [("DiffusionTS", "Diffusion-TS"), ("CSDI", "CSDI"), ("TimeMoDE", "TimeMoDE"), ("TimeDiT", "TimeDiT")]),
     ("VAE",                [("TimeVAE", "TimeVAE"), ("TimeVQVAE", "TimeVQVAE"), ("LS4", "LS4")]),
-    ("Schrödinger Bridge", [("SBTS", "SBTS")]),
+    ("Schrödinger Bridge", [("SBTS", "SBTS"), ("SBBTS", "SBBTS")]),
     ("Fourier Flow",       [("FourierFlow", "Fourier Flow")]),
     # Deep-MKV-TS learns an entropy-penalised volatility correction on top of a
     # frozen path-dependent reference SDE (Guyon-Lekeufack). It is a McKean-Vlasov

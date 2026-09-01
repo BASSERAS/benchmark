@@ -1,0 +1,58 @@
+{
+  "source": "arXiv:2604.07159 section 5.1 + Table 3",
+  "M": 5000,
+  "N": 252,
+  "dt": 0.003968253968253968,
+  "S0": 1.0,
+  "v0": 1.0,
+  "seed": 0,
+  "shape": [
+    5000,
+    253,
+    2
+  ],
+  "channels": [
+    "price",
+    "variance"
+  ],
+  "param_columns": [
+    "r",
+    "kappa",
+    "theta",
+    "rho",
+    "xi"
+  ],
+  "ranges": {
+    "r": [
+      0.01,
+      0.1
+    ],
+    "kappa": [
+      0.5,
+      4.0
+    ],
+    "theta": [
+      0.5,
+      1.5
+    ],
+    "rho": [
+      -0.9,
+      0.9
+    ],
+    "xi": [
+      0.1,
+      0.9
+    ]
+  },
+  "price_min": 0.004029580692488648,
+  "price_max": 45.745516767255374,
+  "var_min": 0.0038533740648011602,
+  "var_max": 3.6204043993770685,
+  "n_nonfinite": 0,
+  "n_nonpositive_price": 0,
+  "elapsed_sec": 8.4,
+  "files": [
+    "X_heston_paper_5000x253x2.npy",
+    "params_true_5000x5.npy"
+  ]
+}

@@ -107,7 +107,8 @@ generator. See [`../../../methods/perfect_recovery/`](../../../methods/perfect_r
 | A34 Teacher-Sigma RMSE ↓ | 0.1002 ± 3.90e-04 | 0.1005 | 0.1007 | 0.09961 | 0.1003 | 0.09993 | 0.06559 |
 
 **Reading the table.** With the author-confirmed **K=20** memory and **h=0.05** bandwidth, SBTS is the
-**strongest generator in the benchmark**, winning **18 of the 36 A-metric rows** (next-best LS4 wins 12). The
+**strongest generator in the benchmark**, winning **12 of the 36 A-metric rows** (next-best Deep-MKV-TS wins
+8). The
 profile that held under the paper's h=0.4, strong marginals, collapsed temporal structure, is gone: the K=20
 kernel now carries enough memory to reproduce Heston's autocorrelation. **Marginals** remain excellent: A1
 kurtosis error **0.0084** ≈ floor (0.0081), tail-quantile errors A2-A4 (≈1.2-2.1e-04), A15 skewness **0.018**
