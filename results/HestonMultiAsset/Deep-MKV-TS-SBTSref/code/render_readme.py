@@ -405,6 +405,7 @@ TREE_NOTES = {
     "code/selection": "per-seed checkpoint-selection records",
     "code/sweep": "one JSON per sweep arm + incumbent.json",
     "code/runs": "per-seed training_checkpoints/ (gitignored)",
+    "code/runs_killed_2026-09-01": "checkpoints of the aborted first launch (not committed)",
     "generated_paths": "",
     "weights": "",
     "losses": "",
@@ -428,7 +429,8 @@ TREE_NOTES = {
 # Directories whose contents are collapsed to one representative line rather than
 # enumerated: five near-identical seed subtrees would bury the structure.
 TREE_COLLAPSE = {"generated_paths", "weights", "code/selection", "code/sweep",
-                 "code/runs", "losses/campaignlogs", "losses/sweeplogs",
+                 "code/runs", "code/runs_killed_2026-09-01",
+                 "losses/campaignlogs", "losses/sweeplogs",
                  "losses/campaignlogs_detached_aborted"}
 TREE_SKIP = {"__pycache__", ".omc", ".git", ".ipynb_checkpoints", ".pytest_cache"}
 

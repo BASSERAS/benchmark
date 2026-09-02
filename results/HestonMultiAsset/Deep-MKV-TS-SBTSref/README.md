@@ -388,24 +388,8 @@ results/HestonMultiAsset/Deep-MKV-TS-SBTSref/
 │   ├── run_stage_*.sh                  (14 files) per-stage sweep launchers (see code/SWEEP.md)
 │   ├── runs/                           per-seed training_checkpoints/ (gitignored)
 │   │   └── seed_0   … and 4 more
-│   ├── runs_killed_2026-09-01/
-│   │   ├── seed_0/
-│   │   │   ├── .lock
-│   │   │   └── training_checkpoints/
-│   │   │       ├── latest.pt
-│   │   │       ├── step_0500.pt
-│   │   │       ├── step_1000.pt
-│   │   │       └── step_1500.pt
-│   │   ├── seed_1/
-│   │   │   ├── .lock
-│   │   │   └── training_checkpoints/
-│   │   │       ├── latest.pt
-│   │   │       ├── step_0500.pt
-│   │   │       ├── step_1000.pt
-│   │   │       └── step_1500.pt
-│   │   └── seed_99/
-│   │       └── training_checkpoints/
-│   │           └── latest.pt
+│   ├── runs_killed_2026-09-01/         checkpoints of the aborted first launch (not committed)
+│   │   └── seed_0   … and 2 more
 │   ├── sbts_reference.py               the SBTS Markovian kernel: b_ref, sigma_ref and db/dx
 │   ├── select_checkpoint_multiasset.py picks the reported checkpoint per seed on validation
 │   ├── selection/                      per-seed checkpoint-selection records
@@ -491,7 +475,7 @@ results/HestonMultiAsset/Deep-MKV-TS-SBTSref/
 │   │   ├── h2.00_s0.log
 │   │   ├── h2.00_s1.log
 │   │   └── h2.00_s2.log
-│   ├── seed_*_losses.csv               (6 files) per-seed training log, one row every 100 steps
+│   ├── seed_*_losses.csv               (5 files) per-seed training log, one row every 100 steps
 │   ├── sweeplogs/                      raw stdout of every sweep arm (gitignored)
 │   │   └── K_1.log   … and 91 more
 │   └── timing_*.log                    (2 files) reference-kernel throughput probes

@@ -48,6 +48,12 @@ def main() -> None:
         markov_order=int(incumbent["markov_order"]),
         npi=int(incumbent["npi"]),
         weight_grad_mode=str(incumbent["weight_grad_mode"]),
+        # Subscript, never ``.get``.  An incumbent predating the full-lag
+        # Jacobian carries no ``jacobian_lags``, and defaulting it would
+        # silently probe the one-lag backward pass -- a different model from
+        # the promoted one, which would make the answer below a lie.  Crash
+        # instead.
+        jacobian_lags=int(incumbent["jacobian_lags"]),
         allow_drift_correction=True,
     )
 
