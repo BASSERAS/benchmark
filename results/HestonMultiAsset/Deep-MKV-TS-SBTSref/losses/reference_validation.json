@@ -1,0 +1,41 @@
+{
+  "drift_max_rel_error": 2.843266748248164e-14,
+  "sigma_max_abs_error": 0.0,
+  "jacobian_max_rel_error": 2.978066789676366e-09,
+  "jacobian_max_abs": 121.24322871892115,
+  "h": 0.31,
+  "K": 20,
+  "dt": 0.003968253968253968,
+  "timings": [
+    {
+      "device": "cuda:0",
+      "batch": 256,
+      "npi": 1,
+      "dtype": "torch.float32",
+      "seconds_per_forward": 0.898,
+      "dead_row_fraction": 0.014489,
+      "peak_gib": 1.118,
+      "final_log_price_std": 0.27099
+    },
+    {
+      "device": "cuda:0",
+      "batch": 256,
+      "npi": 5,
+      "dtype": "torch.float32",
+      "seconds_per_forward": 1.271,
+      "dead_row_fraction": 0.014847,
+      "peak_gib": 1.118,
+      "final_log_price_std": 0.27916
+    },
+    {
+      "device": "cuda:0",
+      "batch": 256,
+      "npi": 50,
+      "dtype": "torch.float32",
+      "seconds_per_forward": 6.252,
+      "dead_row_fraction": 0.014707,
+      "peak_gib": 1.118,
+      "final_log_price_std": 0.28472
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "allow_drift_correction": false,
+  "h": 0.36,
+  "h_note": "Re-swept against the CORRECTED adjoint (jacobian_lags=-1, all K=20 lags). The earlier h=0.36 was selected while the adjoint carried a single lag, a gradient with 100% relative error, so that choice was not evidence about the code that now runs.",
+  "jacobian_lags": -1,
+  "lr": 2.5e-05,
+  "markov_order": 20,
+  "npi": 1,
+  "promoted_from": "winner_hfix.json",
+  "promoted_on": "2026-09-02",
+  "ridge_lambda": 10.0,
+  "weight_grad_mode": "analytic",
+  "weight_grad_mode_note": "Overridden 2026-09-01. The sweep measured detached 0.062446 vs analytic 0.062340 -- a 0.17% gap, well inside the 6.91% seed noise floor -- and detached was promoted for being 16% cheaper. That is a cost argument, not a correctness one: weight_grad_mode='detached' short-circuits at sbts_reference.py:420 and drops d b^ref / d x entirely, while the method is specified to carry it. Set back to analytic; the five-seed campaign is run with the drift path-derivative on."
+}

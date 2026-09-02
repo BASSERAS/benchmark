@@ -1,0 +1,102 @@
+{
+  "source": "probe_occupancy_low.py",
+  "generated": "2026-09-02T00:18:30",
+  "dataset": "heston_ma_S_8192x252x8.npy",
+  "bank_paths": 4096,
+  "queries": 256,
+  "markov_order": 20,
+  "report_step": 120,
+  "note": "bank rows [0,4096), query rows [4096,4352) -- disjoint",
+  "by_h": {
+    "0.28": {
+      "h": 0.28,
+      "step": 120,
+      "alive": 213,
+      "total": 256,
+      "alive_pct": 83.203125,
+      "n_eff_median": 1.9365131371983637,
+      "onehot_pct": 25.352112676056336,
+      "verdict": "near-degenerate"
+    },
+    "0.31": {
+      "h": 0.31,
+      "step": 120,
+      "alive": 238,
+      "total": 256,
+      "alive_pct": 92.96875,
+      "n_eff_median": 3.9294432786850697,
+      "onehot_pct": 8.403361344537815,
+      "verdict": "near-degenerate"
+    },
+    "0.33": {
+      "h": 0.33,
+      "step": 120,
+      "alive": 245,
+      "total": 256,
+      "alive_pct": 95.703125,
+      "n_eff_median": 6.674416443387827,
+      "onehot_pct": 5.714285714285714,
+      "verdict": "near-degenerate"
+    },
+    "0.36": {
+      "h": 0.36,
+      "step": 120,
+      "alive": 253,
+      "total": 256,
+      "alive_pct": 98.828125,
+      "n_eff_median": 16.703364599918807,
+      "onehot_pct": 3.9525691699604746,
+      "verdict": "averaging"
+    },
+    "0.50": {
+      "h": 0.5,
+      "step": 120,
+      "alive": 256,
+      "total": 256,
+      "alive_pct": 100.0,
+      "n_eff_median": 378.34814693640465,
+      "onehot_pct": 0.0,
+      "verdict": "averaging"
+    },
+    "0.70": {
+      "h": 0.7,
+      "step": 120,
+      "alive": 256,
+      "total": 256,
+      "alive_pct": 100.0,
+      "n_eff_median": 1796.0508210476746,
+      "onehot_pct": 0.0,
+      "verdict": "averaging"
+    },
+    "1.00": {
+      "h": 1.0,
+      "step": 120,
+      "alive": 256,
+      "total": 256,
+      "alive_pct": 100.0,
+      "n_eff_median": 3211.5929676332908,
+      "onehot_pct": 0.0,
+      "verdict": "averaging"
+    },
+    "1.50": {
+      "h": 1.5,
+      "step": 120,
+      "alive": 256,
+      "total": 256,
+      "alive_pct": 100.0,
+      "n_eff_median": 3876.2083488105663,
+      "onehot_pct": 0.0,
+      "verdict": "averaging"
+    },
+    "2.00": {
+      "h": 2.0,
+      "step": 120,
+      "alive": 256,
+      "total": 256,
+      "alive_pct": 100.0,
+      "n_eff_median": 4021.4281801104007,
+      "onehot_pct": 0.0,
+      "verdict": "averaging"
+    }
+  }
+}

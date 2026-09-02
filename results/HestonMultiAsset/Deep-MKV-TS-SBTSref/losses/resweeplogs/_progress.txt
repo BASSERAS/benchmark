@@ -1,0 +1,7 @@
+gpu 1 seed 1 finished round [0.36 0.50 0.70]
+gpu 0 seed 0 finished round [0.36 0.50 0.70]
+gpu 2 seed 2 finished round [0.36 0.50 0.70]
+gpu 1 seed 1 finished round [1.00 1.50 2.00]
+gpu 0 seed 0 finished round [1.00 1.50 2.00]
+gpu 2 seed 2 finished round [1.00 1.50 2.00]
+ALL_DONE

@@ -1,0 +1,25 @@
+====================================================================================================
+BANDWIDTH RE-SWEEP, CORRECTED ADJOINT (jacobian_lags = -1, all K = 20 lags)
+====================================================================================================
+     h  alive%     n_eff       seed0       seed1       seed2        mean   spread%
+----------------------------------------------------------------------------------------------------
+  0.28   83.2%       1.9    0.133921    0.142768    0.143091    0.139927      6.6%
+  0.31   93.0%       3.9    0.082450    0.082559    0.080786    0.081932      2.2%
+  0.33   95.7%       6.7    0.092517    0.093699    0.091379    0.092532      2.5%
+  0.36   98.8%      16.7    0.074028    0.069655    0.067299    0.070327      9.6%
+  0.50  100.0%     378.3    0.131761    0.131809    0.131068    0.131546      0.6%
+  0.70  100.0%    1796.1    0.132039    0.132107    0.131358    0.131835      0.6%
+  1.00  100.0%    3211.6    0.132281    0.132357    0.131613    0.132084      0.6%
+  1.50  100.0%    3876.2    0.132488    0.132569    0.131830    0.132296      0.6%
+  2.00  100.0%    4021.4    0.132577    0.132659    0.131924    0.132387      0.6%
+----------------------------------------------------------------------------------------------------
+seed noise floor = 6.91%  (a gap below this is not an h effect)
+alive% / n_eff at step 120, K=20, disjoint bank/query, from occupancy_k20.json
+alive% = rows whose kernel weights did not all underflow; the rest train against b^ref = 0.
+n_eff  = median effective bank paths; near 1 means a 1-NN lookup of a single TRAINING path.
+
+[best]   h = 0.36   mean val_discrepancy = 0.070327
+[second] h = 0.31   mean = 0.081932   margin = 16.50%
+[ok]     margin 16.50% clears the noise floor.
+[promote] incumbent h = 0.36 -> /home/tbasseras/benchmark/results/HestonMultiAsset/Deep-MKV-TS-SBTSref/code/sweep/incumbent.json
+WINNER_H=0.36

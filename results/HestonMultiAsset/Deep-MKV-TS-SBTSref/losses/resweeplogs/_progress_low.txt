@@ -1,0 +1,4 @@
+gpu 1 seed 1 finished LOW round [0.28 0.31 0.33]
+gpu 0 seed 0 finished LOW round [0.28 0.31 0.33]
+gpu 2 seed 2 finished LOW round [0.28 0.31 0.33]
+ALL_DONE_LOW
