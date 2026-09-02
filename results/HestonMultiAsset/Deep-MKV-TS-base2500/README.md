@@ -34,7 +34,7 @@ memorisation diagnostic shared by all methods on this dataset.
 > `num_layers=1`, batch , target batch 256;
 > `AdamW(lr=0.002, weight_decay=1e-05)`, `grad_clip_norm=5`,
 > `ce_target_mode="ridge"` with `ridge_lambda=0.001`, `ce_ridge=0.001`;
->  outer iterations per seed, 5 seeds.
+>  outer iterations per seed, 5 seeds (seeds 0, 2, 4, 5, 6).
 > Every one of those numbers is the **committed d = 1 value**, unchanged, except for
 > what is listed next.
 >
@@ -77,7 +77,7 @@ memorisation diagnostic shared by all methods on this dataset.
 > row is computed on each of the 8 univariate slices and reported as the **mean over assets**
 > (per-asset breakdown in [`metrics_per_asset.csv`](metrics_per_asset.csv)).
 
-| Metric | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
+| Metric | Mean ± Std | Seed 0 | Seed 2 | Seed 4 | Seed 5 | Seed 6 | Perfect floor |
 |---|---|---|---|---|---|---|---|
 | **Fat Tail** | | | | | | | |
 | A1 Kurtosis Error ↓ | 1.05 ± 0.1061 | 1.218 | 1.034 | 1.114 | 0.9691 | 0.9182 | 0.008385 |
@@ -150,7 +150,7 @@ per plot**:
 All ↓ lower is better. The perfect floor is **non-zero** for all plots, it is the residual finite-sample error of an independent multi-asset Heston draw scored against the test set, identical across methods.
 Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CVaR₉₅** (the per-seed columns hold that seed's combined score).
 
-| Plot | Measure | Mean ± Std | Seed 0 | Seed 1 | Seed 2 | Seed 3 | Seed 4 | Perfect floor |
+| Plot | Measure | Mean ± Std | Seed 0 | Seed 2 | Seed 4 | Seed 5 | Seed 6 | Perfect floor |
 |---|---|---|---|---|---|---|---|---|
 | **Path comparison** *(50×50 path-cloud)* | grid_tvd 50×50 (%) ↓ | 4.437% ± 0.2328% | 4.31% | 4.874% | 4.236% | 4.477% | 4.289% | 2.189% |
 | **Log-return histogram** | MSE | 1.065 ± 0.07918 | 1.131 | 0.9227 | 1.134 | 1.037 | 1.099 | 0.0554 |
@@ -185,7 +185,7 @@ Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CV
 |  | CVaR₉₅ | 3.291% ± 0.2336% | 3.54% | 2.891% | 3.443% | 3.174% | 3.409% | 0.1175% |
 
 > **Headline:** **0 of the 6 B plots** sit at or below the finite-sample floor on the deciding MSE row: none.
-> **Cross-seed stability**: the seed here controls **three** independent things — the control network's initialisation, every Euler–Maruyama increment drawn during training, and the batch resampling that re-fits the Z-proxy at each outer iteration. The reference kernel is *not* among them: it is fitted once, frozen, and shared byte-for-byte across all 5 seeds (`code/reference/reference_kernel.json`), so none of the spread below comes from re-estimating the reference SDE. What remains is optimisation plus sampling variance, and [`plots/loss_convergence.png`](plots/loss_convergence.png) shows whether any seed diverged. Generation uses a **separate** seed stream (90000 + i) that never reuses a training seed.
+> **Cross-seed stability**: the seed here controls **three** independent things — the control network's initialisation, every Euler–Maruyama increment drawn during training, and the batch resampling that re-fits the Z-proxy at each outer iteration. The reference kernel is *not* among them: it is fitted once, frozen, and shared byte-for-byte across every seed (`code/reference/reference_kernel.json`), so none of the spread below comes from re-estimating the reference SDE. What remains is optimisation plus sampling variance, and [`plots/loss_convergence.png`](plots/loss_convergence.png) shows whether any seed diverged. Generation uses a **separate** seed stream (90000 + i) that never reuses a training seed.
 
 ---
 
@@ -296,10 +296,10 @@ results/HestonMultiAsset/Deep-MKV-TS/
 │   ├── multivariate_reference.py       the d = 8 Guyon-Lekeufack kernel itself
 │   ├── null_control_baseline.py
 │   ├── plot_diagnostics_multiasset.py  the 8-panel stylised-facts figure
-│   ├── plot_losses.py                  plots/loss_convergence.png, 5 seeds overlaid
+│   ├── plot_losses.py                  plots/loss_convergence.png, all seeds overlaid
 │   ├── reference/                      FITTED artefacts only — the upstream package is NOT vendored here
 │   │   ├── reference_fit_history.csv   its penalised-MLE calibration trace
-│   │   └── reference_kernel.json       the frozen kernel, fitted once, shared by all 5 seeds
+│   │   └── reference_kernel.json       the frozen kernel, fitted once, shared by every seed
 │   ├── render_readme.py                regenerates this README from the artefacts
 │   ├── run_all_multiasset.py           samples the 8192-path bank from the SELECTED checkpoint
 │   ├── run_campaign.sh
@@ -329,8 +329,10 @@ results/HestonMultiAsset/Deep-MKV-TS/
 ├── metrics_per_asset.csv               per-metric × per-asset breakdown (8 rows per metric)
 ├── metrics_summary.csv                 A1-A34, mean ± std, per seed
 ├── plots/
+│   ├── disc_classifier_loss.png        A18 BCE curves, all seeds
 │   ├── heston_diagnostics.png          8-panel stylised facts (seed 0, asset 0)
-│   └── loss_convergence.png            L_adj and the path-functional objective, 5 seeds
+│   ├── loss_convergence.png            L_adj and the path-functional objective, all seeds
+│   └── pred_score_loss.png             A19 MAE curves, all seeds (asset 0)
 ├── seed_0_disc_gru_loss.csv
 ├── seed_0_disc_mlp_loss.csv
 ├── seed_0_metrics.json
@@ -383,7 +385,7 @@ export PYTHONPATH="$R/src:$R/experiments"
 cd dataset/HestonMultiAsset && python generate_heston_multiasset.py && cd -
 
 # 2. fit the frozen reference kernel by penalised MLE on the TRAIN split
-#    Writes code/reference/reference_kernel.json. Fitted ONCE and shared by all 5 seeds.
+#    Writes code/reference/reference_kernel.json. Fitted ONCE and shared by every seed.
 cd results/HestonMultiAsset/Deep-MKV-TS/code
 CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=8 taskset -c 0-7 $PY fit_reference_multiasset.py
 

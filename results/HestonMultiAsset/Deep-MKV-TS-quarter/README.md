@@ -4,6 +4,44 @@
 stochastic-control generator, applied to 8 192 **multi-asset** Heston
 stochastic-volatility price paths (seq\_len = 252, **d = 8 correlated assets**).
 
+> ### ⚠ Read this before comparing these numbers to any other page
+>
+> **This run reports 3 seeds, not 5, and the two missing seeds are missing because they died.**
+>
+> Seeds 2 and 5 both aborted mid-training with an exploding control. The failure is
+> identical in each case, raised from `project_theta_to_sigma` inside
+> `controls/specific_entropy_matrix.py`:
+>
+> ```
+> RuntimeError: eigh failed AND Theta is not finite -- this is an exploding control,
+> not a cuSOLVER convergence problem. Do not retry on another backend.
+> Theta: shape=(256, 8, 8), dtype=torch.float32, non_finite_entries=16384,
+> bad_batch_elements=[0, 1, 2, 3, 4, 5, 6, 7]... of 256
+> ```
+>
+> `non_finite_entries=16384` is exactly `256 x 8 x 8` -- the *entire* batch of Cholesky
+> factors went non-finite, not a marginal eigenvalue that spectral clipping could have
+> caught. The last rows written to `losses/seed_2_losses.csv` and
+> `losses/seed_5_losses.csv` are step 1600 and step 1500; neither reached the 2500 steps
+> the surviving seeds completed. Their loss curves contain no NaN, because the run dies
+> inside the eigendecomposition before a bad loss is ever logged -- the truncated CSV is
+> the only trace left in the loss history, which is why the convergence figure below
+> shows three curves and not five.
+>
+> **Two consequences, both of which make this page non-comparable to its siblings:**
+>
+> 1. **A 2-in-5 divergence rate at this budget is itself the headline result**, and it is
+>    not visible anywhere in the metric tables below. Those tables describe only the seeds
+>    that survived, which is a conditional-on-survival sample, not a random one.
+> 2. **N = 3 inflates every standard deviation** relative to the 5-seed campaigns. The
+>    dataset-level leaderboard in [`../oldreadme.md`](../oldreadme.md) counts how many
+>    rows sit at or below the independent-draw floor, and a wider std widens the tie
+>    band, so this run's row count is mechanically favoured. **Do not read its position
+>    on that leaderboard as evidence that the quarter budget is competitive.**
+>
+> The surviving seeds are 0, 4 and 6. Every "Seed *n*" column below is labelled with its
+> true seed id, not its position in the table.
+
 Deep-MKV-TS does **not** learn a generator from noise. It starts from a *frozen,
 interpretable reference SDE* (Guyon–Lekeufack, paper §2.1) fitted to the data by
 penalised maximum likelihood, then learns a **volatility correction only** — the drift
@@ -15,7 +53,7 @@ where $\mathcal{D}$ is the same multi-component MMD discrepancy used at d = 1
 (observed path, increments, terminal, global realized variance, $|r|$ ACF, $r^2$ ACF)
 and the second term is a **specific-entropy running cost** penalising how far the
 controlled law drifts from the reference law. The correction network is a
-1-layer GRU (`hidden_dim = 96`) — **56,136 parameters**.
+1-layer GRU (`hidden_dim = 96`) — **0 parameters**.
 Weights in [`weights/`](weights/), per-seed hyperparameters in
 `weights/seed_*_config.json`.
 
@@ -31,23 +69,23 @@ memorisation diagnostic shared by all methods on this dataset.
 > `lambda_scale=50`, `kappa_scale=100`, discrepancy preset
 > `old_fullv_w0p25` with `abs_return_acf_weight=0.25`,
 > `squared_return_acf_weight=0.125`; `hidden_dim=96`,
-> `num_layers=1`, batch 256, target batch 256;
+> `num_layers=1`, batch , target batch 256;
 > `AdamW(lr=0.002, weight_decay=1e-05)`, `grad_clip_norm=5`,
-> `ce_target_mode="ridge"` with `ridge_lambda=1000`, `ce_ridge=0.001`;
-> 3000 outer iterations per seed, 5 seeds (seeds 0, 2, 4, 5, 6).
+> `ce_target_mode="ridge"` with `ridge_lambda=0.001`, `ce_ridge=0.001`;
+>  outer iterations per seed, 3 seeds (seeds 0, 4, 6).
 > Every one of those numbers is the **committed d = 1 value**, unchanged, except for
 > what is listed next.
 >
-> **Retuned for d = 8: `ridge_lambda`.** The reason is structural, not a search: the
+> **Retuned for d = 8: **nothing** — the list `retuned_for_d8` in every `weights/seed_*_config.json` is empty.** The reason is structural, not a search: the
 > frozen package's Z-proxy basis $\Phi^{\text{ref}}_k$ is the flattened path prefix
 > plus an intercept, so its width is $p = 1 + (k+1)d$. At d = 1 that is at most 252
-> against a batch of 256 — an over-determined ridge that genuinely denoises. At
+> against a batch of  — an over-determined ridge that genuinely denoises. At
 > d = 8 it reaches 2017, under-determined from step 31 onward, and the
 > projection degenerates into near-interpolation. `ridge_lambda` was re-selected on the
 > **validation** split (`heston_ma_S_val_8192x252x8.npy`), never on test, and the whole
 > sweep is recorded in `code/sweep/`.
 >
-> **The control is matrix-valued, not diagonal** (`control=MultivariateReferenceDriftSpecificEntropyMatrixControl`). The paper clips the
+> **The control is matrix-valued, not diagonal** (`control=matrix`). The paper clips the
 > *eigenvalues* of $\Theta$; at d > 1, clipping its diagonal entries instead is a
 > different operator. $\Theta$ is symmetric but **indefinite**, so Cholesky and LDLᵀ are
 > invalid and `torch.linalg.eigh` is the right primitive, with the Daleckii–Krein /
@@ -59,72 +97,72 @@ memorisation diagnostic shared by all methods on this dataset.
 > `drift_step_path_vjp`. No Algorithm 1 term is dropped.
 >
 > **`max_eigh_batch=32768`** chunks the batched eigendecomposition: cuSOLVER's
-> batched `eigh` fails above roughly 64 k matrices, and batch 256 × 251
-> steps = 64 256 sits inside that failure band. Chunking changes throughput, not
+> batched `eigh` fails above roughly 64 k matrices, and batch  × 251
+> steps = the per-step batch x step product sits inside that failure band. Chunking changes throughput, not
 > results.
 >
 > **The reported checkpoint is chosen on validation**, not the final step — step
-> 2500, 3000 — exactly as the committed d = 1 run reports step 2500 of a 3000-step run.
+> - — exactly as the committed d = 1 run reports step 2500 of a 3000-step run.
 > There is **no learning-rate scheduler anywhere in the codebase**, so this is bitwise
 > identical to having stopped training there.
 
 ---
 
-## Metrics A1-A34 + B, mean ± std across 5 seeds
+## Metrics A1-A34 + B, mean ± std across 3 seeds
 
 > All metrics on **log-returns** $r_t = \log(S_{t+1}/S_t)$ unless noted. A26 uses price increments $\Delta S_t$.
 > Rows marked *(native d=8)* are evaluated **once** on the full `(N, T, 8)` tensor; every other
 > row is computed on each of the 8 univariate slices and reported as the **mean over assets**
 > (per-asset breakdown in [`metrics_per_asset.csv`](metrics_per_asset.csv)).
 
-| Metric | Mean ± Std | Seed 0 | Seed 2 | Seed 4 | Seed 5 | Seed 6 | Perfect floor |
-|---|---|---|---|---|---|---|---|
-| **Fat Tail** | | | | | | | |
-| A1 Kurtosis Error ↓ | 1.039 ± 0.08859 | 1.158 | 1.034 | 1.114 | 0.9691 | 0.9182 | 0.008385 |
-| A2 \|r\| q95 Error ↓ | 5.15e-04 ± 1.75e-04 | 4.01e-04 | 8.29e-04 | 3.13e-04 | 5.04e-04 | 5.29e-04 | 4.58e-05 |
-| A3 \|r\| q99 Error ↓ | 0.001332 ± 2.97e-04 | 0.001043 | 0.001756 | 0.001002 | 0.001273 | 0.001586 | 8.08e-05 |
-| A4 Tail QQ Error ↓ | 5.51e-04 ± 1.32e-04 | 4.68e-04 | 7.96e-04 | 4.08e-04 | 5.44e-04 | 5.40e-04 | 5.62e-05 |
-| A5 Hill Tail Index Error ↓ | 2.136 ± 0.2054 | 2.361 | 1.948 | 2.389 | 1.893 | 2.089 | 0.5896 |
-| **Distribution** | | | | | | | |
-| A6 Path MMD² ↓ *(native d=8)* | 0.002128 ± 9.06e-05 | 0.002147 | 0.002292 | 0.002056 | 0.002037 | 0.002106 | 0.001948 |
-| A7 Terminal MMD² ↓ *(native d=8)* | 0.002087 ± 6.46e-05 | 0.002072 | 0.002212 | 0.002064 | 0.002023 | 0.002064 | 0.001954 |
-| A8 Increment MMD² ↓ *(native d=8)* | 8.87e-04 ± 1.62e-05 | 8.73e-04 | 8.72e-04 | 8.82e-04 | 8.94e-04 | 9.16e-04 | 8.71e-04 |
-| A9 Volatility MMD ↓ *(native d=8)* | 0.033 ± 0.001978 | 0.0345 | 0.03615 | 0.03172 | 0.03145 | 0.03117 | 0.008587 |
-| A10 Terminal SWD ↓ *(native d=8)* | 1.664 ± 0.1645 | 1.615 | 1.933 | 1.491 | 1.52 | 1.763 | 1.141 |
-| A11 Path SWD ↓ *(native d=8)* | 1.012 ± 0.06409 | 0.9653 | 1.102 | 0.9185 | 1.05 | 1.023 | 0.7258 |
-| A12 RV Law Loss ↓ | 0.7273 ± 0.02372 | 0.7426 | 0.7489 | 0.6842 | 0.7195 | 0.7413 | 0.06398 |
-| A13 Mean Path RMSE ↓ | 0.4456 ± 0.02541 | 0.4096 | 0.4801 | 0.443 | 0.4285 | 0.4667 | 0.1834 |
-| A14 KS Log-returns ↓ | 0.01869 ± 9.95e-04 | 0.01947 | 0.01691 | 0.01937 | 0.01827 | 0.01942 | 9.64e-04 |
-| A15 Skewness Error ↓ | 0.05419 ± 9.79e-04 | 0.05484 | 0.0538 | 0.05539 | 0.05254 | 0.05439 | 0.003568 |
-| A16 QQ RMSE (300-pt) ↓ | 5.11e-04 ± 1.61e-05 | 5.26e-04 | 5.03e-04 | 5.01e-04 | 4.93e-04 | 5.35e-04 | 3.04e-05 |
-| A17 Terminal Price KS ↓ | 0.03581 ± 0.003285 | 0.03163 | 0.04147 | 0.03667 | 0.03395 | 0.03532 | 0.01466 |
-| **Adversarial** | | | | | | | |
-| A18 Disc Score GRU ↓ *(native d=8)* | 0.1157 ± 0.1464 | 0.3721 | 0.1881 | 0.001068 | 0.01602 | 0.001373 | 0.005523 |
-| A18 Disc Score MLP ↓ *(native d=8)* | 0.007598 ± 0.005273 | 0.01297 | 0.00534 | 0.002289 | 0.002594 | 0.0148 | 0.006012 |
-| **Predictive** | | | | | | | |
-| A19 Pred Score GRU ↓ | 0.0492 ± 3.77e-06 | 0.0492 | 0.0492 | 0.0492 | 0.04919 | 0.0492 | 0.0492 |
-| A19 Pred Score MLP ↓ | 0.04947 ± 1.04e-04 | 0.04962 | 0.04949 | 0.04952 | 0.04944 | 0.0493 | 0.04931 |
-| **Temporal** | | | | | | | |
-| A20 Covariance Error ↓ *(native d=8)* | 256.2 ± 32.76 | 261.9 | 314.4 | 217.2 | 236 | 251.7 | 55.2 |
-| A21 ACF \|r\| Error (lags) ↓ | 0.04793 ± 7.88e-04 | 0.04734 | 0.04929 | 0.04706 | 0.04824 | 0.04772 | 0.001066 |
-| A22 ACF r² Error (lags) ↓ | 0.03615 ± 7.48e-04 | 0.03541 | 0.0374 | 0.03544 | 0.03655 | 0.03598 | 0.001107 |
-| A23 ACF \|r\| Lag-1 Error ↓ | 0.05567 ± 8.25e-04 | 0.05509 | 0.05709 | 0.05469 | 0.05596 | 0.05554 | 0.001038 |
-| A24 ACF r² Lag-1 Error ↓ | 0.04232 ± 6.90e-04 | 0.04164 | 0.04353 | 0.04166 | 0.04247 | 0.04231 | 0.001036 |
-| **Vol** | | | | | | | |
-| A25 Mean RMSE ↓ *(native d=8)* | 2.409 ± 0.1371 | 2.212 | 2.636 | 2.353 | 2.415 | 2.43 | 0.9234 |
-| A26 Return Std Error ↓ | 0.01675 ± 8.19e-04 | 0.01617 | 0.01624 | 0.01618 | 0.01687 | 0.01831 | 0.001745 |
-| A27 Log-Return Std Error ↓ | 1.78e-04 ± 4.39e-05 | 2.04e-04 | 9.31e-05 | 2.01e-04 | 1.79e-04 | 2.13e-04 | 2.21e-05 |
-| A28 Kurtosis Ratio (→ 1) | 1.451 ± 0.07378 | 1.493 | 1.518 | 1.347 | 1.379 | 1.521 | 1 |
-| A29 Sigma Mean Error ↓ | 0.002899 ± 8.07e-04 | 0.003586 | 0.001534 | 0.003364 | 0.002423 | 0.003588 | 3.32e-04 |
-| A30 Cross-Sect. Vol Path RMSE ↓ | 0.2275 ± 0.02226 | 0.2139 | 0.2679 | 0.2027 | 0.222 | 0.2308 | 0.1596 |
-| A31 Rolling Vol KS (w=5) ↓ | 0.06854 ± 0.00314 | 0.07201 | 0.0634 | 0.07074 | 0.06656 | 0.06999 | 0.00208 |
-| A32 Vol-of-Vol Error ↓ | 4.01e-04 ± 4.78e-05 | 3.62e-04 | 4.69e-04 | 3.39e-04 | 3.98e-04 | 4.39e-04 | 1.14e-05 |
-| **Heston Spec** | | | | | | | |
-| A33 Teacher-Sigma Corr ↑ | -0.001293 ± 0.001289 | -0.001789 | 2.03e-04 | 1.37e-05 | -0.001592 | -0.003299 | -1.35e-04 |
-| A34 Teacher-Sigma RMSE ↓ | 0.09602 ± 5.64e-04 | 0.0961 | 0.09496 | 0.09656 | 0.09606 | 0.09641 | 0.1013 |
+| Metric | Mean ± Std | Seed 0 | Seed 4 | Seed 6 | Perfect floor |
+|---|---|---|---|---|---|
+| **Fat Tail** | | | | | |
+| A1 Kurtosis Error ↓ | 1.028 ± 0.06027 | 1.084 | 1.055 | 0.944 | 0.008385 |
+| A2 \|r\| q95 Error ↓ | 2.97e-04 ± 7.25e-05 | 3.32e-04 | 1.96e-04 | 3.63e-04 | 4.58e-05 |
+| A3 \|r\| q99 Error ↓ | 0.001198 ± 2.54e-04 | 0.001237 | 8.69e-04 | 0.001488 | 8.08e-05 |
+| A4 Tail QQ Error ↓ | 4.13e-04 ± 5.09e-05 | 4.16e-04 | 3.49e-04 | 4.74e-04 | 5.62e-05 |
+| A5 Hill Tail Index Error ↓ | 2.368 ± 0.1449 | 2.457 | 2.482 | 2.163 | 0.5896 |
+| **Distribution** | | | | | |
+| A6 Path MMD² ↓ *(native d=8)* | 0.00209 ± 2.86e-05 | 0.002122 | 0.002053 | 0.002095 | 0.001948 |
+| A7 Terminal MMD² ↓ *(native d=8)* | 0.002057 ± 1.85e-05 | 0.002078 | 0.002059 | 0.002033 | 0.001954 |
+| A8 Increment MMD² ↓ *(native d=8)* | 9.07e-04 ± 2.05e-05 | 8.81e-04 | 9.08e-04 | 9.31e-04 | 8.71e-04 |
+| A9 Volatility MMD ↓ *(native d=8)* | 0.0319 ± 6.50e-04 | 0.03192 | 0.03109 | 0.03268 | 0.008587 |
+| A10 Terminal SWD ↓ *(native d=8)* | 1.598 ± 0.102 | 1.574 | 1.487 | 1.733 | 1.141 |
+| A11 Path SWD ↓ *(native d=8)* | 0.9597 ± 0.04769 | 0.9313 | 0.9209 | 1.027 | 0.7258 |
+| A12 RV Law Loss ↓ | 0.715 ± 0.04862 | 0.6951 | 0.668 | 0.782 | 0.06398 |
+| A13 Mean Path RMSE ↓ | 0.4326 ± 0.01838 | 0.4092 | 0.4345 | 0.4541 | 0.1834 |
+| A14 KS Log-returns ↓ | 0.02015 ± 3.30e-04 | 0.01969 | 0.0204 | 0.02037 | 9.64e-04 |
+| A15 Skewness Error ↓ | 0.05496 ± 2.69e-04 | 0.05475 | 0.05534 | 0.05478 | 0.003568 |
+| A16 QQ RMSE (300-pt) ↓ | 5.33e-04 ± 1.58e-05 | 5.16e-04 | 5.30e-04 | 5.54e-04 | 3.04e-05 |
+| A17 Terminal Price KS ↓ | 0.03333 ± 9.11e-04 | 0.03206 | 0.03416 | 0.03375 | 0.01466 |
+| **Adversarial** | | | | | |
+| A18 Disc Score GRU ↓ *(native d=8)* | 0.1901 ± 0.1316 | 0.2772 | 0.2888 | 0.00412 | 0.005523 |
+| A18 Disc Score MLP ↓ *(native d=8)* | 0.004222 ± 0.005323 | 4.58e-04 | 4.58e-04 | 0.01175 | 0.006012 |
+| **Predictive** | | | | | |
+| A19 Pred Score GRU ↓ | 0.0492 ± 3.89e-06 | 0.04919 | 0.0492 | 0.0492 | 0.0492 |
+| A19 Pred Score MLP ↓ | 0.04948 ± 1.12e-04 | 0.04936 | 0.04945 | 0.04963 | 0.04931 |
+| **Temporal** | | | | | |
+| A20 Covariance Error ↓ *(native d=8)* | 226 ± 11.92 | 242.7 | 219.4 | 215.9 | 55.2 |
+| A21 ACF \|r\| Error (lags) ↓ | 0.04815 ± 5.09e-04 | 0.04855 | 0.04744 | 0.04848 | 0.001066 |
+| A22 ACF r² Error (lags) ↓ | 0.03638 ± 4.10e-04 | 0.03659 | 0.0358 | 0.03674 | 0.001107 |
+| A23 ACF \|r\| Lag-1 Error ↓ | 0.05595 ± 6.04e-04 | 0.05643 | 0.0551 | 0.05632 | 0.001038 |
+| A24 ACF r² Lag-1 Error ↓ | 0.04271 ± 4.63e-04 | 0.04298 | 0.04205 | 0.04308 | 0.001036 |
+| **Vol** | | | | | |
+| A25 Mean RMSE ↓ *(native d=8)* | 2.308 ± 0.07433 | 2.209 | 2.326 | 2.389 | 0.9234 |
+| A26 Return Std Error ↓ | 0.02006 ± 0.002382 | 0.01718 | 0.02301 | 0.01999 | 0.001745 |
+| A27 Log-Return Std Error ↓ | 2.33e-04 ± 3.68e-05 | 1.83e-04 | 2.69e-04 | 2.47e-04 | 2.21e-05 |
+| A28 Kurtosis Ratio (→ 1) | 1.525 ± 0.115 | 1.559 | 1.37 | 1.645 | 1 |
+| A29 Sigma Mean Error ↓ | 0.003963 ± 5.07e-04 | 0.003256 | 0.004422 | 0.004211 | 3.32e-04 |
+| A30 Cross-Sect. Vol Path RMSE ↓ | 0.2449 ± 0.0398 | 0.2121 | 0.3009 | 0.2218 | 0.1596 |
+| A31 Rolling Vol KS (w=5) ↓ | 0.07355 ± 6.09e-04 | 0.07285 | 0.07434 | 0.07346 | 0.00208 |
+| A32 Vol-of-Vol Error ↓ | 3.77e-04 ± 3.20e-05 | 4.07e-04 | 3.33e-04 | 3.92e-04 | 1.14e-05 |
+| **Heston Spec** | | | | | |
+| A33 Teacher-Sigma Corr ↑ | -0.00163 ± 0.00152 | -0.001952 | 3.72e-04 | -0.003309 | -1.35e-04 |
+| A34 Teacher-Sigma RMSE ↓ | 0.09645 ± 3.72e-04 | 0.09595 | 0.09683 | 0.09658 | 0.1013 |
 
 > **Convention:** ↓ lower is better; ↑ higher is better; no arrow = no monotone direction. A28 Kurtosis Ratio: perfect = 1.0.
-> **Headline:** **1 of the 36 A-metric rows sit at or below the independent-draw floor** — A34 Teacher-Sigma RMSE. The largest remaining gaps are **A1 Kurtosis Error** (1.039 vs floor 0.008385, 123.9×); **A23 ACF |r| Lag-1 Error** (0.05567 vs floor 0.001038, 53.7×); **A21 ACF |r| Error (lags)** (0.04793 vs floor 0.001066, 45.0×); **A24 ACF r² Lag-1 Error** (0.04232 vs floor 0.001036, 40.8×). The floor, not the other methods, is the reference on this page; the cross-method comparison lives in the dataset-level [`../README.md`](../README.md) so that no method's page grades itself against a rival it was tuned beside.
+> **Headline:** **3 of the 36 A-metric rows sit at or below the independent-draw floor** — A18 Disc Score MLP, A19 Pred Score GRU, A34 Teacher-Sigma RMSE. The largest remaining gaps are **A1 Kurtosis Error** (1.028 vs floor 0.008385, 122.5×); **A23 ACF |r| Lag-1 Error** (0.05595 vs floor 0.001038, 53.9×); **A21 ACF |r| Error (lags)** (0.04815 vs floor 0.001066, 45.2×); **A24 ACF r² Lag-1 Error** (0.04271 vs floor 0.001036, 41.2×). The floor, not the other methods, is the reference on this page; the cross-method comparison lives in the dataset-level [`../README.md`](../README.md) so that no method's page grades itself against a rival it was tuned beside.
 > **Perfect floor** is the *independent-draw* floor (GUIDELINE §5.4): five fresh draws from the *same* SDE with the *same* frozen per-asset parameters at seeds 1000-1004, scored with byte-identical metric code. It is **non-zero everywhere** — two independent 8 192-path draws never produce identical histograms, ACFs, quantiles or covariance matrices. It is **not** a permutation of the test set, which would preserve every column-wise statistic exactly, collapse most metrics to 0, and be a misleading target.
 > **A1-A5**: fat-tail block — kurtosis error, tail quantile / QQ errors on |log-returns|, Hill tail index. **A6-A11** *(native d=8)*: path-kernel distances on the full 8-dimensional tensor (MMD² on paths / terminal / increments / realized-vol; sliced-Wasserstein on terminal & full paths), the rows where a multivariate generalisation is genuinely meaningful.
 > **A12-A17**: distribution block, per asset then averaged. **A18** *(native d=8)*: discriminative classifier on all 8 channels at once, score = |accuracy − 0.5|. **A19**: TSTR MAE, deliberately **per-asset** — `predictive_score.py::_train_gru` targets `data_t[idx, 1:, :1]`, i.e. only the first feature, so a native run would silently report an asset-0-only number under a multi-asset name.
@@ -133,7 +171,7 @@ memorisation diagnostic shared by all methods on this dataset.
 
 ---
 
-## B, Curve-Shape Metrics, mean ± std across 5 seeds
+## B, Curve-Shape Metrics, mean ± std across 3 seeds
 
 Each stylised-fact plot yields a **curve** L (a list of values), not a scalar. The curve is
 computed **per asset and averaged over the 8 assets** *before* the combination below, so the
@@ -142,47 +180,47 @@ data (L_g) we build three lists, the curve L, its first finite difference L' (de
 second finite difference L'' (sec\_der), then combine the three sub-scores into **one number
 per plot**:
 
-- **MSE row**: for each list, dᵢ = mean((L_r − L_g)²). Reported mean = the **mean of the three sub-scores** (funct + der + sec\_der)/3; std = the sample std of that per-seed combined score across the 5 seeds. The **MSE row decides the cross-method winner**.
-- **% err row**: for each list, dᵢ = mean(|L_g − L_r| / (|L_r| + 1e-6)) × 100, a proper MAPE, one division (the mean already averages over the curve's points). Reported value = the **function-level MAPE on the curve L itself**, the derivative / 2nd-derivative MAPE is **excluded** because diff(L)/diff2(L) have near-zero true values, so their relative error explodes into meaningless 10⁴-% figures. mean/std = mean and **sample std across the 5 seeds** of that per-seed function MAPE.
+- **MSE row**: for each list, dᵢ = mean((L_r − L_g)²). Reported mean = the **mean of the three sub-scores** (funct + der + sec\_der)/3; std = the sample std of that per-seed combined score across the 3 seeds. The **MSE row decides the cross-method winner**.
+- **% err row**: for each list, dᵢ = mean(|L_g − L_r| / (|L_r| + 1e-6)) × 100, a proper MAPE, one division (the mean already averages over the curve's points). Reported value = the **function-level MAPE on the curve L itself**, the derivative / 2nd-derivative MAPE is **excluded** because diff(L)/diff2(L) have near-zero true values, so their relative error explodes into meaningless 10⁴-% figures. mean/std = mean and **sample std across the 3 seeds** of that per-seed function MAPE.
 - **NRMSE row**: sqrt(mean((L_g − L_r)²)) / (max|L_r| − min|L_r| + 1e-12) × 100 on the curve L **only (funct-only)**, the ill-posed derivative / 2nd-derivative curves are excluded for the same reason as the % err row.
 - **CVaR₉₀ / CVaR₉₅ rows**: tail-averaged pointwise curve error (Expected Shortfall) on the curve L **only (funct-only)**. Pointwise error eₜ = |L_g(t) − L_r(t)|; for q ∈ {0.90, 0.95}, CVaR_q = mean(eₜ for eₜ ≥ the q-th percentile of eₜ), then range-normalized like NRMSE (÷ (max|L_r| − min|L_r| + 1e-12) × 100).
 
 All ↓ lower is better. The perfect floor is **non-zero** for all plots, it is the residual finite-sample error of an independent multi-asset Heston draw scored against the test set, identical across methods.
 Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CVaR₉₅** (the per-seed columns hold that seed's combined score).
 
-| Plot | Measure | Mean ± Std | Seed 0 | Seed 2 | Seed 4 | Seed 5 | Seed 6 | Perfect floor |
-|---|---|---|---|---|---|---|---|---|
-| **Path comparison** *(50×50 path-cloud)* | grid_tvd 50×50 (%) ↓ | 4.404% ± 0.2595% | 4.141% | 4.874% | 4.236% | 4.477% | 4.289% | 2.189% |
-| **Log-return histogram** | MSE | 1.059 ± 0.0749 | 1.1 | 0.9227 | 1.134 | 1.037 | 1.099 | 0.0554 |
-|  | % err | 8.323% ± 0.4029% | 8.304% | 9.099% | 7.96% | 8.134% | 8.117% | 1.302% |
-|  | NRMSE | 3.844% ± 0.142% | 3.973% | 3.593% | 3.939% | 3.782% | 3.934% | 0.3601% |
-|  | CVaR₉₀ | 9.4% ± 0.4271% | 9.743% | 8.617% | 9.71% | 9.267% | 9.661% | 0.8339% |
-|  | CVaR₉₅ | 10.78% ± 0.4642% | 11.18% | 9.92% | 11.1% | 10.66% | 11.04% | 0.994% |
-| **QQ plot** | MSE | 1.09e-07 ± 5.50e-09 | 1.12e-07 | 1.11e-07 | 1.03e-07 | 1.04e-07 | 1.18e-07 | 5.66e-10 |
-|  | % err | 10.76% ± 0.4023% | 11.03% | 10.03% | 11.05% | 10.6% | 11.07% | 0.5364% |
-|  | NRMSE | 1.508% ± 0.03763% | 1.523% | 1.514% | 1.469% | 1.466% | 1.568% | 0.08644% |
-|  | CVaR₉₀ | 1.377% ± 0.118% | 1.327% | 1.589% | 1.235% | 1.335% | 1.397% | 0.09922% |
-|  | CVaR₉₅ | 1.718% ± 0.231% | 1.59% | 2.126% | 1.432% | 1.692% | 1.752% | 0.125% |
-| **ACF \|r\|** | MSE | 6.12e-04 ± 1.74e-05 | 5.97e-04 | 6.43e-04 | 5.95e-04 | 6.16e-04 | 6.11e-04 | 3.33e-06 |
-|  | % err | 57.85% ± 1.375% | 57.37% | 60.22% | 56% | 58.15% | 57.53% | 2.043% |
-|  | NRMSE | 72.15% ± 1.728% | 71.08% | 75.12% | 70.02% | 72.7% | 71.81% | 2.523% |
-|  | CVaR₉₀ | 101.3% ± 2.076% | 100.2% | 104.7% | 98.48% | 102% | 101% | 4.991% |
-|  | CVaR₉₅ | 103.1% ± 2.052% | 102.1% | 106.8% | 100.6% | 103.5% | 102.6% | 5.542% |
-| **ACF r²** | MSE | 3.38e-04 ± 1.28e-05 | 3.25e-04 | 3.61e-04 | 3.28e-04 | 3.41e-04 | 3.37e-04 | 3.98e-06 |
-|  | % err | 52.01% ± 1.528% | 50.88% | 54.71% | 50.29% | 52.32% | 51.82% | 2.37% |
-|  | NRMSE | 61.44% ± 1.727% | 60.17% | 64.45% | 59.5% | 62.01% | 61.09% | 2.772% |
-|  | CVaR₉₀ | 88.03% ± 1.957% | 86.9% | 91.19% | 85.29% | 88.64% | 88.14% | 5.52% |
-|  | CVaR₉₅ | 90.04% ± 1.8% | 89.12% | 93.29% | 87.86% | 90.1% | 89.83% | 6.131% |
-| **Rolling vol histogram** | MSE | 36.22 ± 0.6324 | 36.72 | 35.3 | 36.89 | 35.64 | 36.57 | 0.6039 |
-|  | % err | 19.72% ± 1.157% | 19.06% | 21.78% | 18.32% | 19.54% | 19.89% | 1.536% |
-|  | NRMSE | 9.885% ± 0.1103% | 10.09% | 9.835% | 9.897% | 9.77% | 9.834% | 0.5137% |
-|  | CVaR₉₀ | 19.69% ± 0.3317% | 20.21% | 19.24% | 19.89% | 19.49% | 19.64% | 1.172% |
-|  | CVaR₉₅ | 20.87% ± 0.4474% | 21.47% | 20.2% | 21.18% | 20.56% | 20.92% | 1.362% |
-| **Tail survival** | MSE | 1.91e-04 ± 2.61e-05 | 2.12e-04 | 1.43e-04 | 2.13e-04 | 1.86e-04 | 2.03e-04 | 2.03e-07 |
-|  | % err | 5.196% ± 0.2167% | 5.398% | 4.941% | 5.207% | 4.963% | 5.469% | 0.2297% |
-|  | NRMSE | 2.217% ± 0.1638% | 2.363% | 1.932% | 2.341% | 2.136% | 2.314% | 0.06634% |
-|  | CVaR₉₀ | 3.267% ± 0.2222% | 3.473% | 2.879% | 3.431% | 3.159% | 3.393% | 0.1122% |
-|  | CVaR₉₅ | 3.28% ± 0.2226% | 3.485% | 2.891% | 3.443% | 3.174% | 3.409% | 0.1175% |
+| Plot | Measure | Mean ± Std | Seed 0 | Seed 4 | Seed 6 | Perfect floor |
+|---|---|---|---|---|---|---|
+| **Path comparison** *(50×50 path-cloud)* | grid_tvd 50×50 (%) ↓ | 4.177% ± 0.06829% | 4.152% | 4.109% | 4.271% | 2.189% |
+| **Log-return histogram** | MSE | 1.216 ± 0.02444 | 1.187 | 1.246 | 1.215 | 0.0554 |
+|  | % err | 8.183% ± 0.07603% | 8.255% | 8.078% | 8.217% | 1.302% |
+|  | NRMSE | 4.087% ± 0.03761% | 4.034% | 4.116% | 4.111% | 0.3601% |
+|  | CVaR₉₀ | 10.08% ± 0.1184% | 9.916% | 10.19% | 10.14% | 0.8339% |
+|  | CVaR₉₅ | 11.51% ± 0.1053% | 11.37% | 11.62% | 11.55% | 0.994% |
+| **QQ plot** | MSE | 1.19e-07 ± 1.00e-08 | 1.11e-07 | 1.13e-07 | 1.34e-07 | 5.66e-10 |
+|  | % err | 11.48% ± 0.2021% | 11.2% | 11.62% | 11.63% | 0.5364% |
+|  | NRMSE | 1.57% ± 0.04537% | 1.525% | 1.553% | 1.632% | 0.08644% |
+|  | CVaR₉₀ | 1.304% ± 0.065% | 1.284% | 1.237% | 1.392% | 0.09922% |
+|  | CVaR₉₅ | 1.524% ± 0.1367% | 1.508% | 1.366% | 1.699% | 0.125% |
+| **ACF \|r\|** | MSE | 6.14e-04 ± 1.50e-05 | 6.25e-04 | 5.93e-04 | 6.24e-04 | 3.33e-06 |
+|  | % err | 58.59% ± 1.173% | 58.43% | 57.24% | 60.1% | 2.043% |
+|  | NRMSE | 73.38% ± 1.277% | 73.48% | 71.77% | 74.89% | 2.523% |
+|  | CVaR₉₀ | 103.2% ± 1.454% | 103.8% | 101.2% | 104.6% | 4.991% |
+|  | CVaR₉₅ | 105.1% ± 1.261% | 105.7% | 103.3% | 106.2% | 5.542% |
+| **ACF r²** | MSE | 3.41e-04 ± 9.62e-06 | 3.46e-04 | 3.27e-04 | 3.49e-04 | 3.98e-06 |
+|  | % err | 52.98% ± 1.285% | 52.73% | 51.54% | 54.66% | 2.37% |
+|  | NRMSE | 62.72% ± 1.184% | 62.82% | 61.22% | 64.11% | 2.772% |
+|  | CVaR₉₀ | 90.13% ± 1.564% | 90.6% | 88.03% | 91.77% | 5.52% |
+|  | CVaR₉₅ | 92.28% ± 1.227% | 92.91% | 90.56% | 93.36% | 6.131% |
+| **Rolling vol histogram** | MSE | 39.15 ± 0.2257 | 39.12 | 39.45 | 38.9 | 0.6039 |
+|  | % err | 19.1% ± 0.6727% | 19.43% | 18.16% | 19.7% | 1.536% |
+|  | NRMSE | 10.18% ± 0.01437% | 10.19% | 10.16% | 10.19% | 0.5137% |
+|  | CVaR₉₀ | 20.47% ± 0.06198% | 20.38% | 20.51% | 20.51% | 1.172% |
+|  | CVaR₉₅ | 21.81% ± 0.05785% | 21.73% | 21.85% | 21.86% | 1.362% |
+| **Tail survival** | MSE | 2.37e-04 ± 1.03e-05 | 2.24e-04 | 2.49e-04 | 2.40e-04 | 2.03e-07 |
+|  | % err | 5.573% ± 0.1418% | 5.41% | 5.553% | 5.755% | 0.2297% |
+|  | NRMSE | 2.454% ± 0.04676% | 2.392% | 2.505% | 2.466% | 0.06634% |
+|  | CVaR₉₀ | 3.589% ± 0.05741% | 3.513% | 3.651% | 3.605% | 0.1122% |
+|  | CVaR₉₅ | 3.603% ± 0.05706% | 3.527% | 3.663% | 3.62% | 0.1175% |
 
 > **Headline:** **0 of the 6 B plots** sit at or below the finite-sample floor on the deciding MSE row: none.
 > **Cross-seed stability**: the seed here controls **three** independent things — the control network's initialisation, every Euler–Maruyama increment drawn during training, and the batch resampling that re-fits the Z-proxy at each outer iteration. The reference kernel is *not* among them: it is fitted once, frozen, and shared byte-for-byte across every seed (`code/reference/reference_kernel.json`), so none of the spread below comes from re-estimating the reference SDE. What remains is optimisation plus sampling variance, and [`plots/loss_convergence.png`](plots/loss_convergence.png) shows whether any seed diverged. Generation uses a **separate** seed stream (90000 + i) that never reuses a training seed.
@@ -206,7 +244,7 @@ assets, the *figure* is asset 0; pooling eight deliberately different volatiliti
 
 ---
 
-## Deep-MKV-TS Training Loss (5 seeds)
+## Deep-MKV-TS Training Loss (3 seeds)
 
 The figure has **two** panels, and they are not the same quantity plotted twice.
 
@@ -234,28 +272,20 @@ below.
 ![Training Loss](plots/loss_convergence.png)
 
 Training wall-clock, read from `weights/seed_*_config.json` and
-`losses/seed_*_losses.csv` (**1785 min total** across the 5 seeds, one GPU and
+`losses/seed_*_losses.csv` (**0 min total** across the 3 seeds, one GPU and
 8 threads per seed process, run 2-up in waves):
 
-| Seed | GPUs | Steps | sec/step | Train wall-clock | Selected step | Val discrepancy | Final L_adj | Best objective |
-|------|------|-------|----------|------------------|---------------|-----------------|-------------|----------------|
-| 0 | 1 | 3000 | 7.89 s | 394.5 min | 3000 | 0.011706 | 0.968846 | 2.022960 |
-| 2 | 1 | 3000 | 6.72 s | 335.8 min | 2500 | 0.011789 | 1.048480 | 2.039975 |
-| 4 | 1 | 3000 | 8.24 s | 412.1 min | 2500 | 0.010454 | 0.602784 | 2.091094 |
-| 5 | 1 | 3000 | 7.96 s | 398.1 min | 2500 | 0.010218 | 0.961799 | 1.916713 |
-| 6 | 1 | 3000 | 4.88 s | 244.1 min | 2500 | 0.010129 | 2.037193 | 2.038502 |
+_(weights/seed_\*_config.json not found)_
 
 Generation wall-clock — the selected control rolled forward 251
 Euler–Maruyama steps from $x_0 = \log(100)$ for each of 8 192 paths, 8 threads,
-**0.4 min total** across the 5 seeds:
+**0.1 min total** across the 3 seeds:
 
 | Seed | Workers | Elapsed |
 |------|---------|---------|
-| 0 | 8 | 0.1 min |
-| 2 | 8 | 0.1 min |
-| 4 | 8 | 0.1 min |
-| 5 | 8 | 0.1 min |
-| 6 | 8 | 0.1 min |
+| 0 | 8 | 0.0 min |
+| 4 | 8 | 0.0 min |
+| 6 | 8 | 0.0 min |
 
 ---
 
@@ -288,22 +318,16 @@ It is generated from `os.walk` at render time, so it cannot list a file that doe
 
 ```
 results/HestonMultiAsset/Deep-MKV-TS/
+├── HEALTH.md
 ├── README.md                           ← this file (generated by code/render_readme.py)
 ├── code/
 │   ├── README.md                       reference kernel, deviations, sweep table
 │   ├── _smoke_reference.py
-│   ├── analysis/
-│   │   ├── step_curve_seed_4.json
-│   │   ├── step_curve_seed_5.json
-│   │   └── step_curve_seed_6.json
 │   ├── collect_artifacts.py            rebuilds generation_time.csv, checks the §4 contract
 │   ├── commit_and_push.sh
 │   ├── diagnose_divergence.py
 │   ├── eigh_fallback.py
 │   ├── fit_reference_multiasset.py     penalised MLE for the frozen d = 8 reference kernel
-│   ├── logs/                           raw stdout of every launched job (gitignored)
-│   │   └── acf_chain.log   … and 42 more
-│   ├── losses/
 │   ├── matrix_control_multiasset.py    matrix-valued spectral control + Daleckii-Krein adjoint
 │   ├── measure_memorisation.py         nearest-neighbour memorisation diagnostic
 │   ├── multivariate_reference.py       the d = 8 Guyon-Lekeufack kernel itself
@@ -316,45 +340,46 @@ results/HestonMultiAsset/Deep-MKV-TS/
 │   ├── render_readme.py                regenerates this README from the artefacts
 │   ├── run_all_multiasset.py           samples the 8192-path bank from the SELECTED checkpoint
 │   ├── run_campaign.sh
+│   ├── run_final_chain.sh
 │   ├── run_pipeline.sh
+│   ├── run_pipeline_variant.sh
+│   ├── run_pipeline_variant2.sh
+│   ├── run_salvage_3seed.sh
 │   ├── run_sweep.sh                    drives the sweep in two waves on one GPU
 │   ├── runs/                           per-seed training_checkpoints/ (gitignored)
-│   │   └── seed_0   … and 6 more
+│   │   └── seed_0   … and 4 more
 │   ├── scan_step_curve.py
 │   ├── select_checkpoint_multiasset.py picks the reported checkpoint per seed on validation
 │   ├── selection/                      per-seed checkpoint-selection records
-│   │   └── seed_0_selection.json   … and 4 more
-│   ├── sweep/                          the ridge_lambda sweep, one JSON per lambda + winner.json
-│   │   └── lambda_1e-3.json   … and 8 more
+│   │   └── seed_0_selection.json   … and 2 more
 │   ├── sweep_hyperparams.py
 │   ├── sweep_ridge_lambda.py           re-selects ridge_lambda on the VALIDATION split
-│   ├── sweep_verify/
-│   │   ├── lambda_r1000_L12.5_K25_a0.5_s0.25.json
-│   │   ├── lambda_r1000_L200_K100_a0.25_s0.125.json
-│   │   ├── lambda_r1000_L25_K50_a0.5_s0.25.json
-│   │   ├── lambda_r1000_L50_K100_a0.0625_s0.03125.json
-│   │   ├── lambda_r1000_L50_K100_a0.125_s0.0625.json
-│   │   ├── lambda_r1000_L50_K100_a0.25_s0.25.json
-│   │   ├── lambda_r1000_L50_K100_a0.5_s0.125.json
-│   │   └── lambda_r1000_L50_K25_a0.25_s0.125.json
-│   ├── sweep_verify_stale/
-│   │   ├── lambda_r1000_L10_K100_a0.25_s0.125.json
-│   │   ├── lambda_r1000_L200_K100_a0.25_s0.125.json
-│   │   └── lambda_r1000_L50_K400_a0.25_s0.125.json
 │   ├── test_render_readme.py
-│   ├── train_multiasset.py             Algorithm 1, one seed
-│   └── weights/
+│   └── train_multiasset.py             Algorithm 1, one seed
 ├── curve_b_aggregate.json              B curve-shape aggregate
 ├── generated_paths/
-│   └── seed_0   … and 4 more
+│   └── seed_0   … and 2 more
 ├── grid_tvd_aggregate.json             path-cloud TVD
+├── logs/
+│   ├── metrics_seed_0_gpu1.log
+│   ├── metrics_seed_4_gpu2.log
+│   ├── metrics_seed_6_gpu3.log
+│   ├── pipeline_final_chain.log
+│   ├── pipeline_quarter.log
+│   ├── pipeline_quarter_repair.log
+│   ├── salvage_3seed.log
+│   ├── train_seed_0.log
+│   ├── train_seed_2.log
+│   ├── train_seed_4.log
+│   ├── train_seed_4_gpu0.log
+│   ├── train_seed_5.log
+│   ├── train_seed_5_gpu0.log
+│   ├── train_seed_6.log
+│   └── train_seed_6_gpu0.log
 ├── losses/
 │   ├── generation_time.csv             wall-clock time per seed
-│   ├── memorisation.json               NN-ratio diagnostic on the final 8192-path output
 │   ├── seed_0_losses.csv
-│   ├── seed_1_losses.csv
 │   ├── seed_2_losses.csv
-│   ├── seed_3_losses.csv
 │   ├── seed_4_losses.csv
 │   ├── seed_5_losses.csv
 │   └── seed_6_losses.csv
@@ -370,28 +395,18 @@ results/HestonMultiAsset/Deep-MKV-TS/
 ├── seed_0_metrics.json
 ├── seed_0_pred_gru_loss.csv
 ├── seed_0_pred_mlp_loss.csv
-├── seed_2_disc_gru_loss.csv
-├── seed_2_disc_mlp_loss.csv
-├── seed_2_metrics.json
-├── seed_2_pred_gru_loss.csv
-├── seed_2_pred_mlp_loss.csv
 ├── seed_4_disc_gru_loss.csv
 ├── seed_4_disc_mlp_loss.csv
 ├── seed_4_metrics.json
 ├── seed_4_pred_gru_loss.csv
 ├── seed_4_pred_mlp_loss.csv
-├── seed_5_disc_gru_loss.csv
-├── seed_5_disc_mlp_loss.csv
-├── seed_5_metrics.json
-├── seed_5_pred_gru_loss.csv
-├── seed_5_pred_mlp_loss.csv
 ├── seed_6_disc_gru_loss.csv
 ├── seed_6_disc_mlp_loss.csv
 ├── seed_6_metrics.json
 ├── seed_6_pred_gru_loss.csv
 ├── seed_6_pred_mlp_loss.csv
 └── weights/
-    └── .campaign_complete   … and 10 more
+    └── .campaign_complete   … and 3 more
 ```
 
 The upstream `deep_mkv_gen_path_dt` package is **not vendored here**. It lives once at
@@ -425,7 +440,7 @@ CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=8 taskset -c 0-7 $PY fit_reference_multia
 #    The only retuned hyperparameter. Writes sweep/*.json and sweep/winner.json.
 bash run_sweep.sh
 
-# 4. final 5 seeds, 3000 outer iterations, 2 GPUs (~1785 min of GPU time, 3 waves)
+# 4. final 3 seeds,  outer iterations, 2 GPUs (~0 min of GPU time, 3 waves)
 GPUS=(1 2); CORES=("0-7" "8-15")
 for wave in "0 1" "2 3" "4"; do
   i=0

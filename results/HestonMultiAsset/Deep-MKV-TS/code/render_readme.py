@@ -177,11 +177,19 @@ def read_summary(path):
     out = {}
     with open(path, newline="") as fh:
         for row in csv.DictReader(fh):
-            seeds = [row[k] for k in sorted(row) if k.startswith("seed_")]
+            # Order numerically, not lexicographically: plain ``sorted`` puts
+            # seed_10 before seed_2 and would silently transpose two columns
+            # the day a run uses double-digit seeds.
+            keys = sorted((k for k in row if k.startswith("seed_")),
+                          key=lambda k: int(k.split("_", 1)[1]))
             out[row["metric"]] = {
                 "mean": row["mean"], "std": row["std"],
                 "scope": row.get("scope", ""),
-                "seeds": seeds,
+                "seeds": [row[k] for k in keys],
+                # The real seed ids, so the header can name the seed that
+                # produced each column. These runs use 0,2,4,5,6 and 0,4,6 --
+                # never 0..n-1 -- so a positional label misattributes the data.
+                "seed_ids": [int(k.split("_", 1)[1]) for k in keys],
             }
     return out
 
@@ -194,8 +202,10 @@ def read_json(path):
 
 
 def render_a_table(sbts, floor):
-    n_seeds = len(next(iter(sbts.values()))["seeds"]) if sbts else 5
-    head = ["Metric", "Mean ± Std"] + [f"Seed {i}" for i in range(n_seeds)] + ["Perfect floor"]
+    first = next(iter(sbts.values())) if sbts else None
+    ids = first["seed_ids"] if first else list(range(5))
+    n_seeds = len(ids)
+    head = ["Metric", "Mean ± Std"] + [f"Seed {i}" for i in ids] + ["Perfect floor"]
     lines = ["| " + " | ".join(head) + " |",
              "|" + "|".join(["---"] * len(head)) + "|"]
     for cat, rows in CATEGORIES:
@@ -261,9 +271,13 @@ MEASURES = [("mse", "MSE", fmt), ("pct", "% err", pct), ("nrmse", "NRMSE", pct),
             ("cvar90", "CVaR₉₀", pct), ("cvar95", "CVaR₉₅", pct)]
 
 
-def render_b_table(agg, agg_f, tvd, tvd_f):
+def render_b_table(agg, agg_f, tvd, tvd_f, seed_ids=None):
     n_seeds = len(tvd.get("per_seed", [0] * 5)) if tvd else 5
-    head = ["Plot", "Measure", "Mean ± Std"] + [f"Seed {i}" for i in range(n_seeds)] + ["Perfect floor"]
+    # ``per_seed`` is a bare positional list, so the ids have to come from the
+    # A-table summary. Fall back to positions only if that is unavailable, and
+    # never claim an id we cannot substantiate.
+    ids = seed_ids if seed_ids and len(seed_ids) == n_seeds else list(range(n_seeds))
+    head = ["Plot", "Measure", "Mean ± Std"] + [f"Seed {i}" for i in ids] + ["Perfect floor"]
     lines = ["| " + " | ".join(head) + " |",
              "|" + "|".join(["---"] * len(head)) + "|"]
     if tvd:
@@ -369,12 +383,12 @@ TREE_NOTES = {
     "code/select_checkpoint_multiasset.py": "picks the reported checkpoint per seed on validation",
     "code/run_all_multiasset.py": "samples the 8192-path bank from the SELECTED checkpoint",
     "code/collect_artifacts.py": "rebuilds generation_time.csv, checks the §4 contract",
-    "code/plot_losses.py": "plots/loss_convergence.png, 5 seeds overlaid",
+    "code/plot_losses.py": "plots/loss_convergence.png, all seeds overlaid",
     "code/plot_diagnostics_multiasset.py": "the 8-panel stylised-facts figure",
     "code/measure_memorisation.py": "nearest-neighbour memorisation diagnostic",
     "code/render_readme.py": "regenerates this README from the artefacts",
     "code/reference": "FITTED artefacts only — the upstream package is NOT vendored here",
-    "code/reference/reference_kernel.json": "the frozen kernel, fitted once, shared by all 5 seeds",
+    "code/reference/reference_kernel.json": "the frozen kernel, fitted once, shared by every seed",
     "code/reference/reference_fit_history.csv": "its penalised-MLE calibration trace",
     "code/selection": "per-seed checkpoint-selection records",
     "code/sweep": "the ridge_lambda sweep, one JSON per lambda + winner.json",
@@ -386,10 +400,10 @@ TREE_NOTES = {
     "losses/generation_time.csv": "wall-clock time per seed",
     "losses/memorisation.json": "NN-ratio diagnostic on the final 8192-path output",
     "plots": "",
-    "plots/loss_convergence.png": "L_adj and the path-functional objective, 5 seeds",
+    "plots/loss_convergence.png": "L_adj and the path-functional objective, all seeds",
     "plots/heston_diagnostics.png": "8-panel stylised facts (seed 0, asset 0)",
-    "plots/disc_classifier_loss.png": "A18 BCE curves, 5 seeds",
-    "plots/pred_score_loss.png": "A19 MAE curves, 5 seeds (asset 0)",
+    "plots/disc_classifier_loss.png": "A18 BCE curves, all seeds",
+    "plots/pred_score_loss.png": "A19 MAE curves, all seeds (asset 0)",
     "metrics_summary.csv": "A1-A34, mean ± std, per seed",
     "metrics_per_asset.csv": "per-metric × per-asset breakdown (8 rows per metric)",
     "curve_b_aggregate.json": "B curve-shape aggregate",
@@ -528,6 +542,13 @@ def main():
     agg = read_json(os.path.join(SBTS, "curve_b_aggregate.json"))
     agg_f = read_json(os.path.join(FLOOR, "curve_b_aggregate.json"))
     tvd = read_json(os.path.join(SBTS, "grid_tvd_aggregate.json"))
+    # Seed count and ids are properties of the run, not constants. This variant
+    # scored 3 seeds (0, 4, 6) while its siblings scored 5, so a hardcoded
+    # "5 seeds" in the prose would contradict the table right beside it.
+    seed_ids = next(iter(sbts.values()))["seed_ids"] if sbts else list(range(5))
+    n_seeds = len(seed_ids)
+    seeds_txt = f"{n_seeds} seeds"
+    seed_list_txt = ", ".join(str(i) for i in seed_ids)
     tvd_f = read_json(os.path.join(FLOOR, "grid_tvd_aggregate.json"))
 
     missing = [n for n, o in (("Deep-MKV-TS/metrics_summary.csv", sbts),
@@ -609,6 +630,17 @@ def main():
     at_floor, n_a, gaps = a_headline(sbts, floor)
     b_at, n_b = b_headline(agg, agg_f)
 
+    # Optional per-run health warning, verbatim from HEALTH.md beside the page.
+    # A run whose seed set is incomplete because seeds *died* cannot be read the
+    # same way as a clean one, and that caveat has to travel with the numbers
+    # rather than live in a shell script nobody opens. No file, no section, so
+    # every other method page is unaffected.
+    health_path = os.path.join(SBTS, "HEALTH.md")
+    health_block = ""
+    if os.path.exists(health_path):
+        with open(health_path, encoding="utf-8") as fh:
+            health_block = "\n" + fh.read().strip() + "\n"
+
     at_floor_txt = ", ".join(at_floor[:8]) + ("…" if len(at_floor) > 8 else "")
     gap_txt = "; ".join(_fmt_gap(g) for g in gaps[:4]) if gaps else "none"
     b_at_txt = ", ".join(esc(x) for x in b_at) if b_at else "none"
@@ -618,7 +650,7 @@ def main():
 **Deep McKean–Vlasov Time Series generation** — a path-dependent McKean–Vlasov
 stochastic-control generator, applied to 8 192 **multi-asset** Heston
 stochastic-volatility price paths (seq\\_len = {seq_len}, **d = 8 correlated assets**).
-
+{health_block}
 Deep-MKV-TS does **not** learn a generator from noise. It starts from a *frozen,
 interpretable reference SDE* (Guyon–Lekeufack, paper §2.1) fitted to the data by
 penalised maximum likelihood, then learns a **volatility correction only** — the drift
@@ -649,7 +681,7 @@ memorisation diagnostic shared by all methods on this dataset.
 > `num_layers={layers}`, batch {batch}, target batch {tbatch};
 > `AdamW(lr={lr:g}, weight_decay={wd:g})`, `grad_clip_norm={clip:g}`,
 > `ce_target_mode="ridge"` with `ridge_lambda={ridge:g}`, `ce_ridge={ce_ridge:g}`;
-> {steps} outer iterations per seed, 5 seeds.
+> {steps} outer iterations per seed, {seeds_txt} (seeds {seed_list_txt}).
 > Every one of those numbers is the **committed d = 1 value**, unchanged, except for
 > what is listed next.
 >
@@ -685,7 +717,7 @@ memorisation diagnostic shared by all methods on this dataset.
 
 ---
 
-## Metrics A1-A34 + B, mean ± std across 5 seeds
+## Metrics A1-A34 + B, mean ± std across {seeds_txt}
 
 > All metrics on **log-returns** $r_t = \\log(S_{{t+1}}/S_t)$ unless noted. A26 uses price increments $\\Delta S_t$.
 > Rows marked *(native d=8)* are evaluated **once** on the full `(N, T, 8)` tensor; every other
@@ -704,7 +736,7 @@ memorisation diagnostic shared by all methods on this dataset.
 
 ---
 
-## B, Curve-Shape Metrics, mean ± std across 5 seeds
+## B, Curve-Shape Metrics, mean ± std across {seeds_txt}
 
 Each stylised-fact plot yields a **curve** L (a list of values), not a scalar. The curve is
 computed **per asset and averaged over the 8 assets** *before* the combination below, so the
@@ -713,18 +745,18 @@ data (L_g) we build three lists, the curve L, its first finite difference L' (de
 second finite difference L'' (sec\\_der), then combine the three sub-scores into **one number
 per plot**:
 
-- **MSE row**: for each list, dᵢ = mean((L_r − L_g)²). Reported mean = the **mean of the three sub-scores** (funct + der + sec\\_der)/3; std = the sample std of that per-seed combined score across the 5 seeds. The **MSE row decides the cross-method winner**.
-- **% err row**: for each list, dᵢ = mean(|L_g − L_r| / (|L_r| + 1e-6)) × 100, a proper MAPE, one division (the mean already averages over the curve's points). Reported value = the **function-level MAPE on the curve L itself**, the derivative / 2nd-derivative MAPE is **excluded** because diff(L)/diff2(L) have near-zero true values, so their relative error explodes into meaningless 10⁴-% figures. mean/std = mean and **sample std across the 5 seeds** of that per-seed function MAPE.
+- **MSE row**: for each list, dᵢ = mean((L_r − L_g)²). Reported mean = the **mean of the three sub-scores** (funct + der + sec\\_der)/3; std = the sample std of that per-seed combined score across the {seeds_txt}. The **MSE row decides the cross-method winner**.
+- **% err row**: for each list, dᵢ = mean(|L_g − L_r| / (|L_r| + 1e-6)) × 100, a proper MAPE, one division (the mean already averages over the curve's points). Reported value = the **function-level MAPE on the curve L itself**, the derivative / 2nd-derivative MAPE is **excluded** because diff(L)/diff2(L) have near-zero true values, so their relative error explodes into meaningless 10⁴-% figures. mean/std = mean and **sample std across the {seeds_txt}** of that per-seed function MAPE.
 - **NRMSE row**: sqrt(mean((L_g − L_r)²)) / (max|L_r| − min|L_r| + 1e-12) × 100 on the curve L **only (funct-only)**, the ill-posed derivative / 2nd-derivative curves are excluded for the same reason as the % err row.
 - **CVaR₉₀ / CVaR₉₅ rows**: tail-averaged pointwise curve error (Expected Shortfall) on the curve L **only (funct-only)**. Pointwise error eₜ = |L_g(t) − L_r(t)|; for q ∈ {{0.90, 0.95}}, CVaR_q = mean(eₜ for eₜ ≥ the q-th percentile of eₜ), then range-normalized like NRMSE (÷ (max|L_r| − min|L_r| + 1e-12) × 100).
 
 All ↓ lower is better. The perfect floor is **non-zero** for all plots, it is the residual finite-sample error of an independent multi-asset Heston draw scored against the test set, identical across methods.
 Five sublines per plot: **MSE**, **% error**, **NRMSE**, **CVaR₉₀** and **CVaR₉₅** (the per-seed columns hold that seed's combined score).
 
-{render_b_table(agg, agg_f, tvd, tvd_f)}
+{render_b_table(agg, agg_f, tvd, tvd_f, seed_ids)}
 
 > **Headline:** **{len(b_at)} of the {n_b} B plots** sit at or below the finite-sample floor on the deciding MSE row: {b_at_txt}.
-> **Cross-seed stability**: the seed here controls **three** independent things — the control network's initialisation, every Euler–Maruyama increment drawn during training, and the batch resampling that re-fits the Z-proxy at each outer iteration. The reference kernel is *not* among them: it is fitted once, frozen, and shared byte-for-byte across all 5 seeds (`code/reference/reference_kernel.json`), so none of the spread below comes from re-estimating the reference SDE. What remains is optimisation plus sampling variance, and [`plots/loss_convergence.png`](plots/loss_convergence.png) shows whether any seed diverged. Generation uses a **separate** seed stream (90000 + i) that never reuses a training seed.
+> **Cross-seed stability**: the seed here controls **three** independent things — the control network's initialisation, every Euler–Maruyama increment drawn during training, and the batch resampling that re-fits the Z-proxy at each outer iteration. The reference kernel is *not* among them: it is fitted once, frozen, and shared byte-for-byte across every seed (`code/reference/reference_kernel.json`), so none of the spread below comes from re-estimating the reference SDE. What remains is optimisation plus sampling variance, and [`plots/loss_convergence.png`](plots/loss_convergence.png) shows whether any seed diverged. Generation uses a **separate** seed stream (90000 + i) that never reuses a training seed.
 
 ---
 
@@ -745,7 +777,7 @@ assets, the *figure* is asset 0; pooling eight deliberately different volatiliti
 
 ---
 
-## Deep-MKV-TS Training Loss (5 seeds)
+## Deep-MKV-TS Training Loss ({seeds_txt})
 
 The figure has **two** panels, and they are not the same quantity plotted twice.
 
@@ -773,14 +805,14 @@ below.
 ![Training Loss](plots/loss_convergence.png)
 
 Training wall-clock, read from `weights/seed_*_config.json` and
-`losses/seed_*_losses.csv` (**{train_min:.0f} min total** across the 5 seeds, one GPU and
+`losses/seed_*_losses.csv` (**{train_min:.0f} min total** across the {seeds_txt}, one GPU and
 {nw} threads per seed process, run 2-up in waves):
 
 {train_tbl}
 
 Generation wall-clock — the selected control rolled forward {euler_steps}
 Euler–Maruyama steps from $x_0 = \\log(100)$ for each of {gen_n} paths, {nw} threads,
-**{total_min:.1f} min total** across the 5 seeds:
+**{total_min:.1f} min total** across the {seeds_txt}:
 
 {timing}
 
@@ -840,7 +872,7 @@ export PYTHONPATH="$R/src:$R/experiments"
 cd dataset/HestonMultiAsset && python generate_heston_multiasset.py && cd -
 
 # 2. fit the frozen reference kernel by penalised MLE on the TRAIN split
-#    Writes code/reference/reference_kernel.json. Fitted ONCE and shared by all 5 seeds.
+#    Writes code/reference/reference_kernel.json. Fitted ONCE and shared by every seed.
 cd results/HestonMultiAsset/Deep-MKV-TS/code
 CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=8 taskset -c 0-7 $PY fit_reference_multiasset.py
 
@@ -848,7 +880,7 @@ CUDA_VISIBLE_DEVICES=1 OMP_NUM_THREADS=8 taskset -c 0-7 $PY fit_reference_multia
 #    The only retuned hyperparameter. Writes sweep/*.json and sweep/winner.json.
 bash run_sweep.sh
 
-# 4. final 5 seeds, {steps} outer iterations, 2 GPUs (~{train_min:.0f} min of GPU time, 3 waves)
+# 4. final {seeds_txt}, {steps} outer iterations, 2 GPUs (~{train_min:.0f} min of GPU time, 3 waves)
 GPUS=(1 2); CORES=("0-7" "8-15")
 for wave in "0 1" "2 3" "4"; do
   i=0

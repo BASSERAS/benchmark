@@ -39,12 +39,34 @@ def _read(path, ycol):
     return xs, ys
 
 
+def _seeds(res_dir):
+    """Seed ids actually present on disk, numerically ordered.
+
+    Not ``range(5)``.  Seed ids are not guaranteed to be 0..4: the multi-asset
+    Deep-MKV-TS campaigns scored [0, 2, 4, 5, 6] after two seeds diverged, and
+    the quarter-budget run scored [0, 4, 6].  A ``range(5)`` loop silently drew
+    a figure missing seed 6 -- no error, no gap in the legend, just a third of
+    the data absent -- while captioning it "5 seeds".  Globbing means the figure
+    reports whatever was actually run.  For a method whose seeds really are
+    0..4 this returns exactly that, so existing figures are unchanged.
+    """
+    ids = set()
+    for name in os.listdir(res_dir):
+        if name.startswith("seed_") and name.endswith("_loss.csv"):
+            head = name.split("_", 2)[1]
+            if head.isdigit():
+                ids.add(int(head))
+    return sorted(ids)
+
+
 def _panel(ax, res_dir, kind, arch, ycol, ylabel, title):
-    for seed in range(5):
+    # Colours by POSITION, not by seed id, so seed 6 does not run off the end
+    # of a 5-entry palette.
+    for i, seed in enumerate(_seeds(res_dir)):
         xs, ys = _read(os.path.join(res_dir, f"seed_{seed}_{kind}_{arch}_loss.csv"), ycol)
         if xs is None:
             continue
-        ax.plot(xs, ys, color=COLORS[seed], alpha=0.85, linewidth=1.3,
+        ax.plot(xs, ys, color=COLORS[i % len(COLORS)], alpha=0.85, linewidth=1.3,
                 label=f"seed {seed} (last={ys[-1]:.4f})")
     ax.set_title(title, fontsize=12)
     ax.set_xlabel("Training step")
@@ -70,6 +92,10 @@ def main():
     plots_dir = os.path.join(res_dir, "plots")
     os.makedirs(plots_dir, exist_ok=True)
 
+    # Derived, never typed. The caption has to agree with the curves actually
+    # drawn; a literal "5 seeds" over a 3-seed panel is a fabricated claim.
+    seeds_txt = f"{len(_seeds(res_dir))} seeds"
+
     # --- A18 discriminative classifier loss (BCE) ---
     fig, (a1, a2) = plt.subplots(1, 2, figsize=(16, 6))
     _panel(a1, res_dir, "disc", "gru", "train_bce", "Train BCE",
@@ -77,7 +103,7 @@ def main():
     _panel(a2, res_dir, "disc", "mlp", "train_bce", "Train BCE",
            "MLP discriminator loss")
     plt.suptitle(f"{args.method} — A18 Discriminative classifier loss "
-                 f"({args.dataset}, 5 seeds)", fontsize=13)
+                 f"({args.dataset}, {seeds_txt})", fontsize=13)
     plt.tight_layout()
     out1 = os.path.join(plots_dir, "disc_classifier_loss.png")
     plt.savefig(out1, dpi=DPI, bbox_inches="tight")
@@ -91,7 +117,7 @@ def main():
     _panel(a2, res_dir, "pred", "mlp", "train_mae", "Train MAE",
            "MLP predictor loss")
     plt.suptitle(f"{args.method} — A19 Predictive score loss "
-                 f"({args.dataset}, 5 seeds)", fontsize=13)
+                 f"({args.dataset}, {seeds_txt})", fontsize=13)
     plt.tight_layout()
     out2 = os.path.join(plots_dir, "pred_score_loss.png")
     plt.savefig(out2, dpi=DPI, bbox_inches="tight")
