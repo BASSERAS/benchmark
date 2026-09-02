@@ -1,0 +1,20 @@
+{
+  "date": "2026-09-02",
+  "incumbent": {
+    "allow_drift_correction": false,
+    "h": 0.36,
+    "jacobian_lags": -1,
+    "markov_order": 20,
+    "npi": 1,
+    "weight_grad_mode": "analytic"
+  },
+  "note": "Zero-control floor for the SBTS-reference arm. The model was BUILT but never FITTED; the adjoint network's final layer is zero-initialised, so Zhat == 0 exactly and the sampler draws from the pure reference SDE (Markovian b^ref, CONSTANT per-asset sigma^ref). Comparable to the sibling variant's Deep-MKV-TS/code/sweep/null_control.json, which uses the same discrepancy functional and the same VAL_FILE.",
+  "score_paths": 8192,
+  "score_seed": 20260831,
+  "secondary_file": "heston_ma_S_valdisc_8192x252x8.npy",
+  "seed": 0,
+  "selection_file": "heston_ma_S_val_8192x252x8.npy",
+  "steps": 0,
+  "val_discrepancy": 0.2258477360010147,
+  "valdisc_discrepancy": 0.22366033494472504
+}
