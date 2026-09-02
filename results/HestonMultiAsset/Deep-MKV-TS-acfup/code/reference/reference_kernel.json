@@ -1,0 +1,76 @@
+{
+  "state_dim": 8,
+  "dt": 0.003968253968253968,
+  "num_steps": 251,
+  "trend_half_lives": [
+    12.716869527487539,
+    74.1396333977443
+  ],
+  "activity_half_lives": [
+    11.634363220025602,
+    50.37148215570598
+  ],
+  "activity_update": "structural_variance",
+  "fit": {
+    "steps": 300,
+    "lr": 0.001,
+    "seed": 0,
+    "num_paths": 8192,
+    "num_steps": 251,
+    "validation_fraction": 0.2,
+    "train_file": "heston_ma_S_8192x252x8.npy",
+    "torch_version": "2.13.0+cu130",
+    "device": "cuda:0",
+    "fitted_at": "2026-08-26T00:54:11"
+  },
+  "trend_weight": 0.7981262707103242,
+  "activity_weight": 0.23769035255057253,
+  "initial_activity": 0.041311900888408616,
+  "sigma_min": 0.001,
+  "sigma_max": 0.6,
+  "ridge_covariance": 0.0001,
+  "ridge_drift": 0.001,
+  "calibration_nll": -10.33622884009688,
+  "validation_nll": -10.384663309061182,
+  "gamma_diagonal": [
+    0.036009959047556314,
+    0.24056786803210703,
+    0.2490847044788572,
+    -0.42823699021774664,
+    4388.3796220312415,
+    -10.429325230926906,
+    -7.787219804572707
+  ],
+  "gamma_offdiagonal": [
+    0.012245549673356943,
+    0.39242185002435215,
+    -0.024658663569729577,
+    -0.2486588817206937,
+    2047.5714909628496,
+    -3.4042140785776716,
+    -4.005062085606703
+  ],
+  "gamma_drift": [
+    0.029218820221112,
+    6.087777146787144,
+    -0.9185782280568926,
+    -0.187811500099708,
+    0.09146667317304004
+  ],
+  "covariance_feature_names": [
+    "1",
+    "sqrt(V_j V_k)",
+    "(V_j+V_k)/2",
+    "mean_k V_k",
+    "T_j T_k",
+    "(T_j+T_k)/2",
+    "mean_k T_k"
+  ],
+  "drift_feature_names": [
+    "1",
+    "T_j",
+    "mean_k T_k",
+    "V_j",
+    "mean_k V_k"
+  ]
+}

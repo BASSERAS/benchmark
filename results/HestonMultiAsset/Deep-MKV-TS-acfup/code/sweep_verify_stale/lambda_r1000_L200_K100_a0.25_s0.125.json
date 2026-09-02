@@ -1,0 +1,30 @@
+{
+  "abs_return_acf_weight": 0.25,
+  "ce_projection_r2": -1.3749943375587463,
+  "date": "2026-08-26",
+  "eigh_fallback": {
+    "n_calls_failed": 0,
+    "n_fallback_cpu": 0,
+    "n_fallback_cpu_float64": 0
+  },
+  "elapsed_sec": 2546.9828253329033,
+  "eta_3000_hours": 8.489942751109679,
+  "final_loss": 3.8888490200042725,
+  "is_d1_point": false,
+  "kappa_scale": 100.0,
+  "lambda_scale": 200.0,
+  "noise_ce_projection_r2": 0.16343055665493011,
+  "peak_gpu_gib": 9.089290142059326,
+  "ridge_lambda": 1000.0,
+  "score_paths": 8192,
+  "score_seed": 20260826,
+  "sec_per_step": 10.187931301331613,
+  "secondary_file": "heston_ma_S_valdisc_8192x252x8.npy",
+  "seed": 0,
+  "selection_file": "heston_ma_S_val_8192x252x8.npy",
+  "squared_return_acf_weight": 0.125,
+  "steps": 250,
+  "tag": "r1000_L200_K100_a0.25_s0.125",
+  "val_discrepancy": 0.007863471284508705,
+  "valdisc_discrepancy": 0.007531516253948212
+}

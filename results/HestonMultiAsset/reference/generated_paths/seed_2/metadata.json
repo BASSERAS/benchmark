@@ -1,0 +1,35 @@
+{
+  "S0": 100.0,
+  "S0_exact": true,
+  "S_max": 218.9613976138568,
+  "S_min": 15.908419544856025,
+  "all_finite_positive": true,
+  "d": 8,
+  "date": "2026-08-26",
+  "device": "cpu",
+  "dtype": "float64",
+  "gen_time_sec": 77.6,
+  "generated_mean": 102.33493149005454,
+  "generated_std": 14.189622386342933,
+  "generation_seed": 90002,
+  "method": "reference",
+  "n_parameters": 56136,
+  "n_trained_parameters": 0,
+  "note": "Frozen reference SDE. The model was BUILT but never FITTED; both output heads have a zero final layer, so Zhat == 0 exactly and the control reduces to eta * (sigma^ref)^-1, i.e. sigma == sigma^ref. n_parameters counts the architecture Deep-MKV-TS would train; n_trained_parameters is 0 because no gradient step was taken. Generation seeds are shared with Deep-MKV-TS/run_all_multiasset.py, so seeds 0, 1, 2 and 4 are paired with that method's banks.",
+  "s0_max_abs_residual_before_rescale": 6.395087552846235e-06,
+  "s0_rescaled": true,
+  "seed": 2,
+  "shape": [
+    8192,
+    252,
+    8
+  ],
+  "train_time_sec": 0.0,
+  "zero_control_verified": true,
+  "zhat_head_max_abs": {
+    "expected_adjoint_next_head.2.bias": 0.0,
+    "expected_adjoint_next_head.2.weight": 0.0,
+    "expected_adjoint_noise_next_head.2.bias": 0.0,
+    "expected_adjoint_noise_next_head.2.weight": 0.0
+  }
+}

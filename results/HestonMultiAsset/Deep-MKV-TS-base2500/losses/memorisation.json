@@ -1,0 +1,44 @@
+{
+  "diagnostic": "nearest-neighbour memorisation ratio, log-return space",
+  "definition": "median_i min_j ||gen_i - train_j||  /  median_i min_j ||real_test_i - train_j||",
+  "interpretation": "1.0 = generated paths sit no closer to the training set than genuine held-out data; <1 = memorisation, 1/ratio = how many times closer they sit",
+  "space": "log-returns, flattened to (T-1)*d = 2008 dims",
+  "median_nn_heldout": 0.6864349842071533,
+  "nn_ratio": 1.0021152839568521,
+  "nn_ratio_std": 0.003792333499314154,
+  "median_nn_generated": 0.6878869891166687,
+  "n_exact_duplicates": 0,
+  "per_seed": [
+    {
+      "seed": 0,
+      "median_nn_generated": 0.6867847442626953,
+      "nn_ratio": 1.000509531220857,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 2,
+      "median_nn_generated": 0.6838077902793884,
+      "nn_ratio": 0.9961726980876429,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 4,
+      "median_nn_generated": 0.6892846822738647,
+      "nn_ratio": 1.0041514464330556,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 5,
+      "median_nn_generated": 0.6879192590713501,
+      "nn_ratio": 1.0021622948980538,
+      "n_exact_duplicates": 0
+    },
+    {
+      "seed": 6,
+      "median_nn_generated": 0.6916384696960449,
+      "nn_ratio": 1.007580449144651,
+      "n_exact_duplicates": 0
+    }
+  ],
+  "note": "Exact duplicates being 0 does NOT clear the method, and for Deep-MKV-TS it is close to uninformative: a sample is a 251-step Euler-Maruyama rollout driven by fresh Gaussian increments, so bitwise equality with a training path has probability zero by construction. The ratio is the number that matters. Estimator byte-identical to SBTS/code/measure_memorisation.py and LS4/code/measure_memorisation.py so the columns are directly comparable; SBTS d = 8 scores 0.2189 +/- 0.0003 on it, LS4 d = 8 scores 0.8381 +/- 0.0166, and SBTS d = 1 scores 0.158."
+}

@@ -12,7 +12,7 @@ the two can be read side by side:
 |--------|----------------------:|-----------------------:|----------------------:|
 | [SBTS](SBTS/README.md) | 13 / 103 | 0 / 6 | 0.219 |
 | [Deep-MKV-TS-SBTSref](Deep-MKV-TS-SBTSref/README.md) | 9 / 103 | 0 / 6 | 0.955 |
-| [Deep-MKV-TS-quarter](Deep-MKV-TS-quarter/README.md) | 7 / 103 | 0 / 6 | - |
+| Deep-MKV-TS-quarter _(no page yet)_ | 7 / 103 | 0 / 6 | - |
 | [LS4](LS4/README.md) | 7 / 103 | 0 / 6 | 0.838 |
 | [CSDI](CSDI/README.md) | 4 / 103 | 0 / 6 | 0.859 |
 | [reference](reference/README.md) | 4 / 103 | 0 / 6 | 0.998 |

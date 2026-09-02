@@ -126,6 +126,20 @@ def score_method(method, floor_sum, floor_b):
             "b_at": b_at, "b_tot": b_tot, "mem": mem}
 
 
+def method_cell(method):
+    """The method's name, linked only if the page it would point at exists.
+
+    ``discover_methods`` keys on ``metrics_summary.csv``, so a directory that
+    has been scored but never had its README rendered still earns a row here.
+    Linking it unconditionally produced a 404 on github.com for anyone browsing
+    the results without cloning. Testing for the file means the link reappears
+    by itself the moment the page is written -- nothing to remember later.
+    """
+    if os.path.exists(os.path.join(MA, method, "README.md")):
+        return f"[{method}]({method}/README.md)"
+    return f"{method} _(no page yet)_"
+
+
 def leaderboard(rows):
     if not rows:
         return "_(no method has metrics yet)_"
@@ -134,7 +148,7 @@ def leaderboard(rows):
     for r in sorted(rows, key=lambda x: (-x["a_at"], x["method"])):
         nn = r["mem"].get("nn_ratio")
         nn_s = f"{float(nn):.3f}" if nn is not None else "-"
-        out.append(f"| [{r['method']}]({r['method']}/README.md) | "
+        out.append(f"| {method_cell(r['method'])} | "
                    f"{r['a_at']} / {r['a_tot']} | {r['b_at']} / {r['b_tot']} | {nn_s} |")
     return "\n".join(out)
 
@@ -150,7 +164,7 @@ def memorisation_table(rows):
         v = float(m["nn_ratio"])
         sd = m.get("nn_ratio_std")
         sd_s = f"{float(sd):.4f}" if sd is not None else "-"
-        out.append(f"| [{r['method']}]({r['method']}/README.md) | {v:.4f} | {sd_s} | "
+        out.append(f"| {method_cell(r['method'])} | {v:.4f} | {sd_s} | "
                    f"{1.0 / max(v, 1e-9):.1f}× | {m.get('n_exact_duplicates', '-')} |")
     return "\n".join(out)
 
